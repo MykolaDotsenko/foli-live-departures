@@ -43,7 +43,7 @@ test("location button fills the nearest stop but waits for explicit submit", asy
   try {
     render(
       <BusStopForm
-        activeStopId=""
+        activeStopId="4"
         stops={stopsWithCoordinates}
         coordinatesStatus="ready"
         onSubmit={onSubmit}
@@ -289,7 +289,7 @@ async function locateWith(coords, extraProps = {}) {
   try {
     render(
       <BusStopForm
-        activeStopId=""
+        activeStopId="4"
         stops={[
           { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
           { id: "4", name: "Turun linna", lat: 60.4355, lon: 22.2345 },
@@ -316,14 +316,15 @@ async function locateWith(coords, extraProps = {}) {
 test("does not fill in a stop from an approximate location", async () => {
   await locateWith({ latitude: 60.45182, longitude: 22.26662, accuracy: 3_000 });
 
-  expect(screen.getByRole("combobox", { name: "Find your stop" })).toHaveValue("");
+  // Still the stop that is open.
+  expect(screen.getByRole("combobox", { name: "Find your stop" })).toHaveValue("Turun linna");
   expect(screen.getByRole("alert")).toHaveTextContent(/approximate/i);
 });
 
 test("does not fill in a stop far from where the passenger is", async () => {
   await locateWith({ latitude: 60.1699, longitude: 24.9384, accuracy: 10 });
 
-  expect(screen.getByRole("combobox", { name: "Find your stop" })).toHaveValue("");
+  expect(screen.getByRole("combobox", { name: "Find your stop" })).toHaveValue("Turun linna");
   expect(screen.getByRole("alert")).toHaveTextContent(/away/i);
 });
 
@@ -358,4 +359,13 @@ test("lists every stop that shares the exact name typed", () => {
   fireEvent.change(input, { target: { value: "Kauppatori" } });
 
   expect(screen.getAllByRole("option")).toHaveLength(8);
+});
+
+// Before a stop is open, "Find nearest stop" is right below the search.
+test("offers no second location button before a stop is open", () => {
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
+
+  expect(
+    screen.queryByRole("button", { name: "Use current location" })
+  ).not.toBeInTheDocument();
 });

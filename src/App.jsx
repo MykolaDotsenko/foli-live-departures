@@ -526,7 +526,7 @@ function App() {
             <dt>{t("What leaves it")}</dt>
             <dd>
               {t(
-                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, and during a ride the stop you get off at and the one before it, is requested from data.foli.fi, which sees your IP address and those stops. Your location is used only when you ask, stays on the phone and is never saved. Google Maps opens only when you tap a route link, and then sees the stop you chose."
+                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, each bus whose stops you open, and during a ride the stop you get off at and the one before it are requested from data.foli.fi, which sees your IP address and what was asked for. Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved. Google Maps opens only when you tap a route link: it is sent the stop you chose, and may then use your location to plan the route."
               )}
             </dd>
             <dt>{t("What there is not")}</dt>

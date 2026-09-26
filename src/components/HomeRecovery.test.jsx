@@ -83,7 +83,7 @@ test("keeps useful fallbacks when route coordinates are unavailable", () => {
     screen.getByRole("button", { name: "Get me Home" })
   ).toBeDisabled();
   expect(
-    screen.getByText(/Transit directions are temporarily unavailable/i)
+    screen.getByText(/Directions will work once stop locations load/i)
   ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Open Home stop" }));

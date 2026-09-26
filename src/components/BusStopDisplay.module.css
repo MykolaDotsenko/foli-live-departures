@@ -308,8 +308,13 @@
 }
 
 /* 13px at the least, on a laptop too: 11.5px read as fine print. */
+/* A chip that wraps starts its line flush, not indented by a margin. */
 .tripMeta {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4em;
+  row-gap: 2px;
   margin-top: 3px;
   color: #4d626b;
   font-size: 0.8125rem;
@@ -327,8 +332,11 @@
    one that is not keeps a chip, as it is the one to notice. */
 .accessibility {
   display: inline-block;
-  margin-left: 0.4em;
   font-weight: 780;
+}
+
+.accessibility[data-accessible="true"] {
+  display: inline;
 }
 
 .accessibility[data-accessible="true"] {
@@ -345,7 +353,6 @@
 /* The effect of a notice about this line, in the notices' own amber. */
 .lineNotice {
   display: inline-block;
-  margin-left: 0.4em;
   padding: 0 6px;
   border-radius: 6px;
   background: #fbefd2;

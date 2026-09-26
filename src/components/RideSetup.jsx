@@ -128,9 +128,12 @@ export default function RideSetup({
   // The setup opens inside the tapped row, often below the fold, while the
   // button that starts the ride is pinned to the bottom of a phone screen.
   // Bringing the panel into view means the stop it will start with is on
-  // screen before that button can be pressed.
+  // screen before that button can be pressed. On a phone it goes to the
+  // top: brought in only as far as its first lines, the second stop to
+  // choose from sat under that pinned button.
   useEffect(() => {
-    panelRef.current?.scrollIntoView?.({ block: "nearest" });
+    const phone = globalThis.matchMedia?.("(max-width: 620px)")?.matches === true;
+    panelRef.current?.scrollIntoView?.({ block: phone ? "start" : "nearest" });
   }, []);
 
   useEffect(() => {

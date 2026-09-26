@@ -54,8 +54,8 @@ export default {
   "Walk there": "Kävele sinne",
   "Nearby-stop data is still loading. Try again in a moment.":
     "Lähipysäkkien tietoja ladataan vielä. Yritä hetken kuluttua uudelleen.",
-  "Stop coordinates are temporarily unavailable. Search for a stop manually and try again later.":
-    "Pysäkkien koordinaatit eivät ole tilapäisesti saatavilla. Hae pysäkki itse ja yritä myöhemmin uudelleen.",
+  "Stop locations are temporarily unavailable. Search for your stop by name, and try again later.":
+    "Pysäkkien sijainnit eivät ole tilapäisesti saatavilla. Hae pysäkki nimellä ja yritä myöhemmin uudelleen.",
   "Your location is approximate, so compare the nearby options before choosing.":
     "Sijaintisi on likimääräinen, joten vertaa lähellä olevia vaihtoehtoja ennen valintaa.",
   "Your location appears outside Föli’s published service area. Nearby stops are shown for reference, but none was selected automatically.":
@@ -71,7 +71,7 @@ export default {
     "Etsi lähin pysäkki sijaintisi avulla – sijaintia ei tallenneta.",
   "Locating…": "Paikannetaan…",
   "Update location": "Päivitä sijainti",
-  "Preparing stop coordinates…": "Valmistellaan pysäkkien koordinaatteja…",
+  "Getting stop locations…": "Haetaan pysäkkien sijainteja…",
   "Location search is temporarily unavailable; stop search still works normally.":
     "Sijaintihaku ei ole tilapäisesti käytettävissä; pysäkkihaku toimii normaalisti.",
   "One-time location only": "Sijaintia ei seurata",

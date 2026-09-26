@@ -119,7 +119,7 @@ function NearbyStops({
         coordinatesStatus === "loading"
           ? msg("Nearby-stop data is still loading. Try again in a moment.")
           : msg(
-              "Stop coordinates are temporarily unavailable. Search for a stop manually and try again later."
+              "Stop locations are temporarily unavailable. Search for your stop by name, and try again later."
             )
       );
       return;
@@ -244,7 +244,7 @@ function NearbyStops({
       {!hasStopCoordinates && (
         <p className={styles.meta} role="status">
           {locationDataLoading
-            ? t("Preparing stop coordinates…")
+            ? t("Getting stop locations…")
             : t(
                 "Location search is temporarily unavailable; stop search still works normally."
               )}

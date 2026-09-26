@@ -1,235 +1,141 @@
-# Skeptical Product Audit
+# Product audit
 
-**Date:** 2026-09-20  
-**Scope:** product usefulness, safety semantics, information architecture, mobile UX, accessibility, privacy, realtime correctness, resilience, PWA behavior, testing, and portfolio presentation.
+**Updated:** 2026-09-26
+**Scope:** what a passenger meets on the screen, how far the app can be trusted, how useful it is, and how it presents itself before a public release.
 
-This audit treats every optimistic product claim as something that should survive an adversarial question:
+## How it was scored
 
-> What happens when the user is stressed, offline, on a small phone, using stale provider data, unable to pronounce Finnish, or relying on a feature that partially fails?
+Three reviews were run, each more than once, on the same builds:
 
-## Current assessment
+- **QA** read the code and tried to break it, with probes where a claim needed proof.
+- **UX** judged every screen as a passenger sees it, from screenshots at 360 px, 412 px and 1280 px, in light and dark mode, in English and Finnish.
+- **Product and marketing** judged value, first run, copy, brand, trust and the surfaces a passenger sees before opening the app: the link preview, the install sheet and the README.
+
+Each area is scored out of 100. These scores are the reviewers' judgement, not usage data: there is no analytics, by design.
+
+An earlier version of this page gave every area 95–98. Those were self-assessments of how well the code was built. The reviews below score the product as a passenger meets it, and they started much lower.
+
+## Scorecards
+
+Four rounds of review. "First" is the first review of this release, before its fixes. "Verification" is the latest full review.
 
-| Area | Score | Why |
-| --- | ---: | --- |
-| Everyday user utility | **97/100** | Search, realtime board, disruptions, nearest stops, Safe Places, walking/transit handoffs and recovery cover the main daily flow without an account. |
-| Reliability / failure states | **98/100** | Realtime and alert freshness now age across outages, same-stop fallbacks remain explicit, offline PWA behavior is tested, and dead-phone preparation has a physical fallback. |
-| Privacy | **98/100** | Exact Home/School/Work coordinates are not persisted and there is no tracking backend. Safe Places use public stop identity only, but the audit now treats a named Home/School/Work stop as approximate-location information rather than “non-sensitive” data. |
-| Accessibility | **98/100** | Keyboard search, semantic controls, forced-colors/reduced-motion support, large touch targets and axe gates are present. |
-| Mobile UX | **97/100** | Core controls collapse well, recovery is prominent, management is deprioritized, and worst-case expanded states are overflow-tested. |
-| Realtime semantics | **98/100** | Live/scheduled/freshness distinctions are defensive, stale provider time advances across failed refreshes, old rows are removed, and vehicle direction is deliberately not inferred from coordinates alone. |
-| PWA / degraded use | **98/100** | The complete production shell is precached and offline-reload tested; capability loss is explicit, external routes are withheld offline, and a printable Home card covers the limit where the device itself dies. |
-| Portfolio / recruiter signal | **95/100** | The code demonstrates product reasoning, browser APIs, accessibility, API normalization and cross-browser QA. Repository/deployment branding metadata still needs final cleanup. |
+### Quality (QA)
+
+| Area | First | Re-audit | Pre-release | Verification |
+| --- | ---: | ---: | ---: | ---: |
+| Get-off alert (Ride Mode) | 60 | 64 | 58 | 72 |
+| Departure board | 82 | 74 | 88 | 88 |
+| Stop search | 84 | 86 | 88 | 93 |
+| Service updates | 85 | 85 | 80 | 82 |
+| My Places and Get me Home | 86 | 88 | 86 | 93 |
+| Offline | 68 | 80 | 87 | 91 |
+| Finnish | — | 86 | 94 | 94 |
 
-These are implementation-quality scores, not claims of market validation.
-
-## High-ROI issues fixed in this audit
-
-### 1. Core value was too far down the page
-
-**Problem:** Near you and the relatively large My Places management surface appeared before the live departure board.
-
-**Risk:** a commuter opening the product for its primary job — “what leaves now?” — had to scan or scroll through setup/management UI first.
-
-**Change:** normal information hierarchy now prioritizes:
-
-1. Get me Home recovery, when configured
-2. stop search
-3. near-you shortcut
-4. favorites / recents
-5. relevant service disruptions
-6. **live departures**
-7. My Places management
-
-A shared Safe Place is the exception: explicit import confirmation moves up because that is the user's current task.
-
-### 2. “Bus approaching” claimed more than the data proved
-
-**Problem:** a vehicle within 250 m was labelled “approaching”.
-
-**Risk:** latitude/longitude plus distance cannot prove travel direction. The vehicle may have passed the stop, be on a loop, or report a delayed position.
-
-**Change:** the product now says **Bus nearby** and retains the straight-line distance. Stale coordinates continue to be labelled as an old last position.
-
-### 3. Old departures could remain as “Due”
-
-**Problem:** provider rows with a past timestamp could be clamped by the UI to Due.
-
-**Risk:** users could wait for a vehicle that has already left.
-
-**Change:** departures older than a short grace interval are removed before rendering. Rows without any valid departure timestamp are not presented as useful departures.
-
-### 4. Backup Safe Arrival stops were trusted automatically
-
-**Problem:** initial Safe Place setup preselected all three nearest stops.
-
-**Risk:** physical proximity does not make a stop safe, appropriate, or even useful for the correct side/direction. For a child, auto-approving backups is too strong an assumption.
-
-**Change:** only the nearest candidate is initially selected. Backup stops require explicit opt-in and explanatory copy.
-
-### 5. More than four alerts were silently hidden
-
-**Problem:** the UI rendered only the first four relevant alerts without explaining that additional alerts existed.
-
-**Risk:** a lower-priority but still relevant disruption could be invisible.
-
-**Change:** the first four remain the low-noise default, but the UI exposes “Show N more updates” with accessible expanded state.
-
-### 6. Show driver still assumed spoken Finnish
-
-**Problem:** the destination card helped visually but a child/newcomer might still be unable to pronounce the Finnish sentence.
-
-**Change:** when the browser supports Web Speech, the card offers **Read aloud in Finnish** using local browser speech synthesis. Unsupported browsers simply omit the control; no AI/API/backend is required.
-
-### 7. Browser QA did not test the production application
-
-**Problem:** Playwright previously ran against Vite's development server.
-
-**Risk:** production asset paths, service-worker registration, PWA caching and deployment-like behavior were outside the browser gate.
-
-**Change:** Playwright now builds the app and runs against Vite preview.
-
-### 8. PWA offline behavior was weaker than the documentation implied
-
-**Problem:** the source service worker cached the root page but did not guarantee that the first installed shell contained the hashed JavaScript/CSS required for an offline reload.
-
-**Change:** npm run build now generates a content-versioned production service worker that precaches the complete built same-origin shell. CI verifies that every built asset is represented in the precache manifest.
-
-The service worker intentionally does **not** cache live data.foli.fi API responses.
-
-### 9. Offline capability was implicit
-
-**Problem:** a user could lose connectivity without understanding which parts of the product were still trustworthy.
-
-**Change:** an explicit offline banner explains:
-
-- Safe Places remain local
-- driver help remains available
-- live departures need connectivity
-- external route planning needs connectivity
-
-External walking/transit links are withheld while the browser reports offline. The header also changes to **Offline mode**, so the global status does not visually contradict the degraded-state banner.
-
-### 10. Realtime freshness could freeze across repeated failures
-
-**Problem:** the UI retained same-stop data after a failed refresh, but the provider `servertime` inside that payload was also retained.
-
-**Risk:** without advancing the reference clock, a vehicle position and monitored trip could remain labelled fresher than they really were.
-
-**Change:** every successful Stop Monitoring response records a browser receipt timestamp. The provider clock is advanced by elapsed time since receipt, so **Due**, vehicle-position age and live-data freshness continue aging during an outage. A failed refresh also states when the last successful update was received.
-
-The same principle is applied to the disruption feed: retained alerts remain visible, but a failed or old alert check is explicitly marked instead of silently implying the feed is current.
-
-### 11. A dead phone had no externalized fallback
-
-**Problem:** every digital recovery flow disappears once the device powers off.
-
-**Risk:** no browser feature can recover from a fully dead phone, and the Battery Status API is not consistently available enough to be a safety dependency.
-
-**Change:** Home recovery now includes **Prepare for no battery**. A caregiver can print or save a compact Home backup card containing the primary approved stop, optional approved backup stops and the Finnish driver-help sentence. It contains public stop identity, not the private home address or setup coordinates.
-
-### 12. Offline and “live” visual language conflicted
-
-**Problem:** the offline banner could coexist with a green-looking Föli status dot.
-
-**Risk:** a stressed user could read the overall interface as still live.
-
-**Change:** offline state now changes the header status to **Offline mode** with neutral warning styling. The browser connectivity signal remains advisory; API request results still decide whether realtime data is actually trustworthy.
-
-## Intentionally unresolved limitations
-
-These are not hidden behind optimistic wording.
-
-### Route-level disruption completeness
-
-Route-only alerts are matched against lines currently present in the selected stop's departure feed.
-
-This is useful but not mathematically complete. If a route is so disrupted that it has **no visible upcoming departure**, matching only current visible lines can miss that route-level alert.
-
-A complete solution needs coherent GTFS stop → stop_times → trips → route membership, ideally pinned to one GTFS dataset version.
-
-### No child-optimized journey planner inside the app
-
-Go Home delegates actual transit routing to an external Maps transit handoff.
-
-The app therefore does not itself guarantee:
-
-- minimum transfers
-- safest walking path
-- child-specific transfer penalties
-- route recomputation inside the app
-- wrong-bus detection
-
-Implementing this honestly would require a routing provider such as Digitransit plus a production-safe API-key/proxy strategy and a separate itinerary UX.
-
-### Vehicle direction is unknown
-
-SIRI Stop Monitoring coordinates are used for straight-line vehicle-to-stop distance.
-
-The app deliberately says **nearby**, not “approaching”, because proximity alone is not directional evidence.
-
-A stronger directional model would need trip/shape/progress context.
-
-### Browser connectivity is advisory
-
-`navigator.onLine` is useful as an immediate browser hint, but it does not prove that Föli or Google Maps is reachable.
-
-The connectivity UI therefore also performs a small same-origin **HEAD** probe with `no-store`. The production service worker handles only GET requests, so the cached PWA shell cannot make that probe falsely succeed while offline. This verifies general reachability of the app origin without introducing a third-party tracking endpoint.
-
-Actual Föli request success/failure remains the authoritative signal for realtime and disruption data.
-
-### Safe Place stop identity still reveals an approximate area
-
-The app does not persist an exact private address or setup coordinates, but a Safe Place labelled Home/School/Work is not anonymous. A public stop ID can reveal the approximate area associated with that place.
-
-Share, import and print flows now say this explicitly. The product should not describe public-stop-only storage as if it eliminated all location sensitivity.
-
-### No full localization yet
-
-The interface is primarily English with a specific Finnish driver-help sentence.
-
-A production public-facing version should add structured localization at least for Finnish, Swedish and English; Ukrainian would also be valuable for the newcomer use case.
-
-### PWA icon coverage
-
-The manifest lists the SVG icon and 192×192 / 512×512 PNGs for general use, plus a separate full-bleed 512×512 maskable PNG, so Android's own mask no longer clips the rounded tile a second time. iPhones get a 180×180 apple-touch-icon, and get-off notifications carry a monochrome status-bar badge. `scripts/build-icons.mjs` renders every PNG from `public/foli-icon.svg`, and `npm run verify:pwa` fails a build whose manifest or touch icon is missing or not precached.
-
-### No product analytics by design
-
-There is no tracking backend or analytics SDK, which supports the privacy model.
-
-The tradeoff is that the repository cannot claim validated adoption, retention or product-market fit from usage data.
-
-### Repository / deployment presentation needs final cleanup
-
-The implementation is stronger than its external metadata:
-
-- GitHub repository description is empty
-- GitHub topics are empty
-- homepage still uses the legacy nuppu-assignment.vercel.app branding
-- repository history is unusually large for the current source tree
-
-These are presentation/maintenance issues rather than user-flow defects. History should not be rewritten casually.
-
-## Release gates after this audit
-
-A change is not considered release-ready merely because unit tests pass.
-
-The intended gate is:
-
-1. ESLint
-2. Vitest / Testing Library
-3. production Vite build
-4. generated PWA precache verification
-5. deterministic Playwright Chromium with service workers blocked
-6. deterministic Playwright Firefox with service workers blocked
-7. deterministic Playwright mobile WebKit with service workers blocked
-8. real browser geolocation scenarios
-9. Safe Place privacy/import scenarios
-10. Get me Home recovery
-11. dedicated Chromium PWA project with real service-worker offline reload
-12. axe WCAG A/AA checks
-13. worst-case mobile overflow
-14. deterministic desktop/mobile screenshots
+The get-off alert fell in the pre-release round because the review found a real fault: "Press STOP now" could come while the bus was still at the stop before the exit, and the press stopped it there. That was fixed. The verification round found the same fault on one more path, a passenger's location read while they still waited at the boarding stop. That was fixed after the round too (see below).
+
+### Design (UX)
+
+| Area | First | Re-audit | Pre-release | Verification |
+| --- | ---: | ---: | ---: | ---: |
+| Visual design | 70 | 74 | 80 | 86 |
+| Copy, English | 63 | 72 | 79 | 85 |
+| Copy, Finnish | — | 68 | 77 | 80 |
+| Phone ergonomics | 58 | 64 | 76 | 82 |
+| Dark theme | — | 84 | 86 | 89 |
+
+In the verification round, 21 of 23 screens scored 80 or more on a phone. The two below were the ride screen going by the timetable (74, its notes contradicted each other) and place setup (70, three controls per stop).
+
+### Product and marketing
+
+| Area | Pre-release | Verification |
+| --- | ---: | ---: |
+| Value to a passenger | 74 | 80 |
+| First run | 70 | 76 |
+| Copy | 76 | 80 |
+| Brand | 60 | 63 |
+| Finnish | 78 | 82 |
+| Marketing surface | 62 | 70 |
+| Install (PWA) | 80 | 84 |
+| Trust and privacy | 78 | 82 |
+| Feature completeness | 72 | 82 |
+| **Average** | **72** | **78** |
+
+The first product review averaged about 41, and the re-audit about 56, on a coarser list of areas.
+
+The product reviewer's verdict: ready for a quiet release now. Not ready to promote until the name and the domain are settled, and until the get-off alert has been ridden on real buses in the city centre.
+
+## Fixed after the verification round
+
+These came out of the verification round and are not yet re-scored.
+
+**Get-off alert**
+- Location raises nothing while the passenger still waits at the boarding stop. It counts once two fixes in a row are on the route, past the boarding stop, and not standing still.
+- "Press STOP now" needs two such fixes past the stop before, each past it by its own accuracy, or the bus seen leaving that stop live.
+- One name everywhere: **Get-off alert** / **Pysäkkihälytys**, **Alert on**, **Turn off alert**, **Missed your stop?**. Before, the board said "Get-off alert" and the panel said "Ride Mode".
+- The "Remaining" tile shows the planned count before departure, and a dash, never "tracking".
+- The timetable note no longer contradicts "Following your bus".
+- The off-route question's "Turn off alert" asks for a second tap, like the one in the panel.
+- Get me Home is hidden during a ride: its route link would leave the page the alert runs in.
+- The badge no longer squeezes the title on a small phone.
+
+**Board and service updates**
+- A failed service-update check is tried again as soon as Föli answers the board, not five minutes later.
+- With a line filter on, a cancelled bus is not listed twice.
+- The wheelchair symbol stays with the status, and chips that wrap start flush.
+- "Hide stops" is short enough to keep the alert button on the same line.
+
+**Places, offline and first run**
+- One location button on a first visit, not two a thumb apart.
+- My Places says its promise once, and "Not at the stop?" once, under all three places.
+- The offline notice is two lines, and the Home card does not repeat it.
+- The printed card labels backup stops in Finnish and English.
+- Developer words are gone from the copy: "coordinates", "catalogue", "realtime feed", "stop sequence".
+
+**Trust and first impressions**
+- About & privacy and the README say what data.foli.fi is asked (stops and buses), when location is used (on request, and during a ride while Follow my location is on), and that Google Maps may use the phone's location once it opens.
+- The install-sheet and README screenshots show a morning at 08:10, not 01:00. The ride screenshot sits over the board of the stop being got off at.
+
+## Still open
+
+**Found by the reviews, not done**
+- Place setup still asks for a checkbox and a "Main stop" choice per stop, and a confirmation (UX, 70).
+- The board header on a phone stacks Filter lines and Refresh, and error screens offer both Refresh and Try again.
+- Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
+- There is no install hint on iPhone outside ride setup.
+- MISSED ends the alert for good; it does not come back if the bus turns out to be earlier on its route.
+
+**Owner decisions**
+1. **One product name.** Five are in use: "Föli departures" (header), "Föli Live Departures" (README), two page and manifest titles, and "Turku Föli" on the home screen. "Turku Föli" reads as the operator's own app, so Föli's written no-objection is worth having first.
+2. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
+3. **Who makes it, and a contact address.** About says only who does not make it. GitHub issues are the only channel.
+4. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
+5. **The Android app ID** `fi.turku.*` uses the City's namespace.
+6. **Swedish.**
+7. **GitHub description and topics.**
+
+## Known limitations
+
+These are stated, not hidden.
+
+- **A browser can pause the get-off alert.** A page in the background or on a locked phone may stop running. The panel says so, asks the passenger to keep it open, and plays a test alert first. Guaranteed lock-screen alerts need a small backend with Web Push; that is Phase 2 in [Ride Mode design](RIDE_MODE_SPEC.md).
+- **No journey planner inside the app.** Get me Home hands the route to Google Maps. The app does not choose transfers or walking paths.
+- **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
+- **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
+- **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.
+- **Two languages, not three.** Föli publishes Finnish, Swedish and English; the interface is Finnish and English. A service update Föli wrote only in Finnish shows in Finnish in the English interface.
+- **No analytics, by design.** Nothing measures adoption or retention; the scores above are reviewers' judgement.
+
+## Release gates
+
+Every pull request to `master` runs:
+
+1. ESLint, including the rule that JSX text must go through the translator
+2. Vitest and Testing Library (512 tests, coverage ratchet 82 / 75 / 85 / 86), with a test that every phrase has a Finnish translation and every translation is still used
+3. production build, PWA precache and install-sheet checks, and the bundle budget (600 KB)
+4. the Föli API reference drift check
+5. Playwright on Chromium, Firefox, mobile WebKit and Chromium mobile, with axe WCAG A/AA checks, a Finnish phone and worst-case mobile overflow
+6. a Chromium PWA project that installs the real service worker and reopens offline
+7. the README's and the install sheet's screenshots, taken by the same flows
 
 ## Product principle
 

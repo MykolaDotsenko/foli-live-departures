@@ -793,13 +793,30 @@ function BusStopDisplay({
                       )}
                       {/* One line on a phone: the clock went under the
                           countdown, and an accessible bus is a symbol here
-                          rather than a chip wrapping onto two more lines. */}
+                          rather than a chip wrapping onto two more lines.
+                          The symbol is held to the status before it: on
+                          its own it was left alone on a line at 360px. */}
                       <span className={styles.tripMeta}>
-                        {cancelled
-                          ? t("Cancelled at this stop · was due {time}", {
-                              time: formatClock(departureTime),
-                            })
-                          : serviceStatus}
+                        <span>
+                          {cancelled
+                            ? t("Cancelled at this stop · was due {time}", {
+                                time: formatClock(departureTime),
+                              })
+                            : serviceStatus}
+                          {accessibility && tripDetails?.wheelchairAccessible === 1 && (
+                            <>
+                              {"\u00a0"}
+                              <span
+                                className={styles.accessibility}
+                                data-accessible="true"
+                                title={accessibility}
+                              >
+                                <span aria-hidden="true">{"♿"}</span>
+                                <span className={styles.srOnly}>{accessibility}</span>
+                              </span>
+                            </>
+                          )}
+                        </span>
                         {!cancelled && lineNotices?.has(String(arrival.lineref || "")) && (
                           <span className={styles.lineNotice}>
                             {lineNotices.get(String(arrival.lineref || "")) ||
@@ -807,16 +824,7 @@ function BusStopDisplay({
                           </span>
                         )}
                         {accessibility &&
-                          (tripDetails?.wheelchairAccessible === 1 ? (
-                            <span
-                              className={styles.accessibility}
-                              data-accessible="true"
-                              title={accessibility}
-                            >
-                              <span aria-hidden="true">{"♿"}</span>
-                              <span className={styles.srOnly}>{accessibility}</span>
-                            </span>
-                          ) : (
+                          (tripDetails?.wheelchairAccessible === 1 ? null : (
                             <span
                               className={styles.accessibility}
                               data-accessible="false"
@@ -912,7 +920,7 @@ function BusStopDisplay({
           <summary>{t("About live estimates")}</summary>
           <p>
             {t(
-              "Live times are estimates from vehicle data. Vehicle distance is a straight-line estimate from the latest reported position. Scheduled means no current realtime feed is available for that trip."
+              "Live times are Föli’s estimates from the buses themselves. A bus’s distance is a straight line from its last reported position. Scheduled means Föli has no live data for that trip right now."
             )}
           </p>
         </details>

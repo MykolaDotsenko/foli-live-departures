@@ -22,6 +22,8 @@ const NAME_SEPARATOR = "\u00a0·";
 // interface language: "Pysäkki / Stop 164".
 const PRINTED_STOP_FINNISH = "Pysäkki";
 const PRINTED_STOP_ENGLISH = "Stop";
+const PRINTED_BACKUPS_FINNISH = "Varapysäkit";
+const PRINTED_BACKUPS_ENGLISH = "Backup stops";
 
 function resolveStops(place, stops) {
   const byId = new Map(stops.map((stop) => [stop.id, stop]));
@@ -97,7 +99,7 @@ function HomeRecovery({
       {home.needsReview && (
         <p className={styles.status} role="status">
           {t(
-            "Home needs review because a saved stop changed or disappeared from the current Föli catalogue."
+            "Check Home: one of its stops has changed or is no longer in Föli’s stop list."
           )}
         </p>
       )}
@@ -187,11 +189,16 @@ function HomeRecovery({
         </p>
       )}
 
+      {/* Offline, the banner at the top already says directions need a
+          connection: the disabled button keeps it, unseen, as its reason. */}
       {!transitUrl && (
-        <p id="home-recovery-routing-status" className={styles.status}>
+        <p
+          id="home-recovery-routing-status"
+          className={online ? styles.status : styles.srOnly}
+        >
           {online
             ? t(
-                "Transit directions are temporarily unavailable until public stop coordinates load. Your saved stop and driver card still work."
+                "Directions will work once stop locations load. Your saved stop and the driver card work now."
               )
             : t("Directions need an internet connection.")}
         </p>
@@ -287,7 +294,10 @@ function HomeRecovery({
         </p>
         {backupStops.length > 0 && (
           <div className={styles.printBackups}>
-            <strong>{t("Backup stops")}</strong>
+            <strong>
+              <span lang="fi">{PRINTED_BACKUPS_FINNISH}</span> /{" "}
+              <span lang="en">{PRINTED_BACKUPS_ENGLISH}</span>
+            </strong>
             {backupStops.map((stop) => (
               <p key={stop.id}>
                 <StopName stop={stop} /> · <span lang="fi">{PRINTED_STOP_FINNISH}</span>{" "}

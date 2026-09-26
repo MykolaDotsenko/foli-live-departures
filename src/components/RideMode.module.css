@@ -352,6 +352,36 @@
   }
 }
 
+/* Beside the title on a small phone, the badge wrapped to two lines and
+   squeezed the title to three. It goes under the eyebrow, on one line, and
+   the title gets the full width. */
+@media (max-width: 380px) {
+  .topline {
+    display: grid;
+    justify-items: start;
+    gap: 0;
+  }
+
+  .topline > div {
+    display: contents;
+  }
+
+  .eyebrow {
+    order: 0;
+  }
+
+  .health {
+    order: 1;
+    max-width: none;
+    margin: 2px 0 6px;
+    white-space: nowrap;
+  }
+
+  .topline h2 {
+    order: 2;
+  }
+}
+
 @media (forced-colors: active) {
   .panel,
   .health,
