@@ -8,9 +8,9 @@ const STORAGE_KEY = "foli-my-places-v1";
 // the place was saved in, so it reads the same in the other and code can
 // still tell Home by it. The screen names a place through placeLabel().
 export const PLACE_PRESETS = [
-  { id: "home", label: "Home", icon: "⌂" },
-  { id: "school", label: "School", icon: "▣" },
-  { id: "work", label: "Work", icon: "▤" },
+  { id: "home", label: "Home" },
+  { id: "school", label: "School" },
+  { id: "work", label: "Work" },
 ];
 
 const PLACE_LABELS = {

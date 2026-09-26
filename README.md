@@ -36,7 +36,7 @@ Live departures from any Föli stop, the service updates that affect them, and a
   &nbsp;
   <img
     src="docs/assets/foli-ride-now.png"
-    alt="Ride Mode at the passenger's stop: Get off now at Puistokatu, move to the doors and step off here"
+    alt="The get-off alert at the passenger's stop: Get off now at Puistokatu, move to the doors and step off here"
     width="260"
   >
   &nbsp;
@@ -53,7 +53,7 @@ Live departures from any Föli stop, the service updates that affect them, and a
 - **Get off at the right stop.** Tap **Get-off alert** on a departure and choose your stop. The phone tells you when to get ready and when to press STOP, with sound, vibration and speech where it can. Keep the page open: a browser can pause a page it thinks you have left.
 - **Before you go.** Detours, cancellations and other service updates for your stop and your lines, above the times they change.
 - **Home, School and Work.** Save each as the public stops you use, never an address. **Get me Home** opens the route in Google Maps, **Show to driver** puts your stop on screen in large type with a request in Finnish, and a backup card can be printed for a flat battery.
-- **Just your lines.** Follow the lines you take at a stop, and the board keeps showing only them.
+- **Just your lines.** Tap **Filter lines** at a stop and pick the lines you take, and the board keeps showing only them.
 - **When the network drops,** your places and the driver card still open, and the board you just looked at keeps its last times, marked as not live.
 
 <p align="center">
@@ -72,9 +72,9 @@ Live departures from any Föli stop, the service updates that affect them, and a
 ### Privacy
 
 - No account, no ads, no analytics.
-- Favourites, places and the lines you follow stay on your phone. Clearing the site's data removes them.
-- Your location is used only when you ask. It stays on the phone and is never saved.
-- The page is served by GitHub Pages and the times come from data.foli.fi. Both see your IP address, and data.foli.fi sees which stop you look up.
+- Favourites, places and each stop's line filter stay on your phone. Clearing the site's data removes them.
+- Your location is used to find a stop when you ask, and during a ride while **Follow my location** is on. It stays on the phone and is never saved.
+- The page is served by GitHub Pages and the times come from data.foli.fi. Both see your IP address, and data.foli.fi sees which stops and buses you look up. A route link sends Google Maps only the stop you chose; Google Maps may then use your location to plan the route.
 
 The full list is under **About & privacy** at the foot of the app. Feedback is welcome in [GitHub issues](https://github.com/MykolaDotsenko/foli-live-departures/issues).
 
@@ -90,7 +90,7 @@ Pysäkkien reaaliaikaiset lähdöt, niihin vaikuttavat liikennetiedotteet ja mui
 - **Jää pois oikealla pysäkillä.** Napauta lähdön kohdalla **Pysäkkihälytys** ja valitse pysäkkisi. Puhelin kertoo äänellä, värinällä ja puheella, milloin valmistautua ja milloin painaa STOP. Pidä sivu auki: selain voi keskeyttää sivun, jolta se luulee sinun poistuneen.
 - **Ennen kuin lähdet.** Pysäkkiäsi ja linjojasi koskevat poikkeusreitit, peruutukset ja muut liikennetiedotteet näkyvät lähtöaikojen yläpuolella.
 - **Koti, koulu ja työ.** Tallenna niihin käyttämäsi julkiset pysäkit, ei koskaan osoitetta. **Vie minut kotiin** avaa reitin Google Mapsissa, **Näytä kuljettajalle** näyttää pysäkkisi isolla ja pyynnön suomeksi, ja varakortin voi tulostaa tyhjän akun varalle.
-- **Vain omat linjasi.** Seuraa pysäkillä linjoja, joilla kuljet, niin taulu näyttää vain ne.
+- **Vain omat linjasi.** Napauta pysäkillä **Suodata linjoja** ja valitse linjat, joilla kuljet, niin taulu näyttää vain ne.
 - **Kun yhteys katkeaa,** omat paikat ja kuljettajakortti aukeavat yhä, ja juuri katsomasi taulu säilyttää viimeiset aikansa merkittynä vanhoiksi.
 
 ### Lisää aloitusnäytölle
@@ -101,9 +101,9 @@ Pysäkkien reaaliaikaiset lähdöt, niihin vaikuttavat liikennetiedotteet ja mui
 ### Tietosuoja
 
 - Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.
-- Suosikit, paikat ja seuraamasi linjat pysyvät puhelimessasi. Ne poistuvat, kun tyhjennät sivuston tiedot.
-- Sijaintiasi käytetään vain pyynnöstäsi. Se pysyy puhelimessa eikä sitä tallenneta.
-- Sivut jakaa GitHub Pages ja ajat tulevat osoitteesta data.foli.fi. Molemmat näkevät IP-osoitteesi, ja data.foli.fi näkee, minkä pysäkin tiedot haet.
+- Suosikit, paikat ja pysäkkien linjasuodattimet pysyvät puhelimessasi. Ne poistuvat, kun tyhjennät sivuston tiedot.
+- Sijaintiasi käytetään pysäkin etsimiseen, kun pyydät, ja matkan aikana, kun **Seuraa sijaintiani** on päällä. Se pysyy puhelimessa eikä sitä tallenneta.
+- Sivut jakaa GitHub Pages ja ajat tulevat osoitteesta data.foli.fi. Molemmat näkevät IP-osoitteesi, ja data.foli.fi näkee, minkä pysäkkien ja bussien tiedot haet. Reittilinkki kertoo Google Mapsille vain valitsemasi pysäkin; Google Maps voi sitten käyttää sijaintiasi reitin laskemiseen.
 
 Koko luettelo on sovelluksen alareunassa kohdassa **Tietoa ja tietosuoja**.
 

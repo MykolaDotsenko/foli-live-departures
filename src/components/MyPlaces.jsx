@@ -458,7 +458,7 @@ function PlaceCard({
       {place.needsReview && (
         <p className={styles.reviewNotice} role="status">
           {t(
-            "One or more saved stops no longer appear in the current Föli stop catalogue. Review this place before relying on it."
+            "One or more of its stops are no longer in Föli’s stop list. Check this place before you rely on it."
           )}
         </p>
       )}
@@ -628,7 +628,6 @@ function EmptyPlaceCard({
         </span>
         <div>
           <h3>{label}</h3>
-          <p>{t("Save the stops you use, without typing an address.")}</p>
         </div>
         <div className={styles.emptyActions}>
           <button
@@ -788,7 +787,6 @@ function MyPlaces({
     <section className={styles.wrapper} aria-labelledby="my-places-title">
       <div className={styles.header}>
         <div>
-          <p className={styles.kicker}>{t("No address to remember")}</p>
           <h2 id="my-places-title">{t("My Places")}</h2>
           <p className={styles.description}>
             {t(
@@ -874,11 +872,24 @@ function MyPlaces({
         </p>
       )}
 
-      <p className={styles.privacy}>
-        {t(
-          "Route links give Google Maps only the stop you’re going to, not where you are."
-        )}
-      </p>
+      {/* Said once, under all three: in each empty card it repeated the
+          heading's promise three times over. */}
+      {PLACE_PRESETS.some((preset) => !placesById.get(preset.id)) && (
+        <p className={styles.meta}>
+          {t("Not at the stop? Open its departures first, then use it here.")}
+        </p>
+      )}
+
+      {/* True to the letter, "not where you are" misled: Google Maps then
+          plans the route from where the phone is. Said once there is a
+          route link to follow. */}
+      {placesById.size > 0 && (
+        <p className={styles.privacy}>
+          {t(
+            "Route links send Google Maps only the stop you’re going to. Google Maps may then use your location to plan the route."
+          )}
+        </p>
+      )}
     </section>
   );
 }

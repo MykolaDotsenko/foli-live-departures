@@ -134,6 +134,26 @@ if (sw.includes("social-card.jpg")) {
   throw new Error("The link preview image is precached, adding its weight to every install.");
 }
 
+// Android's fuller install sheet shows these. They must be in the build, a
+// phone one and a laptop one at least, and not precached.
+const screenshots = Array.isArray(manifest.screenshots) ? manifest.screenshots : [];
+for (const formFactor of ["narrow", "wide"]) {
+  if (!screenshots.some((shot) => shot.form_factor === formFactor)) {
+    throw new Error(`The manifest has no ${formFactor} screenshot for the install sheet.`);
+  }
+}
+for (const shot of screenshots) {
+  const relative = String(shot.src).replace(/^\.?\//, "");
+  try {
+    await readFile(path.join(distDir, relative));
+  } catch {
+    throw new Error(`Install screenshot ${shot.src} is missing from the build.`);
+  }
+  if (sw.includes(relative)) {
+    throw new Error(`Install screenshot ${shot.src} is precached, adding its weight to every install.`);
+  }
+}
+
 if (!sw.includes('caches.match(request, { ignoreVary: true })')) {
   throw new Error(
     "Generated service worker does not ignore Vary for same-origin precached assets."

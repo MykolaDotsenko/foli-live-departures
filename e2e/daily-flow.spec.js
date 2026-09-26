@@ -67,6 +67,45 @@ async function seedHome(page, { primaryStopId = "164" } = {}) {
   await page.reload();
 }
 
+// The README's and the install sheet's pictures showed whatever hour the
+// suite ran at, 01:00 more often than not. For them, the page and the mocks
+// here both move to 08:10 in Turku, so every time on screen agrees.
+let restoreClock = null;
+
+async function atMorningCommute(page) {
+  const realNow = Date.now.bind(Date);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Helsinki",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZoneName: "shortOffset",
+    })
+      .formatToParts(new Date(realNow()))
+      .map((part) => [part.type, part.value])
+  );
+  const offsetHours = Number(parts.timeZoneName.match(/GMT([+-]\d+)/)?.[1] || 0);
+  const morning = Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    8 - offsetHours,
+    10
+  );
+  const shift = morning - realNow();
+  Date.now = () => realNow() + shift;
+  restoreClock = () => {
+    Date.now = realNow;
+  };
+  await page.clock.install({ time: Date.now() });
+}
+
+test.afterEach(() => {
+  restoreClock?.();
+  restoreClock = null;
+});
+
 // GTFS writes a trip's times in its service day, which runs past midnight
 // ("24:05:00") until early morning.
 function gtfsClockAt(unixSeconds) {
@@ -446,7 +485,7 @@ test.beforeEach(async ({ page }) => {
   await mockFoli(page);
 });
 
-test("bare URL starts without a default stop and location only fills the search field", async ({
+test("bare URL starts without a default stop, and location only fills the search field", async ({
   page,
   context,
 }, testInfo) => {
@@ -468,13 +507,20 @@ test("bare URL starts without a default stop and location only fills the search 
   await expect(
     page.locator('section[aria-labelledby="departures-title"]')
   ).toHaveCount(0);
+  // One way to use location on a first visit: Near you, right below.
+  await expect(
+    page.getByRole("button", { name: "Use current location" })
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Find nearest stop" })).toBeVisible();
 
+  // With a board open, the search field has its own shortcut.
+  await page.goto("/?stop=4");
   await page
     .getByRole("button", { name: "Use current location" })
     .click();
 
   await expect(input).toHaveValue("Kauppatori");
-  await expect(page).not.toHaveURL(/stop=/);
+  await expect(page).toHaveURL(/stop=4/);
 
   await page.getByRole("button", { name: "Show departures" }).click();
 
@@ -544,12 +590,12 @@ test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
     .uncheck();
   await turnOffNotifications(page);
 
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
 
   // The bus is a minute from Puistokatu but has not been seen leaving
   // Kauppatori, the stop before it. STOP pressed now would stop it there.
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
   await expect(
     page.getByText("Press STOP when the bus leaves Kauppatori.")
@@ -558,13 +604,13 @@ test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
   await expect(page.locator('[data-health="live"]')).toBeVisible();
 
   // One stray touch in a pocket must not end the ride.
-  await page.getByRole("button", { name: "End ride" }).click();
+  await page.getByRole("button", { name: "Turn off alert" }).click();
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
-  await page.getByRole("button", { name: "Tap again to end ride" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toHaveCount(0);
 });
 
@@ -634,11 +680,11 @@ async function startRide(page, { gps }) {
   }
   await turnOffNotifications(page);
 
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
 }
 
 // Measured before this: the open form made the page 3.9 screens on a 375px
-// phone and left "Start Ride Mode" 684px below the fold — a full screen of
+// phone and left "Start get-off alert" 684px below the fold — a full screen of
 // scrolling, one-handed, on a moving bus, before the one committing tap.
 test("the ride can be started without scrolling for the button", async ({
   page,
@@ -657,7 +703,7 @@ test("the ride can be started without scrolling for the button", async ({
     page.getByRole("heading", { name: "Where do you want to get off?" })
   ).toBeVisible();
 
-  const start = page.getByRole("button", { name: "Start Ride Mode" });
+  const start = page.getByRole("button", { name: "Start get-off alert" });
   await expect(start).toBeInViewport();
 
   // Pinned low, where a thumb reaches, not floating mid-screen.
@@ -717,7 +763,7 @@ test("a ride's own controls stay reachable on a small phone", async ({
   ).toBeVisible();
 
   // A thumb scrolling down one screen from the top must pass each control.
-  for (const name of ["Test alert", "End ride"]) {
+  for (const name of ["Test alert", "Turn off alert"]) {
     const control = panel.getByRole("button", { name });
     let seen = false;
     for (let y = 0; y <= 640 && !seen; y += 160) {
@@ -741,7 +787,14 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
 }, testInfo) => {
   // The vehicle being listed at the target stop is the strongest evidence
   // there is, and it is the only one that can raise the alarm without GPS.
-  await routeTargetStop(page, { vehicleatstop: true, expectedarrivaltime: 0 });
+  const capturing = testInfo.project.name === "chromium-mobile";
+  if (capturing) await atMorningCommute(page);
+  // Standing there, it leaves within the minute: "Due", not "2 min".
+  await routeTargetStop(page, {
+    vehicleatstop: true,
+    expectedarrivaltime: 0,
+    expecteddeparturetime: Math.floor(Date.now() / 1000) + 45,
+  });
 
   await page.goto("/?stop=164");
   await seedHome(page);
@@ -751,11 +804,24 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
   await expect(page.locator('[data-stage="now"]')).toBeVisible();
 
   // The README's picture of the feature, taken from the real panel.
-  if (testInfo.project.name === "chromium-mobile") {
+  if (capturing) {
     fs.mkdirSync("artifacts/screenshots", { recursive: true });
     await page
       .locator('section[aria-labelledby="ride-mode-title"]')
       .screenshot({ path: "artifacts/screenshots/foli-ride-now.png" });
+    // And the whole screen, for the install sheet (public/screenshots),
+    // over the board of the stop being got off at: under it, Kauppatori's
+    // board showed the same bus four minutes from Kauppatori.
+    await page.goto("/?stop=32");
+    await expect(page.getByRole("heading", { name: "Get off now" })).toBeVisible();
+    await expect(
+      page.locator('section[aria-labelledby="departures-title"]').getByRole("heading", { name: "Puistokatu" })
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/screenshots/manifest-ride-phone.jpg",
+      type: "jpeg",
+      quality: 80,
+    });
   }
 
   // The confirmation only exists at this stage, and it has to end the ride
@@ -792,7 +858,7 @@ test("Ride Mode offers recovery after the passenger rides past the stop", async 
   await startRide(page, { gps: true });
 
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
 
   // Close enough to count as an approach, but not close enough to claim the
@@ -866,7 +932,7 @@ test("Ride Mode does not mistake an untracked timetable row for the bus", async 
   const exitStopAnswered = page.waitForResponse(
     "https://data.foli.fi/siri/sm/4"
   );
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
   await exitStopAnswered;
 
   // Two planned stops out, but the bus is not due to leave Kauppatori for
@@ -884,8 +950,8 @@ test("Ride Mode does not mistake an untracked timetable row for the bus", async 
     page.getByRole("heading", { name: "Your stop is next" })
   ).toHaveCount(0);
 
-  await page.getByRole("button", { name: "End ride" }).click();
-  await page.getByRole("button", { name: "Tap again to end ride" }).click();
+  await page.getByRole("button", { name: "Turn off alert" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
 });
 
 test("an open get-off setup survives a board refresh", async ({ page }) => {
@@ -1479,7 +1545,7 @@ test("production PWA reopens offline with My Places and driver help", async ({
   // Announced, once, and shown once, by the banner.
   await expect(page.getByText("Offline mode", { exact: true })).toHaveCount(1);
   await expect(
-    page.getByText(/saved places and Show to driver still work/i)
+    page.getByText(/saved places and the driver card still work/i)
   ).toBeVisible();
 
   const recovery = page.locator(
@@ -1732,6 +1798,7 @@ test.describe("on a Finnish phone", () => {
   test("the app is in Finnish, readable, and can be switched to English for good", async ({
     page,
   }, testInfo) => {
+    if (testInfo.project.name === "chromium-mobile") await atMorningCommute(page);
     await routeTargetStop(page);
     await page.goto("/?stop=164");
     await seedHome(page, { primaryStopId: "32" });
@@ -2343,6 +2410,7 @@ test("captures the README's product screenshots", async ({ page }, testInfo) => 
     test.skip();
   }
 
+  await atMorningCommute(page);
   await page.goto("/?stop=164");
   // Home is Puistokatu: offering "Get me Home" at the Home stop itself was
   // the picture of nothing a passenger would do.
@@ -2368,4 +2436,14 @@ test("captures the README's product screenshots", async ({ page }, testInfo) => 
     path: `artifacts/screenshots/${fileName}`,
     fullPage: testInfo.project.name === "chromium-desktop",
   });
+  // The install sheet's pictures (public/screenshots): one screen each.
+  if (testInfo.project.name !== "webkit-mobile") {
+    await page.screenshot({
+      path: `artifacts/screenshots/manifest-board-${
+        testInfo.project.name === "chromium-desktop" ? "wide" : "phone"
+      }.jpg`,
+      type: "jpeg",
+      quality: 80,
+    });
+  }
 });

@@ -139,6 +139,8 @@ Trigger conservatively when one of these is true:
 
 The timetable raises no stage, by count or by time, before the bus is due to leave the boarding stop. Before then every stop is still ahead, and a one-stop ride set up twenty minutes early was told its stop was next.
 
+Location raises no stage until the phone has set off from the boarding stop: two fixes in a row on the trip's shape, past the boarding stop by at least 40 m and by their own accuracy, and not standing still (a reported speed under 2 m/s does not count), or the bus seen leaving the stop before the exit live. Someone waiting at the boarding stop for a one-stop ride is already "400 m from the exit": their location said "Your stop is next" there, and a step along the platform said "Press STOP now" twenty minutes before the bus came. Once set off, it stays so for the ride. Until then the stages go by live data and the timetable, as without location.
+
 Message: **Get ready — your stop is coming up.**
 
 ### NEXT
@@ -153,9 +155,11 @@ Trigger when one of these is true:
 What NEXT asks for depends on whether the bus has left the stop before the exit. Pressing STOP asks for the next stop: pressed before the bus leaves the stop before the exit, it stops the bus there, the request is spent, and a passenger who then waits for their own stop rides past it. City-centre stops are about 300 m apart, closer than the 600 m and 90 s that raise NEXT, so a near exit is not evidence of that. The bus counts as having left that stop when:
 
 - it was observed there live, then is absent for two successful polls, while the target remains listed, or
-- an accurate, fresh GPS fix matched to the trip's shape is more than 30 m past it
+- the phone has set off, and two fixes in a row on the trip's shape are past it by at least 40 m and by their own accuracy, and not standing still. One vague fix just past it was enough before, while the bus could still be standing there.
 
-Until then, on a bus: **Your stop is after {previous stop}. Press STOP when the bus leaves {previous stop}.** Once it has: **Next stop is yours. Press STOP now.**, sounded as an alert of its own when NEXT has already begun. It stays said once known. Non-bus trips, where getting ready early costs nothing, get **Get ready to exit at the next stop.** throughout.
+On a one-stop ride the stop before the exit is the boarding stop, so setting off and "Press STOP now" come together, as one alert.
+
+Until then, on a bus: **Get ready to press STOP. Press STOP when the bus leaves {previous stop}.** Once it has: **Next stop is yours. Press STOP now.**, sounded as an alert of its own when NEXT has already begun. It stays said once known. Non-bus trips, where getting ready early costs nothing, get **Get ready to exit at the next stop.** throughout.
 
 ### NOW
 
@@ -224,7 +228,7 @@ The persisted ride contains public transit identifiers, target stop identity, ro
 ## Expiry and cleanup
 
 - ride sessions expire automatically after six hours
-- End ride clears persisted ride state. It takes a second tap within four seconds: the screen is kept awake in a pocket, and one stray touch cancelled the alert the passenger was counting on
+- Turn off alert clears persisted ride state. It takes a second tap within four seconds, in the panel and in the off-route question alike: the screen is kept awake in a pocket, and one stray touch cancelled the alert the passenger was counting on
 - ride notifications are off until the passenger asks for them, so Start does not raise a location prompt, a notification prompt and the test sound at once
 - geolocation watch is stopped
 - Wake Lock is released

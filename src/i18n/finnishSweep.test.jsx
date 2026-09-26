@@ -380,7 +380,8 @@ test("the stop search, and every way finding a stop can go wrong", async () => {
   };
   for (const [state, getCurrentPosition] of Object.entries(locating)) {
     locateWith(getCurrentPosition);
-    render(form());
+    // The search's own location button is offered with a board open.
+    render(form({ activeStopId: "164" }));
     fireEvent.click(screen.getByRole("button", { name: "Käytä nykyistä sijaintia" }));
     await screen.findByRole("alert");
     sweep(state);
@@ -388,7 +389,13 @@ test("the stop search, and every way finding a stop can go wrong", async () => {
   }
 
   locateWith(at(KAUPPATORI_FIX));
-  render(form({ coordinatesStatus: "loading", stops: [{ id: "164", name: "Kauppatori" }] }));
+  render(
+    form({
+      activeStopId: "164",
+      coordinatesStatus: "loading",
+      stops: [{ id: "164", name: "Kauppatori" }],
+    })
+  );
   fireEvent.click(screen.getByRole("button", { name: "Käytä nykyistä sijaintia" }));
   sweep("search before stop locations have loaded");
 
@@ -551,7 +558,7 @@ test("My Places, from the first visit to a place in use", async () => {
 test("Get me Home, online and off, and the card for the driver", () => {
   render(<HomeRecovery home={HOME} stops={STOPS} onOpenStop={() => {}} />);
   for (const details of document.querySelectorAll("details")) details.open = true;
-  fireEvent.click(screen.getByRole("button", { name: "Näytä lisää" }));
+  fireEvent.click(screen.getByRole("button", { name: "Kodin valinnat" }));
   sweep("get me home");
   cleanup();
 
@@ -598,7 +605,7 @@ test("setting up a ride, and every reason it cannot start", async () => {
   ]);
   render(setup());
   fireEvent.click(await screen.findByDisplayValue("2"));
-  fireEvent.click(screen.getByRole("button", { name: "Käynnistä matkatila" }));
+  fireEvent.click(screen.getByRole("button", { name: "Käynnistä pysäkkihälytys" }));
   await screen.findByRole("alert");
   sweep("ride setup that cannot make a plan");
   cleanup();

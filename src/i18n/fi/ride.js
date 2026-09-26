@@ -18,7 +18,7 @@ export default {
   "This is your stop": "Tämä on pysäkkisi",
   "Get off now": "Jää pois nyt",
   "Move to the doors and step off here.": "Siirry ovelle ja jää pois.",
-  Recovery: "Paluuohjeet",
+  "Missed your stop?": "Ohititko pysäkkisi?",
   "Your stop may be behind you": "Pysäkkisi saattoi jäädä taakse",
   "Get off at the next stop and open its departures below.":
     "Jää pois seuraavalla pysäkillä ja avaa sen lähdöt alta.",
@@ -28,7 +28,7 @@ export default {
   // as on its sign, so it follows "pysäkin" / "pysäkiltä" rather than being
   // inflected itself.
   "Almost there": "Kohta perillä",
-  "Your stop is after {name}": "Pysäkkisi on pysäkin {name} jälkeen",
+  "Get ready to press STOP": "Valmistaudu painamaan STOP-nappia",
   "Press STOP when the bus leaves {name}.":
     "Paina STOP-nappia, kun bussi lähtee pysäkiltä {name}.",
   "Your stop comes after": "Pysäkkisi on tämän pysäkin jälkeen:",
@@ -50,9 +50,10 @@ export default {
   Remaining: "Jäljellä",
   Estimate: "Arvio",
   "By timetable": "Aikataulun mukaan",
+  "Your bus is live, but Föli has no time for {name} yet, so this time is from the timetable.":
+    "Bussisi näkyy reaaliaikatiedoissa, mutta pysäkille {name} ei ole vielä aikaa, joten aika on aikataulusta.",
   "Estimated from the timetable until Föli’s live data shows your bus.":
     "Arvio perustuu aikatauluun, kunnes bussisi näkyy Fölin reaaliaikatiedoissa.",
-  tracking: "seurataan",
   "Ride progress": "Matkan eteneminen",
 
   // What the live data shows
@@ -90,8 +91,8 @@ export default {
   "Location backup was not allowed.": "Sijainnin käyttöä ei sallittu.",
   "Location backup is temporarily unavailable.":
     "Sijainnin seuranta ei ole tilapäisesti käytettävissä.",
-  "Ride tracking continues without device location.":
-    "Matkan seuranta jatkuu ilman laitteen sijaintia.",
+  "The alert keeps going without your location.":
+    "Hälytys toimii ilman sijaintiasi.",
 
   // The panel
   "Your stop": "Pysäkkisi",
@@ -120,13 +121,13 @@ export default {
   "Open next stop": "Avaa seuraava pysäkki",
   "I'm getting off": "Jään pois",
   "Test alert": "Testaa hälytys",
-  "End ride": "Lopeta matkatila",
-  "Tap again to end ride": "Lopeta napauttamalla uudelleen",
+  "Turn off alert": "Lopeta hälytys",
+  "Tap again to turn it off": "Lopeta napauttamalla uudelleen",
   "Keeping your screen on": "Näyttö pidetään päällä",
   "Cannot keep your screen on": "Näyttöä ei voi pitää päällä",
   "Your screen may switch off": "Näyttö voi sammua",
   "Most reliable while this page stays open and visible":
-    "Luotettavin, kun tämä sivu pysyy auki ja näkyvissä",
+    "Toimii varmimmin, kun sivu on auki ja näkyvissä",
   "We cannot see your bus in the live data right now, so we are going by the timetable. You will still get the early warnings, but we will not say “get off now” on the timetable alone.":
     "Emme näe bussiasi reaaliaikatiedoissa juuri nyt, joten seuraamme aikataulua. Saat silti ennakkovaroitukset, mutta pelkän aikataulun perusteella emme sano ”jää pois nyt”.",
   "Check your bus": "Tarkista bussisi",
@@ -141,19 +142,20 @@ export default {
   "Yes, keep tracking": "Kyllä, jatka seurantaa",
   "We could not load this route's path, so we are following your distance to the stop instead. Live arrival data still applies.":
     "Emme saaneet ladattua tämän reitin kulkua, joten seuraamme sen sijaan etäisyyttäsi pysäkille. Reaaliaikaiset saapumistiedot ovat yhä käytössä.",
-  "Ride Mode is travel help, not a guaranteed alarm. A browser can pause a page it thinks you have left, so keep this screen open with the sound on.":
-    "Matkatila auttaa matkalla, mutta se ei ole taattu hälytys. Selain voi keskeyttää sivun, jolta se luulee sinun poistuneen, joten pidä tämä sivu auki ja ääni päällä.",
+  "The get-off alert is travel help, not a guaranteed alarm. A browser can pause a page it thinks you have left, so keep this screen open with the sound on.":
+    "Pysäkkihälytys on matka-apu, eikä sen toimintaa voida taata. Selain voi keskeyttää sivun, jolta se luulee sinun poistuneen, joten pidä tämä sivu auki ja ääni päällä.",
 
   // Setup
   "Set up get-off alerts": "Aseta pysäkkihälytys",
-  "Ride Mode": "Matkatila",
   "Where do you want to get off?": "Missä haluat jäädä pois?",
   "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP.":
     "Valitse pysäkkisi ja pidä tämä sivu auki ääni päällä. Sitä ei tarvitse katsoa: kerromme, kun on aika painaa STOP-nappia.",
   Cancel: "Peruuta",
   "Loading this trip's planned stops…": "Ladataan tämän vuoron pysäkkejä…",
-  "This trip's stop sequence is temporarily unavailable. Ride Mode cannot start safely without it.":
-    "Tämän vuoron pysäkkijärjestys ei ole tilapäisesti saatavilla. Matkatilaa ei voi käynnistää turvallisesti ilman sitä.",
+  "The get-off alert needs a connection to load this bus's stops.":
+    "Pysäkkihälytys tarvitsee verkkoyhteyden, jotta bussin pysäkit voidaan ladata.",
+  "We cannot load this bus's stops right now. Close this and try again in a moment.":
+    "Bussin pysäkkejä ei saada juuri nyt ladattua. Sulje tämä ja yritä hetken päästä uudelleen.",
   "This bus comes back to this stop later on its route, and we cannot tell which pass you are boarding. We will not guess about your stop.":
     "Tämä bussi palaa tälle pysäkille myöhemmin reitillään, emmekä voi tietää, millä kerralla nouset kyytiin. Emme arvaile pysäkkiäsi.",
   "No later drop-off stops are available for this trip.":
@@ -175,13 +177,13 @@ export default {
     "Kun käynnistät, kuulet testihälytyksen – tarkista samalla ääni ja värinä. Sanomme ”jää pois nyt” vain, kun bussin reaaliaikatieto tai sijaintisi vahvistaa sen.",
   "Starting plays a test alert, so you can check the sound now; this phone will not vibrate for these alerts. We only say “get off now” when live bus data or your location confirms it.":
     "Kun käynnistät, kuulet testihälytyksen – tarkista samalla ääni. Puhelin ei värise näistä hälytyksistä. Sanomme ”jää pois nyt” vain, kun bussin reaaliaikatieto tai sijaintisi vahvistaa sen.",
-  "Choose the stop you want to get off at before starting Ride Mode.":
-    "Valitse pysäkki, jolla jäät pois, ennen kuin käynnistät matkatilan.",
+  "Choose the stop you want to get off at first.":
+    "Valitse ensin pysäkki, jolla jäät pois.",
   "We do not have a departure time for this bus yet. Wait for the board to refresh and try again.":
     "Tälle bussille ei ole vielä lähtöaikaa. Odota, että lähtötaulu päivittyy, ja yritä uudelleen.",
   "We cannot work out a reliable plan for that stop on this trip. Try another stop, or start the ride from a different departure.":
     "Emme pysty laatimaan luotettavaa suunnitelmaa tälle pysäkille tällä vuorolla. Kokeile toista pysäkkiä tai aloita matka toisesta lähdöstä.",
-  "Start Ride Mode": "Käynnistä matkatila",
+  "Start get-off alert": "Käynnistä pysäkkihälytys",
   "Get off at {name}": "Jäät pois: {name}",
   "Line {line} leaves {time}": "Linja {line} lähtee klo {time}",
   "Line {line}": "Linja {line}",
@@ -192,7 +194,7 @@ export default {
   // spoken instruction keeps the stop button in lower case, as the English
   // one does.
   "your stop": "pysäkkisi",
-  "Ride alerts are working.": "Matkatilan hälytykset toimivat.",
+  "Your get-off alert is working.": "Pysäkkihälytys toimii.",
   "Get ready. Your stop is coming up.": "Valmistaudu. Pysäkkisi lähestyy.",
   "The next stop is yours.": "Pysäkkisi on seuraavana.",
   "Press the stop button now.": "Paina stop-nappia nyt.",
@@ -207,5 +209,5 @@ export default {
   "This is your stop: {name}": "Tämä on pysäkkisi: {name}",
   "Get off at the next stop and check the app for how to get back.":
     "Jää pois seuraavalla pysäkillä ja katso sovelluksesta, miten pääset takaisin.",
-  "Ride alerts are working": "Matkatilan hälytykset toimivat",
+  "Your get-off alert is working": "Pysäkkihälytys toimii",
 };

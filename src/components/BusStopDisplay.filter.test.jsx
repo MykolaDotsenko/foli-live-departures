@@ -210,3 +210,27 @@ test("a followed line whose only live row is cancelled still shows its next bus"
     expect.anything()
   );
 });
+
+// The timetable knows nothing of cancellations, so it lists the cancelled
+// bus too, and the board showed "Cancelled" for it twice.
+test("the cancelled bus is not listed again from the timetable", async () => {
+  mocks.fetchScheduledLineDepartures.mockResolvedValue([
+    { ...departure("32", "Varissuo", 600), tripref: "trip-32-cancelled" },
+    { ...departure("32", "Varissuo", 70 * 60), tripref: "trip-32-next" },
+  ]);
+  follow(["32"]);
+  render(
+    board({
+      arrivals: [
+        departure("1", "Satama", 60),
+        { ...departure("32", "Varissuo", 600), tripref: "trip-32-cancelled" },
+      ],
+      cancellations: [{ line: "32", scheduledTime: NOW + 600 }],
+    })
+  );
+
+  await waitFor(() => expect(mocks.fetchScheduledLineDepartures).toHaveBeenCalled());
+  await waitFor(() => expect(screen.getAllByText("Varissuo")).toHaveLength(2));
+  expect(rows()).toHaveLength(2);
+  expect(rows().filter((row) => /Cancelled/.test(row.textContent))).toHaveLength(1);
+});

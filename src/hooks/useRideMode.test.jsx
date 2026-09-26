@@ -181,18 +181,40 @@ test("map-matched GPS can advance Ride Mode to NEXT without SIRI proximity", asy
   const { result, unmount } = renderHook(() => useRideMode());
 
   act(() => {
-    result.current.startRide(rideConfig);
+    // Four stops by the timetable: only the location can say "next".
+    result.current.startRide({
+      ...rideConfig,
+      plan: {
+        ...rideConfig.plan,
+        stopsToTarget: ["41", "42", "43", "32"].map((id) => ({
+          id,
+          name: `Stop ${id}`,
+          predictedEpochSec: Math.floor(Date.now() / 1000) + 500,
+        })),
+      },
+    });
   });
 
   await waitFor(() => {
     expect(result.current.gps.shapeStatus).toBe("ready");
   });
 
+  // Two fixes in a row, riding along the route.
   act(() => {
     deliverGps({
       coords: {
         latitude: 60.4493,
         longitude: 22.2569,
+        accuracy: 18,
+        speed: 8,
+      },
+    });
+  });
+  act(() => {
+    deliverGps({
+      coords: {
+        latitude: 60.44925,
+        longitude: 22.25674,
         accuracy: 18,
         speed: 8,
       },
@@ -212,6 +234,137 @@ test("map-matched GPS can advance Ride Mode to NEXT without SIRI proximity", asy
     result.current.endRide();
   });
   expect(clearWatch).toHaveBeenCalledWith(88);
+  unmount();
+});
+
+// Someone waiting at the boarding stop for a one-stop ride is already
+// "400 m from the exit". Their location said "Your stop is next" there,
+// and a step along the platform said "Press STOP now", twenty minutes
+// before the bus came.
+const METRES_PER_DEGREE_LON = 54_900;
+const alongShortRoute = (metres) => ({
+  latitude: 60.45,
+  longitude: 22.25 + metres / METRES_PER_DEGREE_LON,
+});
+
+async function waitForShortRide(result, { departsInSec = 1200 } = {}) {
+  mocks.fetchTripShape.mockResolvedValueOnce([
+    { lat: 60.45, lon: 22.25, traveled: 0 },
+    { lat: 60.45, lon: 22.25 + 549 / METRES_PER_DEGREE_LON, traveled: 549 },
+    { lat: 60.45, lon: 22.25 + 1098 / METRES_PER_DEGREE_LON, traveled: 1098 },
+  ]);
+  const now = Math.floor(Date.now() / 1000);
+  const boarding = {
+    id: "164",
+    name: "Kauppatori",
+    lat: 60.45,
+    lon: 22.25,
+    shapeDistTraveled: 0,
+    predictedEpochSec: now + departsInSec,
+  };
+  const target = {
+    id: "32",
+    name: "Puistokatu",
+    ...(({ latitude, longitude }) => ({ lat: latitude, lon: longitude }))(
+      alongShortRoute(400)
+    ),
+    shapeDistTraveled: 400,
+    predictedEpochSec: now + departsInSec + 90,
+  };
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      boardingStop: boarding,
+      targetStop: target,
+      previousStop: boarding,
+      plan: {
+        boardingStop: boarding,
+        targetStop: target,
+        previousStop: boarding,
+        routeStops: [boarding, target],
+        stopsToTarget: [target],
+        targetPredictedEpochSec: target.predictedEpochSec,
+      },
+    });
+  });
+  await waitFor(() => {
+    expect(result.current.gps.shapeStatus).toBe("ready");
+  });
+}
+
+test("location says nothing while the passenger still waits at the boarding stop", async () => {
+  mocks.announceRideStage.mockClear();
+  let deliverGps = null;
+  watchPosition.mockImplementation((success) => {
+    deliverGps = success;
+    return 89;
+  });
+  const { result, unmount } = renderHook(() => useRideMode());
+  await waitForShortRide(result);
+
+  const fix = (metres, extra) =>
+    act(() => {
+      deliverGps({ coords: { ...alongShortRoute(metres), accuracy: 15, ...extra } });
+    });
+
+  fix(0, { speed: 0 });
+  fix(35, { speed: 0 });
+  fix(50, { speed: 1.2 });
+  fix(60, { speed: 1.4 });
+
+  expect(result.current.gps.onRoute).toBe(true);
+  expect(result.current.session?.stage).toBe("boarded");
+  expect(result.current.session?.underway).not.toBe(true);
+  expect(result.current.session?.previousLeft).not.toBe(true);
+  expect(mocks.announceRideStage).not.toHaveBeenCalled();
+
+  // The bus comes and carries them off: one alert, and it is the press.
+  fix(80, { speed: 7 });
+  expect(mocks.announceRideStage).not.toHaveBeenCalled();
+  fix(95, { speed: 8 });
+
+  expect(result.current.session?.underway).toBe(true);
+  expect(result.current.session?.stage).toBe("next");
+  expect(result.current.session?.previousLeft).toBe(true);
+  expect(mocks.announceRideStage).toHaveBeenCalledTimes(1);
+  expect(mocks.announceRideStage).toHaveBeenLastCalledWith(
+    "next",
+    expect.objectContaining({ id: "32" }),
+    false,
+    3,
+    expect.objectContaining({ previousLeft: true })
+  );
+
+  act(() => result.current.endRide());
+  unmount();
+});
+
+test("one vague fix past the stop before does not say press STOP now", async () => {
+  mocks.announceRideStage.mockClear();
+  let deliverGps = null;
+  watchPosition.mockImplementation((success) => {
+    deliverGps = success;
+    return 90;
+  });
+  const { result, unmount } = renderHook(() => useRideMode());
+  await waitForShortRide(result);
+
+  const fix = (metres, accuracy) =>
+    act(() => {
+      deliverGps({ coords: { ...alongShortRoute(metres), accuracy, speed: 6 } });
+    });
+
+  // 31 m past the stop, give or take 110 m: the bus may still be at it.
+  fix(31, 110);
+  fix(31, 110);
+  expect(result.current.session?.previousLeft).not.toBe(true);
+  // One good fix past it, then a poor one: not two in a row.
+  fix(70, 10);
+  fix(20, 110);
+  expect(result.current.session?.previousLeft).not.toBe(true);
+  expect(mocks.announceRideStage).not.toHaveBeenCalled();
+
+  act(() => result.current.endRide());
   unmount();
 });
 

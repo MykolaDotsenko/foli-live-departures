@@ -313,14 +313,19 @@
     text-align: center;
   }
 
-  .metrics,
   .statusGrid {
     grid-template-columns: 1fr;
   }
 
+  /* Line, stops left and time in one row: stacked, they took 120px of a
+     360px screen from the instruction above them. */
+  .metrics {
+    gap: 6px;
+  }
+
   .metrics > div {
-    grid-template-columns: 6rem minmax(0, 1fr);
-    align-items: baseline;
+    align-content: start;
+    padding: 8px;
   }
 
   .target strong {
@@ -344,6 +349,36 @@
   .confirm {
     grid-column: 1 / -1;
     order: -1;
+  }
+}
+
+/* Beside the title on a small phone, the badge wrapped to two lines and
+   squeezed the title to three. It goes under the eyebrow, on one line, and
+   the title gets the full width. */
+@media (max-width: 380px) {
+  .topline {
+    display: grid;
+    justify-items: start;
+    gap: 0;
+  }
+
+  .topline > div {
+    display: contents;
+  }
+
+  .eyebrow {
+    order: 0;
+  }
+
+  .health {
+    order: 1;
+    max-width: none;
+    margin: 2px 0 6px;
+    white-space: nowrap;
+  }
+
+  .topline h2 {
+    order: 2;
   }
 }
 

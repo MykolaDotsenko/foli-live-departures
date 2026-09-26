@@ -350,17 +350,22 @@ function BusStopForm({
             }
             placeholder={t("e.g. Kauppatori")}
           />
-          <button
-            className={styles.locateButton}
-            type="button"
-            onClick={locateNearestStop}
-            disabled={locating}
-            aria-busy={locating}
-            aria-label={t("Use current location")}
-            title={t("Use current location")}
-          >
-            <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
-          </button>
+          {/* Before a stop is open, Near you sits right under the search with
+              "Find nearest stop": two location buttons a thumb apart. With a
+              board open, Near you is below it, and this is the quick way. */}
+          {activeStopId && (
+            <button
+              className={styles.locateButton}
+              type="button"
+              onClick={locateNearestStop}
+              disabled={locating}
+              aria-busy={locating}
+              aria-label={t("Use current location")}
+              title={t("Use current location")}
+            >
+              <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
+            </button>
+          )}
           <button
             className={styles.button}
             type="submit"

@@ -71,7 +71,8 @@
   overflow-wrap: anywhere;
 }
 
-/* A narrow card broke "stop | 164"; the number moves down whole. */
+/* A narrow card broke "stop | 164"; the number moves down whole, after
+   "Kauppatori ·". */
 .stopNumber {
   white-space: nowrap;
 }
@@ -791,4 +792,13 @@
   .mobileOptionsToggle:focus-visible {
     outline-color: var(--dm-focus);
   }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

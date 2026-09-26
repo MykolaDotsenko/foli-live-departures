@@ -12,6 +12,7 @@ vi.mock("../api/foliApi", () => ({
 }));
 
 import useStopAlerts from "./useStopAlerts";
+import { reportProviderReached } from "./useOnlineStatus";
 
 const routesById = new Map([["50", { id: "50", shortName: "50" }]]);
 const noLines = [];
@@ -89,4 +90,28 @@ test("checks the notices again as soon as the connection comes back", async () =
       "Line 50 stop moved",
     ])
   );
+});
+
+// A check can fail while the phone stays online. The board recovered within
+// 30 seconds; the cancellations waited for the five-minute timer.
+test("checks failed notices again once Föli answers the board", async () => {
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set(["50"]));
+  mocks.fetchAlerts.mockRejectedValueOnce(new Error("timeout"));
+
+  const { result } = renderHook(() => useStopAlerts("164", noLines, routesById));
+  await waitFor(() => expect(result.current.error).toBe(true));
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1);
+
+  reportProviderReached();
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2));
+  await waitFor(() =>
+    expect(result.current.alerts.map((alert) => alert.title)).toEqual([
+      "Line 50 stop moved",
+    ])
+  );
+
+  // Once they are current, the board's answers do not ask again.
+  reportProviderReached();
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2);
 });

@@ -1,7 +1,7 @@
 {
   "name": "Turku Departures — Föli live times",
   "short_name": "Turku Föli",
-  "description": "Live Turku bus departures, disruption notices and an alert that tells you when to press STOP. Not an official Föli app.",
+  "description": "Live Turku bus departures, service updates and an alert that tells you when to press STOP. Not an official Föli app.",
   "lang": "en",
   "start_url": "./",
   "id": "./",
@@ -39,5 +39,28 @@
     "navigation",
     "travel",
     "utilities"
+  ],
+  "screenshots": [
+    {
+      "src": "./screenshots/board-phone.jpg",
+      "sizes": "1082x2202",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Live departures from Kauppatori, each with a get-off alert"
+    },
+    {
+      "src": "./screenshots/ride-phone.jpg",
+      "sizes": "1082x2202",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "The get-off alert at the passenger's stop: Get off now"
+    },
+    {
+      "src": "./screenshots/board-wide.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Departures, service updates and Get me Home on a laptop"
+    }
   ]
 }

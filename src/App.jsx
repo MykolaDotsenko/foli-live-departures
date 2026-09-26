@@ -371,13 +371,17 @@ function App() {
           left and search, saved stops and service updates the right, so
           the board starts on the first screen (App.css). */}
       <div className="top-section">
-        <HomeRecovery
-          home={placesById.get("home") || null}
-          stops={stops}
-          online={online}
-          compact={Boolean(stopId)}
-          onOpenStop={selectStop}
-        />
+        {/* During a ride its route link would open Google Maps and leave
+            the page the alert runs in. It comes back when the ride ends. */}
+        {!ride.session && (
+          <HomeRecovery
+            home={placesById.get("home") || null}
+            stops={stops}
+            online={online}
+            compact={Boolean(stopId)}
+            onOpenStop={selectStop}
+          />
+        )}
 
         <section className="search-panel" aria-label={t("Choose a bus stop")}>
           <BusStopForm
@@ -522,7 +526,7 @@ function App() {
             <dt>{t("What leaves it")}</dt>
             <dd>
               {t(
-                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, and during a ride the stop you get off at and the one before it, is requested from data.foli.fi, which sees your IP address and those stops. Your location is used only when you ask, stays on the phone and is never saved. Google Maps opens only when you tap a route link, and then sees the stop you chose."
+                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, each bus whose stops you open, and during a ride the stop you get off at and the one before it are requested from data.foli.fi, which sees your IP address and what was asked for. Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved. Google Maps opens only when you tap a route link: it is sent the stop you chose, and may then use your location to plan the route."
               )}
             </dd>
             <dt>{t("What there is not")}</dt>

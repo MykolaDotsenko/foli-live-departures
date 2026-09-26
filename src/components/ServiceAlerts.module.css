@@ -567,6 +567,13 @@
     text-align: left;
   }
 
+  .phoneToggleText {
+    overflow: hidden;
+    min-width: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .phoneToggle::after {
     content: "";
     flex: 0 0 auto;

@@ -250,13 +250,17 @@ function ServiceAlerts({ alerts, error = false, receivedAtMs = null }) {
           aria-controls="service-alerts-list"
           onClick={() => setPhoneOpen((current) => !current)}
         >
-          {phoneOpen
-            ? t("Hide service updates")
-            : `${
-                alerts.length === 1
-                  ? t("1 service update")
-                  : t("{count} service updates", { count: alerts.length })
-              } · ${alerts[0].title}`}
+          {/* One line on a phone: wrapped, it pushed the first departure
+              down a line. The count stays whole; the title is cut. */}
+          <span className={styles.phoneToggleText}>
+            {phoneOpen
+              ? t("Hide service updates")
+              : `${
+                  alerts.length === 1
+                    ? t("1 service update")
+                    : t("{count} service updates", { count: alerts.length })
+                } · ${alerts[0].title}`}
+          </span>
         </button>
       )}
 
