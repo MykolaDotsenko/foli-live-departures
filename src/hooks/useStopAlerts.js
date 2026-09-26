@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchAlerts, fetchStopServedRouteIds } from "../api/foliApi";
 import { providerLanguages, useLanguage } from "../i18n";
 import { extractStopAlerts } from "../utils/alerts";
+import { PROVIDER_REACHED_EVENT } from "./useOnlineStatus";
 
 const ALERT_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 // Reused so "no served routes" never produces a fresh identity on every run.
@@ -11,6 +12,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
   const [payload, setPayload] = useState(null);
   const [receivedAtMs, setReceivedAtMs] = useState(null);
   const [error, setError] = useState(false);
+  const failedRef = useRef(false);
   // Kept with the stop it was looked up for. Kept bare, one stop's routes
   // stayed in use while the next stop's lookup ran, and a notice for a
   // route that never serves the new stop appeared under it.
@@ -32,6 +34,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
+    failedRef.current = false;
     setError(false);
 
     try {
@@ -45,6 +48,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
         requestError?.name !== "CanceledError" &&
         requestError?.name !== "AbortError"
       ) {
+        failedRef.current = true;
         setError(true);
         // Keep the last successful payload, but expose its age to the UI.
       }
@@ -116,14 +120,23 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
     // five minutes after the connection came back, and live departures
     // showed without their cancellations in the meantime.
     const handleOnline = () => refresh();
+    // A check can fail while the phone stays online: a timeout, a 5xx. The
+    // board asks Föli every 30 seconds, and once Föli answers it again, a
+    // failed check is tried again, so a cancelled bus does not keep its
+    // countdown and its Get-off alert button for five minutes.
+    const handleProviderReached = () => {
+      if (failedRef.current) refresh();
+    };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("online", handleOnline);
+    window.addEventListener(PROVIDER_REACHED_EVENT, handleProviderReached);
 
     return () => {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("online", handleOnline);
+      window.removeEventListener(PROVIDER_REACHED_EVENT, handleProviderReached);
       abortRef.current?.abort();
       membershipAbortRef.current?.abort();
     };

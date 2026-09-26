@@ -7,7 +7,7 @@ import { realStopName, stopLabel } from "../utils/stopNames";
 
 const STAGE_COPY = {
   [RIDE_STAGE.BOARDED]: {
-    eyebrow: msg("Ride Mode active"),
+    eyebrow: msg("Alert on"),
     title: msg("No need to watch for your stop"),
     instruction: msg("We will warn you as your stop gets closer."),
   },
@@ -29,7 +29,7 @@ const STAGE_COPY = {
     instruction: msg("Move to the doors and step off here."),
   },
   [RIDE_STAGE.MISSED]: {
-    eyebrow: msg("Recovery"),
+    eyebrow: msg("Missed your stop?"),
     title: msg("Your stop may be behind you"),
     instruction: msg("Get off at the next stop and open its departures below."),
   },
@@ -41,7 +41,7 @@ const STAGE_COPY = {
 // and "about now" two minutes late. A live or location estimate is trusted
 // as it stands.
 const RUNNING_LATE_AFTER_SEC = 30;
-// How long "End ride" waits for its second tap.
+// How long "Turn off alert" waits for its second tap.
 const END_CONFIRM_MS = 4_000;
 
 function etaLabel(seconds, stage, { source = "" } = {}) {
@@ -267,7 +267,7 @@ export default function RideMode({
     });
   }, [stage]);
 
-  // The screen is kept awake in a pocket, so one stray touch on "End ride"
+  // The screen is kept awake in a pocket, so one stray touch on "Turn off alert"
   // silently cancelled the alert the passenger was counting on. The first
   // tap asks for a second, for a few seconds.
   const [endArmedFor, setEndArmedFor] = useState("");
@@ -309,7 +309,7 @@ export default function RideMode({
       : waitForPrevious
         ? {
             eyebrow: msg("Almost there"),
-            title: msg("Your stop is coming up"),
+            title: exit.afterPreviousTitle,
             instruction: exit.unnamedPreviousText,
           }
         : session.stage === RIDE_STAGE.NEXT
@@ -322,9 +322,12 @@ export default function RideMode({
     session.stage === RIDE_STAGE.NOW ||
     session.stage === RIDE_STAGE.MISSED;
   const scheduleOnly = runtime.trackingHealth === "schedule";
-  const afterName =
-    realStopName(session.previousStop?.name) ||
-    realStopName(session.boardingStop?.name);
+  // Said once: the instruction already names the stop before while the
+  // passenger waits for the bus to leave it.
+  const afterName = waitForPrevious
+    ? ""
+    : realStopName(session.previousStop?.name) ||
+      realStopName(session.boardingStop?.name);
   // Measured at 735px on a 360x640 phone, which puts the one button that
   // matters below the fold at the exact moment the alarm is going. The three
   // status rows are 185px of diagnostics — what is being tracked, whether
@@ -443,7 +446,7 @@ export default function RideMode({
         </div>
         <div>
           <span>{t("Remaining")}</span>
-          <strong>{remaining || t("tracking")}</strong>
+          <strong>{remaining || "—"}</strong>
         </div>
         <div>
           {/* A time read off the timetable looks like any other. */}
@@ -456,11 +459,19 @@ export default function RideMode({
 
       )}
 
+      {/* Beside "Following your bus", "until Föli's live data shows your
+          bus" contradicted it: the bus is live, its time at this stop is
+          not yet. */}
       {!gettingOffNow && runtime.etaSource === "schedule" && !scheduleOnly && eta && (
         <p className={styles.timetableNote}>
-          {t(
-            "Estimated from the timetable until Föli’s live data shows your bus."
-          )}
+          {runtime.trackingHealth === "live" && realStopName(session.targetStop?.name)
+            ? t(
+                "Your bus is live, but Föli has no time for {name} yet, so this time is from the timetable.",
+                { name: realStopName(session.targetStop.name) }
+              )
+            : t(
+                "Estimated from the timetable until Föli’s live data shows your bus."
+              )}
         </p>
       )}
 
@@ -505,7 +516,7 @@ export default function RideMode({
               data-armed={endArmed ? "true" : undefined}
               onClick={pressEnd}
             >
-              {endArmed ? t("Tap again to end ride") : t("End ride")}
+              {endArmed ? t("Tap again to turn it off") : t("Turn off alert")}
             </button>
           </>
         )}
@@ -559,7 +570,7 @@ export default function RideMode({
       {/* The hook keeps the error as a phrase, translated here. */}
       {gps.error && (
         <p className={styles.degraded} role="status">
-          {t(gps.error)} {t("Ride tracking continues without device location.")}
+          {t(gps.error)} {t("The alert keeps going without your location.")}
         </p>
       )}
 
@@ -574,8 +585,14 @@ export default function RideMode({
             <button type="button" onClick={() => setOffRouteAnsweredFor(session.id)}>
               {t("Yes, keep tracking")}
             </button>
-            <button type="button" onClick={onEndRide}>
-              {t("End ride")}
+            {/* In a pocket, on a screen kept awake, as easy to brush as
+                the one below: it asks for a second tap too. */}
+            <button
+              type="button"
+              data-armed={endArmed ? "true" : undefined}
+              onClick={pressEnd}
+            >
+              {endArmed ? t("Tap again to turn it off") : t("Turn off alert")}
             </button>
           </div>
         </div>
@@ -597,7 +614,7 @@ export default function RideMode({
       {!gettingOffNow && (
         <p className={styles.boundary}>
           {t(
-            "Ride Mode is travel help, not a guaranteed alarm. A browser can pause a page it thinks you have left, so keep this screen open with the sound on."
+            "The get-off alert is travel help, not a guaranteed alarm. A browser can pause a page it thinks you have left, so keep this screen open with the sound on."
           )}
         </p>
       )}

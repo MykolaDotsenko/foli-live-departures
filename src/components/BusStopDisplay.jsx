@@ -6,6 +6,7 @@ import useClockTick from "../hooks/useClockTick";
 import useLineFilter from "../hooks/useLineFilter";
 import useLineTimetable from "../hooks/useLineTimetable";
 import useTripEnrichment from "../hooks/useTripEnrichment";
+import { mergeRealtimeAndScheduled } from "../utils/gtfsSchedule";
 import { msg, providerLanguages, t, tc, useLanguage } from "../i18n";
 import { distanceInMeters, formatDistance, hasCoordinates } from "../utils/geo";
 import { accessibleRouteTextColor, contrastRatio } from "../utils/routes";
@@ -323,14 +324,16 @@ function BusStopDisplay({
       linesMissing.includes(String(row.lineref || "")) &&
       getDepartureTime(row, referenceTime) >= referenceTime - 30
   );
+  // The timetable lists a cancelled bus too, and its live row stays on the
+  // board as "Cancelled": the same bus is not shown twice.
   const visibleArrivals = (
     followedLines.length > 0
-      ? [
-          ...upcomingArrivals.filter((arrival) =>
+      ? mergeRealtimeAndScheduled(
+          upcomingArrivals.filter((arrival) =>
             followedLines.includes(String(arrival.lineref || ""))
           ),
-          ...timetableRows,
-        ].sort(
+          timetableRows
+        ).sort(
           (a, b) =>
             getDepartureTime(a, referenceTime) - getDepartureTime(b, referenceTime)
         )
@@ -854,7 +857,7 @@ function BusStopDisplay({
                                 leaves", and the feature that sets the app
                                 apart went unfound on the phones it is for. */}
                             {sameRideActive
-                              ? t("Ride Mode active")
+                              ? t("Alert on")
                               : rideSetupOpen
                                 ? t("Close get-off setup")
                                 : t("Get-off alert")}

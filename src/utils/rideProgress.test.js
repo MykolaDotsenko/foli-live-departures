@@ -8,7 +8,7 @@ import {
   gtfsTimeToSeconds,
   matchRideArrival,
   plannedRideProgress,
-  previousStopPassed,
+  fixLeftStop,
   resolveRideBoardingIndex,
 } from "./rideProgress";
 
@@ -754,44 +754,46 @@ describe("ride progress", () => {
 // STOP asks for the next stop: pressed before the bus has left the stop
 // before the exit, it stops the bus there. In the city centre those stops
 // are 300 m apart, closer than what raises "next".
-describe("whether the bus has left the stop before the exit", () => {
+describe("whether a fix has left a stop", () => {
   const onShape = {
     gpsShapeUsable: true,
     gpsOnRoute: true,
     gpsAccuracyM: 20,
     gpsAgeSec: 5,
-    previousRouteDistanceM: 300,
   };
+  // The stop lies 300 m before the exit along the route.
+  const left = (signals) => fixLeftStop({ ...onShape, ...signals }, 300);
 
-  it("takes the bus seen leaving that stop in the live data", () => {
-    expect(previousStopPassed({ previousPassedConfirmed: true })).toBe(true);
+  it("takes a fix on the route clearly past the stop", () => {
+    expect(left({ gpsRouteDistanceM: 250 })).toBe(true);
+    expect(left({ gpsRouteDistanceM: 250, gpsSpeedMps: 8 })).toBe(true);
   });
 
-  it("takes a fix on the route past that stop", () => {
-    expect(previousStopPassed({ ...onShape, gpsRouteDistanceM: 250 })).toBe(true);
+  it("does not take a fix at the stop, just past it or before it", () => {
+    expect(left({ gpsRouteDistanceM: 290 })).toBe(false);
+    // A bus standing at the far end of a long platform.
+    expect(left({ gpsRouteDistanceM: 270 })).toBe(false);
+    expect(left({ gpsRouteDistanceM: 520 })).toBe(false);
   });
 
-  it("does not take a fix at that stop or before it", () => {
-    expect(previousStopPassed({ ...onShape, gpsRouteDistanceM: 290 })).toBe(false);
-    expect(previousStopPassed({ ...onShape, gpsRouteDistanceM: 520 })).toBe(false);
+  it("wants a vague fix past the stop by its own accuracy", () => {
+    expect(left({ gpsRouteDistanceM: 269, gpsAccuracyM: 110 })).toBe(false);
+    expect(left({ gpsRouteDistanceM: 180, gpsAccuracyM: 110 })).toBe(true);
+  });
+
+  it("does not take a phone standing or walking", () => {
+    expect(left({ gpsRouteDistanceM: 200, gpsSpeedMps: 0 })).toBe(false);
+    expect(left({ gpsRouteDistanceM: 200, gpsSpeedMps: 1.4 })).toBe(false);
   });
 
   it("does not take a near exit on its own", () => {
-    expect(previousStopPassed({ liveEtaSec: 40 })).toBe(false);
-    expect(
-      previousStopPassed({ ...onShape, previousRouteDistanceM: null, gpsRouteDistanceM: 100 })
-    ).toBe(false);
+    expect(fixLeftStop({ liveEtaSec: 40 }, 300)).toBe(false);
+    expect(fixLeftStop({ ...onShape, gpsRouteDistanceM: 100 }, null)).toBe(false);
   });
 
   it("does not take a fix that is vague, old or off the route", () => {
-    expect(
-      previousStopPassed({ ...onShape, gpsRouteDistanceM: 100, gpsAccuracyM: 300 })
-    ).toBe(false);
-    expect(
-      previousStopPassed({ ...onShape, gpsRouteDistanceM: 100, gpsAgeSec: 120 })
-    ).toBe(false);
-    expect(
-      previousStopPassed({ ...onShape, gpsRouteDistanceM: 100, gpsOnRoute: false })
-    ).toBe(false);
+    expect(left({ gpsRouteDistanceM: 100, gpsAccuracyM: 300 })).toBe(false);
+    expect(left({ gpsRouteDistanceM: 100, gpsAgeSec: 120 })).toBe(false);
+    expect(left({ gpsRouteDistanceM: 100, gpsOnRoute: false })).toBe(false);
   });
 });

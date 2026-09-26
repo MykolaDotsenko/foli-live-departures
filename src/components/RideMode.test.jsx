@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import RideMode from "./RideMode";
 import { resetLanguageForTests } from "../i18n";
@@ -559,7 +559,7 @@ test("offers a single way out once it is time to get off", () => {
     screen.getByRole("button", { name: "I'm getting off" })
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("button", { name: "End ride" })
+    screen.queryByRole("button", { name: "Turn off alert" })
   ).not.toBeInTheDocument();
 });
 
@@ -673,7 +673,7 @@ test("follows a language switch in the middle of a ride", () => {
   expect(
     screen.getByRole("group", { name: "Hälytysäänen tarkistus" })
   ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Lopeta matkatila" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Lopeta hälytys" })).toBeInTheDocument();
 });
 
 test("gives a location problem in Finnish, and the destination as its sign says it", () => {
@@ -696,7 +696,7 @@ test("gives a location problem in Finnish, and the destination as its sign says 
 
   expect(
     screen.getByText(
-      "Sijainnin käyttöä ei sallittu. Matkan seuranta jatkuu ilman laitteen sijaintia."
+      "Sijainnin käyttöä ei sallittu. Hälytys toimii ilman sijaintiasi."
     )
   ).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
@@ -709,7 +709,7 @@ test("gives a location problem in Finnish, and the destination as its sign says 
 
 // Going by the timetable, "~18 min" looked like any live estimate.
 test("marks a time that comes from the timetable", () => {
-  render(
+  const { rerender } = render(
     <RideMode
       session={session("boarded")}
       runtime={{
@@ -729,6 +729,27 @@ test("marks a time that comes from the timetable", () => {
 
   expect(screen.getByText("By timetable")).toBeInTheDocument();
   expect(screen.getByText("~18 min")).toBeInTheDocument();
+  // Beside "Following your bus", not "until Föli's live data shows your bus".
+  expect(
+    screen.getByText(/Your bus is live, but Föli has no time for .+ yet, so this time is from the timetable/)
+  ).toBeInTheDocument();
+
+  rerender(
+    <RideMode
+      session={session("boarded")}
+      runtime={{
+        trackingHealth: "delayed",
+        etaSec: 1080,
+        etaSource: "schedule",
+        remainingStops: 4,
+      }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
   expect(screen.getByText(/from the timetable until Föli’s live data shows your bus/)).toBeInTheDocument();
 });
 
@@ -768,12 +789,14 @@ test("names the stop before the exit until the bus has left it", () => {
   );
 
   expect(
-    screen.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    screen.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Press STOP when the bus leaves Kauppatori."
   );
   expect(screen.queryByText("Press the STOP button now.")).not.toBeInTheDocument();
+  // Named once, where it matters: not again under the stop's name.
+  expect(screen.getAllByText(/Kauppatori/)).toHaveLength(1);
 });
 
 test("names the stop before the exit in Finnish without inflecting it", () => {
@@ -791,7 +814,7 @@ test("names the stop before the exit in Finnish without inflecting it", () => {
   );
 
   expect(
-    screen.getByRole("heading", { name: "Pysäkkisi on pysäkin Kauppatori jälkeen" })
+    screen.getByRole("heading", { name: "Valmistaudu painamaan STOP-nappia" })
   ).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Paina STOP-nappia, kun bussi lähtee pysäkiltä Kauppatori."
@@ -833,21 +856,62 @@ test("ends a ride only on a second tap, and forgets the first after a moment", (
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "End ride" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn off alert" }));
     expect(onEndRide).not.toHaveBeenCalled();
     expect(
-      screen.getByRole("button", { name: "Tap again to end ride" })
+      screen.getByRole("button", { name: "Tap again to turn it off" })
     ).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(4_000);
     });
-    expect(screen.getByRole("button", { name: "End ride" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Turn off alert" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "End ride" }));
-    fireEvent.click(screen.getByRole("button", { name: "Tap again to end ride" }));
+    fireEvent.click(screen.getByRole("button", { name: "Turn off alert" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tap again to turn it off" }));
     expect(onEndRide).toHaveBeenCalledTimes(1);
   } finally {
     vi.useRealTimers();
   }
+});
+
+// "Remaining: tracking" answered nothing on every ride started at the stop.
+test("shows a dash, never a word, when there is no count of stops", () => {
+  render(
+    <RideMode
+      session={session("boarded")}
+      runtime={{ trackingHealth: "schedule", etaSec: null, remainingStops: null }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  const tile = screen.getByText("Remaining").parentElement;
+  expect(tile).toHaveTextContent("Remaining—");
+});
+
+// On a screen kept awake in a pocket, "Check your bus" took one stray touch
+// as the end of the ride.
+test("the off-route question also asks for a second tap to turn off the alert", () => {
+  const onEndRide = vi.fn();
+  render(
+    <RideMode
+      session={session("boarded")}
+      runtime={{ trackingHealth: "live", etaSec: 600, remainingStops: 4 }}
+      gps={{ status: "off-route", distanceM: 400, error: "", offRouteSuspected: true }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={onEndRide}
+      onOpenStop={() => {}}
+    />
+  );
+
+  const question = screen.getByRole("alert");
+  fireEvent.click(within(question).getByRole("button", { name: "Turn off alert" }));
+  expect(onEndRide).not.toHaveBeenCalled();
+  fireEvent.click(within(question).getByRole("button", { name: "Tap again to turn it off" }));
+  expect(onEndRide).toHaveBeenCalledTimes(1);
 });

@@ -201,7 +201,7 @@ export function speakRideStage(stage, stop, routeType = null, context = {}) {
     globalThis.speechSynthesis.cancel();
 
     if (stage === "test") {
-      say(t("Ride alerts are working."));
+      say(t("Your get-off alert is working."));
       sayName();
       return true;
     }
@@ -318,7 +318,7 @@ function notificationCopy(stage, stop, routeType = null, context = {}) {
     };
   }
   return {
-    title: t("Ride alerts are working"),
+    title: t("Your get-off alert is working"),
     body: capitalized(name),
   };
 }

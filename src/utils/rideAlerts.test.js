@@ -169,7 +169,7 @@ describe("ride get-off notifications", () => {
     expect(
       showNotification.mock.calls.map(([title, options]) => [title, options.body])
     ).toEqual([
-      ["Your stop is after Kauppatori", "Press STOP when the bus leaves Kauppatori."],
+      ["Get ready to press STOP", "Press STOP when the bus leaves Kauppatori."],
       ["Next stop: Puistokatu", "Press the STOP button now."],
     ]);
   });

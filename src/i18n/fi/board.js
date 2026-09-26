@@ -102,7 +102,7 @@ export default {
   "Unknown destination": "Tuntematon määränpää",
   "Cancelled at this stop · was due {time}":
     "Peruttu tällä pysäkillä · aikataulun mukaan klo {time}",
-  "Ride Mode active": "Matkatila käytössä",
+  "Alert on": "Hälytys päällä",
   // U8: "Sulje asetukset" did not say which settings.
   "Close get-off setup": "Sulje hälytyksen asetukset",
   // The ride setup is already "Aseta pysäkkihälytys": the button uses the

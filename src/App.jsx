@@ -371,13 +371,17 @@ function App() {
           left and search, saved stops and service updates the right, so
           the board starts on the first screen (App.css). */}
       <div className="top-section">
-        <HomeRecovery
-          home={placesById.get("home") || null}
-          stops={stops}
-          online={online}
-          compact={Boolean(stopId)}
-          onOpenStop={selectStop}
-        />
+        {/* During a ride its route link would open Google Maps and leave
+            the page the alert runs in. It comes back when the ride ends. */}
+        {!ride.session && (
+          <HomeRecovery
+            home={placesById.get("home") || null}
+            stops={stops}
+            online={online}
+            compact={Boolean(stopId)}
+            onOpenStop={selectStop}
+          />
+        )}
 
         <section className="search-panel" aria-label={t("Choose a bus stop")}>
           <BusStopForm

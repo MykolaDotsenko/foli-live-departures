@@ -598,7 +598,7 @@ test("setting up a ride, and every reason it cannot start", async () => {
   ]);
   render(setup());
   fireEvent.click(await screen.findByDisplayValue("2"));
-  fireEvent.click(screen.getByRole("button", { name: "Käynnistä matkatila" }));
+  fireEvent.click(screen.getByRole("button", { name: "Käynnistä pysäkkihälytys" }));
   await screen.findByRole("alert");
   sweep("ride setup that cannot make a plan");
   cleanup();

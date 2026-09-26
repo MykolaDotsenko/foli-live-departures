@@ -544,12 +544,12 @@ test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
     .uncheck();
   await turnOffNotifications(page);
 
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
 
   // The bus is a minute from Puistokatu but has not been seen leaving
   // Kauppatori, the stop before it. STOP pressed now would stop it there.
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
   await expect(
     page.getByText("Press STOP when the bus leaves Kauppatori.")
@@ -558,13 +558,13 @@ test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
   await expect(page.locator('[data-health="live"]')).toBeVisible();
 
   // One stray touch in a pocket must not end the ride.
-  await page.getByRole("button", { name: "End ride" }).click();
+  await page.getByRole("button", { name: "Turn off alert" }).click();
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
-  await page.getByRole("button", { name: "Tap again to end ride" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toHaveCount(0);
 });
 
@@ -634,11 +634,11 @@ async function startRide(page, { gps }) {
   }
   await turnOffNotifications(page);
 
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
 }
 
 // Measured before this: the open form made the page 3.9 screens on a 375px
-// phone and left "Start Ride Mode" 684px below the fold — a full screen of
+// phone and left "Start get-off alert" 684px below the fold — a full screen of
 // scrolling, one-handed, on a moving bus, before the one committing tap.
 test("the ride can be started without scrolling for the button", async ({
   page,
@@ -657,7 +657,7 @@ test("the ride can be started without scrolling for the button", async ({
     page.getByRole("heading", { name: "Where do you want to get off?" })
   ).toBeVisible();
 
-  const start = page.getByRole("button", { name: "Start Ride Mode" });
+  const start = page.getByRole("button", { name: "Start get-off alert" });
   await expect(start).toBeInViewport();
 
   // Pinned low, where a thumb reaches, not floating mid-screen.
@@ -717,7 +717,7 @@ test("a ride's own controls stay reachable on a small phone", async ({
   ).toBeVisible();
 
   // A thumb scrolling down one screen from the top must pass each control.
-  for (const name of ["Test alert", "End ride"]) {
+  for (const name of ["Test alert", "Turn off alert"]) {
     const control = panel.getByRole("button", { name });
     let seen = false;
     for (let y = 0; y <= 640 && !seen; y += 160) {
@@ -798,7 +798,7 @@ test("Ride Mode offers recovery after the passenger rides past the stop", async 
   await startRide(page, { gps: true });
 
   await expect(
-    page.getByRole("heading", { name: "Your stop is after Kauppatori" })
+    page.getByRole("heading", { name: "Get ready to press STOP" })
   ).toBeVisible();
 
   // Close enough to count as an approach, but not close enough to claim the
@@ -872,7 +872,7 @@ test("Ride Mode does not mistake an untracked timetable row for the bus", async 
   const exitStopAnswered = page.waitForResponse(
     "https://data.foli.fi/siri/sm/4"
   );
-  await page.getByRole("button", { name: "Start Ride Mode" }).click();
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
   await exitStopAnswered;
 
   // Two planned stops out, but the bus is not due to leave Kauppatori for
@@ -890,8 +890,8 @@ test("Ride Mode does not mistake an untracked timetable row for the bus", async 
     page.getByRole("heading", { name: "Your stop is next" })
   ).toHaveCount(0);
 
-  await page.getByRole("button", { name: "End ride" }).click();
-  await page.getByRole("button", { name: "Tap again to end ride" }).click();
+  await page.getByRole("button", { name: "Turn off alert" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
 });
 
 test("an open get-off setup survives a board refresh", async ({ page }) => {

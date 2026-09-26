@@ -15,7 +15,7 @@ import {
   rideStageRank,
   evaluateRideStage,
   plannedRideProgress,
-  previousStopPassed,
+  fixLeftStop,
   rideLongOver,
 } from "../utils/rideProgress";
 import { dataAgeSeconds } from "../utils/time";
@@ -45,20 +45,27 @@ const TARGET_CONFIRMED_FOR_SEC = 45;
 const MISS_FIX_ACCURACY_M = 50;
 
 // Metres along the trip's shape from the stop before the exit to the exit.
-function previousStopGapM(plan) {
+// How far along the route a stop of the plan lies before the exit.
+function routeGapM(plan, stop) {
   const target = Number(plan?.targetStop?.shapeDistTraveled);
-  const previous = Number(plan?.previousStop?.shapeDistTraveled);
+  const from = Number(stop?.shapeDistTraveled);
   if (
     plan?.targetStop?.shapeDistTraveled === null ||
-    plan?.previousStop?.shapeDistTraveled === null ||
+    stop?.shapeDistTraveled === null ||
     !Number.isFinite(target) ||
-    !Number.isFinite(previous) ||
-    target <= previous
+    !Number.isFinite(from) ||
+    target <= from
   ) {
     return null;
   }
-  return target - previous;
+  return target - from;
 }
+
+// Fixes in a row that must agree the phone has left a stop. One can be
+// thrown by a building; two a second or so apart rarely are. On a one-stop
+// ride both stops are the boarding stop, so setting off and "Press STOP now"
+// come together, as one alert.
+const LEFT_STOP_FIXES = 2;
 
 function emptyRuntime() {
   return {
@@ -105,6 +112,8 @@ function emptyGps() {
     offRouteSinceMs: null,
     offRouteSuspected: false,
     passedTarget: false,
+    leftBoardingFixes: 0,
+    leftPreviousFixes: 0,
     updatedAt: null,
     error: "",
   };
@@ -346,6 +355,15 @@ export default function useRideMode() {
         ? Math.max(0, (Date.now() - Number(current.stageChangedAt)) / 1000)
         : null;
 
+      // Until the phone has ridden away from the boarding stop, where it is
+      // says nothing about the bus: someone waiting there for a one-stop
+      // ride is already "400 m from the exit", and was told to press STOP
+      // twenty minutes before the bus came. Kept once known.
+      const underway =
+        current.underway === true ||
+        previousPassedConfirmed ||
+        nextGps.leftBoardingFixes >= LEFT_STOP_FIXES;
+
       const evaluated = evaluateRideStage(current.stage, {
         liveEtaSec,
         scheduleEtaSec: planned.etaSec,
@@ -356,10 +374,11 @@ export default function useRideMode() {
         gpsAccuracyM: nextGps.accuracyM,
         gpsAgeSec,
         gpsShapeAvailable: nextGps.shapeStatus === "ready",
-        gpsShapeUsable: nextGps.shapeUsable,
-        gpsOnRoute: nextGps.onRoute,
+        gpsShapeUsable: underway && nextGps.shapeUsable,
+        gpsOnRoute: underway && nextGps.onRoute,
         gpsRouteDistanceM: nextGps.routeDistanceM,
         gpsRouteEtaSec: nextGps.routeEtaSec,
+        // 200 m past the exit is not somewhere a passenger waits for the bus.
         gpsPassedTarget: nextGps.passedTarget,
         gpsSpeedMps,
         stageAgeSec,
@@ -384,6 +403,7 @@ export default function useRideMode() {
       // would otherwise keep showing a confident "~2 min" next to a badge
       // that already says tracking is degraded.
       const gpsEtaUsable =
+        underway &&
         nextGps.routeEtaSec !== null &&
         Number.isFinite(Number(nextGps.routeEtaSec)) &&
         (gpsAgeSec === null || gpsAgeSec <= 60);
@@ -401,7 +421,14 @@ export default function useRideMode() {
         ...nextRuntime,
         targetMissingCount: enteringNow ? 0 : nextRuntime.targetMissingCount,
         scheduleEtaSec: planned.etaSec,
-        remainingStops: planned.remainingStops,
+        // What the panel shows. Before the bus leaves, every stop of the
+        // plan is still ahead: the stage logic may not count them yet, but
+        // the passenger may, and "Remaining: tracking" answered nothing.
+        remainingStops:
+          planned.remainingStops ??
+          (planned.beforeDeparture && Array.isArray(current.plan?.stopsToTarget)
+            ? current.plan.stopsToTarget.length
+            : null),
         // Published so the panel can age out a fix on exactly the same clock
         // the stage logic uses, instead of presenting a tunnel-old distance
         // as where the passenger is now.
@@ -428,33 +455,29 @@ export default function useRideMode() {
 
       // Kept once known: "Press STOP now" is only said once the bus has left
       // the stop before the exit, and a fix lost in a tunnel afterwards does
-      // not put it back there.
+      // not put it back there. One vague fix past it is not enough: the bus
+      // could still be standing there, and the press would stop it there.
       const previousLeft =
         current.previousLeft === true ||
-        previousStopPassed({
-          previousPassedConfirmed,
-          gpsShapeUsable: nextGps.shapeUsable,
-          gpsOnRoute: nextGps.onRoute,
-          gpsRouteDistanceM: nextGps.routeDistanceM,
-          gpsAccuracyM: nextGps.accuracyM,
-          gpsAgeSec,
-          previousRouteDistanceM: previousStopGapM(current.plan),
-        });
+        previousPassedConfirmed ||
+        (underway && nextGps.leftPreviousFixes >= LEFT_STOP_FIXES);
       const stageChanged = evaluated.stage !== current.stage;
       const leftPrevious = previousLeft && current.previousLeft !== true;
+      const setOff = underway && current.underway !== true;
 
-      if (!stageChanged && !leftPrevious) return;
+      if (!stageChanged && !leftPrevious && !setOff) return;
 
       const nextSession = stageChanged
         ? {
             ...current,
+            underway,
             previousLeft,
             stage: evaluated.stage,
             stageReason: evaluated.reason,
             stageConfidence: evaluated.confidence,
             stageChangedAt: Date.now(),
           }
-        : { ...current, previousLeft };
+        : { ...current, underway, previousLeft };
 
       sessionRef.current = nextSession;
       setSession(nextSession);
@@ -465,7 +488,7 @@ export default function useRideMode() {
       // its own.
       const announceStage = stageChanged
         ? evaluated.stage
-        : evaluated.stage === RIDE_STAGE.NEXT
+        : leftPrevious && evaluated.stage === RIDE_STAGE.NEXT
           ? RIDE_STAGE.NEXT
           : null;
       if (
@@ -670,6 +693,28 @@ export default function useRideMode() {
             })
           : null;
 
+        // Asked of every fix, so "in a row" means fixes, not polls.
+        const fixSignals = {
+          gpsShapeUsable: shapeAnalysis?.usable === true,
+          gpsOnRoute: shapeAnalysis?.onRoute === true,
+          gpsRouteDistanceM: shapeAnalysis?.routeDistanceM,
+          gpsAccuracyM: accuracy,
+          gpsAgeSec: 0,
+          gpsSpeedMps: Number.isFinite(speed) ? speed : null,
+        };
+        const leftBoardingFixes = fixLeftStop(
+          fixSignals,
+          routeGapM(current.plan, current.plan?.boardingStop)
+        )
+          ? (previous.leftBoardingFixes || 0) + 1
+          : 0;
+        const leftPreviousFixes = fixLeftStop(
+          fixSignals,
+          routeGapM(current.plan, current.plan?.previousStop)
+        )
+          ? (previous.leftPreviousFixes || 0) + 1
+          : 0;
+
         const next = {
           ...previous,
           status:
@@ -704,6 +749,8 @@ export default function useRideMode() {
           offRouteSinceMs: shapeAnalysis?.offRouteSinceMs ?? null,
           offRouteSuspected: shapeAnalysis?.offRouteSuspected === true,
           passedTarget: shapeAnalysis?.passedTarget === true,
+          leftBoardingFixes,
+          leftPreviousFixes,
           updatedAt: nowMs,
           error: "",
         };

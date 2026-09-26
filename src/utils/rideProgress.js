@@ -454,26 +454,36 @@ function shapeFixReliable(signals) {
   );
 }
 
-// How far past the stop before the exit a fix must be to count as having
-// left it: a bus standing there is still at it.
-const LEFT_PREVIOUS_STOP_M = 30;
+// How far past a stop a fix must be to count as having left it: a bus
+// standing at a long platform is still at it. A vague fix must be past it by
+// its own accuracy too, or the phone may yet be standing there.
+const LEFT_STOP_MARGIN_M = 40;
+// Slower than this, the phone is standing or walking, not riding away.
+const RIDING_AWAY_MPS = 2;
 
+// One fix, on the route, clearly past a stop `stopRouteDistanceM` before the
+// exit, and not standing still. The hook asks this of every fix, about the
+// boarding stop and about the stop before the exit, and counts the answers.
+//
 // Pressing STOP asks for the next stop. Pressed before the bus leaves the
 // stop before the exit, it stops the bus there instead and the request is
 // spent, and a passenger who then waits for their stop rides past it. So
 // "Press STOP now" needs evidence that the bus has left that stop: it was
-// seen leaving it live, or a fix on the route is past it. A near exit alone
-// is not that: in the city centre, stops are closer than the 600 m and
-// 90 s that raise the stage.
-export function previousStopPassed(signals = {}) {
-  if (signals.previousPassedConfirmed === true) return true;
+// seen leaving it live, or fixes on the route are past it. A near exit alone
+// is not that: in the city centre, stops are closer than the 600 m and 90 s
+// that raise the stage.
+export function fixLeftStop(signals = {}, stopRouteDistanceM) {
   const gpsRouteDistance = finiteNumber(signals.gpsRouteDistanceM);
-  const previousRouteDistance = finiteNumber(signals.previousRouteDistanceM);
+  const stopRouteDistance = finiteNumber(stopRouteDistanceM);
+  const accuracy = finiteNumber(signals.gpsAccuracyM);
+  const speed = finiteNumber(signals.gpsSpeedMps);
   return (
     shapeFixReliable(signals) &&
-    previousRouteDistance !== null &&
-    previousRouteDistance > 0 &&
-    gpsRouteDistance <= previousRouteDistance - LEFT_PREVIOUS_STOP_M
+    stopRouteDistance !== null &&
+    stopRouteDistance > 0 &&
+    (speed === null || speed >= RIDING_AWAY_MPS) &&
+    gpsRouteDistance <=
+      stopRouteDistance - Math.max(LEFT_STOP_MARGIN_M, accuracy ?? 0)
   );
 }
 

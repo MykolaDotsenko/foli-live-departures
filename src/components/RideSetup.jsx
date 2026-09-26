@@ -249,7 +249,7 @@ export default function RideSetup({
     // kept as a phrase and translated where it is shown.
     if (!selectedTarget) {
       setStartError(
-        msg("Choose the stop you want to get off at before starting Ride Mode.")
+        msg("Choose the stop you want to get off at first.")
       );
       return;
     }
@@ -335,7 +335,7 @@ export default function RideSetup({
     >
       <div className={styles.heading}>
         <div className={styles.headingText}>
-          <p className={styles.kicker}>{t("Ride Mode")}</p>
+          <p className={styles.kicker}>{t("Get-off alert")}</p>
           <h4>{t("Where do you want to get off?")}</h4>
           <p>
             {t(
@@ -354,11 +354,15 @@ export default function RideSetup({
         </p>
       )}
 
+      {/* Trip stops are kept in memory only, so offline this is the
+          answer for any bus not opened since the page loaded. */}
       {status === "error" && (
         <p className={styles.status} role="alert">
-          {t(
-            "This trip's stop sequence is temporarily unavailable. Ride Mode cannot start safely without it."
-          )}
+          {globalThis.navigator?.onLine === false
+            ? t("The get-off alert needs a connection to load this bus's stops.")
+            : t(
+                "We cannot load this bus's stops right now. Close this and try again in a moment."
+              )}
         </p>
       )}
 
@@ -510,7 +514,7 @@ export default function RideSetup({
                 disabled={!targetStopSequence}
                 onClick={start}
               >
-                {t("Start Ride Mode")}
+                {t("Start get-off alert")}
               </button>
               <span className={styles.departureContext}>
                 {chosenStop

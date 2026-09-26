@@ -104,7 +104,7 @@ test("prefers a saved Home stop and builds an exact trip/shape ride plan", async
   fireEvent.click(
     screen.getByRole("checkbox", { name: /Follow my location/i })
   );
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
 
   expect(onStart).toHaveBeenCalledTimes(1);
   const config = onStart.mock.calls[0][0];
@@ -210,9 +210,9 @@ test("says why the ride cannot start instead of ignoring the button", async () =
   const onStart = vi.fn();
   renderSetup({ onStart });
 
-  await screen.findByRole("button", { name: "Start Ride Mode" });
+  await screen.findByRole("button", { name: "Start get-off alert" });
   fireEvent.click(screen.getByDisplayValue("2"));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
 
   expect(onStart).not.toHaveBeenCalled();
   expect(
@@ -244,9 +244,9 @@ test("explains a departure with no usable time", async () => {
     },
   });
 
-  await screen.findByRole("button", { name: "Start Ride Mode" });
+  await screen.findByRole("button", { name: "Start get-off alert" });
   fireEvent.click(screen.getByDisplayValue("2"));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
 
   expect(onStart).not.toHaveBeenCalled();
   expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -274,9 +274,9 @@ test("clears a start error once another stop is chosen", async () => {
 
   renderSetup();
 
-  await screen.findByRole("button", { name: "Start Ride Mode" });
+  await screen.findByRole("button", { name: "Start get-off alert" });
   fireEvent.click(screen.getByDisplayValue("2"));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
   expect(await screen.findByRole("alert")).toBeInTheDocument();
 
   fireEvent.click(screen.getByDisplayValue("3"));
@@ -297,7 +297,7 @@ test("refuses to guess when the trip passes the boarding stop twice", async () =
     /comes back to this stop later/i
   );
   expect(
-    screen.queryByRole("button", { name: "Start Ride Mode" })
+    screen.queryByRole("button", { name: "Start get-off alert" })
   ).not.toBeInTheDocument();
 });
 
@@ -378,7 +378,7 @@ test("does not offer notifications a browser cannot send", async () => {
     expect(
       screen.queryByRole("checkbox", { name: /notification/i })
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
     expect(onStart.mock.calls[0][0].options.notifications).toBe(false);
   } finally {
     globalThis.Notification = original;
@@ -408,7 +408,7 @@ test("a ride whose trip details fail once still gets its route and shape", async
   );
 
   fireEvent.click(await screen.findByDisplayValue("3", {}, { timeout: 4_000 }));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
 
   expect(mocks.fetchTripDetails).toHaveBeenCalledTimes(2);
   expect(onStart.mock.calls[0][0]).toEqual(
@@ -435,7 +435,7 @@ test("a ride whose trip details never load knows its line is a bus", async () =>
   );
 
   fireEvent.click(await screen.findByDisplayValue("3", {}, { timeout: 4_000 }));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
 
   expect(onStart.mock.calls[0][0].routeType).toBe(3);
   mocks.fetchTripDetails.mockReset();
@@ -479,7 +479,7 @@ test("sets up the ride in Finnish, with stop names as Föli publishes them", asy
     screen.getByText(/^Jäät pois: Turun linna · Linja 1 lähtee klo \d\d:\d\d$/)
   ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Käynnistä matkatila" }));
+  fireEvent.click(screen.getByRole("button", { name: "Käynnistä pysäkkihälytys" }));
   expect(onStart).toHaveBeenCalledTimes(1);
 });
 
@@ -504,7 +504,7 @@ test("follows a language switch while the stop is being chosen", async () => {
   // Stop 77 is not in the catalogue, so it goes by its number.
   expect(await screen.findByText("Stop 77")).toBeInTheDocument();
   fireEvent.click(screen.getByDisplayValue("3"));
-  fireEvent.click(screen.getByRole("button", { name: "Start Ride Mode" }));
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
   expect(await screen.findByRole("alert")).toHaveTextContent(
     /do not have a departure time/i
   );
