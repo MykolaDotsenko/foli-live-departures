@@ -34,6 +34,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Verify branding consistency
+        run: npm run verify:brand
+
       - name: Unit tests with coverage gate
         run: npm run test:coverage
 
