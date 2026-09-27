@@ -22,13 +22,16 @@
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
   padding: 1px 2px 5px;
+  scroll-snap-type: x proximity;
   scrollbar-width: thin;
 }
 
 .chip {
   display: flex;
   flex: 0 0 auto;
+  scroll-snap-align: start;
   align-items: center;
   gap: 9px;
   min-height: 50px;
