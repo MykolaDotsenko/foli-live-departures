@@ -6,15 +6,37 @@
 ![Accessibility](https://img.shields.io/badge/accessibility-WCAG%20tested-0A7F5A)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-## Public transport is easy when everything goes right. This app is built for when it does not.
+**A privacy-first transit companion for Turku that turns uncertain public-transport data into clear passenger actions.**
 
-**Föli Live Departures is a privacy-first transit companion for Turku that helps passengers answer three practical questions:**
+> **Know what leaves next. See disruptions before they matter. Get an alert when it is time to press STOP.**
 
-**What leaves next? · Is anything disrupting my trip? · When do I need to press STOP?**
+[**Open the live app →**](https://mykoladotsenko.github.io/foli-live-departures/)
+· [Product audit](docs/PRODUCT_AUDIT.md)
+· [Ride Mode design](docs/RIDE_MODE_SPEC.md)
+· [API engineering reference](docs/FOLI_API_REFERENCE.md)
 
-It combines live Föli data, planned GTFS service, disruption information and on-device location signals into one installable PWA — with explicit fallbacks for stale data, weak connectivity, unfamiliar routes and browser limitations.
+### At a glance
 
-**Try the live app:** https://mykoladotsenko.github.io/foli-live-departures/
+| | |
+| --- | --- |
+| **Problem** | Realtime transit data can be late, stale, incomplete or difficult to turn into a passenger decision — especially on an unfamiliar route or when connectivity fails. |
+| **Product** | Live + scheduled departures, relevant disruptions, nearest-stop discovery, Get-off Alert, privacy-first saved places and offline recovery in one installable PWA. |
+| **Differentiator** | Conservative evidence fusion: Föli realtime + GTFS trip order + optional on-device GPS. Weak evidence may warn early, but cannot trigger a false **"get off now"** instruction. |
+| **Engineering proof** | 512 automated tests, coverage gates, Chromium/Firefox/WebKit E2E, mobile + PWA QA, axe accessibility checks and a scheduled live Föli contract smoke test. |
+| **Privacy** | No account, ads or analytics; saved places use public stop identities instead of street addresses, and device GPS is never persisted. |
+| **Status** | Deployed product engineering portfolio project using real Föli public-transport APIs and real browser failure modes. |
+
+## Built for when public transport does not go to plan
+
+A timetable is useful when the happy path holds. Passengers still need an answer when the bus is delayed, realtime disappears, a detour changes the trip, GPS is uncertain, the network drops or they are worried about missing their stop.
+
+Föli Live Departures is designed around those moments:
+
+- **reduce uncertainty before boarding** with live/scheduled semantics and disruption context;
+- **reduce missed-stop anxiety during the ride** with an evidence-based Get-off Alert;
+- **preserve useful recovery options when things fail** with saved public stops, offline state, backup stops and a driver-facing card.
+
+The product does not try to look more certain than its data. When evidence weakens, the interface degrades explicitly instead of silently presenting stale information as truth.
 
 > Independent project using Föli open data. Not made by or affiliated with Föli or the City of Turku.
 
