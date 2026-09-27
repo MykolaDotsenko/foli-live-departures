@@ -621,6 +621,16 @@
   }
 }
 
+@media (max-height: 520px) and (pointer: coarse) {
+  .goButton,
+  .primaryButton,
+  .secondaryButton,
+  .textButton,
+  .dangerButton {
+    min-height: 44px;
+  }
+}
+
 /* Dark theme: tokens in App.css. */
 @media screen {
   :root[data-theme="dark"] .goButton:disabled,
