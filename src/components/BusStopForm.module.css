@@ -242,75 +242,75 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .label {
+@media screen {
+  :root[data-theme="dark"] .label {
     color: var(--dm-soft);
   }
 
-  .input {
+  :root[data-theme="dark"] .input {
     border-color: var(--dm-line-strong);
     background: var(--dm-sunken);
     color: var(--dm-text);
   }
 
-  .input::placeholder {
+  :root[data-theme="dark"] .input::placeholder {
     color: var(--dm-muted);
   }
 
-  .input:hover {
+  :root[data-theme="dark"] .input:hover {
     border-color: #5f949c;
   }
 
-  .input[aria-invalid="true"] {
+  :root[data-theme="dark"] .input[aria-invalid="true"] {
     border-color: var(--dm-danger-text);
   }
 
-  .button {
+  :root[data-theme="dark"] .button {
     box-shadow: 0 6px 16px var(--dm-shadow);
   }
 
-  .locateButton {
+  :root[data-theme="dark"] .locateButton {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-accent);
   }
 
-  .locateButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .locateButton:hover:not(:disabled) {
     border-color: #5f949c;
     background: var(--dm-accent-surface);
   }
 
-  .locateButton:focus-visible,
-  .button:focus-visible,
-  .input:focus-visible {
+  :root[data-theme="dark"] .locateButton:focus-visible,
+  :root[data-theme="dark"] .button:focus-visible,
+  :root[data-theme="dark"] .input:focus-visible {
     outline-color: var(--dm-focus);
   }
 
-  .suggestions {
+  :root[data-theme="dark"] .suggestions {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     box-shadow: 0 16px 36px var(--dm-shadow);
   }
 
-  .suggestion {
+  :root[data-theme="dark"] .suggestion {
     border-bottom-color: var(--dm-line);
   }
 
-  .suggestion:hover,
-  .suggestion[aria-selected="true"] {
+  :root[data-theme="dark"] .suggestion:hover,
+  :root[data-theme="dark"] .suggestion[aria-selected="true"] {
     background: var(--dm-accent-surface);
   }
 
-  .suggestionName {
+  :root[data-theme="dark"] .suggestionName {
     color: var(--dm-text);
   }
 
-  .suggestionId,
-  .help {
+  :root[data-theme="dark"] .suggestionId,
+  :root[data-theme="dark"] .help {
     color: var(--dm-muted);
   }
 
-  .error {
+  :root[data-theme="dark"] .error {
     color: var(--dm-danger-text);
   }
 }
