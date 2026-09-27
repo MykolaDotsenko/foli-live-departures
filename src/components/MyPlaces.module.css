@@ -622,138 +622,138 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .goButton:disabled,
-  .primaryButton:disabled {
+@media screen {
+  :root[data-theme="dark"] .goButton:disabled,
+  :root[data-theme="dark"] .primaryButton:disabled {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-soft);
   }
 
-  .saveHint {
+  :root[data-theme="dark"] .saveHint {
     color: var(--dm-muted);
   }
 
-  .wrapper {
+  :root[data-theme="dark"] .wrapper {
     border-color: var(--dm-line);
     background: var(--dm-surface);
     box-shadow: 0 10px 28px var(--dm-shadow);
   }
 
-  .header h2,
-  .placeCard h3,
-  .emptyCard h3,
-  .importCard h3,
-  .setup h3,
-  .mobileSummary,
-  .importStops > span,
-  .shareInput,
-  .confirmSafe {
+  :root[data-theme="dark"] .header h2,
+  :root[data-theme="dark"] .placeCard h3,
+  :root[data-theme="dark"] .emptyCard h3,
+  :root[data-theme="dark"] .importCard h3,
+  :root[data-theme="dark"] .setup h3,
+  :root[data-theme="dark"] .mobileSummary,
+  :root[data-theme="dark"] .importStops > span,
+  :root[data-theme="dark"] .shareInput,
+  :root[data-theme="dark"] .confirmSafe {
     color: var(--dm-text);
   }
 
-  .kicker,
-  .textButton,
-  .mobileSummaryAction {
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .textButton,
+  :root[data-theme="dark"] .mobileSummaryAction {
     color: var(--dm-accent);
   }
 
-  .description,
-  .emptyCard p,
-  .placeHeading p,
-  .helper,
-  .privacy,
-  .meta,
-  .backupRow small,
-  .importStops small,
-  .sharePrivacyHint,
-  .shareFeedback,
-  .safeChoice small,
-  .mobileSummaryText small {
+  :root[data-theme="dark"] .description,
+  :root[data-theme="dark"] .emptyCard p,
+  :root[data-theme="dark"] .placeHeading p,
+  :root[data-theme="dark"] .helper,
+  :root[data-theme="dark"] .privacy,
+  :root[data-theme="dark"] .meta,
+  :root[data-theme="dark"] .backupRow small,
+  :root[data-theme="dark"] .importStops small,
+  :root[data-theme="dark"] .sharePrivacyHint,
+  :root[data-theme="dark"] .shareFeedback,
+  :root[data-theme="dark"] .safeChoice small,
+  :root[data-theme="dark"] .mobileSummaryText small {
     color: var(--dm-muted);
   }
 
-  .error,
-  .dangerButton {
+  :root[data-theme="dark"] .error,
+  :root[data-theme="dark"] .dangerButton {
     color: var(--dm-danger-text);
   }
 
-  .backups,
-  .manage,
-  .primaryChoice {
+  :root[data-theme="dark"] .backups,
+  :root[data-theme="dark"] .manage,
+  :root[data-theme="dark"] .primaryChoice {
     color: var(--dm-soft);
   }
 
-  .backups,
-  .manage {
+  :root[data-theme="dark"] .backups,
+  :root[data-theme="dark"] .manage {
     border-top-color: var(--dm-line);
   }
 
-  .placeCard,
-  .emptyCard,
-  .mobileSummary {
+  :root[data-theme="dark"] .placeCard,
+  :root[data-theme="dark"] .emptyCard,
+  :root[data-theme="dark"] .mobileSummary {
     border-color: var(--dm-line);
     background: var(--dm-raised);
   }
 
-  .mobileSummary:hover,
-  .secondaryButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .mobileSummary:hover,
+  :root[data-theme="dark"] .secondaryButton:hover:not(:disabled) {
     background: var(--dm-accent-surface);
   }
 
-  .mobileSummary:focus-visible {
+  :root[data-theme="dark"] .mobileSummary:focus-visible {
     outline-color: var(--dm-focus);
   }
 
-  .placeIcon,
-  .primaryBadge {
+  :root[data-theme="dark"] .placeIcon,
+  :root[data-theme="dark"] .primaryBadge {
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }
 
-  .secondaryButton {
+  :root[data-theme="dark"] .secondaryButton {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-text);
   }
 
-  .setup {
+  :root[data-theme="dark"] .setup {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
   }
 
-  .importCard {
+  :root[data-theme="dark"] .importCard {
     border-color: #2f6b72;
     background: var(--dm-accent-surface);
   }
 
-  .importStops > span,
-  .candidate,
-  .confirmSafe {
+  :root[data-theme="dark"] .importStops > span,
+  :root[data-theme="dark"] .candidate,
+  :root[data-theme="dark"] .confirmSafe {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
   }
 
-  .shareInput {
+  :root[data-theme="dark"] .shareInput {
     border-color: var(--dm-line-strong);
     background: var(--dm-sunken);
   }
 
-  .reviewNotice {
+  :root[data-theme="dark"] .reviewNotice {
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .setupDetails {
+  :root[data-theme="dark"] .setupDetails {
     color: var(--dm-soft);
   }
 
-  .setupDetails summary {
+  :root[data-theme="dark"] .setupDetails summary {
     color: var(--dm-accent);
   }
 
-  .setupDetails summary:focus-visible {
+  :root[data-theme="dark"] .setupDetails summary:focus-visible {
     outline-color: var(--dm-focus);
   }
 }
