@@ -744,158 +744,158 @@
 }
 
 /* Dark theme: tokens in App.css. Route badge colours stay the provider's. */
-@media screen and (prefers-color-scheme: dark) {
-  .board {
+@media screen {
+  :root[data-theme="dark"] .board {
     border-color: var(--dm-line);
     background: var(--dm-surface);
     box-shadow: 0 14px 34px var(--dm-shadow);
   }
 
-  .header,
-  .table th,
-  .table td,
-  .summary,
-  .legend {
+  :root[data-theme="dark"] .header,
+  :root[data-theme="dark"] .table th,
+  :root[data-theme="dark"] .table td,
+  :root[data-theme="dark"] .summary,
+  :root[data-theme="dark"] .legend {
     border-color: var(--dm-line);
   }
 
-  .stopName,
-  .state strong {
+  :root[data-theme="dark"] .stopName,
+  :root[data-theme="dark"] .state strong {
     color: var(--dm-text);
   }
 
-  .stopMeta,
-  .state,
-  .tripMeta,
-  .dueDay,
-  .dueClock,
-  .legend,
-  .legend summary,
-  .destinationTranslation {
+  :root[data-theme="dark"] .stopMeta,
+  :root[data-theme="dark"] .state,
+  :root[data-theme="dark"] .tripMeta,
+  :root[data-theme="dark"] .dueDay,
+  :root[data-theme="dark"] .dueClock,
+  :root[data-theme="dark"] .legend,
+  :root[data-theme="dark"] .legend summary,
+  :root[data-theme="dark"] .destinationTranslation {
     color: var(--dm-muted);
   }
 
-  .favoriteButton,
-  .refreshButton,
-  .retryButton {
+  :root[data-theme="dark"] .favoriteButton,
+  :root[data-theme="dark"] .refreshButton,
+  :root[data-theme="dark"] .retryButton {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-soft);
   }
 
-  .favoriteButton {
+  :root[data-theme="dark"] .favoriteButton {
     color: var(--dm-accent);
   }
 
-  .favoriteButton[aria-pressed="true"] {
+  :root[data-theme="dark"] .favoriteButton[aria-pressed="true"] {
     border-color: #3f7f86;
     background: var(--dm-accent-surface);
   }
 
-  .refreshButton:hover:not(:disabled),
-  .retryButton:hover {
+  :root[data-theme="dark"] .refreshButton:hover:not(:disabled),
+  :root[data-theme="dark"] .retryButton:hover {
     border-color: #5f949c;
     background: var(--dm-accent-surface);
   }
 
-  .summary,
-  .table th,
-  .legend {
+  :root[data-theme="dark"] .summary,
+  :root[data-theme="dark"] .table th,
+  :root[data-theme="dark"] .legend {
     background: var(--dm-sunken);
     color: var(--dm-muted);
   }
 
-  .summary strong,
-  .stateKicker {
+  :root[data-theme="dark"] .summary strong,
+  :root[data-theme="dark"] .stateKicker {
     color: var(--dm-accent);
   }
 
-  .staleNotice {
+  :root[data-theme="dark"] .staleNotice {
     border-bottom-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .table tbody tr:hover,
-  .rideSetupRow > td,
-  .rideSetupRow:hover {
+  :root[data-theme="dark"] .table tbody tr:hover,
+  :root[data-theme="dark"] .rideSetupRow > td,
+  :root[data-theme="dark"] .rideSetupRow:hover {
     background: var(--dm-raised) !important;
   }
 
-  .destination {
+  :root[data-theme="dark"] .destination {
     color: var(--dm-text);
   }
 
-  .accessibility[data-accessible="true"] {
+  :root[data-theme="dark"] .accessibility[data-accessible="true"] {
     color: var(--dm-ok-text);
   }
 
-  .lineNotice {
+  :root[data-theme="dark"] .lineNotice {
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .accessibility[data-accessible="false"] {
+  :root[data-theme="dark"] .accessibility[data-accessible="false"] {
     background: var(--dm-danger-surface);
     color: var(--dm-danger-text);
   }
 
-  .proximity {
+  :root[data-theme="dark"] .proximity {
     color: var(--dm-soft);
   }
 
-  .due {
+  :root[data-theme="dark"] .due {
     color: var(--dm-accent);
   }
 
-  .table tr[data-cancelled="true"] .due,
-  .table tr[data-cancelled="true"] .tripMeta {
+  :root[data-theme="dark"] .table tr[data-cancelled="true"] .due,
+  :root[data-theme="dark"] .table tr[data-cancelled="true"] .tripMeta {
     color: var(--dm-danger-text);
   }
 
-  .rideButton {
+  :root[data-theme="dark"] .rideButton {
     border-color: #3f7f86;
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }
 
-  .rideButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .rideButton:hover:not(:disabled) {
     border-color: #5f949c;
     background: #184a50;
   }
 
-  .filterButton,
-  .lineChip {
+  :root[data-theme="dark"] .filterButton,
+  :root[data-theme="dark"] .lineChip {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-text);
   }
 
-  .filterButton {
+  :root[data-theme="dark"] .filterButton {
     color: var(--dm-accent);
   }
 
-  .filterButton[data-active="true"],
-  .lineChip[aria-pressed="true"] {
+  :root[data-theme="dark"] .filterButton[data-active="true"],
+  :root[data-theme="dark"] .lineChip[aria-pressed="true"] {
     border-color: var(--dm-accent);
     background: var(--dm-accent-surface);
   }
 
-  .lineChip[aria-pressed="true"] {
+  :root[data-theme="dark"] .lineChip[aria-pressed="true"] {
     box-shadow: inset 0 0 0 1px var(--dm-accent);
   }
 
-  .lineFilter {
+  :root[data-theme="dark"] .lineFilter {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
   }
 
-  .lineChipCheck {
+  :root[data-theme="dark"] .lineChipCheck {
     color: var(--dm-accent);
   }
 
-  .filterButton:focus-visible,
-  .lineChip:focus-visible {
+  :root[data-theme="dark"] .filterButton:focus-visible,
+  :root[data-theme="dark"] .lineChip:focus-visible {
     outline-color: var(--dm-focus);
   }
 }
