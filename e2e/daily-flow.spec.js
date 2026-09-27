@@ -1777,6 +1777,45 @@ test("a phone in dark mode gets a dark page that is just as readable", async ({
   expect(await rootBackground()).toBe("rgb(237, 244, 245)");
 });
 
+// An explicit passenger preference wins over the phone setting and survives
+// a reload. This is the contract the visible Light/Dark control promises.
+test("the theme switch overrides the phone theme and persists", async ({ page }) => {
+  const rootBackground = () =>
+    page.evaluate(
+      () => globalThis.getComputedStyle(document.documentElement).backgroundColor
+    );
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/");
+
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await rootBackground()).toBe("rgb(12, 20, 22)");
+
+  await page.getByRole("button", { name: "Use light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await rootBackground()).toBe("rgb(237, 244, 245)");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+    "content",
+    "#007985"
+  );
+
+  await page.reload();
+
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  expect(await rootBackground()).toBe("rgb(237, 244, 245)");
+  await expect(
+    page.getByRole("button", { name: "Use dark theme" })
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Use dark theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  expect(await rootBackground()).toBe("rgb(12, 20, 22)");
+  await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+    "content",
+    "#0c1416"
+  );
+});
+
 // A Finnish phone got an English page, whatever else it had going for it:
 // localization scored lowest of everything in the pre-release review.
 test.describe("on a Finnish phone", () => {
