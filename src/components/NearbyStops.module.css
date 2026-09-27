@@ -337,77 +337,77 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .wrapper {
+@media screen {
+  :root[data-theme="dark"] .wrapper {
     border-color: var(--dm-line);
     background:
       radial-gradient(circle at top right, rgba(95, 208, 216, 0.08), transparent 44%),
       var(--dm-surface);
   }
 
-  .heading {
+  :root[data-theme="dark"] .heading {
     color: var(--dm-soft);
   }
 
-  .description,
-  .meta,
-  .stopText > span,
-  .disclaimer {
+  :root[data-theme="dark"] .description,
+  :root[data-theme="dark"] .meta,
+  :root[data-theme="dark"] .stopText > span,
+  :root[data-theme="dark"] .disclaimer {
     color: var(--dm-muted);
   }
 
-  .locateButton {
+  :root[data-theme="dark"] .locateButton {
     border-color: var(--dm-accent);
     background: var(--dm-raised);
     color: var(--dm-accent);
   }
 
-  .locateButton:hover:not(:disabled),
-  .stopButton:hover,
-  .walkLink:hover {
+  :root[data-theme="dark"] .locateButton:hover:not(:disabled),
+  :root[data-theme="dark"] .stopButton:hover,
+  :root[data-theme="dark"] .walkLink:hover {
     background: var(--dm-accent-surface);
   }
 
-  .error {
+  :root[data-theme="dark"] .error {
     color: var(--dm-danger-text);
   }
 
-  .notice {
+  :root[data-theme="dark"] .notice {
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .stopCard {
+  :root[data-theme="dark"] .stopCard {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
   }
 
-  .stopCard:hover {
+  :root[data-theme="dark"] .stopCard:hover {
     border-color: #5f949c;
   }
 
-  .stopCard[data-active="true"] {
+  :root[data-theme="dark"] .stopCard[data-active="true"] {
     border-color: var(--dm-accent);
     outline-color: var(--dm-accent);
   }
 
-  .stopButton {
+  :root[data-theme="dark"] .stopButton {
     color: var(--dm-text);
   }
 
-  .nearestBadge {
+  :root[data-theme="dark"] .nearestBadge {
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }
 
-  .walkLink {
+  :root[data-theme="dark"] .walkLink {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
     color: var(--dm-accent);
   }
 
-  .walkLink:focus-visible {
+  :root[data-theme="dark"] .walkLink:focus-visible {
     outline-color: var(--dm-focus);
   }
 }
