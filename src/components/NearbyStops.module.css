@@ -303,6 +303,14 @@
     line-height: 1.35;
   }
 
+  .stopText strong {
+    overflow: visible;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
   .locateButton {
     width: auto;
     min-height: 44px;
