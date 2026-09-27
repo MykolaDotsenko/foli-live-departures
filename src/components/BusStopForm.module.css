@@ -162,6 +162,10 @@
 }
 
 @media (max-width: 620px) {
+  .suggestions {
+    max-height: min(42dvh, 320px);
+  }
+
   .label,
   .help,
   .error {
