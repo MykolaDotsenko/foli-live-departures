@@ -1850,7 +1850,7 @@ test("the footer guide explains the app without taking over the main screen", as
   ).toBeVisible();
 
   const results = await new AxeBuilder({ page })
-    .include(dialog)
+    .include('[role="dialog"][aria-labelledby="app-guide-title"]')
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(results.violations).toEqual([]);
