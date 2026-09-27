@@ -362,9 +362,13 @@
 
 .srOnly {
   position: absolute;
+  inset: 0 auto auto 0;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: 0;
   overflow: hidden;
+  border: 0;
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
@@ -721,6 +725,35 @@
 
   .rideSetupRow > td {
     padding: 0 10px 12px;
+  }
+}
+
+/* At 320px with large browser text the auto-layout table can grow to its
+   intrinsic text width. Keep the three information columns bounded instead
+   of turning text enlargement into horizontal page movement. */
+@media (max-width: 380px) {
+  .table {
+    table-layout: fixed;
+  }
+
+  .table td:first-child {
+    width: 54px;
+  }
+
+  .table td:last-child {
+    width: 92px;
+  }
+
+  .destination,
+  .destinationTranslation,
+  .tripMeta,
+  .proximity {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .rowActions > * {
+    max-width: 100%;
   }
 }
 
