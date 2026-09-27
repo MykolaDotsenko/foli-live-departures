@@ -295,7 +295,7 @@ function App() {
               home-screen and get-off notification icons from, so the mark
               someone tapped is the mark that greets them. Decorative here:
               the wordmark beside it already carries the name, so a second
-              "Föli departures" for a screen reader would only repeat it. */}
+              "Turku Departures" for a screen reader would only repeat it. */}
           <img
             className="brandMark"
             src={`${import.meta.env.BASE_URL}foli-icon.svg`}
