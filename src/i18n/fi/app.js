@@ -33,14 +33,12 @@ export default {
   "What there is not": "Mitä ei ole",
   "No account, no ads, no analytics.": "Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.",
   "Feedback and source code:": "Palaute ja lähdekoodi:",
-  Guide: "Ohje",
   "How to use": "Käyttöohje",
   "Quick guide": "Pikaohje",
   "How to use Föli departures": "Näin käytät Föli departures -sovellusta",
   "Start with a stop. The app then helps you understand departures, disruptions and when to press STOP.":
     "Aloita pysäkistä. Sovellus auttaa sitten ymmärtämään lähdöt, häiriöt ja sen, milloin STOP-nappia pitää painaa.",
   "Close guide": "Sulje ohje",
-  "Find your stop": "Etsi pysäkkisi",
   "Search by stop name or number, use a favourite, or find nearby stops.":
     "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai etsi lähellä olevia pysäkkejä.",
   "Check what leaves next": "Katso, mikä lähtee seuraavaksi",
