@@ -748,6 +748,22 @@
   }
 }
 
+@media (max-height: 520px) and (pointer: coarse) {
+  .favoriteButton {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .refreshButton,
+  .retryButton,
+  .filterButton,
+  .lineChip,
+  .rideButton {
+    min-height: 44px;
+  }
+}
+
 /* Dark theme: tokens in App.css. Route badge colours stay the provider's. */
 @media screen {
   :root[data-theme="dark"] .board {
