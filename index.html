@@ -4,8 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#007985" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0c1416" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#007985" />
+    <script>
+      (() => {
+        let theme = null;
+        try {
+          theme = localStorage.getItem("foli-theme-v1");
+        } catch {
+          // A blocked preference store must not delay first paint.
+        }
+        if (theme !== "light" && theme !== "dark") {
+          theme =
+            globalThis.matchMedia?.("(prefers-color-scheme: dark)")?.matches
+              ? "dark"
+              : "light";
+        }
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document
+          .querySelector('meta[name="theme-color"]')
+          ?.setAttribute("content", theme === "dark" ? "#0c1416" : "#007985");
+      })();
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Turku Föli" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
