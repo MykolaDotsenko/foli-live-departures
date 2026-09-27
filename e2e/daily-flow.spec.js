@@ -715,6 +715,50 @@ test("the ride can be started without scrolling for the button", async ({
   expect(box.y + box.height).toBeLessThanOrEqual(640);
 });
 
+test("landscape phone keeps ride setup and ride controls reachable", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile");
+  await page.setViewportSize({ width: 844, height: 390 });
+  await routeTargetStop(page, {
+    expectedarrivaltime: Math.floor(Date.now() / 1000) + 900,
+  });
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await page
+    .getByRole("button", { name: "Get-off alert" })
+    .first()
+    .click();
+
+  const start = page.getByRole("button", { name: "Start get-off alert" });
+  await expect(start).toBeInViewport();
+  const startBox = await start.boundingBox();
+  expect(startBox.y + startBox.height).toBeLessThanOrEqual(390);
+
+  await page
+    .getByRole("checkbox", { name: /Follow my location/i })
+    .uncheck();
+  await turnOffNotifications(page);
+  await start.click();
+
+  const ridePanel = page.locator('section[aria-labelledby="ride-mode-title"]');
+  await expect(ridePanel).toBeVisible();
+  await expect(
+    ridePanel.evaluate((node) => globalThis.getComputedStyle(node).position)
+  ).resolves.toBe("relative");
+
+  const endRide = page.getByRole("button", { name: "Turn off alert" });
+  await endRide.scrollIntoViewIfNeeded();
+  await expect(endRide).toBeInViewport();
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+
 // Measured at 735px against a 640px screen, which put the confirm button
 // below the fold at the exact moment the alarm was going off.
 test("the get-off panel fits a small phone with its button in reach", async ({
