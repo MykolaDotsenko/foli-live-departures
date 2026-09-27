@@ -4,6 +4,7 @@ import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import HomeRecovery from "./components/HomeRecovery";
+import HelpGuide from "./components/HelpGuide";
 import LanguageSwitch from "./components/LanguageSwitch";
 import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
@@ -311,6 +312,7 @@ function App() {
                 <span lang="fi">Turku</span> · <span lang="sv">Åbo</span>
               </p>
               <div className="header-controls">
+                <HelpGuide />
                 <ThemeSwitch />
                 <LanguageSwitch />
               </div>
