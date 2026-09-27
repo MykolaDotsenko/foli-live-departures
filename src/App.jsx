@@ -312,7 +312,6 @@ function App() {
                 <span lang="fi">Turku</span> · <span lang="sv">Åbo</span>
               </p>
               <div className="header-controls">
-                <HelpGuide />
                 <ThemeSwitch />
                 <LanguageSwitch />
               </div>
@@ -503,8 +502,10 @@ function App() {
             the phone and what leaves it. The facts were spread over a
             dozen fine-print lines, and a one-line disclaimer was all a
             passenger saw without scrolling to the bottom. */}
-        <details className="about">
-          <summary>{t("About & privacy")}</summary>
+        <div className="footer-actions">
+          <HelpGuide />
+          <details className="about">
+            <summary>{t("About & privacy")}</summary>
           <dl>
             <dt>{t("Who makes it")}</dt>
             <dd>
@@ -548,7 +549,8 @@ function App() {
               GitHub
             </a>
           </p>
-        </details>
+          </details>
+        </div>
       </footer>
     </main>
   );
