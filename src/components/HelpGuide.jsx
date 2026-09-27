@@ -116,7 +116,7 @@ export default function HelpGuide() {
             tabIndex={-1}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <header className={styles.header}>
+            <header className={`${styles.header} ${view === "quick" ? styles.quickHeader : ""}`}>
               <div>
                 <p className={styles.kicker}>
                   {view === "quick" ? t("Start here") : t("Full guide")}
