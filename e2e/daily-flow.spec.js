@@ -726,6 +726,18 @@ test("landscape phone keeps ride setup and ride controls reachable", async ({
 
   await page.goto("/?stop=164");
   await seedHome(page);
+
+  for (const locator of [
+    page.getByRole("button", { name: "Save Kauppatori to favourites" }),
+    page.getByRole("button", { name: "Filter lines" }),
+    page.getByRole("button", { name: "Refresh", exact: true }),
+    page.getByRole("button", { name: "Get-off alert" }).first(),
+  ]) {
+    const box = await locator.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box.height).toBeGreaterThanOrEqual(44);
+  }
+
   await page
     .getByRole("button", { name: "Get-off alert" })
     .first()
