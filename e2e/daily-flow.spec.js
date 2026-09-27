@@ -1819,7 +1819,7 @@ test("the theme switch overrides the phone theme and persists", async ({ page })
   );
 });
 
-test("the footer guide explains the app without taking over the main screen", async ({
+test("the footer guide starts simple and reveals the full guide on demand", async ({
   page,
 }) => {
   await page.goto("/");
@@ -1835,15 +1835,32 @@ test("the footer guide explains the app without taking over the main screen", as
   await expect(guide).toBeVisible();
   await guide.click();
 
-  const dialog = page.getByRole("dialog", {
-    name: "How to use Föli departures",
-  });
-  await expect(dialog).toBeVisible();
+  const dialog = page.locator(
+    '[role="dialog"][aria-labelledby="app-guide-title"]'
+  );
   await expect(
-    dialog.getByRole("heading", { name: "Find your stop" })
+    page.getByRole("dialog", { name: "Three things to know" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Find a stop" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Check the next bus" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Use Get-off Alert" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Watch for disruptions" })
+  ).toHaveCount(0);
+
+  await dialog.getByRole("button", { name: "See full guide" }).click();
+
+  await expect(
+    page.getByRole("dialog", { name: "How to use Föli departures" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Watch for disruptions" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Save familiar places" })
