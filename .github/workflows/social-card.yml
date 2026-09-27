@@ -4,8 +4,8 @@ on:
   push:
     branches: ["master"]
     paths:
-      - "docs/assets/turku-departures-social-card.jpg"
       - "scripts/build-social-card.mjs"
+      - "public/foli-icon.svg"
       - ".github/workflows/social-card.yml"
   workflow_dispatch:
 
@@ -19,7 +19,7 @@ concurrency:
 jobs:
   render:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -29,20 +29,27 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 24
+          cache: npm
 
-      - name: Refresh social card
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Render social artwork
         run: node scripts/build-social-card.mjs
 
-      - name: Commit refreshed card
+      - name: Commit refreshed artwork
         run: |
-          if git diff --quiet -- public/social-card.jpg; then
-            echo "Social card already matches its generated source."
+          if git diff --quiet -- docs/assets/turku-departures-social-card.jpg public/social-card.jpg; then
+            echo "Social artwork already matches its generator."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/social-card.jpg
-          git commit -m "chore: refresh Turku Departures social card"
+          git add docs/assets/turku-departures-social-card.jpg public/social-card.jpg
+          git commit -m "chore: refresh Turku Departures social artwork"
           git fetch origin master
           git rebase origin/master
           git push origin HEAD:master
