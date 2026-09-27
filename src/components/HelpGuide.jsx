@@ -45,10 +45,13 @@ export default function HelpGuide() {
       const active = globalThis.document?.activeElement;
       const inside = dialogRef.current?.contains(active);
 
-      if (event.shiftKey && (active === first || !inside)) {
+      if (event.shiftKey && (active === dialogRef.current || active === first || !inside)) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && (active === last || !inside)) {
+      } else if (
+        !event.shiftKey &&
+        (active === dialogRef.current || active === last || !inside)
+      ) {
         event.preventDefault();
         first.focus();
       }
