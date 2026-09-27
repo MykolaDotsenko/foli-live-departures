@@ -23,23 +23,29 @@ function StopChip({ stop, onSelect, favorite = false }) {
 }
 
 function QuickStops({ favorites, recents, activeStopId, onSelect }) {
+  // The board already has a dedicated Refresh action. Repeating the current
+  // stop as a favourite above it costs scarce first-screen space on a phone
+  // without giving the passenger a new destination.
+  const visibleFavorites = favorites.filter(
+    (favorite) => favorite.id !== activeStopId
+  );
   const visibleRecents = recents.filter(
     (recent) =>
       recent.id !== activeStopId &&
       !favorites.some((favorite) => favorite.id === recent.id)
   );
 
-  if (favorites.length === 0 && visibleRecents.length === 0) return null;
+  if (visibleFavorites.length === 0 && visibleRecents.length === 0) return null;
 
   return (
     <nav className={styles.wrapper} aria-label={t("Saved and recent stops")}>
-      {favorites.length > 0 && (
+      {visibleFavorites.length > 0 && (
         <section className={styles.group} aria-labelledby="favorite-stops">
           <h2 id="favorite-stops" className={styles.heading}>
             {t("Favourites")}
           </h2>
           <div className={styles.scroller}>
-            {favorites.map((stop) => (
+            {visibleFavorites.map((stop) => (
               <StopChip
                 key={stop.id}
                 stop={stop}
