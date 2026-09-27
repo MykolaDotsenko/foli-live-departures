@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import ThemeSwitch from "./ThemeSwitch";
 import { resetLanguageForTests, setLanguage } from "../i18n";
@@ -49,7 +49,7 @@ test("still switches for the visit when storage is blocked", () => {
 
 test("follows the interface language", () => {
   render(<ThemeSwitch />);
-  setLanguage("fi");
+  act(() => setLanguage("fi"));
 
   expect(
     screen.getByRole("button", { name: "Käytä tummaa teemaa" })
