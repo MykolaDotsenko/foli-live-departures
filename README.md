@@ -20,6 +20,27 @@
 
 [![Turku Departures — Know what leaves next. Know when to press STOP.](docs/assets/turku-departures-social-card.jpg)](https://mykoladotsenko.github.io/foli-live-departures/)
 
+## Product showcase
+
+<p align="center">
+  <img
+    src="docs/assets/turku-departures-showcase-1.webp"
+    alt="Turku Departures product showcase with Turku riverside, a Föli bus and the mobile experience"
+    width="49%"
+  >
+  <img
+    src="docs/assets/turku-departures-showcase-2.webp"
+    alt="Turku Departures product showcase with a phone, nearby stops and a get-off alert"
+    width="49%"
+  >
+</p>
+
+<p align="center">
+  <sub>Brand concept visuals. The live application screenshots below show the current production interface.</sub>
+</p>
+
+### Actual interface
+
 <p align="center">
   <img
     src="docs/assets/foli-mobile.png"
