@@ -378,8 +378,8 @@ input:focus-visible,
    an override inside this query, so the light theme is unchanged.
    The palette keeps every text pair at 5:1 or better on its surface.
    Route badge colours are the provider's and stay as they are. */
-@media screen and (prefers-color-scheme: dark) {
-  :root {
+@media screen {
+  :root[data-theme="dark"] {
     color-scheme: dark;
     accent-color: #5fd0d8;
     --dm-bg: #0c1416;
@@ -408,64 +408,64 @@ input:focus-visible,
     background: var(--dm-bg);
   }
 
-  body {
+  :root[data-theme="dark"] body {
     background:
       radial-gradient(circle at top left, rgba(95, 208, 216, 0.07), transparent 34rem),
       var(--dm-bg);
   }
 
-  button:focus-visible,
-  input:focus-visible,
-  [role="option"]:focus-visible,
-  .source-note a:focus-visible,
-  .about summary:focus-visible {
+  :root[data-theme="dark"] button:focus-visible,
+  :root[data-theme="dark"] input:focus-visible,
+  :root[data-theme="dark"] [role="option"]:focus-visible,
+  :root[data-theme="dark"] .source-note a:focus-visible,
+  :root[data-theme="dark"] .about summary:focus-visible {
     outline-color: var(--dm-focus);
   }
 
-  .brandMark {
+  :root[data-theme="dark"] .brandMark {
     box-shadow: 0 8px 20px var(--dm-shadow);
   }
 
-  .eyebrow {
+  :root[data-theme="dark"] .eyebrow {
     color: var(--dm-accent);
   }
 
-  .brand {
+  :root[data-theme="dark"] .brand {
     color: var(--dm-text);
   }
 
-  .context,
-  .source-note {
+  :root[data-theme="dark"] .context,
+  :root[data-theme="dark"] .source-note {
     color: var(--dm-muted);
   }
 
-  .language-switch {
+  :root[data-theme="dark"] .language-switch {
     border-color: var(--dm-line-strong);
     background: var(--dm-surface);
     color: var(--dm-accent);
   }
 
-  .language-switch:hover {
+  :root[data-theme="dark"] .language-switch:hover {
     border-color: #5f949c;
     background: var(--dm-raised);
   }
 
-  .language-switch:focus-visible {
+  :root[data-theme="dark"] .language-switch:focus-visible {
     outline-color: var(--dm-focus);
   }
 
-  .search-panel {
+  :root[data-theme="dark"] .search-panel {
     border-color: var(--dm-line);
     background: var(--dm-surface);
     box-shadow: 0 10px 28px var(--dm-shadow);
   }
 
-  .source-note a,
-  .about summary {
+  :root[data-theme="dark"] .source-note a,
+  :root[data-theme="dark"] .about summary {
     color: var(--dm-accent);
   }
 
-  .about dt {
+  :root[data-theme="dark"] .about dt {
     color: var(--dm-soft);
   }
 }
