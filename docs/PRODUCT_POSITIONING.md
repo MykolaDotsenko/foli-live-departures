@@ -1,6 +1,6 @@
 # Product positioning
 
-This document defines how Föli Live Departures should be explained to passengers, recruiters, product reviewers and potential investors without overstating what has been validated.
+This document defines how Turku Departures should be explained to passengers, recruiters, product reviewers and potential investors without overstating what has been validated.
 
 ## Position in one sentence
 
@@ -112,11 +112,11 @@ These are hypotheses or future validation areas and should not be presented as e
 
 ### 10-second version
 
-**Know what leaves next. See disruptions before they matter. Get an alert when it is time to press STOP.**
+**Know what leaves next. Know when to press STOP.**
 
 ### 60-second version
 
-Föli Live Departures is a privacy-first Turku transit companion for the moments when a normal timetable is not enough. It distinguishes realtime from planned and stale information, brings relevant disruptions into the departure flow, and offers an evidence-based Get-off Alert that combines Föli realtime, exact GTFS trip order and optional on-device GPS. It also keeps useful recovery tools available when connectivity or the normal travel flow fails.
+Turku Departures is a privacy-first Turku transit companion for the moments when a normal timetable is not enough. It distinguishes realtime from planned and stale information, brings relevant disruptions into the departure flow, and offers an evidence-based Get-off Alert that combines Föli realtime, exact GTFS trip order and optional on-device GPS. It also keeps useful recovery tools available when connectivity or the normal travel flow fails.
 
 ### Technical-review version
 
@@ -196,6 +196,9 @@ The positioning approach intentionally borrows a few durable ideas from establis
 - **Obviously Awesome — April Dunford:** start with alternatives, differentiated capabilities, value, best-fit users and market context.
 - **Building a StoryBrand — Donald Miller:** keep the user as the protagonist and the product as the guide.
 - **Made to Stick — Chip Heath & Dan Heath:** keep the core message simple, concrete and credible.
+- **The Brand Gap — Marty Neumeier:** make the promise and the lived product experience reinforce the same idea.
+- **Designing Brand Identity — Alina Wheeler:** keep naming, identity, launch surfaces and governance consistent across touchpoints.
+- **Don't Make Me Think — Steve Krug:** prefer obvious labels and low-friction actions over cleverness.
 - **INSPIRED — Marty Cagan:** distinguish technical feasibility from customer value, usability and business viability.
 
 These frameworks inform the communication structure; they are not substitutes for direct passenger research or market validation.
