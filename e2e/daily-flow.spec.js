@@ -2519,6 +2519,86 @@ test("200 percent text scaling keeps core mobile controls usable", async ({
   }
 });
 
+test("mobile long stop identity wraps without horizontal overflow", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/?stop=164");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+
+  const stopName = page.getByRole("heading", { name: "Kauppatori" });
+  await stopName.evaluate((element) => {
+    element.textContent =
+      "Very long Turku city-centre interchange stop name";
+  });
+
+  const styles = await stopName.evaluate((element) => {
+    const computed = globalThis.getComputedStyle(element);
+    return {
+      whiteSpace: computed.whiteSpace,
+      overflowWrap: computed.overflowWrap,
+    };
+  });
+  expect(styles.whiteSpace).toBe("normal");
+  expect(["anywhere", "break-word"]).toContain(styles.overflowWrap);
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("the mobile guide keeps both actions distinct on a 320px screen", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  await page
+    .locator("footer")
+    .getByRole("button", { name: "How to use" })
+    .click();
+
+  const gotIt = page.getByRole("button", { name: "Got it" });
+  const fullGuide = page.getByRole("button", { name: "See full guide" });
+  const a = await gotIt.boundingBox();
+  const b = await fullGuide.boundingBox();
+
+  expect(a).not.toBeNull();
+  expect(b).not.toBeNull();
+
+  const horizontalGap =
+    Math.max(a.x, b.x) - Math.min(a.x + a.width, b.x + b.width);
+  const verticalGap =
+    Math.max(a.y, b.y) - Math.min(a.y + a.height, b.y + b.height);
+  expect(Math.max(horizontalGap, verticalGap)).toBeGreaterThanOrEqual(7);
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("the mobile viewport opts into safe-area layout", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator('meta[name="viewport"]')).toHaveAttribute(
+    "content",
+    /viewport-fit=cover/
+  );
+});
+
+test("stop search advertises the mobile search keyboard action", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const search = page.getByRole("combobox", { name: "Find your stop" });
+  await expect(search).toHaveAttribute("inputmode", "search");
+  await expect(search).toHaveAttribute("enterkeyhint", "search");
+});
+
 test("captures the README's product screenshots", async ({ page }, testInfo) => {
   if (
     !["chromium-desktop", "webkit-mobile", "chromium-mobile"].includes(
