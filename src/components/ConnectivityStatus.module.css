@@ -31,14 +31,14 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .banner {
+@media screen {
+  :root[data-theme="dark"] .banner {
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .banner strong {
+  :root[data-theme="dark"] .banner strong {
     color: var(--dm-warn-text);
   }
 }
