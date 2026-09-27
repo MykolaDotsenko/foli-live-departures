@@ -283,6 +283,41 @@
 }
 
 
+@media (max-height: 520px) and (pointer: coarse) {
+  /* Landscape phones are wider than the normal mobile breakpoint but have
+     less vertical room. Keep the committing action in the thumb zone. */
+  .actions {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 30;
+    margin: 0;
+    padding:
+      10px
+      max(14px, env(safe-area-inset-right, 0px))
+      calc(10px + env(safe-area-inset-bottom, 0px))
+      max(14px, env(safe-area-inset-left, 0px));
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.4rem;
+    border-top: 1px solid #cddde1;
+    background: #ffffff;
+    box-shadow: 0 -6px 18px rgba(16, 25, 28, 0.14);
+  }
+
+  .start {
+    width: 100%;
+  }
+
+  .departureContext {
+    text-align: center;
+  }
+
+  .panel {
+    padding-bottom: 104px;
+    scroll-margin-bottom: 104px;
+  }
+}
+
 .srOnly {
   position: absolute;
   width: 1px;
@@ -356,6 +391,14 @@
 
   :root[data-theme="dark"] .startError {
     color: var(--dm-danger-text);
+  }
+}
+
+@media screen and (max-height: 520px) and (pointer: coarse) {
+  :root[data-theme="dark"] .actions {
+    border-top-color: var(--dm-line);
+    background: var(--dm-surface);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45);
   }
 }
 
