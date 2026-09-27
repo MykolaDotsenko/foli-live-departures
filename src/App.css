@@ -156,8 +156,7 @@ input:focus-visible,
 }
 
 .language-switch,
-.theme-switch,
-.guide-switch {
+.theme-switch {
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
@@ -177,8 +176,7 @@ input:focus-visible,
 }
 
 .language-switch::after,
-.theme-switch::after,
-.guide-switch::after {
+.theme-switch::after {
   position: absolute;
   inset: -10px -6px;
   content: "";
@@ -198,15 +196,13 @@ input:focus-visible,
 }
 
 .language-switch:hover,
-.theme-switch:hover,
-.guide-switch:hover {
+.theme-switch:hover {
   background: #ffffff;
   border-color: #7fb0b6;
 }
 
 .language-switch:focus-visible,
-.theme-switch:focus-visible,
-.guide-switch:focus-visible {
+.theme-switch:focus-visible {
   outline: 3px solid rgba(0, 121, 133, 0.28);
   outline-offset: 2px;
 }
@@ -262,8 +258,45 @@ input:focus-visible,
   margin: 0;
 }
 
-.about {
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 14px;
   margin-top: 6px;
+}
+
+.guide-button {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-color: rgba(0, 101, 111, 0.35);
+  text-underline-offset: 3px;
+}
+
+.guide-button:hover {
+  color: #004f57;
+  text-decoration-color: currentColor;
+}
+
+.guide-button:focus-visible {
+  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.about {
+  margin: 0;
+}
+
+.about[open] {
+  flex-basis: 100%;
 }
 
 .about summary {
@@ -373,8 +406,7 @@ input:focus-visible,
   }
 
   .language-switch,
-  .theme-switch,
-  .guide-switch {
+  .theme-switch {
     max-width: 100%;
   }
 
@@ -492,23 +524,20 @@ input:focus-visible,
   }
 
   :root[data-theme="dark"] .language-switch,
-  :root[data-theme="dark"] .theme-switch,
-  :root[data-theme="dark"] .guide-switch {
+  :root[data-theme="dark"] .theme-switch {
     border-color: var(--dm-line-strong);
     background: var(--dm-surface);
     color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .language-switch:hover,
-  :root[data-theme="dark"] .theme-switch:hover,
-  :root[data-theme="dark"] .guide-switch:hover {
+  :root[data-theme="dark"] .theme-switch:hover {
     border-color: #5f949c;
     background: var(--dm-raised);
   }
 
   :root[data-theme="dark"] .language-switch:focus-visible,
-  :root[data-theme="dark"] .theme-switch:focus-visible,
-  :root[data-theme="dark"] .guide-switch:focus-visible {
+  :root[data-theme="dark"] .theme-switch:focus-visible {
     outline-color: var(--dm-focus);
   }
 
@@ -519,8 +548,22 @@ input:focus-visible,
   }
 
   :root[data-theme="dark"] .source-note a,
-  :root[data-theme="dark"] .about summary {
+  :root[data-theme="dark"] .about summary,
+  :root[data-theme="dark"] .guide-button {
     color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .guide-button {
+    text-decoration-color: rgba(95, 208, 216, 0.42);
+  }
+
+  :root[data-theme="dark"] .guide-button:hover {
+    color: #8be2e7;
+    text-decoration-color: currentColor;
+  }
+
+  :root[data-theme="dark"] .guide-button:focus-visible {
+    outline-color: var(--dm-focus);
   }
 
   :root[data-theme="dark"] .about dt {
