@@ -182,6 +182,19 @@ input:focus-visible,
   content: "";
 }
 
+.theme-switch-icon {
+  width: 0.9em;
+  text-align: center;
+}
+
+.theme-switch-icon::before {
+  content: "☀";
+}
+
+.theme-switch[data-theme-target="dark"] .theme-switch-icon::before {
+  content: "☾";
+}
+
 .language-switch:hover,
 .theme-switch:hover {
   background: #ffffff;
