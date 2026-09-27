@@ -2519,6 +2519,28 @@ test("200 percent text scaling keeps core mobile controls usable", async ({
   }
 });
 
+test("the current favourite does not waste first-screen space", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "foli-saved-stops-v1",
+      JSON.stringify({
+        favorites: [{ id: "164", name: "Kauppatori" }],
+        recents: [],
+      })
+    );
+  });
+  await page.goto("/?stop=164");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "Saved and recent stops" })
+  ).toHaveCount(0);
+});
+
 test("mobile long stop identity wraps without horizontal overflow", async ({
   page,
 }, testInfo) => {
