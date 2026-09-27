@@ -110,25 +110,25 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .heading,
-  .chipLabel > span {
+@media screen {
+  :root[data-theme="dark"] .heading,
+  :root[data-theme="dark"] .chipLabel > span {
     color: var(--dm-muted);
   }
 
-  .chip {
+  :root[data-theme="dark"] .chip {
     border-color: var(--dm-line);
     background: var(--dm-surface);
     color: var(--dm-text);
     box-shadow: 0 4px 14px var(--dm-shadow);
   }
 
-  .chip:hover {
+  :root[data-theme="dark"] .chip:hover {
     border-color: #5f949c;
     background: var(--dm-raised);
   }
 
-  .chipIcon {
+  :root[data-theme="dark"] .chipIcon {
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }
