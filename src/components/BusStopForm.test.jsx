@@ -361,11 +361,13 @@ test("lists every stop that shares the exact name typed", () => {
   expect(screen.getAllByRole("option")).toHaveLength(8);
 });
 
-// Before a stop is open, "Find nearest stop" is right below the search.
-test("offers no second location button before a stop is open", () => {
+// The compact one-tap location action stays beside search even before a
+// board is open. "Near you" is the richer comparison view, not a substitute
+// for the fast search-row action.
+test("offers one-tap location before a stop is open", () => {
   render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
 
   expect(
-    screen.queryByRole("button", { name: "Use current location" })
-  ).not.toBeInTheDocument();
+    screen.getByRole("button", { name: "Use current location" })
+  ).toBeInTheDocument();
 });
