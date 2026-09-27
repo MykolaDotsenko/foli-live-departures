@@ -2519,6 +2519,42 @@ test("200 percent text scaling keeps core mobile controls usable", async ({
   }
 });
 
+test("a frequent passenger still sees a departure on a 360px phone", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 360, height: 640 });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "foli-saved-stops-v1",
+      JSON.stringify({
+        favorites: [
+          { id: "164", name: "Kauppatori" },
+          { id: "32", name: "Puistokatu" },
+        ],
+        recents: [],
+      })
+    );
+  });
+  await page.goto("/?stop=164");
+  await seedHome(page);
+
+  const shortcuts = page.getByRole("navigation", {
+    name: "Saved and recent stops",
+  });
+  await expect(shortcuts.getByText("Puistokatu")).toBeVisible();
+  await expect(shortcuts.getByText("Kauppatori")).toHaveCount(0);
+
+  const firstDeparture = page.locator("tbody tr").first();
+  await expect(firstDeparture).toBeVisible();
+  const { top, viewportHeight } = await firstDeparture.evaluate((row) => ({
+    top: row.getBoundingClientRect().top,
+    viewportHeight: window.innerHeight,
+  }));
+  expect(top).toBeLessThan(viewportHeight);
+});
+
 test("the current favourite does not waste first-screen space", async ({
   page,
 }, testInfo) => {
