@@ -48,13 +48,13 @@ body {
     linear-gradient(135deg, #005e67 0%, #007985 55%, #00656f 100%);
   color: #ffffff;
 }
-.card { display: grid; grid-template-columns: 1fr 390px; gap: 56px; height: 100%; padding: 64px 72px; }
+.card { display: grid; grid-template-columns: 1fr 346px; gap: 56px; height: 100%; padding: 64px 72px; }
 .copy { display: flex; flex-direction: column; justify-content: center; }
 .brand { display: flex; align-items: center; gap: 16px; font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
 .brand svg { width: 56px; height: 56px; border-radius: 13px; box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18); }
-h1 { margin-top: 36px; font-size: 72px; font-weight: 900; line-height: 1.02; letter-spacing: -0.045em; }
-.lede { margin-top: 24px; max-width: 30ch; color: #d9f3f5; font-size: 28px; font-weight: 600; line-height: 1.35; }
-.lede-fi { margin-top: 12px; max-width: 34ch; color: #b6e6ea; font-size: 22px; font-weight: 600; line-height: 1.35; }
+h1 { margin-top: 36px; font-size: 48px; font-weight: 900; line-height: 1.02; letter-spacing: -0.045em; }
+.lede { margin-top: 24px; max-width: 34ch; color: #d9f3f5; font-size: 24px; font-weight: 600; line-height: 1.35; }
+.lede-fi { margin-top: 12px; max-width: 40ch; color: #b6e6ea; font-size: 18px; font-weight: 600; line-height: 1.35; }
 .fine { margin-top: auto; color: #a9dce0; font-size: 20px; font-weight: 600; }
 .panel {
   align-self: center; padding: 30px 30px 32px; border: 4px solid #e7b74b; border-radius: 30px;
@@ -62,19 +62,19 @@ h1 { margin-top: 36px; font-size: 72px; font-weight: 900; line-height: 1.02; let
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.35);
 }
 .eyebrow { color: #8ee7ee; font-size: 17px; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; }
-.title { margin-top: 6px; font-size: 38px; font-weight: 900; letter-spacing: -0.03em; }
+.title { margin-top: 6px; font-size: 30px; font-weight: 900; letter-spacing: -0.03em; }
 .label { margin-top: 22px; color: #93abb1; font-size: 18px; font-weight: 600; }
-.stop { font-size: 50px; font-weight: 900; letter-spacing: -0.045em; line-height: 1.05; }
-.instruction { margin-top: 22px; padding: 16px 18px; border-radius: 16px; background: #e7b74b; color: #1b1300; font-size: 31px; font-weight: 900; line-height: 1.18; }
+.stop { font-size: 40px; font-weight: 900; letter-spacing: -0.045em; line-height: 1.05; }
+.instruction { margin-top: 22px; padding: 16px 18px; border-radius: 16px; background: #e7b74b; color: #1b1300; font-size: 25px; font-weight: 900; line-height: 1.18; }
 .meta { margin-top: 18px; color: #b9ccd0; font-size: 20px; font-weight: 700; }
 </style></head>
 <body><div class="card">
   <div class="copy">
-    <div class="brand">${icon.replace("<svg ", '<svg aria-hidden="true" ')}Föli departures</div>
-    <h1>Know when to press STOP.</h1>
-    <p class="lede">Live Turku bus times, service updates, and an alert before your stop.</p>
-    <p class="lede-fi" lang="fi">Turun bussien lähtöajat ja muistutus, kun pitää painaa STOP.</p>
-    <p class="fine">Free · No account · No ads · Not an official Föli app</p>
+    <div class="brand">${icon.replace("<svg ", '<svg aria-hidden="true" ')}Turku Departures</div>
+    <h1>Know what leaves next.<br>Know when to press STOP.</h1>
+    <p class="lede">Live bus times, disruptions and get-off alerts for Turku.</p>
+    <p class="lede-fi" lang="fi">Reaaliaikaiset bussiajat, häiriöt ja pysäkkihälytykset.</p>
+    <p class="fine">Independent · Privacy-first · No account · No ads</p>
   </div>
   <div class="panel">
     <div class="eyebrow">Next stop</div>
