@@ -344,6 +344,13 @@
   }
 }
 
+@media (max-height: 520px) and (pointer: coarse) {
+  .locateButton,
+  .walkLink {
+    min-height: 44px;
+  }
+}
+
 /* Dark theme: tokens in App.css. */
 @media screen {
   :root[data-theme="dark"] .wrapper {
