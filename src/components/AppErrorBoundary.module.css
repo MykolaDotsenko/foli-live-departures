@@ -72,26 +72,26 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .shell {
+@media screen {
+  :root[data-theme="dark"] .shell {
     color: var(--dm-text);
   }
 
-  .card {
+  :root[data-theme="dark"] .card {
     border-color: var(--dm-line);
     background: var(--dm-surface);
     box-shadow: 0 12px 30px var(--dm-shadow);
   }
 
-  .kicker {
+  :root[data-theme="dark"] .kicker {
     color: var(--dm-accent);
   }
 
-  .card p {
+  :root[data-theme="dark"] .card p {
     color: var(--dm-muted);
   }
 
-  .card button:focus-visible {
+  :root[data-theme="dark"] .card button:focus-visible {
     outline-color: var(--dm-focus);
   }
 }
