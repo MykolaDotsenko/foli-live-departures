@@ -585,7 +585,12 @@
   }
 
   .stopName {
+    overflow: visible;
     font-size: 1.15rem;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
 
   .stopMeta {
