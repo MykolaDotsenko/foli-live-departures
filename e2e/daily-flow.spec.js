@@ -1854,6 +1854,19 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     dialog.getByRole("heading", { name: "Watch for disruptions" })
   ).toHaveCount(0);
 
+  const quickHeader = dialog.locator("header");
+  const quickBackground = await quickHeader.evaluate(
+    (element) => globalThis.getComputedStyle(element).backgroundImage
+  );
+  expect(quickBackground).toContain("turku-onboarding");
+  expect(quickBackground).toContain("linear-gradient");
+
+  const quickResults = await new AxeBuilder({ page })
+    .include('[role="dialog"][aria-labelledby="app-guide-title"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(quickResults.violations).toEqual([]);
+
   await dialog.getByRole("button", { name: "See full guide" }).click();
 
   await expect(
@@ -1865,6 +1878,11 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
   await expect(
     dialog.getByRole("heading", { name: "Save familiar places" })
   ).toBeVisible();
+
+  const fullBackground = await dialog.locator("header").evaluate(
+    (element) => globalThis.getComputedStyle(element).backgroundImage
+  );
+  expect(fullBackground).toBe("none");
 
   const results = await new AxeBuilder({ page })
     .include('[role="dialog"][aria-labelledby="app-guide-title"]')
