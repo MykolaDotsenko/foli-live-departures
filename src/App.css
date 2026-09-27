@@ -353,6 +353,26 @@ input:focus-visible,
     margin-top: 9px;
   }
 
+  /* Preferences may become much wider under browser text scaling. Let the
+     header reflow instead of creating horizontal page scroll. */
+  .eyebrow-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .header-controls {
+    max-width: 100%;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .language-switch,
+  .theme-switch {
+    max-width: 100%;
+  }
+
   /* Kept on a phone: the person who does not know what "Föli" means is
      most likely to be holding one, standing at a stop in a strange city. */
   .eyebrow {
@@ -401,9 +421,8 @@ input:focus-visible,
 }
 
 
-/* Dark theme, following the phone's own setting. At night a white page
-   on a dark bus glared, while only Ride Mode was dark. Everything here is
-   an override inside this query, so the light theme is unchanged.
+/* Dark theme. The phone setting chooses the initial preference; the visible
+   theme control can then override it and persist that explicit choice.
    The palette keeps every text pair at 5:1 or better on its surface.
    Route badge colours are the provider's and stay as they are. */
 @media screen {
