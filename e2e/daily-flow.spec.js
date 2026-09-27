@@ -488,7 +488,7 @@ test.beforeEach(async ({ page }) => {
   await mockFoli(page);
 });
 
-test("bare URL starts without a default stop, and location only fills the search field", async ({
+test("bare URL keeps one-tap location beside search and only fills the field", async ({
   page,
   context,
 }, testInfo) => {
@@ -505,25 +505,22 @@ test("bare URL starts without a default stop, and location only fills the search
   await page.goto("/");
 
   const input = page.getByRole("combobox", { name: "Find your stop" });
+  const locate = page.getByRole("button", { name: "Use current location" });
   await expect(input).toHaveValue("");
+  await expect(locate).toBeVisible();
+  await expect(page.getByRole("button", { name: "Find nearest stop" })).toBeVisible();
   await expect(page).not.toHaveURL(/stop=/);
   await expect(
     page.locator('section[aria-labelledby="departures-title"]')
   ).toHaveCount(0);
-  // One way to use location on a first visit: Near you, right below.
-  await expect(
-    page.getByRole("button", { name: "Use current location" })
-  ).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Find nearest stop" })).toBeVisible();
 
-  // With a board open, the search field has its own shortcut.
-  await page.goto("/?stop=4");
-  await page
-    .getByRole("button", { name: "Use current location" })
-    .click();
+  // The compact control is the fast path: it fills a confident nearby stop
+  // without unexpectedly navigating. The larger Near you card remains the
+  // comparison view when the passenger wants alternatives.
+  await locate.click();
 
   await expect(input).toHaveValue("Kauppatori");
-  await expect(page).toHaveURL(/stop=4/);
+  await expect(page).not.toHaveURL(/stop=/);
 
   await page.getByRole("button", { name: "Show departures" }).click();
 
@@ -2739,6 +2736,46 @@ test("stop search advertises the mobile search keyboard action", async ({
   const search = page.getByRole("combobox", { name: "Find your stop" });
   await expect(search).toHaveAttribute("inputmode", "search");
   await expect(search).toHaveAttribute("enterkeyhint", "search");
+});
+
+test("first-visit search row keeps location and Show inside the card", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  for (const viewport of [
+    { width: 360, height: 640 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+
+    const input = page.getByRole("combobox", { name: "Find your stop" });
+    const locate = page.getByRole("button", { name: "Use current location" });
+    const show = page.getByRole("button", { name: "Show departures" });
+
+    await expect(input).toBeVisible();
+    await expect(locate).toBeVisible();
+    await expect(show).toBeVisible();
+
+    const inputBox = await input.boundingBox();
+    const locateBox = await locate.boundingBox();
+    const showBox = await show.boundingBox();
+
+    expect(inputBox).not.toBeNull();
+    expect(locateBox).not.toBeNull();
+    expect(showBox).not.toBeNull();
+
+    expect(inputBox.x + inputBox.width).toBeLessThanOrEqual(locateBox.x);
+    expect(locateBox.x + locateBox.width).toBeLessThanOrEqual(showBox.x);
+    expect(showBox.x + showBox.width).toBeLessThanOrEqual(viewport.width + 1);
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  }
 });
 
 test("mobile viewport matrix keeps core journey controls inside the screen", async ({
