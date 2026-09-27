@@ -99,6 +99,7 @@
   color: #ffffff;
   font-size: clamp(1.3rem, 4vw, 1.8rem);
   letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
 }
 
 .health {
@@ -145,6 +146,8 @@
   font-size: clamp(1.7rem, 6vw, 2.6rem);
   line-height: 1.05;
   letter-spacing: -0.045em;
+  hyphens: auto;
+  overflow-wrap: anywhere;
 }
 
 .target small {
