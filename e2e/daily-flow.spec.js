@@ -1819,6 +1819,47 @@ test("the theme switch overrides the phone theme and persists", async ({ page })
   );
 });
 
+test("the footer guide explains the app without taking over the main screen", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const header = page.locator("header");
+  await expect(
+    header.getByRole("button", { name: "How to use" })
+  ).toHaveCount(0);
+
+  const guide = page
+    .locator("footer")
+    .getByRole("button", { name: "How to use" });
+  await expect(guide).toBeVisible();
+  await guide.click();
+
+  const dialog = page.getByRole("dialog", {
+    name: "How to use Föli departures",
+  });
+  await expect(dialog).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Find your stop" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Use Get-off Alert" })
+  ).toBeVisible();
+  await expect(
+    dialog.getByRole("heading", { name: "Save familiar places" })
+  ).toBeVisible();
+
+  const results = await new AxeBuilder({ page })
+    .include(dialog)
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(guide).toBeFocused();
+});
+
 // A Finnish phone got an English page, whatever else it had going for it:
 // localization scored lowest of everything in the pre-release review.
 test.describe("on a Finnish phone", () => {
