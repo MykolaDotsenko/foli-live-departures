@@ -1,0 +1,33 @@
+name: Product feedback
+description: Suggest an improvement or tell us what was confusing or useful.
+title: "[Feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Feedback is most useful when it describes the travel task you were trying to complete.
+
+        Please do not include private addresses, exact GPS history or other unnecessary personal information.
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to do?
+      placeholder: e.g. I was checking the next bus home after work.
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would make that easier?
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often do you use Föli?
+      options:
+        - Daily
+        - A few times a week
+        - Occasionally
+        - First time / visitor
+        - Prefer not to say
