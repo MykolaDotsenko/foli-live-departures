@@ -102,28 +102,28 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .toggle {
+@media screen {
+  :root[data-theme="dark"] .toggle {
     color: var(--dm-accent);
   }
 
-  .toggle:focus-visible {
+  :root[data-theme="dark"] .toggle:focus-visible {
     outline-color: var(--dm-focus);
   }
 
-  .panel {
+  :root[data-theme="dark"] .panel {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
   }
 
-  .kicker,
-  .status,
-  .more,
-  .list li small {
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .status,
+  :root[data-theme="dark"] .more,
+  :root[data-theme="dark"] .list li small {
     color: var(--dm-muted);
   }
 
-  .list li {
+  :root[data-theme="dark"] .list li {
     color: var(--dm-soft);
   }
 }
