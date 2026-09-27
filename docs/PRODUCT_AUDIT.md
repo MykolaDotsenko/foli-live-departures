@@ -1,6 +1,6 @@
 # Product audit
 
-**Updated:** 2026-09-26
+**Updated:** 2026-09-27
 **Scope:** what a passenger meets on the screen, how far the app can be trusted, how useful it is, and how it presents itself before a public release.
 
 ## How it was scored
@@ -94,6 +94,9 @@ These came out of the verification round and are not yet re-scored.
 **Trust and first impressions**
 - About & privacy and the README say what data.foli.fi is asked (stops and buses), when location is used (on request, and during a ride while Follow my location is on), and that Google Maps may use the phone's location once it opens.
 - The install-sheet and README screenshots show a morning at 08:10, not 01:00. The ride screenshot sits over the board of the stop being got off at.
+- Final public identity is **Turku Departures** across the app header, browser titles, PWA install surface, README and social sharing. Föli remains the data/provider reference rather than the product name.
+- The footer now names the maker and exposes direct contact, problem-reporting and source-code links without hiding accountability inside About & privacy.
+- CI has a branding consistency gate so the retired public names cannot silently return.
 
 ## Still open
 
@@ -104,14 +107,16 @@ These came out of the verification round and are not yet re-scored.
 - There is no install hint on iPhone outside ride setup.
 - MISSED ends the alert for good; it does not come back if the bus turns out to be earlier on its route.
 
-**Owner decisions**
-1. **One product name.** Five are in use: "Föli departures" (header), "Föli Live Departures" (README), two page and manifest titles, and "Turku Föli" on the home screen. "Turku Föli" reads as the operator's own app, so Föli's written no-objection is worth having first.
-2. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
-3. **Who makes it, and a contact address.** About says only who does not make it. GitHub issues are the only channel.
-4. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
-5. **The Android app ID** `fi.turku.*` uses the City's namespace.
-6. **Swedish.**
-7. **GitHub description and topics.**
+**Owner decisions still open**
+1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
+2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
+3. **The Android app ID** `fi.turku.*` uses the City's namespace.
+4. **Swedish.**
+5. **GitHub description and topics.**
+
+**Closed owner decisions**
+- **One product name:** Turku Departures.
+- **Maker and contact:** Mykola Dotsenko is named; direct contact, problem reporting and source-code links are visible in the footer.
 
 ## Known limitations
 
