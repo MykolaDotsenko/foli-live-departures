@@ -37,6 +37,51 @@
   align-items: start;
 }
 
+.quickHeader {
+  min-height: 210px;
+  margin: -22px -22px 18px;
+  padding: 28px 22px 22px;
+  align-items: end;
+  border-radius: 21px 21px 16px 16px;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 20, 24, 0.18) 0%,
+      rgba(5, 20, 24, 0.42) 45%,
+      rgba(5, 20, 24, 0.9) 100%
+    ),
+    url("../assets/turku-onboarding.webp") center 51% / cover no-repeat;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.quickHeader .kicker,
+.quickHeader h2,
+.quickHeader .intro {
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.quickHeader .intro {
+  max-width: 48ch;
+}
+
+.quickHeader .closeIcon {
+  align-self: start;
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgba(8, 25, 29, 0.56);
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+}
+
+.quickHeader .closeIcon:hover {
+  background: rgba(8, 25, 29, 0.78);
+}
+
+.quickHeader .closeIcon:focus-visible {
+  outline-color: rgba(255, 255, 255, 0.92);
+}
+
 .kicker {
   margin: 0 0 5px;
   color: #007985;
@@ -265,6 +310,23 @@
   color: var(--dm-accent);
 }
 
+:root[data-theme="dark"] .quickHeader {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(2, 12, 15, 0.28) 0%,
+      rgba(2, 12, 15, 0.56) 46%,
+      rgba(2, 12, 15, 0.94) 100%
+    ),
+    url("../assets/turku-onboarding.webp") center 51% / cover no-repeat;
+}
+
+:root[data-theme="dark"] .quickHeader .kicker,
+:root[data-theme="dark"] .quickHeader h2,
+:root[data-theme="dark"] .quickHeader .intro {
+  color: #ffffff;
+}
+
 :root[data-theme="dark"] .header h2,
 :root[data-theme="dark"] .quickStep h3,
 :root[data-theme="dark"] .quickTip strong,
@@ -352,6 +414,19 @@
     gap: 10px;
   }
 
+  .quickHeader {
+    min-height: 170px;
+    margin: -17px -17px 14px;
+    padding: 20px 17px 17px;
+    border-radius: 19px 19px 14px 14px;
+    background-position: center 50%;
+  }
+
+  .quickHeader .intro {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
   .quickSteps {
     grid-template-columns: 1fr;
     margin-top: 16px;
@@ -403,6 +478,19 @@
 }
 
 @media (forced-colors: active) {
+  .quickHeader {
+    background-image: none;
+    background-color: Canvas;
+  }
+
+  .quickHeader .kicker,
+  .quickHeader h2,
+  .quickHeader .intro,
+  .quickHeader .closeIcon {
+    color: CanvasText;
+    text-shadow: none;
+  }
+
   .dialog,
   .quickStep,
   .step,
