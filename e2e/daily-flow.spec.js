@@ -2823,10 +2823,33 @@ test("320px dark mode with 200 percent text still reflows without horizontal scr
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
 
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth
-  );
-  expect(overflow).toBeLessThanOrEqual(1);
+  const overflowState = await page.evaluate(() => {
+    const overflow = document.documentElement.scrollWidth - window.innerWidth;
+    const offenders = [...document.querySelectorAll("body *")]
+      .map((element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className:
+            typeof element.className === "string" ? element.className : "",
+          text: (element.textContent || "").trim().replace(/\\s+/g, " ").slice(0, 80),
+          left: Math.round(rect.left),
+          right: Math.round(rect.right),
+          width: Math.round(rect.width),
+        };
+      })
+      .filter(
+        ({ left, right, width }) =>
+          width > 0 && (left < -1 || right > window.innerWidth + 1)
+      )
+      .slice(0, 20);
+    return { overflow, offenders };
+  });
+  expect(
+    overflowState.overflow,
+    JSON.stringify(overflowState.offenders, null, 2)
+  ).toBeLessThanOrEqual(1);
 
   for (const locator of [
     page.getByRole("combobox", { name: "Find your stop" }),
