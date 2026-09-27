@@ -16,7 +16,8 @@
     "preview": "vite preview",
     "verify:pwa": "node scripts/verify-pwa.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
-    "verify:api-reference": "node scripts/verify-foli-api-reference.mjs"
+    "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
+    "verify:brand": "node scripts/verify-branding.mjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
