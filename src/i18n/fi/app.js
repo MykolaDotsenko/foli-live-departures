@@ -1,11 +1,11 @@
 // The app's frame: header, title, footer and About.
 export default {
-  "Turku bus departures · Föli live times":
-    "Turun bussilähdöt · Fölin ajat reaaliajassa",
-  // The name stays as the header shows it.
-  "{name} ({id}) · Föli departures": "{name} ({id}) · Föli departures",
-  "Find your stop, then tap Get-off alert on your bus: we’ll tell you when to press STOP.":
-    "Etsi pysäkkisi ja napauta bussisi kohdalla Pysäkkihälytys, niin kerromme, kun on aika painaa STOP-nappia.",
+  "Turku Departures · Live bus times & get-off alerts":
+    "Turku Departures · Reaaliaikaiset bussiajat ja pysäkkihälytys",
+  // The product name stays the same in every language.
+  "{name} ({id}) · Turku Departures": "{name} ({id}) · Turku Departures",
+  "Live bus times, disruptions and get-off alerts for Turku.":
+    "Turun bussien reaaliaikaiset ajat, häiriöt ja pysäkkihälytykset.",
   Online: "Yhteys toimii",
   "Offline mode": "Ei yhteyttä",
   Dark: "Tumma",
@@ -14,12 +14,18 @@ export default {
   "Use light theme": "Käytä vaaleaa teemaa",
   "Choose a bus stop": "Valitse bussipysäkki",
   "Stop {id}": "Pysäkki {id}",
-  "Unofficial app · Data: Turku region public transport":
-    "Epävirallinen sovellus · Tiedot: Turun seudun joukkoliikenne",
+  "Independent app · Data: Föli open data":
+    "Itsenäinen sovellus · Tiedot: Fölin avoin data",
+  "Built by": "Tekijä:",
+  "Project links": "Projektin linkit",
+  Contact: "Ota yhteyttä",
+  "Contact the maker by email": "Ota yhteyttä tekijään sähköpostitse",
+  "Report a problem": "Ilmoita ongelmasta",
+  "Source code": "Lähdekoodi",
   "About & privacy": "Tietoa ja tietosuoja",
   "Who makes it": "Kuka sovelluksen tekee",
-  "An unofficial app, not made by or affiliated with Föli (Turku region public transport) or the City of Turku. For tickets and official journey planning, use Föli’s own services.":
-    "Epävirallinen sovellus. Sen tekijä ei ole Föli (Turun seudun joukkoliikenne) eikä Turun kaupunki, eikä se liity niihin. Lippuja ja virallista reittiopasta varten käytä Fölin omia palveluja.",
+  "Turku Departures is an independent project by Mykola Dotsenko. It uses Föli open data but is not made by or affiliated with Föli or the City of Turku. For tickets and official journey planning, use Föli’s own services.":
+    "Turku Departures on Mykola Dotsenkon itsenäinen projekti. Se käyttää Fölin avointa dataa, mutta Föli tai Turun kaupunki ei tee sovellusta eikä se liity niihin. Lippuja ja virallista reittiopasta varten käytä Fölin omia palveluja.",
   "Föli’s website": "Fölin verkkosivut",
   "Where the times come from": "Mistä ajat tulevat",
   "Föli open data at data.foli.fi, under CC BY 4.0, as processed by this app. Live times are estimates from the buses and can change.":
@@ -32,7 +38,6 @@ export default {
     "Sovelluksen jakaa GitHub Pages, joka näkee IP-osoitteesi. Jokainen hakemasi pysäkki, jokainen bussi, jonka pysäkit avaat, sekä matkan aikana pysäkki, jolla jäät pois, ja sitä edeltävä pysäkki haetaan osoitteesta data.foli.fi, joka näkee IP-osoitteesi ja sen, mitä haettiin. Sijaintiasi käytetään pysäkin etsimiseen, kun pyydät, ja matkan aikana, kun Seuraa sijaintiani on päällä. Se pysyy puhelimessa eikä sitä tallenneta. Google Maps avautuu vain, kun napautat reittilinkkiä: se saa valitsemasi pysäkin ja voi sitten käyttää sijaintiasi reitin laskemiseen.",
   "What there is not": "Mitä ei ole",
   "No account, no ads, no analytics.": "Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.",
-  "Feedback and source code:": "Palaute ja lähdekoodi:",
   "How to use": "Käyttöohje",
   "Start here": "Aloita tästä",
   "Full guide": "Koko ohje",
@@ -54,7 +59,7 @@ export default {
     "Koko ohje kertoo myös häiriöistä, offline-toiminnasta ja tallennetuista paikoista.",
   "See full guide": "Näytä koko ohje",
   "Quick start": "Pika-aloitus",
-  "How to use Föli departures": "Näin käytät Föli departures -sovellusta",
+  "How to use Turku Departures": "Näin käytät Turku Departures -sovellusta",
   "Close guide": "Sulje ohje",
   "Search by stop name or number, use a favourite, or find nearby stops.":
     "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai etsi lähellä olevia pysäkkejä.",
