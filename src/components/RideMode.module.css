@@ -355,6 +355,17 @@
   }
 }
 
+@media (max-height: 520px) and (pointer: coarse) {
+  /* A phone in landscape is wide enough to miss the width breakpoint but
+     too short for a sticky ride panel. Let the page scroll the whole panel
+     so its controls can always be reached. */
+  .panel {
+    position: relative;
+    top: auto;
+    scroll-margin-top: 8px;
+  }
+}
+
 /* Beside the title on a small phone, the badge wrapped to two lines and
    squeezed the title to three. It goes under the eyebrow, on one line, and
    the title gets the full width. */
