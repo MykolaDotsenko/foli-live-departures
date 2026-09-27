@@ -34,10 +34,27 @@ export default {
   "No account, no ads, no analytics.": "Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.",
   "Feedback and source code:": "Palaute ja lähdekoodi:",
   "How to use": "Käyttöohje",
-  "Quick guide": "Pikaohje",
+  "Start here": "Aloita tästä",
+  "Full guide": "Koko ohje",
+  "Three things to know": "Kolme asiaa alkuun",
+  "Find a stop, check the next bus, then use Get-off Alert if you want help during the ride.":
+    "Etsi pysäkki, tarkista seuraava bussi ja käytä Pysäkkihälytystä, jos haluat apua matkan aikana.",
+  "The full guide explains departures, disruptions, Get-off Alert and saved places.":
+    "Koko ohje kertoo lähdöistä, häiriöistä, Pysäkkihälytyksestä ja tallennetuista paikoista.",
+  "Find a stop": "Etsi pysäkki",
+  "Search by name or number, or use Nearby stops.":
+    "Hae nimellä tai numerolla tai käytä Lähelläsi-pysäkkejä.",
+  "Check the next bus": "Tarkista seuraava bussi",
+  "Open departures and check whether the time is live or scheduled.":
+    "Avaa lähdöt ja tarkista, onko aika reaaliaikainen vai aikataulun mukainen.",
+  "Tap Get-off alert on your bus and choose where you want to get off.":
+    "Napauta bussisi kohdalla Pysäkkihälytys ja valitse pysäkki, jolla haluat jäädä pois.",
+  "That is enough to get started.": "Näillä pääset alkuun.",
+  "The full guide also covers disruptions, offline behaviour and saved places.":
+    "Koko ohje kertoo myös häiriöistä, offline-toiminnasta ja tallennetuista paikoista.",
+  "See full guide": "Näytä koko ohje",
+  "Quick start": "Pika-aloitus",
   "How to use Föli departures": "Näin käytät Föli departures -sovellusta",
-  "Start with a stop. The app then helps you understand departures, disruptions and when to press STOP.":
-    "Aloita pysäkistä. Sovellus auttaa sitten ymmärtämään lähdöt, häiriöt ja sen, milloin STOP-nappia pitää painaa.",
   "Close guide": "Sulje ohje",
   "Search by stop name or number, use a favourite, or find nearby stops.":
     "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai etsi lähellä olevia pysäkkejä.",
