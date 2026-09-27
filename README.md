@@ -1,4 +1,4 @@
-# Föli Live Departures
+# Turku Departures
 
 ![CI](https://github.com/MykolaDotsenko/foli-live-departures/actions/workflows/ci.yml/badge.svg)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
@@ -6,16 +6,19 @@
 ![Accessibility](https://img.shields.io/badge/accessibility-WCAG%20tested-0A7F5A)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**A privacy-first transit companion for Turku that turns uncertain public-transport data into clear passenger actions.**
+**Live bus times, disruptions & get-off alerts for Turku — privacy-first, no account, no ads.**
 
-> **Know what leaves next. See disruptions before they matter. Get an alert when it is time to press STOP.**
+> **Know what leaves next. Know when to press STOP.**
 
-[**Open the live app →**](https://mykoladotsenko.github.io/foli-live-departures/)
+[**Open Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/)
+· [Brand guide](docs/BRAND_GUIDE.md)
 · [Product positioning](docs/PRODUCT_POSITIONING.md)
 · [Product audit](docs/PRODUCT_AUDIT.md)
 · [Ride Mode design](docs/RIDE_MODE_SPEC.md)
+· [Contact](mailto:docnikolaj1990@gmail.com?subject=Turku%20Departures%20feedback)
+· [Report a problem](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
 
-> Independent project using Föli open data. Not made by or affiliated with Föli or the City of Turku.
+> Independent project by **Mykola Dotsenko** using Föli open data. Not made by or affiliated with Föli or the City of Turku.
 
 <p align="center">
   <img
@@ -48,7 +51,7 @@ A normal timetable works when everything goes right. Real passengers also need a
 - they are worried about missing their stop;
 - they need a simple way to get home.
 
-**Föli Live Departures is built for those moments of uncertainty.**
+**Turku Departures is built for those moments of uncertainty.**
 
 It does not try to look more certain than its data. When evidence weakens, the interface degrades explicitly instead of presenting stale information as truth.
 
@@ -110,7 +113,7 @@ Official journey planners are good at finding routes. This project focuses on a 
 | Timetable | Planned service | Live / stale / scheduled / unknown states |
 | Journey planner | Route from A to B | Assistance during the actual ride |
 | Map app | Navigation | Transit-specific stop order and STOP timing |
-| Föli Live Departures | Passenger reassurance | Realtime context + disruption + Get-off Alert + recovery |
+| Turku Departures | Passenger reassurance | Realtime context + disruption + Get-off Alert + recovery |
 
 The differentiator is the **decision layer between provider data and the passenger**.
 
