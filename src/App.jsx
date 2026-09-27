@@ -26,6 +26,9 @@ import { buildRouteIndexes } from "./utils/routes";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
 import { realStopName } from "./utils/stopNames";
 
+const PRODUCT_NAME = "Turku Departures";
+const MAKER_NAME = "Mykola Dotsenko";
+
 
 function stopFromLocation() {
   const stopFromUrl = new URLSearchParams(window.location.search).get("stop");
@@ -318,7 +321,7 @@ function App() {
             </div>
             {/* The name stays English in either interface, and is read so. */}
             <p className="brand" lang="en">
-              Turku Departures
+              {PRODUCT_NAME}
             </p>
             <p
               className="context"
@@ -504,7 +507,7 @@ function App() {
               target="_blank"
               rel="noreferrer"
             >
-              Mykola Dotsenko
+              {MAKER_NAME}
             </a>
           </span>
           <nav className="project-links" aria-label={t("Project links")}>
