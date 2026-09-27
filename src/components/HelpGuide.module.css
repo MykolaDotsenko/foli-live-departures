@@ -6,8 +6,9 @@
   place-items: center;
   padding:
     max(16px, env(safe-area-inset-top, 0px))
-    16px
-    max(16px, env(safe-area-inset-bottom, 0px));
+    max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
   background: rgba(8, 22, 26, 0.58);
@@ -471,6 +472,31 @@
   .primary,
   .secondary {
     flex: 1 1 10rem;
+  }
+
+  :root[data-theme="dark"] .actions {
+    border-top-color: var(--dm-line);
+    background: var(--dm-surface);
+  }
+}
+
+@media (max-height: 520px) and (pointer: coarse) {
+  .quickHeader {
+    min-height: 150px;
+  }
+
+  .actions {
+    position: sticky;
+    bottom: -22px;
+    z-index: 2;
+    margin: 14px -22px -22px;
+    padding:
+      12px
+      max(22px, env(safe-area-inset-right, 0px))
+      max(12px, env(safe-area-inset-bottom, 0px))
+      max(22px, env(safe-area-inset-left, 0px));
+    border-top: 1px solid #dce8ea;
+    background: #ffffff;
   }
 
   :root[data-theme="dark"] .actions {
