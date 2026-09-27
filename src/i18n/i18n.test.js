@@ -193,9 +193,11 @@ test("no component names a control in literal English", () => {
 
 test("the page's own title is the phrase the app translates", () => {
   const html = readFileSync(path.resolve(SRC, "../index.html"), "utf8");
-  const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
+  const title = html
+    .match(/<title>([^<]+)<\/title>/)?.[1]
+    ?.replaceAll("&amp;", "&");
 
-  expect(title).toBe("Turku bus departures · Föli live times");
+  expect(title).toBe("Turku Departures · Live bus times & get-off alerts");
 });
 
 test("follows the first language the phone lists that the app speaks", () => {
