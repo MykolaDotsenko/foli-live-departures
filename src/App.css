@@ -156,7 +156,8 @@ input:focus-visible,
 }
 
 .language-switch,
-.theme-switch {
+.theme-switch,
+.guide-switch {
   position: relative;
   display: inline-flex;
   flex: 0 0 auto;
@@ -176,7 +177,8 @@ input:focus-visible,
 }
 
 .language-switch::after,
-.theme-switch::after {
+.theme-switch::after,
+.guide-switch::after {
   position: absolute;
   inset: -10px -6px;
   content: "";
@@ -196,13 +198,15 @@ input:focus-visible,
 }
 
 .language-switch:hover,
-.theme-switch:hover {
+.theme-switch:hover,
+.guide-switch:hover {
   background: #ffffff;
   border-color: #7fb0b6;
 }
 
 .language-switch:focus-visible,
-.theme-switch:focus-visible {
+.theme-switch:focus-visible,
+.guide-switch:focus-visible {
   outline: 3px solid rgba(0, 121, 133, 0.28);
   outline-offset: 2px;
 }
@@ -369,7 +373,8 @@ input:focus-visible,
   }
 
   .language-switch,
-  .theme-switch {
+  .theme-switch,
+  .guide-switch {
     max-width: 100%;
   }
 
@@ -487,20 +492,23 @@ input:focus-visible,
   }
 
   :root[data-theme="dark"] .language-switch,
-  :root[data-theme="dark"] .theme-switch {
+  :root[data-theme="dark"] .theme-switch,
+  :root[data-theme="dark"] .guide-switch {
     border-color: var(--dm-line-strong);
     background: var(--dm-surface);
     color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .language-switch:hover,
-  :root[data-theme="dark"] .theme-switch:hover {
+  :root[data-theme="dark"] .theme-switch:hover,
+  :root[data-theme="dark"] .guide-switch:hover {
     border-color: #5f949c;
     background: var(--dm-raised);
   }
 
   :root[data-theme="dark"] .language-switch:focus-visible,
-  :root[data-theme="dark"] .theme-switch:focus-visible {
+  :root[data-theme="dark"] .theme-switch:focus-visible,
+  :root[data-theme="dark"] .guide-switch:focus-visible {
     outline-color: var(--dm-focus);
   }
 
