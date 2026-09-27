@@ -93,6 +93,14 @@ Avoid:
 
 ## Visual identity
 
+The canonical social / README artwork is:
+
+- `docs/assets/turku-departures-social-card.jpg` — repository and README source;
+- `public/social-card.jpg` — production/Open Graph copy;
+- `scripts/build-social-card.mjs` — reproducible generator for both files.
+
+The artwork belongs in brand, README and sharing surfaces. It is intentionally **not** placed inside the operational departures or Ride Mode UI, where it would compete with time-critical passenger information.
+
 The existing visual system remains the brand system:
 
 - primary teal: **#007985**;
