@@ -128,7 +128,7 @@ export default function HelpGuide() {
                 >
                   {view === "quick"
                     ? t("Three things to know")
-                    : t("How to use Föli departures")}
+                    : t("How to use Turku Departures")}
                 </h2>
                 <p id="app-guide-intro" className={styles.intro}>
                   {view === "quick"
