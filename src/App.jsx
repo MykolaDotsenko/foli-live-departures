@@ -243,11 +243,11 @@ function App() {
   useEffect(() => {
     // The page's own title in index.html is this same phrase.
     document.title = stopId
-      ? t("{name} ({id}) · Föli departures", {
+      ? t("{name} ({id}) · Turku Departures", {
           name: displayStopName || t("Stop {id}", { id: stopId }),
           id: stopId,
         })
-      : t("Turku bus departures · Föli live times");
+      : t("Turku Departures · Live bus times & get-off alerts");
   }, [displayStopName, language, stopId]);
 
   const selectStop = (nextStopId) => {
@@ -318,7 +318,7 @@ function App() {
             </div>
             {/* The name stays English in either interface, and is read so. */}
             <p className="brand" lang="en">
-              Föli departures
+              Turku Departures
             </p>
             <p
               className="context"
@@ -326,9 +326,7 @@ function App() {
                 placesById.size === 0 && (firstVisit || !stopId) ? "true" : "false"
               }
             >
-              {t(
-                "Find your stop, then tap Get-off alert on your bus: we’ll tell you when to press STOP."
-              )}
+              {t("Live bus times, disruptions and get-off alerts for Turku.")}
             </p>
           </div>
         </div>
@@ -484,7 +482,7 @@ function App() {
 
       <footer className="source-note">
         <p className="source-line">
-          {t("Unofficial app · Data: Turku region public transport")} ·{" "}
+          {t("Independent app · Data: Föli open data")} ·{" "}
           <a href="https://data.foli.fi/" target="_blank" rel="noreferrer">
             data.foli.fi
           </a>{" "}
@@ -498,6 +496,41 @@ function App() {
           </a>
         </p>
 
+        <div className="maker-row">
+          <span>
+            {t("Built by")}{" "}
+            <a
+              href="https://github.com/MykolaDotsenko"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Mykola Dotsenko
+            </a>
+          </span>
+          <nav className="project-links" aria-label={t("Project links")}>
+            <a
+              href="mailto:docnikolaj1990@gmail.com?subject=Turku%20Departures%20feedback"
+              aria-label={t("Contact the maker by email")}
+            >
+              {t("Contact")}
+            </a>
+            <a
+              href="https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("Report a problem")}
+            </a>
+            <a
+              href="https://github.com/MykolaDotsenko/foli-live-departures"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("Source code")}
+            </a>
+          </nav>
+        </div>
+
         {/* Trust needs one place that says who makes this, what stays on
             the phone and what leaves it. The facts were spread over a
             dozen fine-print lines, and a one-line disclaimer was all a
@@ -510,7 +543,7 @@ function App() {
             <dt>{t("Who makes it")}</dt>
             <dd>
               {t(
-                "An unofficial app, not made by or affiliated with Föli (Turku region public transport) or the City of Turku. For tickets and official journey planning, use Föli’s own services."
+                "Turku Departures is an independent project by Mykola Dotsenko. It uses Föli open data but is not made by or affiliated with Föli or the City of Turku. For tickets and official journey planning, use Föli’s own services."
               )}{" "}
               {/* It is a companion to the official services, not a stand-in
                   for them, so it points the way. */}
@@ -539,16 +572,6 @@ function App() {
             <dt>{t("What there is not")}</dt>
             <dd>{t("No account, no ads, no analytics.")}</dd>
           </dl>
-          <p>
-            {t("Feedback and source code:")}{" "}
-            <a
-              href="https://github.com/MykolaDotsenko/foli-live-departures/issues"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-          </p>
           </details>
         </div>
       </footer>
