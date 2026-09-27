@@ -1950,7 +1950,7 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
   await dialog.getByRole("button", { name: "See full guide" }).click();
 
   await expect(
-    page.getByRole("dialog", { name: "How to use Föli departures" })
+    page.getByRole("dialog", { name: "How to use Turku Departures" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Watch for disruptions" })
@@ -1985,7 +1985,7 @@ test.describe("on a Finnish phone", () => {
   // taken out first; STOP in capitals is the button's own label in Finnish.
   const ENGLISH_WORDS =
     /\b(?:[Tt]he|[Aa]nd|[Yy]ou|[Yy]our|[Ss]tops?|[Dd]epartures?|[Ll]oading|[Rr]efresh|[Nn]ext|[Hh]ome|[Ll]ive|[Uu]pdates?|[Aa]lert|[Rr]ide|[Nn]ear|[Ss]how|[Ff]ind|[Ss]earch|[Ss]aved|[Pp]laces|[Ww]ork|[Ss]chool|[Ll]ate|[Ee]arly|[Ss]cheduled|[Tt]imetable|[Dd]river|[Bb]ackup)\b/g;
-  const ALLOWED = ["Föli departures", "In English", "Google Maps", "CC BY 4.0", "GitHub", "data.foli.fi"];
+  const ALLOWED = ["Turku Departures", "Mykola Dotsenko", "In English", "Google Maps", "CC BY 4.0", "GitHub", "data.foli.fi"];
 
   async function englishLeftOnScreen(page) {
     let text = await page.locator("body").innerText();
@@ -2242,18 +2242,31 @@ test("each stop gets its own tab title, and the app says who makes it", async ({
 
   await page.goto("/");
   const defaultTitle = await page.title();
-  expect(defaultTitle).toContain("Föli");
+  expect(defaultTitle).toContain("Turku Departures");
 
   await page.goto("/?stop=164");
-  await expect(page).toHaveTitle("Kauppatori (164) · Föli departures");
+  await expect(page).toHaveTitle("Kauppatori (164) · Turku Departures");
 
   const about = page.locator("details.about");
   await about.getByText("About & privacy").click();
-  await expect(about.getByText(/not made by or affiliated with Föli/)).toBeVisible();
-  await expect(about.getByText("No account, no ads, no analytics.")).toBeVisible();
   await expect(
-    about.getByRole("link", { name: "GitHub" })
-  ).toHaveAttribute("href", /github\.com\/MykolaDotsenko\/foli-live-departures/);
+    about.getByText(/independent project by Mykola Dotsenko/)
+  ).toBeVisible();
+  await expect(about.getByText("No account, no ads, no analytics.")).toBeVisible();
+
+  await expect(page.locator(".brand")).toHaveText("Turku Departures");
+  await expect(page.getByRole("link", { name: "Contact the maker by email" })).toHaveAttribute(
+    "href",
+    /^mailto:/
+  );
+  await expect(page.getByRole("link", { name: "Report a problem" })).toHaveAttribute(
+    "href",
+    /issues\/new\?template=bug_report\.yml/
+  );
+  await expect(page.getByRole("link", { name: "Source code" })).toHaveAttribute(
+    "href",
+    /github\.com\/MykolaDotsenko\/foli-live-departures/
+  );
 
   // With no stop on screen the page goes back to its own title. (A bare
   // address would now reopen Kauppatori, the stop last looked at.)
