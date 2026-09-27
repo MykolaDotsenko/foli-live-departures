@@ -34,6 +34,7 @@ export default {
   "No account, no ads, no analytics.": "Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.",
   "Feedback and source code:": "Palaute ja lähdekoodi:",
   Guide: "Ohje",
+  "How to use": "Käyttöohje",
   "Quick guide": "Pikaohje",
   "How to use Föli departures": "Näin käytät Föli departures -sovellusta",
   "Start with a stop. The app then helps you understand departures, disruptions and when to press STOP.":
