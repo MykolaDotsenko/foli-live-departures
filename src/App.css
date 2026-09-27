@@ -145,13 +145,25 @@ input:focus-visible,
   line-height: 1.5;
 }
 
-/* Small enough to share the eyebrow's line, with a thumb-sized hit area
-   around it, and in its own language (see LanguageSwitch.jsx). */
-.language-switch {
+/* Compact preferences live on the same line as Turku · Åbo so they do
+   not push departures below the first phone viewport. Their visual pills are
+   small, but each has an expanded 44px-equivalent pointer target. */
+.header-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.language-switch,
+.theme-switch {
   position: relative;
+  display: inline-flex;
   flex: 0 0 auto;
   min-height: 24px;
-  padding: 0 10px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 9px;
   border: 1px solid #b9d3d6;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.86);
@@ -163,18 +175,21 @@ input:focus-visible,
   cursor: pointer;
 }
 
-.language-switch::after {
+.language-switch::after,
+.theme-switch::after {
   position: absolute;
   inset: -10px -6px;
   content: "";
 }
 
-.language-switch:hover {
+.language-switch:hover,
+.theme-switch:hover {
   background: #ffffff;
   border-color: #7fb0b6;
 }
 
-.language-switch:focus-visible {
+.language-switch:focus-visible,
+.theme-switch:focus-visible {
   outline: 3px solid rgba(0, 121, 133, 0.28);
   outline-offset: 2px;
 }
@@ -439,18 +454,21 @@ input:focus-visible,
     color: var(--dm-muted);
   }
 
-  :root[data-theme="dark"] .language-switch {
+  :root[data-theme="dark"] .language-switch,
+  :root[data-theme="dark"] .theme-switch {
     border-color: var(--dm-line-strong);
     background: var(--dm-surface);
     color: var(--dm-accent);
   }
 
-  :root[data-theme="dark"] .language-switch:hover {
+  :root[data-theme="dark"] .language-switch:hover,
+  :root[data-theme="dark"] .theme-switch:hover {
     border-color: #5f949c;
     background: var(--dm-raised);
   }
 
-  :root[data-theme="dark"] .language-switch:focus-visible {
+  :root[data-theme="dark"] .language-switch:focus-visible,
+  :root[data-theme="dark"] .theme-switch:focus-visible {
     outline-color: var(--dm-focus);
   }
 
