@@ -1143,7 +1143,7 @@ test("a phone is told what the app is until it no longer needs telling", async (
 
   const intro = page.locator(".context");
   await expect(intro).toBeVisible();
-  await expect(intro).toContainText("we’ll tell you when to press STOP");
+  await expect(intro).toHaveText("Live bus times, disruptions and get-off alerts for Turku.");
 
   // These two sections are three bare rows and a lone button on a phone;
   // nothing else ever says what they are for.
