@@ -16,6 +16,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at top left, rgba(0, 121, 133, 0.09), transparent 34rem),
     #edf4f5;
@@ -38,7 +39,11 @@ input:focus-visible,
 .app-shell {
   width: min(960px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 30px 0 22px;
+  padding:
+    max(30px, env(safe-area-inset-top, 0px))
+    max(0px, calc(env(safe-area-inset-right, 0px) - 14px))
+    max(22px, env(safe-area-inset-bottom, 0px))
+    max(0px, calc(env(safe-area-inset-left, 0px) - 14px));
 }
 
 /* Only a grouping: on a phone its parts are laid out as if it were not
@@ -358,7 +363,11 @@ input:focus-visible,
 @media (max-width: 620px) {
   .app-shell {
     width: min(100% - 16px, 960px);
-    padding-top: 10px;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      max(0px, calc(env(safe-area-inset-right, 0px) - 8px))
+      max(22px, env(safe-area-inset-bottom, 0px))
+      max(0px, calc(env(safe-area-inset-left, 0px) - 8px));
   }
 
   .topbar {
