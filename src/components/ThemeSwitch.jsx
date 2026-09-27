@@ -15,9 +15,10 @@ export default function ThemeSwitch() {
       className="theme-switch"
       aria-label={action}
       title={action}
+      data-theme-target={nextTheme}
       onClick={toggleTheme}
     >
-      <span aria-hidden="true">{nextTheme === "dark" ? "☾" : "☀"}</span>
+      <span className="theme-switch-icon" aria-hidden="true" />
       <span>{label}</span>
     </button>
   );
