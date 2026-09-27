@@ -498,8 +498,8 @@
 
 /* On a dark page the dark panel had no edge in its calm stages (1.04:1).
    The stages' own borders still win: they are more specific. */
-@media screen and (prefers-color-scheme: dark) {
-  .panel {
+@media screen {
+  :root[data-theme="dark"] .panel {
     border-color: #3f7f86;
   }
 }
