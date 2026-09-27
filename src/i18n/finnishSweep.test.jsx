@@ -59,7 +59,7 @@ const ENGLISH_WORDS =
   /\b(?:[Tt]he|[Aa]nd|[Yy]ou|[Yy]our|[Ss]tops?|[Dd]epartures?|[Ll]oading|[Rr]efresh|[Nn]ext|[Hh]ome|[Ll]ive|[Uu]pdates?|[Aa]lert|[Rr]ide|[Nn]ear|[Ss]how|[Ff]ind|[Ss]earch|[Ss]aved|[Pp]laces|[Ww]ork|[Ss]chool|[Ll]ate|[Ee]arly|[Ss]cheduled|[Tt]imetable|[Dd]river|[Bb]ackup|[Cc]ancel(?:led)?|[Cc]lose|[Tt]ry)\b/g;
 
 // Names, which stay as they are in every language.
-const NAMES = ["Föli departures", "Google Maps", "CC BY 4.0", "data.foli.fi", "GitHub"];
+const NAMES = ["Turku Departures", "Google Maps", "CC BY 4.0", "data.foli.fi", "GitHub", "Mykola Dotsenko"];
 
 const SPOKEN_ATTRIBUTES = [
   "aria-label",
@@ -166,7 +166,7 @@ afterEach(() => {
 test("the sweep finds English, and leaves names and marked English alone", () => {
   render(
     <div>
-      <p>Kauppatori · Föli departures · Google Maps</p>
+      <p>Kauppatori · Turku Departures · Google Maps</p>
       <p lang="en">Could you help me get off at the right stop?</p>
       <button type="button" aria-label="Näytä lähdöt">
         Näytä
