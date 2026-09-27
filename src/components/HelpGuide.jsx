@@ -115,7 +115,7 @@ export default function HelpGuide() {
 
             <ol className={styles.steps}>
               <li className={styles.step}>
-                <span className={styles.number} aria-hidden="true">1</span>
+                <span className={styles.number} aria-hidden="true">{1}</span>
                 <div>
                   <h3>{t("Find your stop")}</h3>
                   <p>
@@ -127,7 +127,7 @@ export default function HelpGuide() {
               </li>
 
               <li className={styles.step}>
-                <span className={styles.number} aria-hidden="true">2</span>
+                <span className={styles.number} aria-hidden="true">{2}</span>
                 <div>
                   <h3>{t("Check what leaves next")}</h3>
                   <p>
@@ -139,7 +139,7 @@ export default function HelpGuide() {
               </li>
 
               <li className={styles.step}>
-                <span className={styles.number} aria-hidden="true">3</span>
+                <span className={styles.number} aria-hidden="true">{3}</span>
                 <div>
                   <h3>{t("Use Get-off Alert")}</h3>
                   <p>
@@ -151,7 +151,7 @@ export default function HelpGuide() {
               </li>
 
               <li className={styles.step}>
-                <span className={styles.number} aria-hidden="true">4</span>
+                <span className={styles.number} aria-hidden="true">{4}</span>
                 <div>
                   <h3>{t("Watch for disruptions")}</h3>
                   <p>
@@ -163,7 +163,7 @@ export default function HelpGuide() {
               </li>
 
               <li className={styles.step}>
-                <span className={styles.number} aria-hidden="true">5</span>
+                <span className={styles.number} aria-hidden="true">{5}</span>
                 <div>
                   <h3>{t("Save familiar places")}</h3>
                   <p>
