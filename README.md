@@ -573,6 +573,7 @@ docs/            product audit, API reference, ride spec and screenshots
 
 ## Documentation
 
+- **[Product positioning](docs/PRODUCT_POSITIONING.md)** — audience, alternatives, differentiated value, evidence and validation gaps
 - **[Product audit](docs/PRODUCT_AUDIT.md)** — current UX/product scorecards, fixed risks and open limitations
 - **[Ride Mode design](docs/RIDE_MODE_SPEC.md)** — state machine, evidence model and Phase 2 reliability boundary
 - **[Föli API engineering reference](docs/FOLI_API_REFERENCE.md)** — documented vs live-observed provider contracts
