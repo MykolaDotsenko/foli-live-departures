@@ -263,6 +263,27 @@ input:focus-visible,
   margin: 0;
 }
 
+.maker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 12px;
+  margin-top: 4px;
+}
+
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+}
+
+.project-links a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
 .footer-actions {
   display: flex;
   flex-wrap: wrap;
