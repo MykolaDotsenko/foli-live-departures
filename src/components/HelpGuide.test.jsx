@@ -36,7 +36,7 @@ test("starts with three essential actions before revealing the full guide", () =
   fireEvent.click(screen.getByRole("button", { name: "See full guide" }));
 
   expect(
-    screen.getByRole("dialog", { name: "How to use Föli departures" })
+    screen.getByRole("dialog", { name: "How to use Turku Departures" })
   ).toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: "Watch for disruptions" })
@@ -95,7 +95,7 @@ test("the quick start and full guide follow the selected interface language", ()
 
   expect(
     screen.getByRole("heading", {
-      name: "Näin käytät Föli departures -sovellusta",
+      name: "Näin käytät Turku Departures -sovellusta",
     })
   ).toBeInTheDocument();
   expect(
