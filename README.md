@@ -208,6 +208,20 @@ It explicitly supports scenarios involving:
 
 The current implementation is Turku-specific, but the product pattern — **realtime + disruption context + conservative ride assistance + recovery** — can be adapted to other transit systems exposing compatible realtime and GTFS data.
 
+## Why not just use a timetable or journey-planner app?
+
+Official journey planners and ticketing apps solve important jobs well. Föli Live Departures is positioned around a narrower problem: **what happens after a passenger already has a trip in mind but the situation becomes uncertain.**
+
+| Alternative | What it is good at | Gap this project explores |
+| --- | --- | --- |
+| Timetable / departure board | Showing planned service | Distinguishing live, stale, planned and unknown states when data quality changes |
+| Journey planner | Finding routes from A to B | Helping during the actual ride without requiring continuous map watching |
+| Map application | Navigation and route handoff | Transit-specific stop order, vehicle evidence and STOP timing |
+| Memory / asking someone | Familiar journeys and local knowledge | Repeatable recovery tools for unfamiliar, stressful or second-language situations |
+| This product | Passenger reassurance around a known trip | Realtime context + disruption relevance + Get-off Alert + recovery + privacy-first local state |
+
+The project deliberately **does not replace official ticketing or full journey planning**. Its value is the decision and reassurance layer around those services.
+
 ---
 
 <a id="why-it-is-different"></a>
@@ -274,6 +288,22 @@ Potential product directions include:
 - more resilient disruption and recovery flows.
 
 The architecture intentionally keeps these options open without requiring accounts or a heavy backend for the current product.
+
+## Evidence today vs. what still needs validation
+
+This repository separates **engineering evidence** from **market claims**.
+
+| Evidence available today | Still needs real-world validation |
+| --- | --- |
+| Deployed, installable PWA | Recurring passenger usage and retention |
+| 512 automated tests with coverage gates | Whether Get-off Alert materially reduces missed-stop anxiety at scale |
+| Chromium, Firefox, WebKit and mobile E2E | Extended on-bus field testing across routes, weather and phone models |
+| Real service-worker/offline QA | Demand outside the initial Turku use case |
+| axe accessibility gates and 200% text-scaling tests | Native-user accessibility studies |
+| Scheduled smoke tests against live Föli contracts | Product-market fit and any commercial model |
+| Explicit stale-data, GPS and browser-lifecycle failure handling | Guaranteed locked-phone alerts, which require the documented Web Push phase |
+
+That distinction is intentional: **the codebase demonstrates feasibility and reliability strongly; broader user value and business viability should be validated with real passenger behaviour, not inferred from test coverage.**
 
 ---
 
