@@ -2669,7 +2669,7 @@ test("mobile long stop identity wraps without horizontal overflow", async ({
   await page.goto("/?stop=164");
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
 
-  const stopName = page.getByRole("heading", { name: "Kauppatori" });
+  const stopName = page.locator("#departures-title");
   await stopName.evaluate((element) => {
     element.textContent =
       "Very long Turku city-centre interchange stop name";
