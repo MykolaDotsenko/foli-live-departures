@@ -98,7 +98,10 @@ async function atMorningCommute(page) {
   restoreClock = () => {
     Date.now = realNow;
   };
-  await page.clock.install({ time: Date.now() });
+  // Only Date is fixed. Real timers must keep running: Ride Mode polls the
+  // target stop on timers, and freezing them made the screenshot scenario
+  // intermittently miss its strongest "vehicle at stop" evidence.
+  await page.clock.setFixedTime(Date.now());
 }
 
 test.afterEach(() => {
