@@ -73,12 +73,12 @@ export default function HelpGuide() {
       <button
         ref={triggerRef}
         type="button"
-        className="guide-switch"
+        className="guide-button"
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
-        {t("Guide")}
+        {t("How to use")}
       </button>
 
       {open && (
