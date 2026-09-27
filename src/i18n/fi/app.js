@@ -33,6 +33,31 @@ export default {
   "What there is not": "Mitä ei ole",
   "No account, no ads, no analytics.": "Ei käyttäjätiliä, ei mainoksia, ei analytiikkaa.",
   "Feedback and source code:": "Palaute ja lähdekoodi:",
+  Guide: "Ohje",
+  "Quick guide": "Pikaohje",
+  "How to use Föli departures": "Näin käytät Föli departures -sovellusta",
+  "Start with a stop. The app then helps you understand departures, disruptions and when to press STOP.":
+    "Aloita pysäkistä. Sovellus auttaa sitten ymmärtämään lähdöt, häiriöt ja sen, milloin STOP-nappia pitää painaa.",
+  "Close guide": "Sulje ohje",
+  "Find your stop": "Etsi pysäkkisi",
+  "Search by stop name or number, use a favourite, or find nearby stops.":
+    "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai etsi lähellä olevia pysäkkejä.",
+  "Check what leaves next": "Katso, mikä lähtee seuraavaksi",
+  "Live departures are separated from timetable data, and stale information is marked instead of presented as live.":
+    "Reaaliaikaiset lähdöt erotetaan aikataulutiedoista, ja vanhentunut tieto merkitään sen sijaan, että sitä näytettäisiin reaaliaikaisena.",
+  "Use Get-off Alert": "Käytä Pysäkkihälytystä",
+  "Tap Get-off alert on your bus, choose where you want to get off, then keep the ride screen open. It tells you when to get ready, press STOP and get off.":
+    "Napauta bussisi kohdalla Pysäkkihälytys, valitse poistumispysäkki ja pidä matkanäkymä auki. Sovellus kertoo, milloin valmistautua, painaa STOP ja jäädä pois.",
+  "Watch for disruptions": "Seuraa liikennetiedotteita",
+  "Relevant service updates appear with the stop and routes you are using.":
+    "Sinua koskevat liikennetiedotteet näkyvät käyttämäsi pysäkin ja linjojen yhteydessä.",
+  "Save familiar places": "Tallenna tutut paikat",
+  "Save Home, School or Work as public stops. Get me Home, backup stops and the driver card can help when the normal trip goes wrong.":
+    "Tallenna Koti, Koulu tai Työ julkisina pysäkkeinä. Vie minut kotiin, varapysäkit ja kuljettajakortti auttavat, jos tavallinen matka ei onnistu.",
+  "Good to know": "Hyvä tietää",
+  "The app works without an account. Some saved information remains available offline, but live departures and directions still need a connection.":
+    "Sovellus toimii ilman käyttäjätiliä. Osa tallennetuista tiedoista toimii myös ilman verkkoyhteyttä, mutta reaaliaikaiset lähdöt ja reittiohjeet tarvitsevat yhteyden.",
+  "Got it": "Selvä",
 
   // Connection and error screens
   Offline: "Ei yhteyttä",
