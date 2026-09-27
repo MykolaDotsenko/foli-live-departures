@@ -417,106 +417,106 @@
 }
 
 /* Dark theme: tokens in App.css. Notices stay warm, emergencies stay red. */
-@media screen and (prefers-color-scheme: dark) {
-  .panel {
+@media screen {
+  :root[data-theme="dark"] .panel {
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     box-shadow: 0 8px 22px var(--dm-shadow);
   }
 
-  .emergencyPanel {
+  :root[data-theme="dark"] .emergencyPanel {
     border-color: var(--dm-danger-line);
     background: var(--dm-danger-surface);
   }
 
-  .headingRow,
-  .alert,
-  .moreButton {
+  :root[data-theme="dark"] .headingRow,
+  :root[data-theme="dark"] .alert,
+  :root[data-theme="dark"] .moreButton {
     border-color: var(--dm-warn-line);
   }
 
-  .emergencyPanel .headingRow {
+  :root[data-theme="dark"] .emergencyPanel .headingRow {
     border-bottom-color: var(--dm-danger-line);
   }
 
-  .kicker,
-  .heading,
-  .alert strong,
-  .alert p,
-  .details,
-  .details summary,
-  .alertMeta,
-  .mediaLink,
-  .disclosureIcon,
-  .moreButton,
-  .validity {
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .heading,
+  :root[data-theme="dark"] .alert strong,
+  :root[data-theme="dark"] .alert p,
+  :root[data-theme="dark"] .details,
+  :root[data-theme="dark"] .details summary,
+  :root[data-theme="dark"] .alertMeta,
+  :root[data-theme="dark"] .mediaLink,
+  :root[data-theme="dark"] .disclosureIcon,
+  :root[data-theme="dark"] .moreButton,
+  :root[data-theme="dark"] .validity {
     color: var(--dm-warn-text) !important;
   }
 
-  .emergencyPanel .kicker,
-  .cancellation strong,
-  .emergency strong {
+  :root[data-theme="dark"] .emergencyPanel .kicker,
+  :root[data-theme="dark"] .cancellation strong,
+  :root[data-theme="dark"] .emergency strong {
     color: var(--dm-danger-text) !important;
   }
 
-  .emergencyPanel .heading {
+  :root[data-theme="dark"] .emergencyPanel .heading {
     color: #ffe1db !important;
   }
 
-  .count,
-  .effectBadge {
+  :root[data-theme="dark"] .count,
+  :root[data-theme="dark"] .effectBadge {
     background: #4a3b17;
     color: var(--dm-warn-text);
   }
 
-  .emergencyPanel .count {
+  :root[data-theme="dark"] .emergencyPanel .count {
     background: var(--dm-danger-line);
     color: #ffe1db;
   }
 
-  .cancellation,
-  .emergency {
+  :root[data-theme="dark"] .cancellation,
+  :root[data-theme="dark"] .emergency {
     background: var(--dm-danger-surface);
     border-left-color: var(--dm-danger-text);
   }
 
-  .global {
+  :root[data-theme="dark"] .global {
     background: #231c10;
     border-left-color: #c9a45a;
   }
 
-  .unavailablePanel {
+  :root[data-theme="dark"] .unavailablePanel {
     border-color: var(--dm-line);
     background: var(--dm-surface);
   }
 
-  .unavailablePanel .kicker,
-  .unavailablePanel .heading {
+  :root[data-theme="dark"] .unavailablePanel .kicker,
+  :root[data-theme="dark"] .unavailablePanel .heading {
     color: var(--dm-soft) !important;
   }
 
-  .feedStatus {
+  :root[data-theme="dark"] .feedStatus {
     border-bottom-color: var(--dm-line);
     background: var(--dm-sunken);
     color: var(--dm-muted);
   }
 
-  .moreButton {
+  :root[data-theme="dark"] .moreButton {
     background: #211a0e;
   }
 
-  .moreButton:hover {
+  :root[data-theme="dark"] .moreButton:hover {
     background: #30260f;
   }
 
-  .moreButton:focus-visible,
-  .mediaLink:focus-visible,
-  .alertSummary:focus-visible {
+  :root[data-theme="dark"] .moreButton:focus-visible,
+  :root[data-theme="dark"] .mediaLink:focus-visible,
+  :root[data-theme="dark"] .alertSummary:focus-visible {
     outline-color: rgba(242, 212, 143, 0.5);
   }
 
   /* A map with a transparent edge stood in a white frame on a dark page. */
-  .mediaLink img {
+  :root[data-theme="dark"] .mediaLink img {
     border-color: var(--dm-warn-line);
     background: var(--dm-raised);
   }
@@ -604,12 +604,12 @@
   }
 }
 
-@media screen and (max-width: 620px) and (prefers-color-scheme: dark) {
-  .phoneToggle {
+@media screen and (max-width: 620px) {
+  :root[data-theme="dark"] .phoneToggle {
     color: var(--dm-warn-text);
   }
 
-  .panel[data-folded="false"] .phoneToggle {
+  :root[data-theme="dark"] .panel[data-folded="false"] .phoneToggle {
     border-bottom-color: var(--dm-warn-line);
   }
 }
