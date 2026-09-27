@@ -292,63 +292,63 @@
 }
 
 /* Dark theme: tokens in App.css. */
-@media screen and (prefers-color-scheme: dark) {
-  .panel {
+@media screen {
+  :root[data-theme="dark"] .panel {
     border-color: var(--dm-line-strong);
     background: linear-gradient(145deg, #15343a, var(--dm-surface));
     color: var(--dm-text);
   }
 
-  .kicker {
+  :root[data-theme="dark"] .kicker {
     color: var(--dm-accent) !important;
   }
 
-  .heading p,
-  .close,
-  .status,
-  .stopCopy small,
-  .options small,
-  .departureContext,
-  .optionNote {
+  :root[data-theme="dark"] .heading p,
+  :root[data-theme="dark"] .close,
+  :root[data-theme="dark"] .status,
+  :root[data-theme="dark"] .stopCopy small,
+  :root[data-theme="dark"] .options small,
+  :root[data-theme="dark"] .departureContext,
+  :root[data-theme="dark"] .optionNote {
     color: var(--dm-muted);
   }
 
-  .stopOption {
+  :root[data-theme="dark"] .stopOption {
     border-color: var(--dm-line-strong);
     background: var(--dm-sunken);
   }
 
-  .stopOption[data-selected="true"] {
+  :root[data-theme="dark"] .stopOption[data-selected="true"] {
     border-color: var(--dm-accent);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--dm-accent) 25%, transparent);
   }
 
-  .stopOption input,
-  .options input {
+  :root[data-theme="dark"] .stopOption input,
+  :root[data-theme="dark"] .options input {
     accent-color: var(--dm-accent);
   }
 
-  .placeBadge {
+  :root[data-theme="dark"] .placeBadge {
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }
 
-  .options label {
+  :root[data-theme="dark"] .options label {
     background: var(--dm-sunken);
   }
 
-  .safetyNote {
+  :root[data-theme="dark"] .safetyNote {
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
   }
 
-  .startError {
+  :root[data-theme="dark"] .startError {
     color: var(--dm-danger-text);
   }
 }
 
-@media screen and (prefers-color-scheme: dark) and (max-width: 640px) {
-  .actions {
+@media screen and (max-width: 640px) {
+  :root[data-theme="dark"] .actions {
     border-top-color: var(--dm-line);
     background: var(--dm-surface);
     box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45);
