@@ -416,6 +416,18 @@
   }
 }
 
+@media (max-height: 520px) and (pointer: coarse) {
+  .moreButton,
+  .details summary {
+    min-height: 44px;
+  }
+
+  .details summary {
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
 /* Dark theme: tokens in App.css. Notices stay warm, emergencies stay red. */
 @media screen {
   :root[data-theme="dark"] .panel {
