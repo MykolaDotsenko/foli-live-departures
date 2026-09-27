@@ -1875,6 +1875,33 @@ test("the theme switch overrides the phone theme and persists", async ({ page })
   );
 });
 
+test("landscape phone keeps onboarding actions in reach", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile");
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.goto("/");
+  await page
+    .locator("footer")
+    .getByRole("button", { name: "How to use" })
+    .click();
+
+  const fullGuide = page.getByRole("button", { name: "See full guide" });
+  await expect(fullGuide).toBeInViewport();
+  const box = await fullGuide.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.height).toBeGreaterThanOrEqual(44);
+
+  await fullGuide.click();
+  await expect(page.getByRole("button", { name: "Got it" })).toBeInViewport();
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 test("the footer guide starts simple and reveals the full guide on demand", async ({
   page,
 }) => {
