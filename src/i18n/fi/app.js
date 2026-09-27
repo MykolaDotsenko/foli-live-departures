@@ -8,6 +8,10 @@ export default {
     "Etsi pysäkkisi ja napauta bussisi kohdalla Pysäkkihälytys, niin kerromme, kun on aika painaa STOP-nappia.",
   Online: "Yhteys toimii",
   "Offline mode": "Ei yhteyttä",
+  Dark: "Tumma",
+  Light: "Vaalea",
+  "Use dark theme": "Käytä tummaa teemaa",
+  "Use light theme": "Käytä vaaleaa teemaa",
   "Choose a bus stop": "Valitse bussipysäkki",
   "Stop {id}": "Pysäkki {id}",
   "Unofficial app · Data: Turku region public transport":
