@@ -726,70 +726,70 @@
   }
 }
 
-@media screen and (prefers-color-scheme: dark) {
-  .wrapper {
+@media screen {
+  :root[data-theme="dark"] .wrapper {
     border-color: var(--dm-line-strong);
     background: linear-gradient(135deg, var(--dm-accent-surface), var(--dm-surface));
     box-shadow: 0 10px 28px var(--dm-shadow);
   }
 
-  .kicker,
-  .backupActions a,
-  .backupActions button {
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .backupActions a,
+  :root[data-theme="dark"] .backupActions button {
     color: var(--dm-accent);
   }
 
-  .copy h2,
-  .destination strong,
-  .backupRow strong {
+  :root[data-theme="dark"] .copy h2,
+  :root[data-theme="dark"] .destination strong,
+  :root[data-theme="dark"] .backupRow strong {
     color: var(--dm-text);
   }
 
-  .description,
-  .status,
-  .backupHint,
-  .destination small,
-  .backupRow small {
+  :root[data-theme="dark"] .description,
+  :root[data-theme="dark"] .status,
+  :root[data-theme="dark"] .backupHint,
+  :root[data-theme="dark"] .destination small,
+  :root[data-theme="dark"] .backupRow small {
     color: var(--dm-muted);
   }
 
-  .routeNote,
-  .backups,
-  .batteryBackup {
+  :root[data-theme="dark"] .routeNote,
+  :root[data-theme="dark"] .backups,
+  :root[data-theme="dark"] .batteryBackup {
     border-top-color: var(--dm-line);
     color: var(--dm-soft);
   }
 
-  .destination,
-  .backupRow {
+  :root[data-theme="dark"] .destination,
+  :root[data-theme="dark"] .backupRow {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
   }
 
-  .homeIcon {
+  :root[data-theme="dark"] .homeIcon {
     background: #1d4a50;
     color: var(--dm-accent);
   }
 
-  .secondaryAction,
-  .printButton,
-  .mobileOptionsToggle {
+  :root[data-theme="dark"] .secondaryAction,
+  :root[data-theme="dark"] .printButton,
+  :root[data-theme="dark"] .mobileOptionsToggle {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);
     color: var(--dm-text);
   }
 
-  .secondaryAction:hover,
-  .printButton:hover {
+  :root[data-theme="dark"] .secondaryAction:hover,
+  :root[data-theme="dark"] .printButton:hover {
     background: var(--dm-accent-surface);
   }
 
-  .primaryAction:focus-visible,
-  .secondaryAction:focus-visible,
-  .backupActions a:focus-visible,
-  .backupActions button:focus-visible,
-  .printButton:focus-visible,
-  .mobileOptionsToggle:focus-visible {
+  :root[data-theme="dark"] .primaryAction:focus-visible,
+  :root[data-theme="dark"] .secondaryAction:focus-visible,
+  :root[data-theme="dark"] .backupActions a:focus-visible,
+  :root[data-theme="dark"] .backupActions button:focus-visible,
+  :root[data-theme="dark"] .printButton:focus-visible,
+  :root[data-theme="dark"] .mobileOptionsToggle:focus-visible {
     outline-color: var(--dm-focus);
   }
 }
