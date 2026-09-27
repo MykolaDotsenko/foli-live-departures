@@ -2557,6 +2557,7 @@ test("the mobile guide keeps both actions distinct on a 320px screen", async ({
 
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/");
+  await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
   await page
     .locator("footer")
     .getByRole("button", { name: "How to use" })
