@@ -5,6 +5,7 @@ import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import HomeRecovery from "./components/HomeRecovery";
 import LanguageSwitch from "./components/LanguageSwitch";
+import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
@@ -309,7 +310,10 @@ function App() {
               <p className="eyebrow">
                 <span lang="fi">Turku</span> · <span lang="sv">Åbo</span>
               </p>
-              <LanguageSwitch />
+              <div className="header-controls">
+                <ThemeSwitch />
+                <LanguageSwitch />
+              </div>
             </div>
             {/* The name stays English in either interface, and is read so. */}
             <p className="brand" lang="en">
