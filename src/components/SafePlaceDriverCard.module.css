@@ -7,8 +7,11 @@
   display: grid;
   grid-template-rows: 1fr auto;
   gap: 16px;
-  padding: max(20px, env(safe-area-inset-top, 0px)) 20px
-    max(20px, env(safe-area-inset-bottom, 0px));
+  padding:
+    max(20px, env(safe-area-inset-top, 0px))
+    max(20px, env(safe-area-inset-right, 0px))
+    max(20px, env(safe-area-inset-bottom, 0px))
+    max(20px, env(safe-area-inset-left, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
   background: #ffffff;
