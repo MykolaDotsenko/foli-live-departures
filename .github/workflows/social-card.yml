@@ -1,0 +1,53 @@
+name: Refresh social card
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "scripts/build-social-card.mjs"
+      - "public/foli-icon.svg"
+      - ".github/workflows/social-card.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: social-card-master
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Render share card
+        run: node scripts/build-social-card.mjs
+
+      - name: Commit refreshed card
+        run: |
+          if git diff --quiet -- public/social-card.jpg; then
+            echo "Social card already matches its source."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/social-card.jpg
+          git commit -m "chore: refresh Turku Departures social card"
+          git push
