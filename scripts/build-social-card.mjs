@@ -6,7 +6,7 @@
 import { copyFile } from "node:fs/promises";
 
 const PRODUCT_NAME = "Turku Departures";
-const SOURCE = "docs/assets/turku-departures-social-source.jpg";
+const SOURCE = "docs/assets/turku-departures-social-card.jpg";
 const DESTINATION = "public/social-card.jpg";
 
 await copyFile(SOURCE, DESTINATION);

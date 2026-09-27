@@ -18,6 +18,8 @@
 
 > Independent project by **Mykola Dotsenko** using Föli open data. Not made by or affiliated with Föli or the City of Turku.
 
+[![Turku Departures — Know what leaves next. Know when to press STOP.](docs/assets/turku-departures-social-card.jpg)](https://mykoladotsenko.github.io/foli-live-departures/)
+
 <p align="center">
   <img
     src="docs/assets/foli-mobile.png"
