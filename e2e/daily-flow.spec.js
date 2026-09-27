@@ -2741,6 +2741,126 @@ test("stop search advertises the mobile search keyboard action", async ({
   await expect(search).toHaveAttribute("enterkeyhint", "search");
 });
 
+test("mobile viewport matrix keeps core journey controls inside the screen", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 360, height: 640 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/?stop=164");
+    await seedHome(page);
+
+    const controls = [
+      page.getByRole("combobox", { name: "Find your stop" }),
+      page.getByRole("button", { name: "Show departures" }),
+      page.getByRole("button", { name: "Refresh", exact: true }),
+      page.getByRole("button", { name: "Save Kauppatori to favourites" }),
+      page.getByRole("button", { name: "Filter lines" }),
+      page.getByRole("button", { name: "Get-off alert" }).first(),
+    ];
+
+    for (const locator of controls) {
+      await expect(locator).toBeVisible();
+      const box = await locator.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width + 1);
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+  }
+});
+
+test("stop suggestions stay reachable when a mobile keyboard shrinks the viewport", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?stop=164");
+
+  const search = page.getByRole("combobox", { name: "Find your stop" });
+  await search.fill("Tur");
+  const option = page.getByRole("option", { name: /Turun linna/i });
+  await expect(option).toBeVisible();
+
+  // Approximate the dynamic viewport contraction produced by a software
+  // keyboard without depending on a particular mobile OS keyboard.
+  await page.setViewportSize({ width: 390, height: 500 });
+
+  const listbox = page.getByRole("listbox");
+  const box = await listbox.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(500);
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("320px dark mode with 200 percent text still reflows without horizontal scroll", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/?stop=164");
+  await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  for (const locator of [
+    page.getByRole("combobox", { name: "Find your stop" }),
+    page.getByRole("button", { name: "Show departures" }),
+    page.getByRole("button", { name: "Refresh", exact: true }),
+  ]) {
+    const box = await locator.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(321);
+  }
+});
+
+test("closing the guide restores focus to the footer trigger", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.goto("/");
+  const trigger = page
+    .locator("footer")
+    .getByRole("button", { name: "How to use" });
+  await trigger.focus();
+  await trigger.click();
+
+  await expect(page.getByRole("dialog", { name: "Three things to know" })).toBeVisible();
+  await page.getByRole("button", { name: "Close guide" }).click();
+
+  await expect(
+    page.getByRole("dialog", { name: "Three things to know" })
+  ).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
 test("captures the README's product screenshots", async ({ page }, testInfo) => {
   if (
     !["chromium-desktop", "webkit-mobile", "chromium-mobile"].includes(
