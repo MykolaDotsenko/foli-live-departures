@@ -337,6 +337,8 @@ function BusStopForm({
             onBlur={() => setFocused(false)}
             onKeyDown={handleKeyDown}
             autoComplete="off"
+            inputMode="search"
+            enterKeyHint="search"
             role="combobox"
             aria-autocomplete="list"
             aria-expanded={Boolean(showSuggestions)}
