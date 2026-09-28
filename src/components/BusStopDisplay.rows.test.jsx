@@ -37,7 +37,7 @@ function departure(overrides = {}) {
 const KAUPPATORI = { id: "164", name: "Kauppatori" };
 const TURUN_LINNA = { id: "4", name: "Turun linna" };
 
-function board(arrivals, stop = KAUPPATORI) {
+function board(arrivals, stop = KAUPPATORI, overrides = {}) {
   return (
     <BusStopDisplay
       stopId={stop.id}
@@ -58,7 +58,8 @@ function board(arrivals, stop = KAUPPATORI) {
       error={false}
       onRefresh={() => {}}
       placesById={new Map()}
-      onStartRide={() => {}}
+      activeRideTripRef={overrides.activeRideTripRef || ""}
+      onStartRide={overrides.onStartRide || (() => {})}
     />
   );
 }
@@ -165,6 +166,32 @@ test("a different departure taking the slot does not inherit an open setup", asy
   rerender(board([departure({ tripref: "trip-2" })]));
 
   expect(setupPanels()).toHaveLength(0);
+});
+
+test("replacing a different active get-off alert requires confirmation", async () => {
+  const onStartRide = vi.fn();
+  const confirm = vi.spyOn(globalThis, "confirm").mockReturnValue(false);
+
+  render(
+    board(
+      [departure({ lineref: "7", tripref: "trip-7" })],
+      KAUPPATORI,
+      { activeRideTripRef: "trip-1", onStartRide }
+    )
+  );
+
+  await openSetupAndChooseTurunLinna();
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+
+  expect(confirm).toHaveBeenCalledWith(
+    "Switch get-off alert to line 7? Your current alert will end."
+  );
+  expect(onStartRide).not.toHaveBeenCalled();
+
+  confirm.mockReturnValue(true);
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+
+  expect(onStartRide).toHaveBeenCalledTimes(1);
 });
 
 // A neighbouring stop can list the same trip under the same planned minute.
