@@ -284,6 +284,33 @@ test("asks whether the test alert was actually heard, and helps when it was not"
   expect(screen.queryByText(/Turn the media volume up/)).not.toBeInTheDocument();
 });
 
+test("resets sound confirmation when a new ride replaces the current session", () => {
+  const props = {
+    runtime: { trackingHealth: "live", etaSec: 900, remainingStops: 5 },
+    gps: { status: "off", distanceM: null, error: "" },
+    wakeLockState: "active",
+    onTestAlert: () => {},
+    onEndRide: () => {},
+    onOpenStop: () => {},
+  };
+
+  const { rerender } = render(
+    <RideMode session={session("boarded")} {...props} />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Yes" }));
+  expect(screen.queryByText("Did you hear the test alert?")).not.toBeInTheDocument();
+
+  rerender(
+    <RideMode
+      session={{ ...session("boarded"), id: "ride-2", tripRef: "trip-2" }}
+      {...props}
+    />
+  );
+
+  expect(screen.getByText("Did you hear the test alert?")).toBeInTheDocument();
+});
+
 // An iPhone has no vibration for a web page, and a notification needs both
 // the passenger's choice and the browser's permission. The fallback promised
 // both to everyone.
