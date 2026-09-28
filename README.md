@@ -3,43 +3,17 @@
 ![CI](https://github.com/MykolaDotsenko/foli-live-departures/actions/workflows/ci.yml/badge.svg)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8)
-![Accessibility](https://img.shields.io/badge/accessibility-WCAG%20tested-0A7F5A)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Live bus times, disruptions & get-off alerts for Turku — privacy-first, no account, no ads.**
+**Live departures, disruptions and get-off guidance for Turku — privacy-first, no account, no ads.**
 
-> **Know what leaves next. Know when to press STOP.**
+[**Open Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/) ·
+[Product audit](docs/PRODUCT_AUDIT.md) ·
+[Report a problem](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
 
-[**Open Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/)
-· [Brand guide](docs/BRAND_GUIDE.md)
-· [Product audit](docs/PRODUCT_AUDIT.md)
-· [Contact](mailto:docnikolaj1990@gmail.com?subject=Turku%20Departures%20feedback)
-· [Report a problem](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
+> Independent project using Föli open data. Not made by or affiliated with Föli or the City of Turku.
 
-> Independent project by **Mykola Dotsenko** using Föli open data. Not made by or affiliated with Föli or the City of Turku.
-
-[![Turku Departures — Know what leaves next. Know when to press STOP.](docs/assets/turku-departures-social-card.jpg)](https://mykoladotsenko.github.io/foli-live-departures/)
-
-## Product showcase
-
-<p align="center">
-  <img
-    src="docs/assets/turku-departures-showcase-1.webp"
-    alt="Turku Departures product showcase with Turku riverside, a Föli bus and the mobile experience"
-    width="49%"
-  >
-  <img
-    src="docs/assets/turku-departures-showcase-2.webp"
-    alt="Turku Departures product showcase with a phone, nearby stops and a get-off alert"
-    width="49%"
-  >
-</p>
-
-<p align="center">
-  <sub>Brand concept visuals. The live application screenshots below show the current production interface.</sub>
-</p>
-
-### Actual interface
+### Current interface
 
 <p align="center">
   <img
@@ -61,95 +35,78 @@
   >
 </p>
 
-## Why it exists
+## The problem
 
-A timetable is easy when everything goes right. Real passengers also need answers when:
+Transit data is easy when everything is fresh and the passenger already knows the route. Real use is messier:
 
-- the bus is delayed or realtime becomes stale;
-- a disruption changes the trip;
-- the stop or route is unfamiliar;
-- GPS or connectivity is unreliable;
-- they are worried about missing their stop;
-- they need a simple way to get home.
+- realtime can become stale without the provider being completely down;
+- GTFS trips can cross midnight or visit the same stop more than once;
+- GPS can be weak, delayed or off-route;
+- a passenger may need a useful fallback while offline;
+- scheduled and realtime departures must not look equally certain.
 
-**Turku Departures is a decision layer between transport data and the passenger.**
+Turku Departures keeps **live, scheduled, stale and unknown** states distinct instead of flattening them into one timestamp.
 
-It does not pretend uncertain data is certain. Live, scheduled, stale and unknown states are kept distinct.
+## What the app does
 
-## What users get
-
-| Need | Product response |
+| Passenger question | Product response |
 | --- | --- |
 | What leaves next? | Live + planned departures with explicit data state |
-| Is my trip disrupted? | Service alerts in the context of the stop |
-| Where is the closest useful stop? | One-tap location + nearby-stop comparison |
+| Is the trip disrupted? | Service alerts in stop context |
+| What stop is useful nearby? | Location + nearby-stop comparison |
 | When should I press STOP? | Get-off Alert using realtime, GTFS and optional GPS |
-| How do I get home? | Saved Home stop, backup stops and route handoff |
-| I am lost or stressed | Show-to-driver card and simple recovery actions |
-| The connection dropped | Installable PWA with honest offline fallback |
+| How do I get home? | Saved Home stop and fallback stops |
+| What if the connection drops? | Installable PWA with an honest offline state |
 
 ## Get-off Alert
 
-Choose a departure and the stop where you want to get off.
-
-The app can guide the passenger through:
-
-**get ready → press STOP → get off now**
-
-Ride Mode combines:
+Ride Mode combines three independent signals:
 
 1. **Föli SIRI realtime**;
-2. **exact GTFS trip and stop order**;
+2. **exact GTFS trip/stop order**;
 3. **optional on-device GPS matched to the trip shape**.
+
+The guidance progresses through:
+
+```text
+get ready → press STOP → get off now
+```
 
 Weak or off-route GPS is ignored. Timetable-only evidence can warn early, but it cannot trigger **Get off now**.
 
-Exact GTFS stop sequence is preserved, including loop routes that visit the same stop more than once.
+The exact GTFS stop sequence is preserved, including loop routes that visit the same stop multiple times.
 
-## Designed for real mobile use
+## Engineering edge cases
 
-The interface is tested for the situations that usually break transport apps:
+The code explicitly handles:
 
-- 320 / 360 / 390 / 430 px phone widths;
-- portrait and landscape;
-- 200% text scaling;
-- light and dark themes;
-- long Finnish and stop names;
-- touch targets and safe areas;
-- mobile keyboard contraction;
-- browser Back / Forward;
-- stale data, offline and provider failures.
+- responses arriving after the user switches stops;
+- cross-stop cache contamination;
+- stale realtime without a hard provider failure;
+- loop routes and repeated stops;
+- after-midnight GTFS times;
+- poor/off-route GPS;
+- stale vehicle positions;
+- blocked local storage;
+- service-worker deployment under a GitHub Pages subpath;
+- upstream Föli API contract drift.
 
-Core actions stay reachable without horizontal scrolling.
+These are the parts of the project I would discuss in a technical interview.
 
-## Privacy and trust
-
-- No account.
-- No ads.
-- No analytics.
-- Saved places use **public stop identities**, not street addresses.
-- Device coordinates are not persisted.
-- Optional ride GPS is processed on the device.
-- The maker, contact channel, source code and problem-reporting path are visible in the product.
-
-GitHub Pages and data.foli.fi still receive the network requests required to serve the app and transit data.
-
-## Engineering
-
-The infrastructure is intentionally small; the behaviour is not.
+## Architecture
 
 | Area | Technology |
 | --- | --- |
 | UI | React 18, CSS Modules |
 | Build | Vite 8 |
-| Data | Axios, Föli SIRI, GTFS, service alerts |
+| Transit data | Föli SIRI, GTFS, service alerts |
+| HTTP | Axios |
 | Local state | React hooks, Web Storage |
 | Browser APIs | Geolocation, History, Service Worker, Notifications, Wake Lock, Web Audio |
 | Testing | Vitest, Testing Library, Playwright, axe |
-| CI/CD | GitHub Actions + GitHub Pages |
-| Delivery | Installable local-first PWA |
+| Delivery | GitHub Actions + GitHub Pages, installable PWA |
 
-~~~text
+```text
 Föli SIRI + GTFS + Alerts
         │
         ▼
@@ -163,67 +120,41 @@ realtime · disruptions · places · connectivity · Ride Mode
         ▼
 Passenger UI
 departures · alerts · get-off guidance · recovery
-~~~
-
-The code explicitly handles:
-
-- responses arriving after a stop switch;
-- cross-stop cache contamination;
-- stale realtime without a hard provider failure;
-- loop routes and repeated stops;
-- after-midnight GTFS times;
-- poor or off-route GPS;
-- stale vehicle positions;
-- blocked local storage;
-- service-worker deployment under a subpath;
-- upstream Föli API contract drift.
+```
 
 ## Quality evidence
 
-Current verified release:
+The verification suite covers:
 
-- **518 automated unit/integration tests across 48 test files**
-- coverage: **85.78% statements / 79.62% branches / 88.61% functions / 88.84% lines**
-- Playwright on **Chromium, Firefox, mobile WebKit and mobile Chromium**
-- real service-worker PWA tests
-- axe checks for WCAG A/AA, WCAG 2.1 AA and WCAG 2.2 AA
-- mobile overflow, 200% text and touch-target regression tests
-- production bundle budget
-- live Föli API contract smoke tests
-- branding consistency gate
+- unit/integration tests with coverage reporting;
+- Chromium, Firefox, mobile WebKit and mobile Chromium journeys;
+- real service-worker/PWA behaviour;
+- axe accessibility checks;
+- 320–430 px mobile layouts and horizontal-overflow regression;
+- 200% text scaling and touch-target checks;
+- production bundle budget;
+- live Föli API contract smoke tests;
+- branding/reference consistency.
 
-CI verifies:
+CI follows the same path:
 
-~~~text
-lint → brand consistency → tests + coverage → API reference
-→ production build → PWA verification → bundle budget
+```text
+lint → brand/reference checks → tests + coverage
+→ production build → PWA + bundle verification
 → cross-browser E2E → accessibility
-~~~
+```
 
-## Release status
+## Privacy and limits
 
-The product is suitable for a **quiet public beta** and daily use for passengers who already know, or roughly know, their trip.
+- no account, ads or analytics;
+- saved places use public stop identities rather than street addresses;
+- device coordinates are not persisted;
+- ride GPS is processed on the device;
+- GitHub Pages and data.foli.fi receive the network requests needed to serve the application and transit data.
 
-The strongest current use case is:
+A browser can suspend a page in the background or on a locked phone, so Get-off Alert does **not** promise guaranteed lock-screen tracking. Reliable background alerts would require a backend/Web Push phase.
 
-> **I know where I am going. Tell me what is happening now and help me not miss my stop.**
-
-Before wider promotion, the highest-value validation work is:
-
-- real-bus field testing on iPhone and Android;
-- custom domain before acquiring many users;
-- native Finnish copy review;
-- Swedish UI;
-- backend + Web Push if lock-screen Get-off Alert reliability becomes a product requirement.
-
-## Honest boundaries
-
-- A browser may suspend an open page in the background or on a locked phone.
-- Get-off Alert therefore does **not** promise guaranteed lock-screen tracking.
-- Reliable background alerts require the documented backend + Web Push phase.
-- Föli vehicle coordinates are estimates, not raw GPS truth.
-- Turku Departures does not replace official ticketing or full journey planning.
-- The interface currently supports Finnish and English, not Swedish.
+Turku Departures is not a ticketing app and does not replace the official journey planner.
 
 ## Suomeksi
 
@@ -231,7 +162,7 @@ Before wider promotion, the highest-value validation work is:
 
 - reaaliaikaiset ja aikataulun mukaiset lähdöt erotetaan toisistaan;
 - Pysäkkihälytys auttaa valmistautumaan oikeaan aikaan;
-- Koti, koulu ja työ tallennetaan julkisina pysäkkeinä, ei osoitteina;
+- tallennetut paikat ovat julkisia pysäkkejä, eivät osoitteita;
 - sijaintia käytetään vain pyydettäessä tai aktiivisen Pysäkkihälytyksen aikana;
 - ei käyttäjätiliä, mainoksia tai analytiikkaa.
 
@@ -241,14 +172,14 @@ Before wider promotion, the highest-value validation work is:
 
 Requires Node.js 20.19+.
 
-~~~bash
+```bash
 npm ci
 npm run dev
-~~~
+```
 
 Full verification:
 
-~~~bash
+```bash
 npm run lint
 npm run verify:brand
 npm run test:coverage
@@ -257,19 +188,16 @@ npm run build
 npm run verify:pwa
 npm run verify:bundle
 npm run test:e2e
-~~~
+```
 
 ## Documentation
 
-- **[Brand guide](docs/BRAND_GUIDE.md)** — naming, messaging, voice and trust rules
-- **[Product positioning](docs/PRODUCT_POSITIONING.md)** — audience, alternatives and value
-- **[Product audit](docs/PRODUCT_AUDIT.md)** — UX findings, release gates and known gaps
-- **[Ride Mode design](docs/RIDE_MODE_SPEC.md)** — evidence model, state machine and Web Push phase
-- **[Föli API reference](docs/FOLI_API_REFERENCE.md)** — provider contracts and fallbacks
-- **[Localization notes](docs/LOCALIZATION.md)** — language architecture and review rules
+- [Product audit](docs/PRODUCT_AUDIT.md)
+- [Ride Mode design](docs/RIDE_MODE_SPEC.md)
+- [Föli API reference](docs/FOLI_API_REFERENCE.md)
+- [Localization notes](docs/LOCALIZATION.md)
+- [Brand guide](docs/BRAND_GUIDE.md)
 
-## Data attribution
+Transit/timetable data is maintained by Turku region public transport and distributed through data.foli.fi under **CC BY 4.0**.
 
-Transit and timetable data is maintained by Turku region public transport and distributed through data.foli.fi under **CC BY 4.0**.
-
-Application source code is available under the **MIT License**.
+Application source code is under the **MIT License**.
