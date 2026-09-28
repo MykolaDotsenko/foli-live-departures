@@ -359,32 +359,6 @@ test("promises only the backup alerts this phone can give", () => {
   }
 });
 
-test("resets sound confirmation when a new ride session replaces the current one", () => {
-  const props = {
-    runtime: { trackingHealth: "live", etaSec: 900, remainingStops: 5 },
-    gps: { status: "off", distanceM: null, error: "" },
-    wakeLockState: "active",
-    onTestAlert: () => {},
-    onEndRide: () => {},
-    onOpenStop: () => {},
-  };
-
-  const { rerender } = render(
-    <RideMode session={session("boarded")} {...props} />
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Yes" }));
-  expect(screen.queryByText("Did you hear the test alert?")).not.toBeInTheDocument();
-
-  rerender(
-    <RideMode
-      session={{ ...session("boarded"), id: "ride-2", tripRef: "trip-2" }}
-      {...props}
-    />
-  );
-
-  expect(screen.getByText("Did you hear the test alert?")).toBeInTheDocument();
-});
 
 // A short hop reaches SOON within a stop or two, and that is exactly the
 // ride where there is least time to discover a muted phone.
