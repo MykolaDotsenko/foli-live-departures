@@ -2934,6 +2934,96 @@ test("closing the guide restores focus to the footer trigger", async ({
   await expect(trigger).toBeFocused();
 });
 
+test("switching to another get-off alert asks before replacing the active ride", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.route(
+    "https://data.foli.fi/gtfs/v0/20260920-120000/stop_times/trip/trip-164-7",
+    async (route) => {
+      const at = gtfsClockAt(Math.floor(Date.now() / 1000) + 540);
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify([
+          {
+            stop_id: "164",
+            arrival_time: at(-60),
+            departure_time: at(0),
+            stop_sequence: 1,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: 1,
+            shape_dist_traveled: 0,
+          },
+          {
+            stop_id: "32",
+            arrival_time: at(300),
+            departure_time: at(300),
+            stop_sequence: 2,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: 0,
+            shape_dist_traveled: 900,
+          },
+          {
+            stop_id: "4",
+            arrival_time: at(840),
+            departure_time: at(840),
+            stop_sequence: 3,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: 1,
+            shape_dist_traveled: 3000,
+          },
+        ]),
+      });
+    }
+  );
+
+  await page.goto("/?stop=164");
+
+  await page.getByRole("button", { name: "Get-off alert" }).first().click();
+  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page
+    .getByRole("checkbox", { name: /Follow my location/i })
+    .uncheck();
+  await turnOffNotifications(page);
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
+
+  const ridePanel = page.locator('section[aria-labelledby="ride-mode-title"]');
+  await expect(ridePanel).toContainText("1");
+  await ridePanel.getByRole("button", { name: "Yes" }).click();
+  await expect(
+    ridePanel.getByRole("group", { name: "Alert sound check" })
+  ).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Get-off alert" }).first().click();
+  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page
+    .getByRole("checkbox", { name: /Follow my location/i })
+    .uncheck();
+  await turnOffNotifications(page);
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Switch get-off alert to line 7?");
+    await dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
+  await expect(ridePanel).toContainText("1");
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain("Switch get-off alert to line 7?");
+    await dialog.accept();
+  });
+  await page.getByRole("button", { name: "Start get-off alert" }).click();
+
+  await expect(ridePanel).toContainText("7");
+  await expect(
+    ridePanel.getByRole("group", { name: "Alert sound check" })
+  ).toBeVisible();
+});
+
 test("captures the README's product screenshots", async ({ page }, testInfo) => {
   if (
     !["chromium-desktop", "webkit-mobile", "chromium-mobile"].includes(
