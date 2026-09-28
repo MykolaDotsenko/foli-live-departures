@@ -144,6 +144,8 @@ lint → brand/reference checks → tests + coverage
 → cross-browser E2E → accessibility
 ```
 
+The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
+
 ## Privacy and limits
 
 - no account, ads or analytics;
