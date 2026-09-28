@@ -4,13 +4,13 @@ import { hasCoordinates } from "./geo";
 export const HIGH_ACCURACY_LOCATION_OPTIONS = {
   enableHighAccuracy: true,
   timeout: 8_000,
-  maximumAge: 30_000,
+  maximumAge: 0,
 };
 
 export const FALLBACK_LOCATION_OPTIONS = {
   enableHighAccuracy: false,
   timeout: 5_000,
-  maximumAge: 120_000,
+  maximumAge: 0,
 };
 
 function readPosition(geolocation, options) {
