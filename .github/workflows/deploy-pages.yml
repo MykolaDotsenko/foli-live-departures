@@ -4,7 +4,6 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,9 +17,8 @@ concurrency:
 jobs:
   build:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'master')
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'master'
     runs-on: ubuntu-latest
     env:
       VITE_BASE_PATH: /foli-live-departures/
@@ -28,7 +26,7 @@ jobs:
       - name: Checkout verified revision
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || 'master' }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v5
