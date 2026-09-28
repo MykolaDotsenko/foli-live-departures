@@ -271,6 +271,15 @@ export default function RideMode({
   // silently cancelled the alert the passenger was counting on. The first
   // tap asks for a second, for a few seconds.
   const [endArmedFor, setEndArmedFor] = useState("");
+
+  // A RideMode component survives when one active ride is replaced by another.
+  // Do not carry acknowledgements or a half-armed end action into the new trip.
+  useEffect(() => {
+    setAlertHeard("unasked");
+    setOffRouteAnsweredFor("");
+    setEndArmedFor("");
+  }, [session?.id]);
+
   useEffect(() => {
     if (!endArmedFor) return undefined;
     const id = globalThis.setTimeout(() => setEndArmedFor(""), END_CONFIRM_MS);
