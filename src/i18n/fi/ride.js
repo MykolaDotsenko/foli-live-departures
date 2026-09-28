@@ -193,6 +193,10 @@ export default {
   "Line {line}": "Linja {line}",
   "This trip leaves {time}": "Tämä vuoro lähtee klo {time}",
   "This trip": "Tämä vuoro",
+  "Switch get-off alert to line {line}? Your current alert will end.":
+    "Vaihda pysäkkihälytys linjalle {line}? Nykyinen hälytys päättyy.",
+  "Switch get-off alert to this trip? Your current alert will end.":
+    "Vaihda pysäkkihälytys tähän vuoroon? Nykyinen hälytys päättyy.",
 
   // Spoken. The stop name is read on its own, by the Finnish voice. The
   // spoken instruction keeps the stop button in lower case, as the English
