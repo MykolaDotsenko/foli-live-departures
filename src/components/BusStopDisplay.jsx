@@ -900,6 +900,24 @@ function BusStopDisplay({
                           routesByShortName={routesByShortName}
                           onCancel={() => setRideCandidateKey("")}
                           onStart={(config) => {
+                            const replacingAnotherRide =
+                              Boolean(activeRideTripRef) &&
+                              activeRideTripRef !== arrival.tripref;
+
+                            if (replacingAnotherRide) {
+                              const line = String(arrival.lineref || "").trim();
+                              const message = line
+                                ? t(
+                                    "Switch get-off alert to line {line}? Your current alert will end.",
+                                    { line }
+                                  )
+                                : t(
+                                    "Switch get-off alert to this trip? Your current alert will end."
+                                  );
+
+                              if (!globalThis.confirm(message)) return;
+                            }
+
                             onStartRide?.(config);
                             setRideCandidateKey("");
                           }}
