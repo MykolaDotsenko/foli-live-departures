@@ -238,6 +238,11 @@ export default function RideMode({
   // the stop is still far off, rather than blocking the start of tracking.
   const [alertHeard, setAlertHeard] = useState("unasked");
 
+  useEffect(() => {
+    setAlertHeard("unasked");
+    setOffRouteAnsweredFor("");
+  }, [session?.id]);
+
   // On a phone the panel scrolls with the page, so a passenger reading the
   // board below it would miss "Press STOP" and "Get off now" on screen. The
   // alerts escalate, so the panel comes back into view with them, unless it
