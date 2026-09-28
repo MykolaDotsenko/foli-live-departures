@@ -276,10 +276,12 @@ test("retries a timed-out high-accuracy request with fallback options", async ()
   expect(getCurrentPosition.mock.calls[0][2]).toMatchObject({
     enableHighAccuracy: true,
     timeout: 8_000,
+    maximumAge: 0,
   });
   expect(getCurrentPosition.mock.calls[1][2]).toMatchObject({
     enableHighAccuracy: false,
     timeout: 5_000,
+    maximumAge: 0,
   });
 });
 
