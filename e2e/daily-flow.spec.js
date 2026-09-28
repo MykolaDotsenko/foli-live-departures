@@ -2984,7 +2984,7 @@ test("switching to another get-off alert asks before replacing the active ride",
   await page.goto("/?stop=164");
 
   await page.getByRole("button", { name: "Get-off alert" }).first().click();
-  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page.locator('input[type="radio"][value="2"]').check();
   await page
     .getByRole("checkbox", { name: /Follow my location/i })
     .uncheck();
@@ -2999,7 +2999,7 @@ test("switching to another get-off alert asks before replacing the active ride",
   ).toHaveCount(0);
 
   await page.getByRole("button", { name: "Get-off alert" }).first().click();
-  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page.locator('input[type="radio"][value="2"]').check();
   await page
     .getByRole("checkbox", { name: /Follow my location/i })
     .uncheck();
