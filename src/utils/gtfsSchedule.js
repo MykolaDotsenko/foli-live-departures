@@ -107,27 +107,31 @@ export function gtfsServiceEpoch(serviceDate, gtfsTime) {
   if (!dateMatch || !clock) return null;
 
   const [, yearText, monthText, dayText] = dateMatch;
-  const dayCarry = Math.floor(clock.hour / 24);
-  const localHour = clock.hour % 24;
 
-  const localWallClockAsUtc = Date.UTC(
+  // GTFS Time is elapsed time from "noon minus 12h" of the service day,
+  // not a naive local wall-clock. On ordinary days that is local midnight;
+  // on DST transition days it deliberately differs by an hour so stop times
+  // remain monotonic through a skipped or repeated wall-clock hour.
+  //
+  // Noon itself is never ambiguous in Europe/Helsinki. Resolve that local
+  // wall-clock instant with the same two-pass timezone-offset technique, then
+  // subtract twelve real hours and add the full GTFS elapsed time. Hours over
+  // 24 therefore stay attached to their originating service day as required.
+  const localNoonAsUtc = Date.UTC(
     Number(yearText),
     Number(monthText) - 1,
-    Number(dayText) + dayCarry,
-    localHour,
-    clock.minute,
-    clock.second
+    Number(dayText),
+    12,
+    0,
+    0
   );
+  const noonFirst = localNoonAsUtc - zoneOffsetMs(localNoonAsUtc);
+  const localNoonEpochMs = localNoonAsUtc - zoneOffsetMs(noonFirst);
+  const serviceDayStartMs = localNoonEpochMs - 12 * 60 * 60 * 1000;
+  const elapsedMs =
+    ((clock.hour * 60 + clock.minute) * 60 + clock.second) * 1000;
 
-  // First estimate the Helsinki offset at the target wall-clock instant,
-  // then repeat once at the resulting instant. The second pass handles DST
-  // boundaries without assuming the device itself is in Finland.
-  const first =
-    localWallClockAsUtc - zoneOffsetMs(localWallClockAsUtc);
-  const second =
-    localWallClockAsUtc - zoneOffsetMs(first);
-
-  return Math.round(second / 1000);
+  return Math.round((serviceDayStartMs + elapsedMs) / 1000);
 }
 
 const WEEKDAY_FIELDS = [
