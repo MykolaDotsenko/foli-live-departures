@@ -141,6 +141,22 @@ describe("ride get-off notifications", () => {
     expect(created[0].close).toHaveBeenCalledTimes(1);
   });
 
+  it("closes an older page fallback after a service-worker notification takes over", async () => {
+    stubServiceWorker(null);
+
+    await expect(showRideNotification("soon", "Puistokatu")).resolves.toBe(true);
+    expect(created).toHaveLength(1);
+    expect(created[0].close).not.toHaveBeenCalled();
+
+    const showNotification = vi.fn(() => Promise.resolve());
+    stubServiceWorker({ showNotification });
+
+    await expect(showRideNotification("next", "Puistokatu", 3)).resolves.toBe(true);
+
+    expect(showNotification).toHaveBeenCalledTimes(1);
+    expect(created[0].close).toHaveBeenCalledTimes(1);
+  });
+
   it("sends a tap on the page-level fallback back to the app", async () => {
     stubServiceWorker(null);
     const focus = vi.fn();
