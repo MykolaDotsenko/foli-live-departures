@@ -1,5 +1,6 @@
 import axios from "axios";
 import createBoundedCache from "../utils/boundedCache";
+import { timestampIsFresh } from "../utils/cacheTime";
 import {
   mergeRealtimeAndScheduled,
   scheduledClockCandidates,
@@ -66,11 +67,12 @@ function clearGtfsResourceCaches() {
  * a retired dataset can outlive the pin.
  */
 function invalidateExpiredGtfsDataset() {
-  const expired =
-    gtfsDatasetResolvedAtMs > 0 &&
-    Date.now() - gtfsDatasetResolvedAtMs >= GTFS_DATASET_TTL_MS;
-
-  if (!expired) return;
+  if (
+    gtfsDatasetResolvedAtMs <= 0 ||
+    timestampIsFresh(gtfsDatasetResolvedAtMs, GTFS_DATASET_TTL_MS)
+  ) {
+    return;
+  }
 
   gtfsDatasetBasePromise = null;
   gtfsDatasetResolvedAtMs = 0;
