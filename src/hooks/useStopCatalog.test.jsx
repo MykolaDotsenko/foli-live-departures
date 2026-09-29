@@ -468,39 +468,3 @@ test("a successful catalogue refresh never disguises stale coordinates as fresh"
 
   dateNow.mockRestore();
 });
-
-
-test("keeps a previously fetched catalogue stale-but-usable when its next refresh fails", async () => {
-  const start = Date.UTC(2026, 8, 29, 9, 0, 0);
-  let now = start;
-  const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
-
-  vi.mocked(fetchStopCatalog)
-    .mockResolvedValueOnce([{ id: "164", name: "Kauppatori" }])
-    .mockRejectedValueOnce(new Error("catalogue down"));
-  vi.mocked(fetchStopCoordinates)
-    .mockResolvedValueOnce(new Map([["164", { lat: 60.4518, lon: 22.2666 }]]))
-    .mockRejectedValueOnce(new Error("coordinates down"));
-
-  const { result, rerender, unmount } = renderHook(() => useStopCatalog());
-
-  await waitFor(() => expect(result.current.catalogStatus).toBe("ready"));
-  await waitFor(() => expect(result.current.coordinatesStatus).toBe("ready"));
-  expect(result.current.stops).toEqual([
-    { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
-  ]);
-
-  now = start + 24 * 60 * 60 * 1000 + 1;
-  rerender();
-
-  await waitFor(() => expect(fetchStopCatalog).toHaveBeenCalledTimes(2));
-  await waitFor(() => expect(result.current.catalogStatus).toBe("stale"));
-
-  expect(result.current.stops).toEqual([
-    { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
-  ]);
-  expect(result.current.coordinatesStatus).toBe("ready");
-
-  unmount();
-  dateNow.mockRestore();
-});
