@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { fetchStopMonitor } from "../api/foliApi";
-import { RIDE_STAGE, matchRideArrival } from "../utils/rideProgress";
+import { RIDE_STAGE, resolveRideArrivalMatch } from "../utils/rideProgress";
 import { ridePollDelayMs } from "../utils/retry";
 
 const REALTIME_ONLY = Object.freeze({ scheduleFallback: false });
@@ -13,12 +13,20 @@ const REALTIME_ONLY = Object.freeze({ scheduleFallback: false });
 // data at all (NO_SIRI_DATA, PENDING): the feed may be down, or the stop may
 // simply have nothing more coming.
 function rideSighting(answer, identity) {
-  const match = matchRideArrival(answer?.arrivals, identity);
+  const resolution = resolveRideArrivalMatch(answer?.arrivals, identity);
 
-  if (match) {
+  if (resolution.status === "matched") {
+    const match = {
+      arrival: resolution.arrival,
+      matchedBy: resolution.matchedBy,
+    };
     return match.arrival?.monitored === true
       ? { kind: "live", match }
       : { kind: "untracked" };
+  }
+
+  if (resolution.status === "ambiguous") {
+    return { kind: "ambiguous" };
   }
 
   return { kind: answer?.realtimeAvailable === false ? "no-data" : "absent" };
@@ -112,6 +120,11 @@ export default function useRideProviderPoll({
                 current.targetStop
               )
             );
+          } else if (target.kind === "ambiguous") {
+            // The journey is present, but more than one visit fits and the
+            // planned time cannot safely choose between them. This is not
+            // evidence that the bus disappeared. Preserve the last state and
+            // let its timestamps age naturally.
           } else {
             // Absent, untracked or no data: either way the bus is not in the
             // live data. A stop with nothing more coming can answer
@@ -158,6 +171,9 @@ export default function useRideProviderPoll({
             next.lastLiveMatchAt = Date.now();
             next.previousSeen = true;
             next.previousMissingCount = 0;
+          } else if (previous.kind === "ambiguous") {
+            // Presence is known, visit identity is not. Do not turn
+            // uncertainty into "the bus left this stop".
           } else if (previous.kind === "untracked") {
             // An untracked row leaves the board when its timetable time
             // passes, bus or no bus, so its disappearance cannot mean the bus

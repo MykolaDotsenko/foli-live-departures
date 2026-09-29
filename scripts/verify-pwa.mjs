@@ -178,6 +178,12 @@ if (!sw.includes('self.addEventListener("notificationclick"')) {
   );
 }
 
+if (!sw.includes("clientUrl.pathname.startsWith(BASE_PATH)")) {
+  throw new Error(
+    "Notification taps can focus another app on the same origin instead of this app's own scope."
+  );
+}
+
 if (!sw.includes('foli-claim-clients')) {
   throw new Error(
     "Generated service worker cannot take over a page that reloaded during install, so that visit has no offline shell."

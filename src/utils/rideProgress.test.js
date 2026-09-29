@@ -66,6 +66,39 @@ describe("ride progress", () => {
     expect(plan.targetStop.shapeDistTraveled).toBe(1800);
   });
 
+  it("anchors boarding to departure but downstream stops to arrival", () => {
+    const stopsById = new Map([
+      ["10", { id: "10", name: "Board" }],
+      ["20", { id: "20", name: "Target" }],
+    ]);
+
+    const plan = buildRidePlan({
+      stopTimes: [
+        {
+          stopId: "10",
+          arrivalTime: "11:58:00",
+          departureTime: "12:00:00",
+          stopSequence: 1,
+        },
+        {
+          stopId: "20",
+          arrivalTime: "12:08:00",
+          departureTime: "12:12:00",
+          stopSequence: 2,
+        },
+      ],
+      currentStopId: "10",
+      targetStopId: "20",
+      targetStopSequence: 2,
+      stopsById,
+      departureEpochSec: 1_000,
+    });
+
+    expect(plan.boardingStop.offsetSec).toBe(0);
+    expect(plan.targetStop.offsetSec).toBe(8 * 60);
+    expect(plan.targetPredictedEpochSec).toBe(1_480);
+  });
+
   // The plan's names are what the panel shows and the alerts say, so a stop
   // the catalogue does not name goes by its number in the passenger's
   // language, never by an empty name.
@@ -186,6 +219,42 @@ describe("ride progress", () => {
         { vehicleRef: "bus-a", lineRef: "1" }
       )
     ).toBeNull();
+  });
+
+  it("refuses a single same-line vehicle row from the wrong run", () => {
+    expect(
+      matchRideArrival(
+        [
+          {
+            lineref: "1",
+            vehicleref: "bus-a",
+            originaimeddeparturetime: 5_000,
+          },
+        ],
+        {
+          vehicleRef: "bus-a",
+          lineRef: "1",
+          originAimedDepartureTime: 1_000,
+        }
+      )
+    ).toBeNull();
+
+    const match = matchRideArrival(
+      [
+        {
+          lineref: "1",
+          vehicleref: "bus-a",
+          originaimeddeparturetime: 1_030,
+        },
+      ],
+      {
+        vehicleRef: "bus-a",
+        lineRef: "1",
+        originAimedDepartureTime: 1_000,
+      }
+    );
+
+    expect(match?.matchedBy).toBe("vehicle-origin-time");
   });
 
   it("picks the run whose origin time matches when one bus is listed twice", () => {

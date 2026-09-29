@@ -3,6 +3,8 @@ import { distanceInMeters, hasCoordinates } from "./geo";
 const EARTH_RADIUS_METERS = 6_371_008.8;
 const MAX_GPS_ACCURACY_METERS = 120;
 const OFF_ROUTE_CONFIRM_MS = 120_000;
+const MAX_ROUTE_SPEED_MPS = 40;
+const FORWARD_JUMP_TOLERANCE_M = 200;
 
 function finiteNumber(value) {
   if (value === null || value === undefined || value === "") return null;
@@ -124,6 +126,8 @@ export function projectPositionToRideShape(
     minAlongM = Number.NEGATIVE_INFINITY,
     maxAlongM = Number.POSITIVE_INFINITY,
     previousAlongM = null,
+    maxForwardJumpM = Number.POSITIVE_INFINITY,
+    ambiguityDistanceM = 20,
   } = {}
 ) {
   if (!hasCoordinates(position) || !shape?.points?.length) return null;
@@ -148,6 +152,15 @@ export function projectPositionToRideShape(
 
     if (alongM < minAlongM || alongM > maxAlongM) continue;
 
+    const forwardLimit = finiteNumber(maxForwardJumpM);
+    if (
+      previous !== null &&
+      forwardLimit !== null &&
+      alongM > previous + Math.max(0, forwardLimit)
+    ) {
+      continue;
+    }
+
     // GPS can sit near two legs of a loop. Prefer continuity instead of
     // snapping hundreds of metres backwards to a geometrically close segment.
     const backwardsM =
@@ -167,10 +180,15 @@ export function projectPositionToRideShape(
   candidates.sort((a, b) => a.score - b.score);
 
   let best = candidates[0];
+  const ambiguityGapM = Math.max(
+    20,
+    finiteNumber(ambiguityDistanceM) ?? 20
+  );
   const nearAlternatives = candidates.filter(
     (candidate) =>
       candidate !== best &&
-      candidate.lateralDistanceM <= best.lateralDistanceM + 20 &&
+      candidate.lateralDistanceM <=
+        best.lateralDistanceM + ambiguityGapM &&
       Math.abs(candidate.alongM - best.alongM) >= 250
   );
 
@@ -221,6 +239,7 @@ export function analyzeRideGps({
   boardingShapeDistM,
   targetShapeDistM,
   previousAlongM = null,
+  previousFixAtMs = null,
   offRouteSinceMs = null,
   nowMs = Date.now(),
 }) {
@@ -243,10 +262,27 @@ export function analyzeRideGps({
     };
   }
 
+  const previousFixAt = finiteNumber(previousFixAtMs);
+  const currentTime = finiteNumber(nowMs) ?? Date.now();
+  const elapsedSincePreviousSec =
+    previousFixAt !== null && currentTime >= previousFixAt
+      ? Math.min(5 * 60, (currentTime - previousFixAt) / 1000)
+      : null;
+  const maxForwardJumpM =
+    finiteNumber(previousAlongM) !== null && elapsedSincePreviousSec !== null
+      ? FORWARD_JUMP_TOLERANCE_M +
+        accuracy * 2 +
+        MAX_ROUTE_SPEED_MPS * elapsedSincePreviousSec
+      : Number.POSITIVE_INFINITY;
+
   const projection = projectPositionToRideShape(position, shape, {
     minAlongM: Math.max(0, boarding - 300),
     maxAlongM: Math.min(shape.lengthM, target + 700),
     previousAlongM,
+    maxForwardJumpM,
+    // A vague fix can make two nearby legs of a loop indistinguishable even
+    // when their centre lines differ by more than the old fixed 20 metres.
+    ambiguityDistanceM: Math.max(20, Math.min(100, accuracy)),
   });
 
   if (!projection) {

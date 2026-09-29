@@ -68,6 +68,60 @@ describe("Ride Mode shape matching", () => {
     expect(sample.routeEtaSec).toBeLessThan(100);
   });
 
+  it("does not snap a fresh fix far forward onto a nearby future leg", () => {
+    const loopShape = prepareRideShape([
+      { lat: 60.45, lon: 22.25, traveled: 0 },
+      { lat: 60.45, lon: 22.27, traveled: 1100 },
+      { lat: 60.4503, lon: 22.27, traveled: 1135 },
+      { lat: 60.4503, lon: 22.25, traveled: 2235 },
+    ]);
+
+    const sample = analyzeRideGps({
+      // Geometrically this is much closer to the future return leg than the
+      // leg the bus was on one second ago.
+      position: { lat: 60.45028, lon: 22.259 },
+      accuracyM: 15,
+      speedMps: 8,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      previousAlongM: 500,
+      previousFixAtMs: 1_000_000,
+      nowMs: 1_001_000,
+    });
+
+    expect(sample.usable).toBe(true);
+    expect(sample.onRoute).toBe(true);
+    expect(sample.alongM).toBeGreaterThan(400);
+    expect(sample.alongM).toBeLessThan(650);
+    expect(sample.routeDistanceM).toBeGreaterThan(1_500);
+  });
+
+  it("allows real forward progress after a long gap between fixes", () => {
+    const loopShape = prepareRideShape([
+      { lat: 60.45, lon: 22.25, traveled: 0 },
+      { lat: 60.45, lon: 22.27, traveled: 1100 },
+      { lat: 60.4503, lon: 22.27, traveled: 1135 },
+      { lat: 60.4503, lon: 22.25, traveled: 2235 },
+    ]);
+
+    const sample = analyzeRideGps({
+      position: { lat: 60.4503, lon: 22.259 },
+      accuracyM: 15,
+      speedMps: 10,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      previousAlongM: 500,
+      previousFixAtMs: 1_000_000,
+      nowMs: 1_061_000,
+    });
+
+    expect(sample.usable).toBe(true);
+    expect(sample.onRoute).toBe(true);
+    expect(sample.alongM).toBeGreaterThan(1_500);
+  });
+
   it("does not trust poor-accuracy GPS as route evidence", () => {
     const sample = analyzeRideGps({
       position: { lat: 60.45, lon: 22.278 },

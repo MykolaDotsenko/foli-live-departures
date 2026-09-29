@@ -201,6 +201,43 @@ test("a tracked row is still a live sighting at both stops", async () => {
   );
 });
 
+test("an ambiguous repeated visit never counts as the bus disappearing", async () => {
+  const ambiguousRows = [
+    { ...trackedRow, expectedarrivaltime: 1_000 },
+    { ...trackedRow, expectedarrivaltime: 2_200 },
+  ];
+  const before = {
+    targetListed: true,
+    targetMatchBy: "trip",
+    targetMissingCount: 1,
+    targetWasAtStop: false,
+    liveEtaSec: 120,
+    providerDistanceM: 300,
+    providerPositionAgeSec: 10,
+    previousSeen: true,
+    previousMissingCount: 1,
+    lastLiveMatchAt: 5,
+  };
+
+  const { next, readArrivalSignals } = await pollOnce(
+    {
+      32: answer(ambiguousRows),
+      164: answer(ambiguousRows),
+    },
+    before
+  );
+
+  expect(next.targetListed).toBe(true);
+  expect(next.targetMatchBy).toBe("trip");
+  expect(next.targetMissingCount).toBe(1);
+  expect(next.liveEtaSec).toBe(120);
+  expect(next.providerDistanceM).toBe(300);
+  expect(next.previousSeen).toBe(true);
+  expect(next.previousMissingCount).toBe(1);
+  expect(next.lastLiveMatchAt).toBe(5);
+  expect(readArrivalSignals).not.toHaveBeenCalled();
+});
+
 test("a tracked bus dropping to an untracked row reads as gone from live data", async () => {
   const { next } = await pollOnce(
     { 32: answer([untrackedRow]), 164: answer([]) },
