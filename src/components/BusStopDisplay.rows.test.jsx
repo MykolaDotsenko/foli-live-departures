@@ -117,6 +117,54 @@ test("an open get-off setup survives an earlier bus leaving the board", async ()
   ).toBeChecked();
 });
 
+// The alert is set up for the bus being boarded, so the setup is often still
+// open as that bus leaves. Half a minute later its row went, and the setup
+// with it, chosen stop and all, before the passenger could press Start.
+test("an open get-off setup stays as its bus pulls away, and after the feed drops it", async () => {
+  const onStartRide = vi.fn();
+  const atStop = { aimeddeparturetime: NOW + 20, expecteddeparturetime: NOW + 20 };
+  const { rerender } = render(
+    board([departure(atStop)], KAUPPATORI, { onStartRide })
+  );
+  await openSetupAndChooseTurunLinna();
+
+  // A minute gone, still listed.
+  rerender(
+    board(
+      [departure({ ...atStop, expecteddeparturetime: NOW - 60 })],
+      KAUPPATORI,
+      { onStartRide }
+    )
+  );
+  expect(setupPanels()).toHaveLength(1);
+  expect(document.querySelector('input[type="radio"][value="3"]')).toBeChecked();
+
+  // Then no longer listed at all.
+  rerender(board([], KAUPPATORI, { onStartRide }));
+  expect(setupPanels()).toHaveLength(1);
+  expect(document.querySelector('input[type="radio"][value="3"]')).toBeChecked();
+
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+  expect(onStartRide).toHaveBeenCalledTimes(1);
+  expect(onStartRide.mock.calls[0][0]).toMatchObject({ tripRef: "trip-1" });
+  // Started, the row it held goes the way of any departed bus.
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Get-off alert" })).toBeNull();
+});
+
+test("cancelling the setup of a departed bus lets its row go", async () => {
+  const atStop = { aimeddeparturetime: NOW + 20, expecteddeparturetime: NOW + 20 };
+  const { rerender } = render(board([departure(atStop)]));
+  await openSetupAndChooseTurunLinna();
+  rerender(board([departure({ ...atStop, expecteddeparturetime: NOW - 60 })]));
+  expect(setupPanels()).toHaveLength(1);
+
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Get-off alert" })).toBeNull();
+});
+
 test("an expanded next-stops list stays open across a refresh", async () => {
   const { rerender } = render(board([departure()]));
   fireEvent.click(screen.getByRole("button", { name: "Next stops" }));

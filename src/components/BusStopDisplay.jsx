@@ -36,6 +36,10 @@ import {
 // refresh: the open line filter and the get-off setup being filled in. The
 // pieces it is drawn with live in ./departureBoard.
 
+// A bus due within this long when the feed last listed it was leaving, not
+// withdrawn, when the feed let it go.
+const SETUP_HOLD_LEAVING_SECONDS = 120;
+
 function BusStopDisplay({
   stopId,
   stopName,
@@ -123,7 +127,7 @@ function BusStopDisplay({
   );
   // The timetable lists a cancelled bus too, and its live row stays on the
   // board as "Cancelled": the same bus is not shown twice.
-  const visibleArrivals = (
+  const listedArrivals = (
     followedLines.length > 0
       ? mergeRealtimeAndScheduled(
           upcomingArrivals.filter((arrival) =>
@@ -133,6 +137,81 @@ function BusStopDisplay({
         ).sort(byDepartureTime(referenceTime))
       : upcomingArrivals
   ).slice(0, MAX_VISIBLE_DEPARTURES);
+  const [rideCandidateKey, setRideCandidateKey] = useState("");
+  // The departure the open get-off setup belongs to, as last listed, and the
+  // board time of the answer that listed it.
+  const [setupDeparture, setSetupDeparture] = useState(null);
+  // An open setup belongs to the stop it was opened at, so it is dropped the
+  // moment the stop changes and coming back later does not reopen it. The
+  // board itself stays mounted: remounting it for a stop change dropped
+  // keyboard focus and the live region that announces the stop.
+  const [candidateStopId, setCandidateStopId] = useState(stopId);
+  if (candidateStopId !== stopId) {
+    setCandidateStopId(stopId);
+    setRideCandidateKey("");
+    setSetupDeparture(null);
+    setLineFilterOpen(false);
+  }
+  // A passenger sets up the alert for the bus they are boarding, so it is
+  // often still open as that bus pulls away. Half a minute after it left its
+  // row went, and the setup with it, stop chosen and all, before Start. The
+  // row stays while its setup is open: as the feed lists it, departed or
+  // not, and if the feed has let it go altogether, as it was last listed,
+  // since that is still the bus the passenger is on and the setup needs
+  // nothing newer to start the ride. That last case only for a bus that was
+  // leaving when last seen: one still minutes away that drops out of the
+  // feed was withdrawn or replaced, and its setup goes with it as before.
+  // Only while the setup is open, and only on this stop's board: Start and
+  // Cancel close it, and so does a stop change. A row the line filter hides
+  // is not held: the passenger hid it.
+  const listedKeys = departureKeys(listedArrivals, referenceTime, stopId);
+  const listedIndex = rideCandidateKey
+    ? listedKeys.indexOf(rideCandidateKey)
+    : -1;
+  const feedArrival =
+    listedIndex >= 0
+      ? listedArrivals[listedIndex]
+      : rideCandidateKey
+        ? arrivals.find(
+            (arrival) =>
+              departureKeys([arrival], referenceTime, stopId)[0] ===
+              rideCandidateKey
+          )
+        : undefined;
+  if (!rideCandidateKey) {
+    if (setupDeparture) setSetupDeparture(null);
+  } else if (
+    feedArrival &&
+    (setupDeparture?.key !== rideCandidateKey ||
+      setupDeparture.arrival !== feedArrival)
+  ) {
+    setSetupDeparture({
+      key: rideCandidateKey,
+      arrival: feedArrival,
+      seenAt: referenceTime,
+    });
+  }
+  const lastSeenLeaving =
+    setupDeparture?.key === rideCandidateKey &&
+    getDepartureTime(setupDeparture.arrival, setupDeparture.seenAt) <=
+      setupDeparture.seenAt + SETUP_HOLD_LEAVING_SECONDS;
+  const heldArrival =
+    listedIndex >= 0
+      ? null
+      : feedArrival ?? (lastSeenLeaving ? setupDeparture.arrival : null);
+  const holdsSetupRow =
+    Boolean(heldArrival) &&
+    (followedLines.length === 0 ||
+      followedLines.includes(String(heldArrival.lineref || "")));
+  const visibleArrivals = holdsSetupRow
+    ? // Gone by the clock, so it sorts first and the cut keeps it.
+      [heldArrival, ...listedArrivals]
+        .sort(byDepartureTime(referenceTime))
+        .slice(0, MAX_VISIBLE_DEPARTURES)
+    : listedArrivals;
+  // The held row counts as one to come, or the board put "No upcoming
+  // departures" in place of the list and its setup.
+  const upcomingCount = upcomingArrivals.length + (holdsSetupRow ? 1 : 0);
   // Only an answer that itself listed nothing says nothing is coming. One
   // whose buses have all left since says nothing about what comes after
   // them: the timetable was never asked, because they were still ahead.
@@ -166,17 +245,6 @@ function BusStopDisplay({
     () => providerLanguages(language),
     [language]
   );
-  const [rideCandidateKey, setRideCandidateKey] = useState("");
-  // An open setup belongs to the stop it was opened at, so it is dropped the
-  // moment the stop changes and coming back later does not reopen it. The
-  // board itself stays mounted: remounting it for a stop change dropped
-  // keyboard focus and the live region that announces the stop.
-  const [candidateStopId, setCandidateStopId] = useState(stopId);
-  if (candidateStopId !== stopId) {
-    setCandidateStopId(stopId);
-    setRideCandidateKey("");
-    setLineFilterOpen(false);
-  }
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
 
   const filterable = linesOnOffer.length > 1 && upcomingArrivals.length > 0;
@@ -208,7 +276,7 @@ function BusStopDisplay({
         unknownStop={unknownStop}
       />
 
-      {upcomingArrivals.length > 0 && (
+      {upcomingCount > 0 && (
         <DepartureSummary
           visibleCount={visibleArrivals.length}
           realtimeCount={realtimeCount}
@@ -249,7 +317,7 @@ function BusStopDisplay({
         answerWasEmpty={answerWasEmpty}
         scheduleFailed={scheduleFailed}
         scheduleIncomplete={scheduleIncomplete}
-        upcomingCount={upcomingArrivals.length}
+        upcomingCount={upcomingCount}
         visibleCount={visibleArrivals.length}
         followedLines={followedLines}
         timetableStatus={lineTimetable.status}
