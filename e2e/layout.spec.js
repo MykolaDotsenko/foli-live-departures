@@ -232,7 +232,7 @@ test("ten departures remain scan-friendly without horizontal table scrolling", a
   await page
     .locator('[aria-labelledby="departures-title"]')
     .screenshot({
-      path: `artifacts/screenshots/foli-${testInfo.project.name}-ten-departures.png`,
+      path: `artifacts/screenshots/turku-departures-${testInfo.project.name}-ten-departures.png`,
       animations: "disabled",
     });
 });

@@ -272,7 +272,7 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
     fs.mkdirSync("artifacts/screenshots", { recursive: true });
     await page
       .locator('section[aria-labelledby="ride-mode-title"]')
-      .screenshot({ path: "artifacts/screenshots/foli-ride-now.png" });
+      .screenshot({ path: "artifacts/screenshots/turku-departures-ride-now.png" });
     // And the whole screen, for the install sheet (public/screenshots),
     // over the board of the stop being got off at: under it, Kauppatori's
     // board showed the same bus four minutes from Kauppatori.

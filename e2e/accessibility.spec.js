@@ -307,7 +307,7 @@ test.describe("on a Finnish phone", () => {
     // The README's Finnish picture, a phone's first screen.
     if (testInfo.project.name === "chromium-mobile") {
       fs.mkdirSync("artifacts/screenshots", { recursive: true });
-      await page.screenshot({ path: "artifacts/screenshots/foli-mobile-fi.png" });
+      await page.screenshot({ path: "artifacts/screenshots/turku-departures-mobile-fi.png" });
     }
 
     const nextStops = page.getByRole("button", { name: "Seuraavat pysäkit" }).first();

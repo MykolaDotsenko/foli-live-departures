@@ -17,19 +17,19 @@
 
 <p align="center">
   <img
-    src="docs/assets/foli-mobile.png"
+    src="docs/assets/turku-departures-mobile.png"
     alt="Turku Departures showing live and scheduled departures from Kauppatori"
     width="260"
   >
   &nbsp;
   <img
-    src="docs/assets/foli-ride-now.png"
+    src="docs/assets/turku-departures-ride-now.png"
     alt="Turku Departures get-off alert telling the passenger to get off now"
     width="260"
   >
   &nbsp;
   <img
-    src="docs/assets/foli-mobile-fi.png"
+    src="docs/assets/turku-departures-mobile-fi.png"
     alt="Turku Departures in Finnish"
     width="260"
   >
