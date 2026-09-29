@@ -400,3 +400,45 @@ test("does not auto-select when the position is outside the published Föli boun
   ).toBeInTheDocument();
   expect(onSelect).not.toHaveBeenCalled();
 });
+
+// A slow fix used to land after the passenger had already searched for
+// another stop and jump the board away from it to the nearest one.
+test("a late location fix does not replace a stop chosen while locating", async () => {
+  let deliverFix;
+  setGeolocation(
+    vi.fn((success) => {
+      deliverFix = () =>
+        success({
+          coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+        });
+    })
+  );
+  const onSelect = vi.fn();
+
+  const { rerender } = render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="4"
+      onSelect={onSelect}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+
+  // The passenger searches for stop 32 before the fix arrives.
+  rerender(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={onSelect}
+    />
+  );
+
+  deliverFix();
+
+  // The nearest stops are still offered, but none is chosen for them.
+  await screen.findByRole("group", { name: "Nearest Föli stops" });
+  expect(onSelect).not.toHaveBeenCalled();
+});

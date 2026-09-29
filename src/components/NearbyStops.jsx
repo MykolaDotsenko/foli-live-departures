@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import {
   distanceInMeters,
@@ -82,6 +82,12 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   // A phrase, put into words when shown, so it follows a language change.
   const [error, setError] = useState("");
+  // A location fix can take seconds. By the time it lands the passenger may
+  // already have searched for another stop, and jumping the board to the
+  // nearest one then would take away the stop they chose themselves. The
+  // lookup compares against the stop showing now, not the one at the tap.
+  const activeStopIdRef = useRef(activeStopId);
+  activeStopIdRef.current = activeStopId;
 
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
@@ -127,6 +133,7 @@ function NearbyStops({
 
     setStatus("locating");
     setError("");
+    const stopIdAtTap = activeStopIdRef.current;
 
     try {
       const nextPosition = await requestOneTimePosition(
@@ -157,7 +164,10 @@ function NearbyStops({
         insideServiceArea !== false &&
         !ambiguousChoice &&
         closest.distanceMeters <= AUTO_SELECT_MAX_DISTANCE_METERS &&
-        closest.id !== activeStopId
+        // Chose a stop while we waited: keep it, the list below still
+        // offers the nearest one a tap away.
+        activeStopIdRef.current === stopIdAtTap &&
+        closest.id !== activeStopIdRef.current
       ) {
         onSelect(closest.id);
       }

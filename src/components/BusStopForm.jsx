@@ -149,12 +149,18 @@ function BusStopForm({
   // merge, so `stops` changes identity mid-session. Resetting the field on
   // every one of those wiped whatever was being typed at that moment.
   const syncedStopIdRef = useRef(activeStopId);
+  // Counts every change to the field made by the passenger or by moving to
+  // another stop. A location fix can take seconds; if the text changed in
+  // the meantime, the late answer is about a question nobody is asking any
+  // more and must not replace what they typed.
+  const fieldEditsRef = useRef(0);
 
   useEffect(() => {
     const stop =
       stops.find((item) => String(item.id) === String(activeStopId)) || null;
     const navigated = syncedStopIdRef.current !== activeStopId;
     syncedStopIdRef.current = activeStopId;
+    if (navigated) fieldEditsRef.current += 1;
 
     setResolved(stop);
     setValue((current) => {
@@ -254,9 +260,12 @@ function BusStopForm({
     }
 
     setLocating(true);
+    const editsAtTap = fieldEditsRef.current;
+    const superseded = () => fieldEditsRef.current !== editsAtTap;
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
+      if (superseded()) return;
       const { verdict, stop: nearest } = judgeNearestStop(
         stops,
         position,
@@ -275,6 +284,7 @@ function BusStopForm({
       setResolved(nearest);
       setFocused(false);
     } catch (error) {
+      if (superseded()) return;
       setValidationError(message(locationErrorMessage(error)));
     } finally {
       setLocating(false);
@@ -327,6 +337,7 @@ function BusStopForm({
             className={styles.input}
             value={value}
             onChange={(event) => {
+              fieldEditsRef.current += 1;
               setValue(event.target.value);
               // Editing the text means it is no longer the stop we resolved.
               setResolved(null);

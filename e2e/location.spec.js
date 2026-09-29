@@ -127,3 +127,81 @@ test("choosing a stop from the first visit's near-you list keeps your place", as
   await expect(choice).toBeVisible();
   await expect(choice).toBeFocused();
 });
+
+// A slow phone location fix, answered at Kauppatori three seconds after the
+// tap, so the passenger has time to do something else while it is pending.
+async function slowGeolocation(page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition(success) {
+          globalThis.setTimeout(
+            () =>
+              success({
+                coords: {
+                  latitude: 60.45182,
+                  longitude: 22.26662,
+                  accuracy: 10,
+                  altitude: null,
+                  altitudeAccuracy: null,
+                  heading: null,
+                  speed: null,
+                },
+                timestamp: Date.now(),
+              }),
+            3000
+          );
+        },
+        watchPosition() {
+          return 0;
+        },
+        clearWatch() {},
+      },
+    });
+  });
+}
+
+// The fix used to land after the passenger had searched for another stop and
+// jump the board to the nearest one, pushing a history entry on the way.
+test("a late location fix leaves a stop searched for meanwhile on the board", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await slowGeolocation(page);
+
+  await page.goto("/?stop=4");
+  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("combobox", { name: "Find your stop" }).fill("32");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(page).toHaveURL(/stop=32/);
+  await expect(page.getByRole("heading", { name: "Puistokatu" })).toBeVisible();
+
+  // The fix has arrived once the nearby list is up; the board is unmoved.
+  await expect(page.getByText("Nearest")).toBeVisible({ timeout: 10_000 });
+  await expect(page).toHaveURL(/stop=32/);
+  await expect(page.getByRole("heading", { name: "Puistokatu" })).toBeVisible();
+});
+
+// The same late fix used to replace the words being typed in the search
+// field with the nearest stop's name.
+test("a late location fix does not overwrite the search being typed", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await slowGeolocation(page);
+
+  await page.goto("/");
+  const input = page.getByRole("combobox", { name: "Find your stop" });
+  const locate = page.getByRole("button", { name: "Use current location" });
+  await locate.click();
+  await expect(locate).toHaveAttribute("aria-busy", "true");
+  await input.fill("Puistokatu");
+
+  // The lookup has finished once the button is usable again.
+  await expect(locate).toBeEnabled({ timeout: 10_000 });
+  await expect(input).toHaveValue("Puistokatu");
+  await expect(page).not.toHaveURL(/stop=/);
+});

@@ -70,6 +70,58 @@ test("location button fills the nearest stop but waits for explicit submit", asy
   }
 });
 
+// A slow fix used to land after the passenger had started typing and
+// replace their words with the nearest stop, marked as resolved.
+test("a late location fix does not overwrite what was typed meanwhile", async () => {
+  const originalGeolocation = navigator.geolocation;
+  let deliverFix;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: (success) => {
+        deliverFix = () =>
+          success({
+            coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+          });
+      },
+    },
+  });
+
+  try {
+    const onSubmit = vi.fn();
+    render(
+      <BusStopForm
+        activeStopId=""
+        stops={[
+          { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
+          { id: "32", name: "Puistokatu", lat: 60.4488, lon: 22.255 },
+        ]}
+        coordinatesStatus="ready"
+        onSubmit={onSubmit}
+      />
+    );
+
+    const locate = screen.getByRole("button", { name: "Use current location" });
+    fireEvent.click(locate);
+    const input = screen.getByRole("combobox", { name: "Find your stop" });
+    fireEvent.change(input, { target: { value: "Puistokatu" } });
+
+    await act(async () => deliverFix());
+
+    await waitFor(() => expect(locate).not.toBeDisabled());
+    expect(input).toHaveValue("Puistokatu");
+
+    // The typed text is still looked up as typed, not as a resolved stop.
+    fireEvent.click(screen.getByRole("button", { name: "Show departures" }));
+    expect(onSubmit).toHaveBeenCalledWith("32");
+  } finally {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: originalGeolocation,
+    });
+  }
+});
+
 test("finds stops by name and submits a suggestion", () => {
   const onSubmit = vi.fn();
 
