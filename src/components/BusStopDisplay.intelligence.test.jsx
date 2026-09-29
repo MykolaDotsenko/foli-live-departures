@@ -593,3 +593,68 @@ test("marks a departure Föli has cancelled at this stop instead of counting it 
     within(runningRow).getByRole("button", { name: "Get-off alert" })
   ).toBeInTheDocument();
 });
+
+
+test("a cancellation does not spill onto the next close departure of the same line", () => {
+  const now = Math.floor(Date.now() / 1000);
+  const cancelledOrigin = now - 1_200;
+  const nextOrigin = cancelledOrigin + 60;
+
+  render(
+    <BusStopDisplay
+      stopId="164"
+      stopName="Kauppatori"
+      stops={[]}
+      routesByShortName={new Map()}
+      serverTime={now}
+      loading={false}
+      refreshing={false}
+      error={false}
+      onRefresh={() => {}}
+      onStartRide={() => {}}
+      cancellations={[
+        {
+          line: "1",
+          scheduledTime: now + 240,
+          originDepartureTime: cancelledOrigin,
+        },
+      ]}
+      arrivals={[
+        {
+          lineref: "1",
+          destinationdisplay: "Satama",
+          monitored: false,
+          tripref: "trip-cancelled",
+          originaimeddeparturetime: cancelledOrigin,
+          aimedarrivaltime: now + 240,
+          aimeddeparturetime: now + 240,
+        },
+        {
+          lineref: "1",
+          destinationdisplay: "Satama",
+          monitored: false,
+          tripref: "trip-running",
+          originaimeddeparturetime: nextOrigin,
+          aimedarrivaltime: now + 300,
+          aimeddeparturetime: now + 300,
+        },
+      ]}
+    />
+  );
+
+  const [cancelledRow, runningRow] = screen.getAllByRole("row").slice(1);
+
+  expect(
+    within(cancelledRow).getByText("Cancelled", { selector: "td" })
+  ).toBeInTheDocument();
+  expect(
+    within(cancelledRow).queryByRole("button", { name: "Get-off alert" })
+  ).not.toBeInTheDocument();
+
+  expect(
+    within(runningRow).queryByText("Cancelled", { selector: "td" })
+  ).not.toBeInTheDocument();
+  expect(
+    within(runningRow).getByRole("button", { name: "Get-off alert" })
+  ).toBeInTheDocument();
+});
