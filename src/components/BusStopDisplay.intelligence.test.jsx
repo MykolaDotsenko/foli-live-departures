@@ -210,6 +210,43 @@ test("prefers provider vehicle-at-stop truth over geometric proximity", () => {
   expect(screen.getByText("Bus is at the stop")).toBeInTheDocument();
 });
 
+test("does not present undated physical vehicle telemetry as current proximity", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  render(
+    <BusStopDisplay
+      stopId="164"
+      stopName="Kauppatori"
+      stop={{ id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 }}
+      stops={[]}
+      routesByShortName={new Map()}
+      serverTime={now}
+      loading={false}
+      refreshing={false}
+      error={false}
+      onRefresh={() => {}}
+      arrivals={[
+        {
+          lineref: "1",
+          destinationdisplay: "Satama",
+          monitored: true,
+          vehicleatstop: true,
+          latitude: 60.4518,
+          longitude: 22.2666,
+          recordedattime: null,
+          expecteddeparturetime: now + 60,
+          aimeddeparturetime: now + 50,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.queryByText("Bus is at the stop")).not.toBeInTheDocument();
+  expect(screen.queryByText("Bus at or near stop")).not.toBeInTheDocument();
+  expect(screen.queryByText(/Bus nearby/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Last bus position/i)).not.toBeInTheDocument();
+});
+
 function destinationBoard(arrival) {
   const now = Math.floor(Date.now() / 1000);
 
