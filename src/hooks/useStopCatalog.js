@@ -3,6 +3,7 @@ import {
   fetchStopCatalog,
   fetchStopCoordinates,
 } from "../api/foliApi";
+import { timestampIsFresh } from "../utils/cacheTime";
 import useRetrySignal from "./useRetrySignal";
 
 const CACHE_KEY = "foli-stop-catalog-v2";
@@ -52,10 +53,7 @@ function readCache() {
 }
 
 function cacheIsFresh(cache) {
-  return (
-    Number(cache?.savedAt) > 0 &&
-    Date.now() - Number(cache.savedAt) < CACHE_TTL_MS
-  );
+  return timestampIsFresh(cache?.savedAt, CACHE_TTL_MS);
 }
 
 function coordinatesFromStops(stops) {
