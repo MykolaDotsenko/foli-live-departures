@@ -36,8 +36,9 @@
   color: #17212b;
 }
 
+/* 4.5:1: the example is read before anything is typed. */
 .input::placeholder {
-  color: #8a9ba3;
+  color: #5f7680;
 }
 
 .input:hover {
@@ -259,8 +260,9 @@
     color: var(--dm-soft);
   }
 
+  /* 3:1 against the dark panel, like the light field's border. */
   :root[data-theme="dark"] .input {
-    border-color: var(--dm-line-strong);
+    border-color: #5f7f87;
     background: var(--dm-sunken);
     color: var(--dm-text);
   }

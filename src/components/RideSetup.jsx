@@ -8,6 +8,7 @@ import {
 import { formatClock, getDepartureTime } from "../utils/time";
 import styles from "./RideSetup.module.css";
 import StopName from "./StopName";
+import useScrollPaddingFor from "../hooks/useScrollPaddingFor";
 import { stopLabel } from "../utils/stopNames";
 
 function plannedClock(value) {
@@ -125,6 +126,10 @@ export default function RideSetup({
   const [notifications, setNotifications] = useState(false);
   const [startError, setStartError] = useState("");
   const panelRef = useRef(null);
+  // The Start bar is fixed to the bottom of a phone: what is focused below
+  // the fold must stop above it, not behind it.
+  const [actionsElement, setActionsElement] = useState(null);
+  useScrollPaddingFor(actionsElement, "bottom");
 
   // The setup opens inside the tapped row, often below the fold, while the
   // button that starts the ride is pinned to the bottom of a phone screen.
@@ -516,7 +521,7 @@ export default function RideSetup({
               </span>
             </div>
 
-            <div className={styles.actions}>
+            <div ref={setActionsElement} className={styles.actions}>
               {startError && (
                 <p className={styles.startError} role="alert">
                   {t(startError)}

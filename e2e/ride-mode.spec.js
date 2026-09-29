@@ -685,3 +685,34 @@ test("a get-off alert turned off in one tab ends in the other and stays off", as
   ).toBeNull();
   await otherTab.close();
 });
+
+// On a wide screen the running alert stays pinned to the top of the page.
+// Tabbing on through the page put focused controls underneath it, out of
+// sight (WCAG 2.4.11): the page now keeps focus below the panel.
+test("keyboard focus is never hidden under the pinned ride panel", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await routeTargetStop(page, {
+    expectedarrivaltime: Math.floor(Date.now() / 1000) + 900,
+  });
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+
+  const panel = page.locator("[data-stage]");
+  await expect(panel).toBeVisible();
+
+  for (const target of [
+    page.getByRole("combobox", { name: "Find your stop" }),
+    page.getByRole("button", { name: "Next stops" }).first(),
+    page.getByRole("link", { name: "Get me Home by public transit" }),
+  ]) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await target.focus();
+    const panelBox = await panel.boundingBox();
+    const box = await target.boundingBox();
+    expect(box.y).toBeGreaterThanOrEqual(panelBox.y + panelBox.height - 1);
+  }
+});

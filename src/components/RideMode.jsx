@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import { rideExitInstruction } from "../utils/rideInstructions";
 import { RIDE_STAGE, rideStageRank } from "../utils/rideProgress";
 import styles from "./RideMode.module.css";
+import useScrollPaddingFor from "../hooks/useScrollPaddingFor";
 import { realStopName, stopLabel } from "../utils/stopNames";
 
 const STAGE_COPY = {
@@ -257,6 +258,13 @@ export default function RideMode({
   // alerts escalate, so the panel comes back into view with them, unless it
   // is already there.
   const panelRef = useRef(null);
+  // Pinned over the page on a wide screen: tabbing must not land under it.
+  const [panelElement, setPanelElement] = useState(null);
+  useScrollPaddingFor(panelElement, "top");
+  const attachPanel = useCallback((node) => {
+    panelRef.current = node;
+    setPanelElement(node);
+  }, []);
   const stage = session?.stage;
   useEffect(() => {
     if (
@@ -378,7 +386,7 @@ export default function RideMode({
 
   return (
     <section
-      ref={panelRef}
+      ref={attachPanel}
       className={styles.panel}
       data-stage={session.stage}
       aria-labelledby="ride-mode-title"

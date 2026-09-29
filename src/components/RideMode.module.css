@@ -158,6 +158,7 @@
 }
 
 .instruction {
+  overflow-wrap: break-word;
   margin: 14px 0 0;
   color: #e9f4f5;
   font-size: 1rem;
@@ -197,7 +198,7 @@
 .metrics {
   margin-top: 14px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -211,11 +212,11 @@
   background: #152225;
 }
 
+/* Wraps rather than ending in "…": with large text "1 stop" was cut to
+   "1 sto". */
 .metrics strong {
-  overflow: hidden;
   color: #ffffff;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 }
 
 .statusGrid {
@@ -549,5 +550,13 @@
 @media screen {
   :root[data-theme="dark"] .panel {
     border-color: #3f7f86;
+  }
+}
+
+/* A phone with its text size turned right up: the three tiles one under
+   another, each with the room to say its value whole. */
+@media (max-width: 15em) {
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

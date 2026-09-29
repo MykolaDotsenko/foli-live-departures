@@ -136,9 +136,16 @@
   gap: 0.6rem;
 }
 
+.options strong,
+.options small {
+  overflow-wrap: break-word;
+}
+
 .options label {
   display: grid;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, …): with large text the label grew past its cell and the
+     setup scrolled sideways, cutting "(recommended)" off. */
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.65rem;
   align-items: flex-start;
   padding: 0.7rem;
