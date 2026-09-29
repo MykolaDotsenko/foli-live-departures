@@ -41,10 +41,52 @@ async function retry(label, fn, {
   throw new Error(`${label} timed out: ${lastError?.message || "unknown error"}`);
 }
 
-const targets = await retry("WebView CDP target", async () => {
-  const list = await CDP.List({ host, port });
-  return list.find((target) => target.type === "page") || list[0];
-}, { attempts: 20, delayMs: 500 });
+const session = await retry(
+  "WebView CDP session",
+  async () => {
+    const list = await CDP.List({ host, port });
+    const target =
+      list.find(
+        (candidate) =>
+          candidate.type === "page" &&
+          String(candidate.url || "").startsWith("https://localhost")
+      ) ||
+      list.find((candidate) => candidate.type === "page") ||
+      null;
+
+    if (!target) return null;
+
+    let candidateClient = null;
+    try {
+      candidateClient = await CDP({ host, port, target });
+      const { Runtime, Network, Log } = candidateClient;
+      await Promise.all([Runtime.enable(), Network.enable(), Log.enable()]);
+      return {
+        target,
+        client: candidateClient,
+        Runtime,
+        Network,
+        Log,
+      };
+    } catch (error) {
+      try {
+        await candidateClient?.close();
+      } catch {
+        // Best-effort cleanup before retrying a WebView that restarted.
+      }
+      throw error;
+    }
+  },
+  { attempts: 12, delayMs: 1000 }
+);
+
+const {
+  target: targets,
+  client,
+  Runtime,
+  Network,
+  Log,
+} = session;
 
 console.log("CDP target:", {
   id: targets.id,
@@ -52,11 +94,6 @@ console.log("CDP target:", {
   url: targets.url,
   type: targets.type,
 });
-
-const client = await CDP({ host, port, target: targets });
-const { Runtime, Network, Log } = client;
-
-await Promise.all([Runtime.enable(), Network.enable(), Log.enable()]);
 
 Runtime.consoleAPICalled(({ type, args }) => {
   if (type !== "error") return;
