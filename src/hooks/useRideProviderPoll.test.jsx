@@ -374,3 +374,68 @@ test("at the get-off stop, an answer without the bus still counts towards ending
 
   expect(next.targetMissingCount).toBe(2);
 });
+
+
+test("a stale at-stop row never arms the historical target-at-stop latch", async () => {
+  const staleAtStop = {
+    ...trackedRow,
+    vehicleatstop: true,
+    expectedarrivaltime: 1_060,
+  };
+  const onRuntime = vi.fn();
+  const props = harness({
+    onRuntime,
+    runtimeRef: { current: { targetWasAtStop: false } },
+    readArrivalSignals: () => ({
+      liveEtaSec: 60,
+      providerPositionAgeSec: 300,
+    }),
+  });
+  mocks.fetchStopMonitor.mockImplementation((stopId) =>
+    Promise.resolve(
+      String(stopId) === "32"
+        ? answer([staleAtStop])
+        : answer([])
+    )
+  );
+
+  const { unmount } = renderHook(() => useRideProviderPoll(props));
+  await vi.advanceTimersByTimeAsync(0);
+
+  const next = onRuntime.mock.calls[0][0];
+  expect(next.targetWasAtStop).toBe(false);
+
+  unmount();
+});
+
+test("a fresh at-stop row still arms the historical target-at-stop latch", async () => {
+  const freshAtStop = {
+    ...trackedRow,
+    vehicleatstop: true,
+    expectedarrivaltime: 1_060,
+  };
+  const onRuntime = vi.fn();
+  const props = harness({
+    onRuntime,
+    runtimeRef: { current: { targetWasAtStop: false } },
+    readArrivalSignals: () => ({
+      liveEtaSec: 60,
+      providerPositionAgeSec: 5,
+    }),
+  });
+  mocks.fetchStopMonitor.mockImplementation((stopId) =>
+    Promise.resolve(
+      String(stopId) === "32"
+        ? answer([freshAtStop])
+        : answer([])
+    )
+  );
+
+  const { unmount } = renderHook(() => useRideProviderPoll(props));
+  await vi.advanceTimersByTimeAsync(0);
+
+  const next = onRuntime.mock.calls[0][0];
+  expect(next.targetWasAtStop).toBe(true);
+
+  unmount();
+});
