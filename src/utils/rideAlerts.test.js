@@ -106,6 +106,7 @@ describe("ride get-off notifications", () => {
     expect(options.requireInteraction).toBe(true);
     expect(options.renotify).toBe(true);
     expect(options.tag).toBe("foli-active-ride");
+    expect(options.data?.url).toBe(globalThis.location.href);
     expect(options.lang).toBe("en");
     // A raster icon every notification centre decodes, and a status-bar badge
     // so Android shows the bus rather than the browser's logo.
