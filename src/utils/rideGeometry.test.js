@@ -179,3 +179,130 @@ describe("Ride Mode shape matching", () => {
     expect(sample.passedTarget).toBe(true);
   });
 });
+
+
+describe("Ride Mode ambiguity and recovery boundaries", () => {
+  const loopShape = prepareRideShape([
+    { lat: 60.45, lon: 22.25, traveled: 0 },
+    { lat: 60.45, lon: 22.27, traveled: 1100 },
+    { lat: 60.4503, lon: 22.27, traveled: 1135 },
+    { lat: 60.4503, lon: 22.25, traveled: 2235 },
+  ]);
+
+  it("refuses a fix that is equally plausible on two distant legs of a loop", () => {
+    const sample = analyzeRideGps({
+      position: { lat: 60.45015, lon: 22.259 },
+      accuracyM: 18,
+      speedMps: 8,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      nowMs: 1_000_000,
+    });
+
+    expect(sample.usable).toBe(false);
+    expect(sample.reason).toBe("shape-match-ambiguous");
+    expect(sample.offRouteSuspected).toBe(false);
+    expect(sample.passedTarget).toBe(false);
+  });
+
+  it("uses recent route continuity to choose the correct parallel leg", () => {
+    const sample = analyzeRideGps({
+      position: { lat: 60.45015, lon: 22.259 },
+      accuracyM: 18,
+      speedMps: 8,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      previousAlongM: 500,
+      previousFixAtMs: 990_000,
+      nowMs: 1_000_000,
+    });
+
+    expect(sample.usable).toBe(true);
+    expect(sample.onRoute).toBe(true);
+    expect(sample.alongM).toBeGreaterThan(400);
+    expect(sample.alongM).toBeLessThan(650);
+    expect(sample.routeDistanceM).toBeGreaterThan(1_500);
+  });
+
+  it("keeps the fix ambiguous when continuity cannot clearly distinguish two legs", () => {
+    const match = projectPositionToRideShape(
+      { lat: 60.45015, lon: 22.259 },
+      loopShape,
+      { previousAlongM: 1100 }
+    );
+
+    expect(match).not.toBeNull();
+    expect(match.ambiguous).toBe(true);
+  });
+
+  it("clears an off-route timer immediately after a trustworthy on-route fix", () => {
+    const offRoute = analyzeRideGps({
+      position: { lat: 60.455, lon: 22.27 },
+      accuracyM: 20,
+      speedMps: 8,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      nowMs: 1_000_000,
+    });
+
+    expect(offRoute.onRoute).toBe(false);
+    expect(offRoute.offRouteSinceMs).toBe(1_000_000);
+
+    const recovered = analyzeRideGps({
+      position: { lat: 60.45, lon: 22.26 },
+      accuracyM: 20,
+      speedMps: 8,
+      shape: loopShape,
+      boardingShapeDistM: 0,
+      targetShapeDistM: 2235,
+      offRouteSinceMs: offRoute.offRouteSinceMs,
+      nowMs: 1_090_000,
+    });
+
+    expect(recovered.usable).toBe(true);
+    expect(recovered.onRoute).toBe(true);
+    expect(recovered.offRouteSinceMs).toBeNull();
+    expect(recovered.offRouteSuspected).toBe(false);
+  });
+
+  it("never turns implausible speed into a route ETA", () => {
+    for (const speedMps of [0, 1.9, 40.1, 80]) {
+      const sample = analyzeRideGps({
+        position: { lat: 60.45, lon: 22.278 },
+        accuracyM: 15,
+        speedMps,
+        shape: prepareRideShape([
+          { lat: 60.45, lon: 22.25, traveled: 0 },
+          { lat: 60.45, lon: 22.29, traveled: 2200 },
+        ]),
+        boardingShapeDistM: 0,
+        targetShapeDistM: 2200,
+      });
+
+      expect(sample.onRoute).toBe(true);
+      expect(sample.routeEtaSec).toBeNull();
+    }
+  });
+
+  it("does not call a geometrically passed target confirmed when the fix is off-route", () => {
+    const sample = analyzeRideGps({
+      position: { lat: 60.455, lon: 22.29 },
+      accuracyM: 15,
+      speedMps: 8,
+      shape: prepareRideShape([
+        { lat: 60.45, lon: 22.25, traveled: 0 },
+        { lat: 60.45, lon: 22.30, traveled: 2750 },
+      ]),
+      boardingShapeDistM: 0,
+      targetShapeDistM: 1900,
+      nowMs: 1_000_000,
+    });
+
+    expect(sample.routeDistanceM).toBeLessThan(-250);
+    expect(sample.onRoute).toBe(false);
+    expect(sample.passedTarget).toBe(false);
+  });
+});
