@@ -19,6 +19,37 @@ for (const check of requiredTrustChecks) {
   }
 }
 
+const concurrencyBlock =
+  workflow.match(/concurrency:\s*\n([\s\S]*?)\n\njobs:/m)?.[1] || "";
+
+if (!concurrencyBlock.includes("'github-pages'")) {
+  throw new Error(
+    "Production-eligible deploy runs no longer share the GitHub Pages concurrency group."
+  );
+}
+
+for (const check of requiredTrustChecks) {
+  if (!concurrencyBlock.includes(check)) {
+    throw new Error(
+      `Pages concurrency is missing the trust condition: ${check}`
+    );
+  }
+}
+
+if (
+  !concurrencyBlock.includes("format('non-production-{0}', github.run_id)")
+) {
+  throw new Error(
+    "Ineligible workflow_run events can share production concurrency and cancel a valid Pages deploy."
+  );
+}
+
+if (!concurrencyBlock.includes("cancel-in-progress: true")) {
+  throw new Error(
+    "Production Pages concurrency no longer cancels superseded deploys."
+  );
+}
+
 if (!workflow.includes("persist-credentials: false")) {
   throw new Error(
     "Production checkout persists credentials into a build that executes package scripts."
