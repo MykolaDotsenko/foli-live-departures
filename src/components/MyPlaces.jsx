@@ -9,11 +9,11 @@ import {
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { PLACE_PRESETS } from "../hooks/useSavedPlaces";
 import styles from "./MyPlaces.module.css";
-import EmptyPlaceCard from "./myPlaces/EmptyPlaceCard";
-import PlaceCard from "./myPlaces/PlaceCard";
-import { isAccurateFix, MAX_SETUP_DISTANCE_METERS } from "./myPlaces/placeSetup";
-import SetupPlace from "./myPlaces/SetupPlace";
-import SharedPlaceImport from "./myPlaces/SharedPlaceImport";
+import EmptyPlaceCard from "./places/EmptyPlaceCard";
+import PlaceCard from "./places/PlaceCard";
+import { isAccurateFix, MAX_SETUP_DISTANCE_METERS } from "./places/placeSetup";
+import SetupPlace from "./places/SetupPlace";
+import SharedPlaceImport from "./places/SharedPlaceImport";
 
 function MyPlaces({
   stops,
