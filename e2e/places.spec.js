@@ -5,11 +5,12 @@ import { encodeSharedPlaceForTest, seedHome } from "./support/places.js";
 test("saves Home as a privacy-first safe arrival zone", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   await context.setGeolocation({
     latitude: 60.45182,

@@ -4,11 +4,12 @@ import { expect, test } from "./support/test.js";
 test("bare URL keeps one-tap location beside search and only fills the field", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   await context.setGeolocation({
     latitude: 60.45182,
@@ -44,11 +45,12 @@ test("bare URL keeps one-tap location beside search and only fills the field", a
 test("finds the nearest stop from one-time browser geolocation", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   await context.setGeolocation({
     latitude: 60.45182,
@@ -83,11 +85,12 @@ test("finds the nearest stop from one-time browser geolocation", async ({
 test("a first visit offers the stops near you", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   await context.setGeolocation({ latitude: 60.45182, longitude: 22.26662 });
 
@@ -104,11 +107,12 @@ test("a first visit offers the stops near you", async ({
 test("choosing a stop from the first visit's near-you list keeps your place", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   // Approximate, so the list is offered instead of a stop being chosen.
   await context.setGeolocation({
