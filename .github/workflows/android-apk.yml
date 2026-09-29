@@ -14,7 +14,7 @@ on:
       - "vite.config.*"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-apk:
@@ -57,7 +57,7 @@ jobs:
           cat > capacitor.config.json <<'JSON'
           {
             "appId": "fi.turku.folilivedepartures",
-            "appName": "Turku Föli",
+            "appName": "Turku Departures",
             "webDir": "dist",
             "server": {
               "androidScheme": "https"
@@ -105,7 +105,7 @@ jobs:
           manifest.write_text(text)
           PY
 
-      - name: Apply Föli launcher icon
+      - name: Apply Turku Departures launcher icon
         run: |
           sudo apt-get update
           sudo apt-get install -y librsvg2-bin
@@ -169,15 +169,39 @@ jobs:
             sleep $((attempt * 10))
           done
 
-      - name: Normalize APK filename
+      - name: Normalize APK filename and checksum
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk \
-             Turku-Foli-${{ github.sha }}.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk Turku-Departures.apk
+          sha256sum Turku-Departures.apk > Turku-Departures.apk.sha256
 
-      - name: Upload APK
+      - name: Upload APK workflow artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: Turku-Foli-Android-APK
-          path: Turku-Foli-${{ github.sha }}.apk
+          name: Turku-Departures-Android-APK
+          path: |
+            Turku-Departures.apk
+            Turku-Departures.apk.sha256
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish stable Android download
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="android-latest"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release delete "$tag" --cleanup-tag --yes
+          else
+            git push origin ":refs/tags/$tag" >/dev/null 2>&1 || true
+          fi
+
+          gh release create "$tag" \
+            Turku-Departures.apk \
+            Turku-Departures.apk.sha256 \
+            --target "$GITHUB_SHA" \
+            --title "Turku Departures Android APK" \
+            --prerelease \
+            --notes "Installable Android sideload build from commit \`$GITHUB_SHA\`. Built automatically from \`master\`. This is not a Google Play release."
