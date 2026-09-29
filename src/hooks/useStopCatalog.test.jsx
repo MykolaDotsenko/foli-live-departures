@@ -58,6 +58,7 @@ test("uses a fresh coordinate-complete cache without unnecessary provider reques
     CACHE_KEY,
     JSON.stringify({
       savedAt,
+      coordinatesSavedAt: savedAt,
       stops: [
         {
           id: "164",
@@ -221,10 +222,12 @@ test("recovers the catalogue when connectivity returns", async () => {
 // One bad entry in the saved catalogue took the whole app to its error
 // screen, and a reload read the same entry back: nothing could recover it.
 test("skips saved stops that are not stops instead of crashing on them", () => {
+  const savedAt = Date.now();
   localStorage.setItem(
     CACHE_KEY,
     JSON.stringify({
-      savedAt: Date.now(),
+      savedAt,
+      coordinatesSavedAt: savedAt,
       stops: [
         null,
         "Kauppatori",
