@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -169,4 +169,98 @@ test("a superseded alert request cannot mark a newer successful refresh as faile
   // it is not a failed provider check and must not overwrite the successful
   // refresh state.
   expect(result.current.error).toBe(false);
+});
+
+
+test("keeps the last successful cancellation when a later alerts refresh fails", async () => {
+  const cancellationPayload = {
+    cancellations: [
+      {
+        id: "cancel-50",
+        line: "50",
+        departure: 1_900_000_000,
+        stops: [
+          {
+            stop: "164",
+            arrival: 1_900_000_600,
+            isactive: true,
+          },
+        ],
+      },
+    ],
+    messages: [],
+  };
+
+  mocks.fetchAlerts
+    .mockResolvedValueOnce(cancellationPayload)
+    .mockRejectedValueOnce(new Error("temporary alerts outage"));
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts).toEqual([
+      expect.objectContaining({
+        type: "cancellation",
+        line: "50",
+        scheduledTime: 1_900_000_600,
+        originDepartureTime: 1_900_000_000,
+      }),
+    ])
+  );
+
+  const firstReceivedAt = result.current.receivedAtMs;
+  expect(firstReceivedAt).toEqual(expect.any(Number));
+
+  act(() => {
+    window.dispatchEvent(new globalThis.Event("online"));
+  });
+
+  await waitFor(() => expect(result.current.error).toBe(true));
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2);
+
+  // A failed refresh must not make a known cancelled departure look live
+  // again while the previous successful alerts payload is still the best
+  // information we have.
+  expect(result.current.alerts).toEqual([
+    expect.objectContaining({
+      type: "cancellation",
+      line: "50",
+      scheduledTime: 1_900_000_600,
+      originDepartureTime: 1_900_000_000,
+    }),
+  ]);
+  expect(result.current.receivedAtMs).toBe(firstReceivedAt);
+});
+
+test("aborts an in-flight alerts request when the consumer unmounts", () => {
+  let signal = null;
+  mocks.fetchAlerts.mockImplementation((requestSignal) => {
+    signal = requestSignal;
+    return new Promise((_resolve, reject) => {
+      requestSignal.addEventListener(
+        "abort",
+        () =>
+          reject(
+            new globalThis.DOMException(
+              "The operation was aborted.",
+              "AbortError"
+            )
+          ),
+        { once: true }
+      );
+    });
+  });
+
+  const { unmount } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  expect(signal).not.toBeNull();
+  expect(signal.aborted).toBe(false);
+
+  unmount();
+
+  expect(signal.aborted).toBe(true);
 });
