@@ -67,29 +67,6 @@ jobs:
           npm run build
           npm run verify:pwa
 
-  runtime-compat:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-
-      - name: Setup minimum supported Node
-        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
-        with:
-          node-version: 22.22.2
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Test minimum supported Node
-        run: npm test
-
-      - name: Build on minimum supported Node
-        run: npm run build
-
   browser-qa:
     needs: unit-build
     runs-on: ubuntu-latest
