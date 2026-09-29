@@ -57,10 +57,10 @@ export default defineConfig(({ mode }) => ({
       // Set just under what the suite currently reaches, so the numbers can
       // only be argued upwards. They are a ratchet, not a target.
       thresholds: {
-        statements: 82,
-        branches: 75,
-        functions: 85,
-        lines: 86,
+        statements: 88,
+        branches: 81,
+        functions: 90,
+        lines: 91,
       },
     },
   },
