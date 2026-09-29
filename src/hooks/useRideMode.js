@@ -688,6 +688,7 @@ export default function useRideMode() {
               targetShapeDistM:
                 current.plan?.targetStop?.shapeDistTraveled,
               previousAlongM: previous.alongRouteM,
+              previousFixAtMs: previous.updatedAt,
               offRouteSinceMs: previous.offRouteSinceMs,
               nowMs,
             })
@@ -734,9 +735,14 @@ export default function useRideMode() {
           shapeStatus: shapeRef.current ? "ready" : previous.shapeStatus,
           shapeUsable: shapeAnalysis?.usable === true,
           onRoute: shapeAnalysis?.onRoute === true,
-          alongRouteM: Number.isFinite(shapeAnalysis?.alongM)
-            ? shapeAnalysis.alongM
-            : null,
+          // Ambiguous or off-route projections are diagnostics, not progress.
+          // Keeping one as the next continuity anchor can lock a later good fix
+          // onto the wrong leg of a loop.
+          alongRouteM:
+            shapeAnalysis?.onRoute === true &&
+            Number.isFinite(shapeAnalysis?.alongM)
+              ? shapeAnalysis.alongM
+              : previous.alongRouteM,
           lateralDistanceM: Number.isFinite(shapeAnalysis?.lateralDistanceM)
             ? shapeAnalysis.lateralDistanceM
             : null,
