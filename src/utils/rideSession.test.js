@@ -144,9 +144,26 @@ describe("stored ride", () => {
     expect(localStorage.getItem(RIDE_STORAGE_KEY)).toBeNull();
   });
 
-  it("never lets a corrupt record throw", () => {
+  it("never lets a corrupt record throw, and removes it", () => {
     localStorage.setItem(RIDE_STORAGE_KEY, "{not json");
     expect(readStoredRide()).toBeNull();
+    expect(localStorage.getItem(RIDE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("reads no ride when storage cannot be read or cleaned", () => {
+    const getItem = vi
+      .spyOn(globalThis.Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError");
+      });
+    const removeItem = vi
+      .spyOn(globalThis.Storage.prototype, "removeItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError");
+      });
+    expect(readStoredRide()).toBeNull();
+    getItem.mockRestore();
+    removeItem.mockRestore();
   });
 
   it("keeps going when storage refuses to save", () => {

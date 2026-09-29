@@ -115,6 +115,12 @@ export function readStoredRide() {
     localStorage.removeItem(RIDE_STORAGE_KEY);
   } catch {
     // A corrupt convenience record must never block the departure board.
+    // Left in place, it was read, and failed, on every load for good.
+    try {
+      localStorage.removeItem(RIDE_STORAGE_KEY);
+    } catch {
+      // Storage itself is unavailable; there is nothing to clean up.
+    }
   }
   return null;
 }
