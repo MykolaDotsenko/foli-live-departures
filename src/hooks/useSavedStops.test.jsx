@@ -64,6 +64,16 @@ test("reopens the stop looked at in the last 12 hours, or else the first favouri
   expect(stopToReopen(now + 11 * HOUR)).toBe("4");
 });
 
+test("does not reopen a recent stop whose timestamp is in the future", () => {
+  const now = Date.parse("2026-09-26T07:30:00Z");
+  store({
+    favorites: [{ id: "4", name: "Turun linna" }],
+    recents: [{ id: "164", name: "Kauppatori", viewedAt: now + HOUR }],
+  });
+
+  expect(stopToReopen(now)).toBe("4");
+});
+
 test("a first visit, or a recent stop from before timestamps, reopens nothing", () => {
   expect(stopToReopen()).toBe("");
 
