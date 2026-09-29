@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchRouteCatalog } from "../api/foliApi";
+import { timestampIsFresh } from "../utils/cacheTime";
 import useRetrySignal from "./useRetrySignal";
 
 const CACHE_KEY = "foli-route-catalog-v1";
@@ -47,8 +48,7 @@ export default function useRouteCatalog() {
   const { attempt, reportFailure, reportSuccess } = useRetrySignal();
   // Evaluated per render, so a session that outlives the cache refreshes
   // instead of serving day-old route metadata until someone reloads.
-  const isFresh =
-    cache.savedAt > 0 && Date.now() - cache.savedAt < CACHE_TTL_MS;
+  const isFresh = timestampIsFresh(cache.savedAt, CACHE_TTL_MS);
 
   useEffect(() => {
     if (isFresh) return undefined;

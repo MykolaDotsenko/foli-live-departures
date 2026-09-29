@@ -20,6 +20,38 @@ beforeEach(() => {
   vi.mocked(fetchStopCoordinates).mockReset();
 });
 
+test("treats a future-dated cache as stale and refreshes it", async () => {
+  const now = Date.now();
+  localStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({
+      savedAt: now + 24 * 60 * 60 * 1000,
+      stops: [
+        {
+          id: "164",
+          name: "Future cached name",
+          lat: 60.4518,
+          lon: 22.2666,
+        },
+      ],
+    })
+  );
+
+  vi.mocked(fetchStopCoordinates).mockResolvedValue(
+    new Map([["164", { lat: 60.4518, lon: 22.2666 }]])
+  );
+  vi.mocked(fetchStopCatalog).mockResolvedValue([
+    { id: "164", name: "Kauppatori" },
+  ]);
+
+  const { result } = renderHook(() => useStopCatalog());
+
+  expect(result.current.catalogStatus).toBe("stale");
+  await waitFor(() => expect(result.current.catalogStatus).toBe("ready"));
+  expect(fetchStopCatalog).toHaveBeenCalledTimes(1);
+  expect(result.current.stops[0].name).toBe("Kauppatori");
+});
+
 test("uses a fresh coordinate-complete cache without unnecessary provider requests", () => {
   const savedAt = Date.now();
   localStorage.setItem(

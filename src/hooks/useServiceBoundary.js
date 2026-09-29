@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchServiceBoundary } from "../api/foliApi";
+import { timestampIsFresh } from "../utils/cacheTime";
 import useRetrySignal from "./useRetrySignal";
 
 const CACHE_KEY = "foli-service-boundary-v1";
@@ -39,8 +40,7 @@ export default function useServiceBoundary() {
   );
   const { attempt, reportFailure, reportSuccess } = useRetrySignal();
   // Evaluated per render for the same reason as the other catalogues.
-  const fresh =
-    cache.savedAt > 0 && Date.now() - cache.savedAt < CACHE_TTL_MS;
+  const fresh = timestampIsFresh(cache.savedAt, CACHE_TTL_MS);
 
   useEffect(() => {
     if (fresh && cache.geometry) {
