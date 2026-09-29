@@ -125,8 +125,9 @@ test("daily flow: search, save, navigate and restore with Back", async ({ page }
   await expect(lineOneBadge).toHaveCSS("color", "rgb(0, 0, 0)");
 
   await page.getByRole("button", { name: "Save Kauppatori to favourites" }).click();
+  // One name either way; pressed is what says it is saved.
   await expect(
-    page.getByRole("button", { name: "Remove Kauppatori from favourites" })
+    page.getByRole("button", { name: "Save Kauppatori to favourites", pressed: true })
   ).toHaveAttribute("aria-pressed", "true");
 
   const search = page.getByRole("combobox", { name: "Find your stop" });
@@ -455,7 +456,7 @@ test("six simultaneous alerts stay compact and keep departures reachable", async
   });
 
   await page.goto("/?stop=164");
-  await expect(page.getByLabel("6 service updates")).toBeAttached();
+  await expect(page.getByText("6 service updates", { exact: true })).toBeAttached();
   await openServiceUpdates(page);
   await expect(
     page.getByRole("button", { name: "Show 2 more updates" })

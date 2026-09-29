@@ -306,7 +306,10 @@
     visibility: hidden !important;
   }
 
+  /* The main content is a level down from the shell, beside the header
+     and footer, so its other parts are taken out there. */
   :global(.app-shell) > :not(:has(.printCard)),
+  :global(.app-main) > :not(:has(.printCard)),
   .wrapper > :not(.printCard) {
     display: none !important;
   }

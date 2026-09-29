@@ -45,6 +45,8 @@ export default {
   now: "nyt",
   "running late": "myöhässä",
   "about now": "ihan kohta",
+  // What a screen reader says for "~2 min": the tilde is only for the eye.
+  "about {time}": "noin {time}",
   "you are here": "olet perillä",
   "behind you": "jäi taakse",
   "almost there": "melkein perillä",

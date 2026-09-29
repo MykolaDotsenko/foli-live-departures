@@ -125,7 +125,7 @@ test("an expanded next-stops list stays open across a refresh", async () => {
   rerender(board([departure({ expecteddeparturetime: NOW + 320 })]));
 
   expect(
-    screen.getByRole("button", { name: "Hide next stops" })
+    screen.getByRole("button", { name: "Hide stops" })
   ).toBeInTheDocument();
 });
 
@@ -293,4 +293,46 @@ test("a busy Refresh keeps keyboard focus and ignores presses", () => {
   expect(refresh).not.toHaveAttribute("aria-disabled");
   fireEvent.click(refresh);
   expect(onRefresh).toHaveBeenCalledTimes(1);
+});
+
+// A name that changed with the state as well as aria-pressed read "Remove
+// Kauppatori from favourites, pressed". One name; pressed says it is saved.
+test("the favourite button keeps one name and says whether it is saved", () => {
+  const props = (isFavorite) => ({
+    ...board([departure()]).props,
+    isFavorite,
+    onToggleFavorite: () => {},
+  });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const favourite = screen.getByRole("button", {
+    name: "Save Kauppatori to favourites",
+    pressed: false,
+  });
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  expect(
+    screen.getByRole("button", {
+      name: "Save Kauppatori to favourites",
+      pressed: true,
+    })
+  ).toBe(favourite);
+});
+
+// A label on a plain div is not read; as a group its name is.
+test("the departure counts are a named group", () => {
+  render(board([departure()]));
+
+  expect(
+    screen.getByRole("group", { name: "Departure data summary" })
+  ).toHaveTextContent("1 upcoming");
+});
+
+// The gap between the sign and its translation is a margin, and a screen
+// reader ran the two together: "SatamaHarbour".
+test("a destination and its translation are read apart", () => {
+  render(board([departure({ destinationdisplay_en: "Harbour" })]));
+
+  const cell = screen.getByText("Harbour").closest("td");
+  expect(cell.textContent).toMatch(/^Satama · Harbour/);
 });

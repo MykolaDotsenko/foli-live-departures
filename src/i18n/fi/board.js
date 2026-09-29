@@ -40,7 +40,6 @@ export default {
 
   // Board
   "Loading…": "Ladataan…",
-  "Remove {name} from favourites": "Poista suosikeista: {name}",
   "Save {name} to favourites": "Lisää suosikkeihin: {name}",
   "Remove favourite": "Poista suosikki",
   "Save favourite": "Lisää suosikiksi",
@@ -117,7 +116,6 @@ export default {
     "Reaaliaikaiset ajat ovat Fölin arvioita busseilta saaduista tiedoista. Bussin etäisyys on linnuntie-etäisyys sen viimeksi ilmoittamasta sijainnista. Aikataulu tarkoittaa, ettei Fölillä ole juuri nyt reaaliaikaista tietoa vuorosta.",
 
   // Next stops
-  "Hide next stops": "Piilota seuraavat pysäkit",
   "Hide stops": "Piilota pysäkit",
   "Next stops": "Seuraavat pysäkit",
   // A narrow phone's labels, so a row's two actions share one line.

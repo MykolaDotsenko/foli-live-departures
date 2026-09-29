@@ -136,3 +136,13 @@ test("names a cause it does not know without leaving English in Finnish", () => 
     resetLanguageForTests("en");
   }
 });
+
+// A label on a plain span is not read, so the count said only "2".
+test("the count beside the heading is read in words", () => {
+  render(<ServiceAlerts alerts={[1, 2].map(message)} />);
+
+  const words = screen.getByText("2 service updates", { exact: true });
+  const count = words.parentElement;
+  expect(count).not.toHaveAttribute("aria-label");
+  expect(count.querySelector('[aria-hidden="true"]')).toHaveTextContent(/^2$/);
+});

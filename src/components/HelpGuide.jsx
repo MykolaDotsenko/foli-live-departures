@@ -118,7 +118,12 @@ export default function HelpGuide() {
             tabIndex={-1}
             onMouseDown={(event) => event.stopPropagation()}
           >
-            <header className={`${styles.header} ${view === "quick" ? styles.quickHeader : ""}`}>
+            {/* No landmark role: inside a dialog a header can be taken for
+                the page's banner, and the page already has one. */}
+            <header
+              role="none"
+              className={`${styles.header} ${view === "quick" ? styles.quickHeader : ""}`}
+            >
               <div>
                 <p className={styles.kicker}>
                   {view === "quick" ? t("Start here") : t("Full guide")}

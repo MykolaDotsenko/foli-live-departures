@@ -87,12 +87,14 @@ export default function TripJourneyDetails({
         className={styles.toggle}
         onClick={() => setExpanded((current) => !current)}
         aria-expanded={expanded}
-        aria-label={expanded ? t("Hide next stops") : t("Next stops")}
+        aria-label={expanded ? t("Hide stops") : t("Next stops")}
       >
         {/* A narrow phone gets the short Finnish label, so this and the
             get-off alert share one line; its words stay in the name. Open,
             it stays as short: "Hide next stops" pushed the alert button
-            onto a line of its own. */}
+            onto a line of its own. The name says what is on screen, so a
+            passenger who speaks "Hide stops" to voice control reaches it;
+            aria-expanded says it is the list below. */}
         <span className={styles.toggleLong} aria-hidden="true">
           {expanded ? t("Hide stops") : t("Next stops")}
         </span>

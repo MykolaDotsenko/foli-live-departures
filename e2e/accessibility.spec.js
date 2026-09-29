@@ -143,6 +143,32 @@ test("the theme switch overrides the phone theme and persists", async ({ page })
   );
 });
 
+// A screen reader moves by landmark and heading. The header and footer sat
+// inside <main>, so the page had no banner or contentinfo, and a first
+// visit had no h1 at all: the name was a paragraph.
+test("the page has its landmarks and exactly one h1, before and after a stop is open", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("banner")).toHaveCount(1);
+  await expect(page.getByRole("main")).toHaveCount(1);
+  await expect(page.getByRole("contentinfo")).toHaveCount(1);
+  await expect(page.getByRole("main").getByRole("banner")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Turku Departures"
+  );
+
+  await page.getByLabel("Find your stop").fill("164");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Kauppatori" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  // The name keeps its look as a paragraph.
+  await expect(page.locator(".brand")).toHaveText("Turku Departures");
+});
+
 test("landscape phone keeps onboarding actions in reach", async ({
   page,
 }, testInfo) => {

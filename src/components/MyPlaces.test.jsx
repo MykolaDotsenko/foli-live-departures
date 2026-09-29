@@ -965,3 +965,61 @@ test("Use my location keeps focus while it looks, and a second press does nothin
   expect(locate).not.toBeDisabled();
   expect(locate).toHaveFocus();
 });
+
+// Every radio was called "Main stop", so going through them a screen reader
+// could not say which stop each would make the main one.
+test("each main-stop choice is named for its stop", async () => {
+  setGeolocation((success) =>
+    success({
+      coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+    })
+  );
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Use my location to set up Home" })
+  );
+  await screen.findByRole("heading", { name: "Choose stops for Home" });
+
+  const names = screen
+    .getAllByRole("radio")
+    .map((radio) => radio.labels[0].textContent);
+  expect(names).toEqual([
+    "Main stop: Kauppatori",
+    "Main stop: Puistokatu",
+    "Main stop: Turun linna",
+  ]);
+  expect(
+    screen.getByRole("radio", { name: "Main stop: Puistokatu" })
+  ).toBeInTheDocument();
+});
+
+// A stop chosen by hand has no distance, and its line ended "Stop 32 ·".
+test("a stop chosen by hand is not followed by a dangling separator", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Use Puistokatu for Home" })
+  );
+
+  expect(screen.getByText("Stop 32", { exact: true })).toBeInTheDocument();
+});

@@ -52,12 +52,11 @@ function BoardHeader({
               type="button"
               className={styles.favoriteButton}
               onClick={onToggleFavorite}
+              // One name, and pressed says whether it is saved. A name that
+              // changed with the state as well read "Remove Kauppatori from
+              // favourites, pressed", which says the opposite of itself.
               aria-pressed={isFavorite}
-              aria-label={
-                isFavorite
-                  ? t("Remove {name} from favourites", { name: stopName })
-                  : t("Save {name} to favourites", { name: stopName })
-              }
+              aria-label={t("Save {name} to favourites", { name: stopName })}
               title={isFavorite ? t("Remove favourite") : t("Save favourite")}
             >
               <span aria-hidden="true">{isFavorite ? "★" : "☆"}</span>

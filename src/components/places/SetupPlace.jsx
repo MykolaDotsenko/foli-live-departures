@@ -122,13 +122,21 @@ export default function SetupPlace({
                 />
                 <span>
                   <strong><StopName stop={stop} /></strong>
+                  {/* A stop chosen by hand has no distance: "Stop 164 ·"
+                      ended on a dot with nothing after it. */}
                   <small>
-                    {t("Stop {id}", { id: stop.id })} ·{" "}
-                    {formatDistance(stop.distanceMeters)}
+                    {t("Stop {id}", { id: stop.id })}
+                    {formatDistance(stop.distanceMeters)
+                      ? ` · ${formatDistance(stop.distanceMeters)}`
+                      : ""}
                   </small>
                 </span>
               </label>
 
+              {/* Every radio was called "Main stop", so a screen reader
+                  going through them could not tell which stop each one
+                  made the main one. The stop's name is added out of
+                  sight, after the words on screen. */}
               <label className={styles.primaryChoice}>
                 <input
                   type="radio"
@@ -138,6 +146,9 @@ export default function SetupPlace({
                   onChange={() => setPrimaryStopId(stop.id)}
                 />
                 {t("Main stop")}
+                <span className={styles.srOnly}>
+                  : <StopName stop={stop} />
+                </span>
               </label>
             </div>
           );

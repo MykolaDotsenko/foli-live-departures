@@ -119,12 +119,17 @@ function DepartureRow({
         <td className={styles.destination}>
           <span lang={destinationLang || undefined}>{destination}</span>
           {destinationName.translation && (
-            <span
-              className={styles.destinationTranslation}
-              lang={destinationName.lang}
-            >
-              {destinationName.translation}
-            </span>
+            <>
+              {/* The gap between the sign and its translation is a margin,
+                  so a screen reader ran them together: "SatamaHarbour". */}
+              <span className={styles.srOnly}> · </span>
+              <span
+                className={styles.destinationTranslation}
+                lang={destinationName.lang}
+              >
+                {destinationName.translation}
+              </span>
+            </>
           )}
           {/* One line on a phone: the clock went under the countdown, and
               an accessible bus is a symbol here rather than a chip wrapping

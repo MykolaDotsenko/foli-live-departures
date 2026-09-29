@@ -9,8 +9,10 @@ import { formatClock, formatElapsedAge } from "../../utils/time";
 
 export function DepartureSummary({ visibleCount, realtimeCount }) {
   return (
+    // A group, so its name is read: on a plain div the label was ignored.
     <div
       className={styles.summary}
+      role="group"
       aria-label={t("Departure data summary")}
     >
       <span>{t("{count} upcoming", { count: visibleCount })}</span>

@@ -978,3 +978,28 @@ test("the instruction moves between two lasting live regions as the stop nears",
   expect(polite).toBeEmptyDOMElement();
   expect(alertSaying("Move to the doors and step off here.")).toBe(urgent);
 });
+
+// "~2 min" was read "tilde 2 min", and the label on the plain div around
+// the numbers was not read at all.
+test("the estimate is read as about so many minutes, in a named group", () => {
+  const panel = (
+    <RideMode
+      session={session("boarded")}
+      runtime={{ trackingHealth: "live", etaSec: 200, remainingStops: 3 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+  const { rerender } = render(panel);
+
+  const progress = screen.getByRole("group", { name: "Ride progress" });
+  expect(within(progress).getByText("~4 min")).toHaveAttribute("aria-hidden", "true");
+  expect(within(progress).getByText("about 4 min")).toBeInTheDocument();
+
+  resetLanguageForTests("fi");
+  rerender(panel);
+  expect(screen.getByText("noin 4 min")).toBeInTheDocument();
+});

@@ -230,15 +230,15 @@ function ServiceAlerts({ alerts, error = false, receivedAtMs = null }) {
             {emergency ? t("Emergency notice") : t("Service updates")}
           </h2>
         </div>
-        <span
-          className={styles.count}
-          aria-label={
-            alerts.length === 1
+        {/* A label on a plain span is not read, so a screen reader said
+            only "2". The number is for the eye; the words for the ear. */}
+        <span className={styles.count}>
+          <span aria-hidden="true">{alerts.length}</span>
+          <span className={styles.srOnly}>
+            {alerts.length === 1
               ? t("1 service update")
-              : t("{count} service updates", { count: alerts.length })
-          }
-        >
-          {alerts.length}
+              : t("{count} service updates", { count: alerts.length })}
+          </span>
         </span>
       </div>
 

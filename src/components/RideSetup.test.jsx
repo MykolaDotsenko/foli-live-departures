@@ -518,3 +518,31 @@ test("follows a language switch while the stop is being chosen", async () => {
   );
   expect(screen.getByText(/^Jäät pois: Puistokatu · Linja 1$/)).toBeInTheDocument();
 });
+
+// Each exit stop's name is Föli's own and Finnish, so an English screen
+// reader must be told to say it so; and the place badge ran on from the
+// line before it, "…after PuistokatuHome".
+test("reads each exit stop in Finnish, with its place badge set apart", async () => {
+  renderThreeStopSetup({
+    placesById: new Map([
+      [
+        "home",
+        {
+          id: "home",
+          label: "Home",
+          primaryStopId: "4",
+          stops: [{ id: "4", name: "Turun linna" }],
+        },
+      ],
+    ]),
+  });
+
+  const choice = await screen.findByRole("radio", { name: /Turun linna/ });
+  const option = choice.closest("label");
+  expect(option.querySelector('[lang="fi"]')).toHaveTextContent("Turun linna");
+  expect(option.textContent).toMatch(/Puistokatu · Home$/);
+  // Under the board's h1: the setup's question is the next level down.
+  expect(
+    screen.getByRole("heading", { level: 2, name: "Where do you want to get off?" })
+  ).toBeInTheDocument();
+});

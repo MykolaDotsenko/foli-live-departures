@@ -59,6 +59,20 @@ function etaLabel(seconds, stage, { source = "" } = {}) {
   return `~${t("{minutes} min", { minutes })}`;
 }
 
+// "~2 min" was read "tilde 2 min". The eye keeps the tilde; the ear gets
+// "about 2 min" in the language on screen.
+function EtaText({ eta }) {
+  if (!eta.startsWith("~")) return eta;
+  return (
+    <>
+      <span aria-hidden="true">{eta}</span>
+      <span className={styles.srOnly}>
+        {t("about {time}", { time: eta.slice(1) })}
+      </span>
+    </>
+  );
+}
+
 function remainingLabel(value, stage) {
   if (stage === RIDE_STAGE.NOW) return t("you are here");
   if (stage === RIDE_STAGE.MISSED) return t("behind you");
@@ -457,7 +471,12 @@ export default function RideMode({
       </p>
 
       {!gettingOffNow && (
-      <div className={styles.metrics} aria-label={t("Ride progress")}>
+      // A group, so its name is read: on a plain div the label was ignored.
+      <div
+        className={styles.metrics}
+        role="group"
+        aria-label={t("Ride progress")}
+      >
         <div>
           <span>{t("Line")}</span>
           <strong>{session.lineRef || "—"}</strong>
@@ -471,7 +490,7 @@ export default function RideMode({
           <span>
             {runtime.etaSource === "schedule" ? t("By timetable") : t("Estimate")}
           </span>
-          <strong>{eta || "—"}</strong>
+          <strong>{eta ? <EtaText eta={eta} /> : "—"}</strong>
         </div>
       </div>
 

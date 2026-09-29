@@ -163,6 +163,20 @@
   line-height: 1.45;
 }
 
+/* Heard, not seen: "about 2 min" for the "~2 min" on screen. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* The instruction has two live regions, polite and urgent, and only one
    speaks at a time. The quiet one is taken out of sight and out of the
    layout, but not out of the page: a region hidden with display: none is
