@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { URL } from "node:url";
 import CDP from "chrome-remote-interface";
 
 const host = process.env.CDP_HOST || "127.0.0.1";
