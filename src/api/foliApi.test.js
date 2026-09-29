@@ -1066,6 +1066,42 @@ test("re-resolves the pinned GTFS dataset after its TTL and drops rows cached fr
   expect(tripUrls[1]).toContain("/20260921-120000/");
 });
 
+test("re-resolves GTFS after the device clock moves backwards", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-09-22T12:00:00Z"));
+
+  let latest = "20260920-120000";
+  const metadataUrls = [];
+  const tripUrls = [];
+
+  mocks.get.mockImplementation((url) => {
+    if (url === "https://data.foli.fi/gtfs/") {
+      metadataUrls.push(url);
+      return Promise.resolve({ data: { ...datasetMeta, latest } });
+    }
+    if (url.includes("/trips/trip/")) {
+      tripUrls.push(url);
+      return Promise.resolve({ data: [{ route_id: "1" }] });
+    }
+    return Promise.reject(new Error(`Unexpected URL ${url}`));
+  });
+
+  await fetchTripDetails("trip-1");
+  expect(metadataUrls).toHaveLength(1);
+  expect(tripUrls[0]).toContain("/20260920-120000/");
+
+  latest = "20260921-120000";
+  // The device corrects a clock that had been one day fast. A negative cache
+  // age must invalidate the pin rather than keep the retired dataset forever.
+  vi.setSystemTime(new Date("2026-09-21T12:00:00Z"));
+
+  await fetchTripDetails("trip-1");
+
+  expect(metadataUrls).toHaveLength(2);
+  expect(tripUrls).toHaveLength(2);
+  expect(tripUrls[1]).toContain("/20260921-120000/");
+});
+
 test("re-reads rows once after the pin expires, against the confirmed dataset", async () => {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-09-21T00:00:00Z"));
