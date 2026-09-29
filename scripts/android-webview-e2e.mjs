@@ -195,30 +195,59 @@ console.log("Android WebView capabilities:", results.capabilities);
 record("geolocation API is exposed", results.capabilities.geolocation === true);
 record("app starts online", results.capabilities.online === true);
 
-const geo = await evaluate(`
-  new Promise((resolve) => {
-    const timer = setTimeout(
-      () => resolve({ ok: false, error: "timeout" }),
-      12000
-    );
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        clearTimeout(timer);
-        resolve({
-          ok: true,
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        });
-      },
-      (error) => {
-        clearTimeout(timer);
-        resolve({ ok: false, error: error.message, code: error.code });
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
-  })
-`, { awaitPromise: true });
+async function readAndroidGeolocation(enableHighAccuracy, timeout) {
+  return evaluate(`
+    new Promise((resolve) => {
+      const timer = setTimeout(
+        () => resolve({ ok: false, error: "outer timeout" }),
+        ${timeout + 2000}
+      );
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          clearTimeout(timer);
+          resolve({
+            ok: true,
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        },
+        (error) => {
+          clearTimeout(timer);
+          resolve({ ok: false, error: error.message, code: error.code });
+        },
+        {
+          enableHighAccuracy: ${enableHighAccuracy},
+          timeout: ${timeout},
+          maximumAge: 0
+        }
+      );
+    })
+  `, { awaitPromise: true });
+}
+
+// Mirror the product's reliability contract: ask for a fresh high-accuracy fix
+// first, then fall back when Android reports a timeout. The assertion below
+// remains strict about the injected Turku coordinates, so this retries provider
+// readiness rather than accepting a wrong or stale location.
+let geo = await readAndroidGeolocation(true, 8000);
+if (!geo?.ok && geo?.code === 3) {
+  geo = await retry(
+    "Android fallback geolocation",
+    async () => {
+      const candidate = await readAndroidGeolocation(false, 5000);
+      if (
+        candidate?.ok === true &&
+        Math.abs(Number(candidate.latitude) - 60.4518) < 0.05 &&
+        Math.abs(Number(candidate.longitude) - 22.2666) < 0.05
+      ) {
+        return candidate;
+      }
+      return null;
+    },
+    { attempts: 3, delayMs: 1000 }
+  );
+}
 
 record(
   "Android geolocation returns Turku emulator coordinates",
