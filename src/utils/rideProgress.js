@@ -559,7 +559,8 @@ function candidateStage(signals) {
 
   const freshProviderPosition =
     providerDistance !== null &&
-    (providerAge === null || providerAge <= 120);
+    providerAge !== null &&
+    providerAge <= 120;
   // A fix is only evidence about where the passenger is now. Once the phone
   // stops reporting — tunnel, revoked permission, sleeping device — the last
   // known distance stays in state forever, and without this it could still
