@@ -60,7 +60,7 @@ test("clearing a filter removes that stop from storage", () => {
 
 test("a blocked storage write does not stop the current board from filtering", () => {
   const setItem = vi
-    .spyOn(Storage.prototype, "setItem")
+    .spyOn(globalThis.Storage.prototype, "setItem")
     .mockImplementation(() => {
       throw new Error("storage blocked");
     });
