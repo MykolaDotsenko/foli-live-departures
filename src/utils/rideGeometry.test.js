@@ -297,11 +297,11 @@ describe("Ride Mode ambiguity and recovery boundaries", () => {
         { lat: 60.45, lon: 22.30, traveled: 2750 },
       ]),
       boardingShapeDistM: 0,
-      targetShapeDistM: 2000,
+      targetShapeDistM: 1900,
       nowMs: 1_000_000,
     });
 
-    expect(sample.routeDistanceM).toBeLessThan(-200);
+    expect(sample.routeDistanceM).toBeLessThan(-250);
     expect(sample.onRoute).toBe(false);
     expect(sample.passedTarget).toBe(false);
   });
