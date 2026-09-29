@@ -51,9 +51,14 @@ function vehicleProximity(arrival, stop, route, serverTime) {
   const phrases = VEHICLE_PHRASES[route?.type === 4 ? "waterbus" : "bus"];
   const ageSeconds = dataAgeSeconds(arrival.recordedattime, serverTime);
 
+  // ETA can still be realtime when the provider omitted the physical sample
+  // timestamp, but position/at-stop telemetry of unknown age is not safe to
+  // present as current. Ride Mode uses the same freshness boundary.
+  if (ageSeconds === null) return "";
+
   if (
     arrival.vehicleatstop === true &&
-    (ageSeconds === null || ageSeconds <= 120)
+    ageSeconds <= 120
   ) {
     return t(phrases.atStop);
   }
