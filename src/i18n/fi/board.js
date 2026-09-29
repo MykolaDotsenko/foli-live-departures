@@ -106,7 +106,6 @@ export default {
     "Peruttu tällä pysäkillä · aikataulun mukaan klo {time}",
   "Alert on": "Hälytys päällä",
   // U8: "Sulje asetukset" did not say which settings.
-  "Close get-off setup": "Sulje hälytyksen asetukset",
   // The ride setup is already "Aseta pysäkkihälytys": the button uses the
   // same word, at every width.
   "Get-off alert": "Pysäkkihälytys",

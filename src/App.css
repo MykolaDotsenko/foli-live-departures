@@ -284,10 +284,13 @@ input:focus-visible,
   gap: 0 12px;
 }
 
+/* Taps well above the 24px minimum, without a text line's worth of gap
+   between every row of links. */
 .project-links a {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 32px;
   align-items: center;
+  padding-block: 4px;
 }
 
 .footer-actions {

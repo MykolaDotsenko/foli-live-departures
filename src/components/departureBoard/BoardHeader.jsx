@@ -24,6 +24,7 @@ function BoardHeader({
   lineFilterOpen,
   onToggleLineFilter,
   onRefresh,
+  unknownStop = false,
 }) {
   return (
     <header
@@ -90,16 +91,19 @@ function BoardHeader({
         )}
         {/* Busy rather than disabled: a disabled button drops keyboard
             focus to the page, and this one is busy every half minute. */}
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={() => {
-            if (!loading && !refreshing) onRefresh?.();
-          }}
-          aria-disabled={loading || refreshing ? "true" : undefined}
-        >
-          {refreshing ? t("Refreshing…") : t("Refresh")}
-        </button>
+        {/* A number Föli does not have gets nothing new from asking again. */}
+        {!unknownStop && (
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => {
+              if (!loading && !refreshing) onRefresh?.();
+            }}
+            aria-disabled={loading || refreshing ? "true" : undefined}
+          >
+            {refreshing ? t("Refreshing…") : t("Refresh")}
+          </button>
+        )}
       </div>
     </header>
   );

@@ -120,9 +120,11 @@ function DepartureRow({
           <span lang={destinationLang || undefined}>{destination}</span>
           {destinationName.translation && (
             <>
-              {/* The gap between the sign and its translation is a margin,
-                  so a screen reader ran them together: "SatamaHarbour". */}
-              <span className={styles.srOnly}> · </span>
+              {/* A real space, so the line can break between the sign and
+                  its translation (with only the hidden one, "SatamaHarbour"
+                  was one word and split as "Harbou/r"), and a hidden dot so
+                  a screen reader pauses between the two names. */}{" "}
+              <span className={styles.srOnly}>· </span>
               <span
                 className={styles.destinationTranslation}
                 lang={destinationName.lang}
@@ -200,11 +202,16 @@ function DepartureRow({
                     read as "remind me before this bus leaves", and the
                     feature that sets the app apart went unfound on the
                     phones it is for. */}
-                {sameRideActive
-                  ? t("Alert on")
-                  : rideSetupOpen
-                    ? t("Close get-off setup")
-                    : t("Get-off alert")}
+                {/* Open or closed, the same name: the setup has its own
+                    Cancel, and aria-expanded says which it is. */}
+                {sameRideActive ? (
+                  <>
+                    <span aria-hidden="true">✓ </span>
+                    {t("Alert on")}
+                  </>
+                ) : (
+                  t("Get-off alert")
+                )}
               </button>
             </div>
           )}

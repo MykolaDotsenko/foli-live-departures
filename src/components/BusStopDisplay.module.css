@@ -315,8 +315,11 @@
   font-weight: 800;
 }
 
+/* Moves to the next line whole rather than breaking inside the name. */
 .destinationTranslation {
-  margin-left: 0.45em;
+  display: inline-block;
+  max-width: 100%;
+  margin-left: 0.2em;
   color: #52666f;
   font-weight: 650;
 }
@@ -646,8 +649,10 @@
     grid-area: title;
   }
 
+  /* Under the name, not level with the middle of the stacked button. */
   .header[data-filterable="true"] .stopMeta {
     grid-area: meta;
+    align-self: start;
     margin: 0;
   }
 
@@ -799,6 +804,13 @@
     white-space: normal;
   }
 
+  /* Flex items keep their text's width unless told otherwise, and a long
+     Finnish delay or notice ran under the countdown. */
+  .tripMeta > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
   .rowActions > * {
     max-width: 100%;
   }
@@ -829,6 +841,53 @@
   }
 }
 
+/* A phone with its text size turned up (the width in em is what is left
+   for words: 320px at double size is 10em). Three columns there left the
+   destination a word's width and cut "4 min". Each departure becomes a
+   small card instead, as on a stop display: the line and the countdown on
+   top, the destination and its details the full width below. Page zoom
+   and ordinary phones never reach this width. */
+@media (max-width: 15em) {
+  .table,
+  .table tbody {
+    display: block;
+  }
+
+  .table tbody tr:not(.rideSetupRow) {
+    display: grid;
+    grid-template-areas:
+      "line due"
+      "destination destination";
+    grid-template-columns: auto minmax(0, 1fr);
+    border-bottom: 1px solid #edf1f2;
+  }
+
+  .table tbody tr:not(.rideSetupRow) > td {
+    display: block;
+    border-bottom: 0;
+    padding: 0.5em 0.75em 0;
+  }
+
+  .table tbody tr:not(.rideSetupRow) > td:first-child {
+    grid-area: line;
+  }
+
+  .table tbody tr:not(.rideSetupRow) > td.destination {
+    grid-area: destination;
+    padding-bottom: 0.75em;
+  }
+
+  .table tbody tr:not(.rideSetupRow) > td.due {
+    grid-area: due;
+    white-space: normal;
+  }
+
+  .rideSetupRow,
+  .rideSetupRow > td {
+    display: block;
+  }
+}
+
 @media (max-height: 520px) and (pointer: coarse) {
   .favoriteButton {
     width: 44px;
@@ -856,6 +915,7 @@
   :root[data-theme="dark"] .header,
   :root[data-theme="dark"] .table th,
   :root[data-theme="dark"] .table td,
+  :root[data-theme="dark"] .table tbody tr,
   :root[data-theme="dark"] .summary,
   :root[data-theme="dark"] .legend {
     border-color: var(--dm-line);

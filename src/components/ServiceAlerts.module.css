@@ -581,7 +581,8 @@
     min-height: 48px;
     align-items: center;
     gap: 10px;
-    padding: 8px 15px;
+    /* In line with the service updates it opens. */
+    padding: 8px 11px;
     border: 0;
     background: transparent;
     color: #3d3320;

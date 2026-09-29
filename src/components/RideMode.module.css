@@ -134,8 +134,10 @@
   gap: 1px;
 }
 
+/* The tile's label only: the estimate's value is a span too, and was
+   drawn as small grey label text beside "1 stop". */
 .target span,
-.metrics span,
+.metrics > div > span:first-child,
 .statusGrid small {
   color: #93abb1;
   font-size: 0.74rem;

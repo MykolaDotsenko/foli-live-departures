@@ -217,8 +217,9 @@
   height: 32px;
   place-items: center;
   border-radius: 999px;
-  background: #dff3f3;
-  color: #00656f;
+  /* The same step numbers as the quick guide's. */
+  background: #007985;
+  color: #ffffff;
   font-size: 0.85rem;
   font-weight: 900;
 }

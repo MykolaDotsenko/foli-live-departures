@@ -205,6 +205,7 @@ function BusStopDisplay({
         lineFilterOpen={lineFilterOpen}
         onToggleLineFilter={() => setLineFilterOpen((open) => !open)}
         onRefresh={onRefresh}
+        unknownStop={unknownStop}
       />
 
       {upcomingArrivals.length > 0 && (

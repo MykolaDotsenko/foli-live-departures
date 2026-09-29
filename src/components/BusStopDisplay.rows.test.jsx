@@ -146,8 +146,11 @@ test("two visits of one looping trip keep separate rows and panels", async () =>
   );
 
   expect(setupPanels()).toHaveLength(1);
+  // The row button keeps its name open or closed; aria-expanded says which.
   expect(
-    screen.getAllByRole("button", { name: "Get-off alert" })
+    screen
+      .getAllByRole("button", { name: "Get-off alert" })
+      .filter((button) => button.getAttribute("aria-expanded") === "true")
   ).toHaveLength(1);
   expect(
     consoleError.mock.calls.some((call) =>
