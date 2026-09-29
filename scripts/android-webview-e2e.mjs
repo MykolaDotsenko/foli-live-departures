@@ -58,7 +58,7 @@ const session = await retry(
 
     let candidateClient = null;
     try {
-      candidateClient = await CDP({ host, port, target });
+      candidateClient = await CDP({ host, port, target, local: true });
       const { Runtime, Network, Log } = candidateClient;
       await Promise.all([Runtime.enable(), Network.enable(), Log.enable()]);
       return {
