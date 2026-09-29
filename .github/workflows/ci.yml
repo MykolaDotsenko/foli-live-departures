@@ -40,6 +40,9 @@ jobs:
       - name: Verify deployment trust boundary
         run: npm run verify:deployment
 
+      - name: Verify immutable workflow action pins
+        run: npm run verify:workflow-pins
+
       - name: Unit tests with coverage gate
         run: npm run test:coverage
 
