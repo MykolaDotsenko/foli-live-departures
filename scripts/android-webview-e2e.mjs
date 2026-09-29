@@ -228,8 +228,8 @@ async function readAndroidGeolocation(enableHighAccuracy, timeout) {
 
 // Mirror the product's reliability contract: ask for a fresh high-accuracy fix
 // first, then fall back when Android reports a timeout. The assertion below
-// remains strict about the injected Turku coordinates, so this retries provider
-// readiness rather than accepting a wrong or stale location.
+// remains strict about the injected Turku coordinates, so this retries Android
+// location-provider readiness rather than accepting a wrong or stale location.
 let geo = await readAndroidGeolocation(true, 8000);
 if (!geo?.ok && geo?.code === 3) {
   geo = await retry(
@@ -257,6 +257,80 @@ record(
   geo || {}
 );
 
+// Android/WebView correctness must not depend on whether Föli happens to
+// answer during this CI minute. Live provider contracts are exercised by the
+// separate scheduled "Live Föli contract smoke" workflow. Here we seed only
+// data the product itself is allowed to persist: public stop metadata and a
+// recent departure-board snapshot. Then block the provider so search, board,
+// offline continuity and reload are proved against a deterministic outage.
+await evaluate(`(() => {
+  const now = Date.now();
+  const serverTime = Math.floor(now / 1000);
+
+  localStorage.setItem(
+    "foli-stop-catalog-v2",
+    JSON.stringify({
+      savedAt: now,
+      coordinatesSavedAt: now,
+      stops: [
+        {
+          id: "164",
+          name: "Kauppatori",
+          lat: 60.4518,
+          lon: 22.2666
+        }
+      ]
+    })
+  );
+
+  localStorage.setItem(
+    "foli-last-departures-v1",
+    JSON.stringify({
+      "164": {
+        stopName: "Kauppatori",
+        arrivals: [
+          {
+            lineref: "1",
+            destinationdisplay: "Satama",
+            destinationdisplay_en: "Harbour",
+            destinationdisplay_sv: "Hamnen",
+            tripref: "",
+            monitored: false,
+            recordedattime: null,
+            vehicleatstop: false,
+            latitude: null,
+            longitude: null,
+            delay: null,
+            expecteddeparturetime: null,
+            expectedarrivaltime: null,
+            aimeddeparturetime: serverTime + 600,
+            aimedarrivaltime: serverTime + 600
+          }
+        ],
+        serverTime,
+        realtimeAvailable: false,
+        scheduleAvailable: true,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+        receivedAtMs: now
+      }
+    })
+  );
+
+  return true;
+})()`);
+
+await Network.setBlockedURLs({ urls: ["https://data.foli.fi/*"] });
+await evaluate("location.reload(); true");
+
+await retry("fixture-backed app reload", async () => {
+  return evaluate(
+    `document.readyState === "complete" &&
+      document.body &&
+      /Turku Departures/i.test(document.body.innerText)`
+  );
+}, { attempts: 20, delayMs: 500 });
+
 await evaluate(`(() => {
   const input =
     document.querySelector('input[role="combobox"]') ||
@@ -278,12 +352,12 @@ await evaluate(`(() => {
   return true;
 })()`);
 
-const suggestionText = await retry("live stop suggestion", async () => {
+const suggestionText = await retry("cached stop suggestion", async () => {
   const text = await evaluate("document.body.innerText");
   return /Kauppatori/i.test(text) ? text : "";
 }, { attempts: 20, delayMs: 750 });
 
-record("live stop search returns Kauppatori", /Kauppatori/i.test(suggestionText));
+record("stop search returns cached Kauppatori during provider outage", /Kauppatori/i.test(suggestionText));
 
 const selected = await evaluate(`(() => {
   const candidates = [...document.querySelectorAll('[role="option"]')];
@@ -338,7 +412,7 @@ record(
   showDepartures || {}
 );
 
-const board = await retry("live departure board", async () => {
+const board = await retry("fixture-backed departure board", async () => {
   return evaluate(`(() => ({
     url: location.href,
     text: document.body.innerText,
@@ -348,7 +422,7 @@ const board = await retry("live departure board", async () => {
 }, { attempts: 25, delayMs: 750 });
 
 record(
-  "live Föli departure board opens for the selected stop",
+  "recent cached departure board opens while Föli is unavailable",
   new URL(board.url).searchParams.get("stop") === selectedStopId &&
     /Kauppatori/i.test(board.heading || board.text) &&
     Number(board.rows) > 0,
@@ -386,6 +460,23 @@ record(
     liveSemantics.rowCount > 0 &&
     liveSemantics.everyRowHasAtLeastThreeCells === true,
   liveSemantics
+);
+
+const providerOutageState = await evaluate(`({
+  online: navigator.onLine,
+  rows: document.querySelectorAll("tbody tr").length,
+  text: document.body.innerText
+})`);
+
+record(
+  "provider outage keeps the cached board usable while the WebView is online",
+  providerOutageState.online === true &&
+    providerOutageState.rows > 0 &&
+    /Kauppatori/i.test(providerOutageState.text),
+  {
+    online: providerOutageState.online,
+    rows: providerOutageState.rows
+  }
 );
 
 await Network.emulateNetworkConditions({
