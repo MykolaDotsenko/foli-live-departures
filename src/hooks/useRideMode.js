@@ -106,6 +106,7 @@ function emptyGps() {
     shapeUsable: false,
     onRoute: false,
     alongRouteM: null,
+    alongRouteUpdatedAt: null,
     lateralDistanceM: null,
     routeDistanceM: null,
     routeEtaSec: null,
@@ -688,7 +689,7 @@ export default function useRideMode() {
               targetShapeDistM:
                 current.plan?.targetStop?.shapeDistTraveled,
               previousAlongM: previous.alongRouteM,
-              previousFixAtMs: previous.updatedAt,
+              previousFixAtMs: previous.alongRouteUpdatedAt,
               offRouteSinceMs: previous.offRouteSinceMs,
               nowMs,
             })
@@ -743,6 +744,11 @@ export default function useRideMode() {
             Number.isFinite(shapeAnalysis?.alongM)
               ? shapeAnalysis.alongM
               : previous.alongRouteM,
+          alongRouteUpdatedAt:
+            shapeAnalysis?.onRoute === true &&
+            Number.isFinite(shapeAnalysis?.alongM)
+              ? nowMs
+              : previous.alongRouteUpdatedAt,
           lateralDistanceM: Number.isFinite(shapeAnalysis?.lateralDistanceM)
             ? shapeAnalysis.lateralDistanceM
             : null,
