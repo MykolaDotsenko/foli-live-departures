@@ -90,3 +90,56 @@ test("releases the lock when the ride ends", async () => {
   unmount();
   expect(sentinel.release).toHaveBeenCalled();
 });
+
+
+test("does not issue a second wake-lock request while the first one is still pending", async () => {
+  let resolveRequest;
+  const request = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+  );
+  stubWakeLock(request);
+
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockReturnValue("visible");
+
+  const sentinel = fakeSentinel();
+  const { result } = renderHook(() => useRideWakeLock("ride-1"));
+
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
+
+  expect(request).toHaveBeenCalledTimes(1);
+
+  resolveRequest(sentinel);
+  await waitFor(() => expect(result.current).toBe("active"));
+
+  visibility.mockRestore();
+});
+
+
+test("releases a wake lock that resolves after the ride has already ended", async () => {
+  let resolveRequest;
+  const request = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+  );
+  stubWakeLock(request);
+
+  const sentinel = fakeSentinel();
+  const { unmount } = renderHook(() => useRideWakeLock("ride-1"));
+
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  unmount();
+
+  resolveRequest(sentinel);
+
+  await waitFor(() => expect(sentinel.release).toHaveBeenCalledTimes(1));
+});
