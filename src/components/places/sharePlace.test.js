@@ -52,8 +52,28 @@ test("copies the link where there is no share sheet", async () => {
   expect(writeText).toHaveBeenCalledWith(url);
 });
 
+// A share sheet the browser refuses to open is not the passenger closing
+// it: the link used to go straight to the copy-by-hand field.
+test("copies the link when the share sheet is refused", async () => {
+  setNavigator(
+    "share",
+    vi.fn().mockRejectedValue(Object.assign(new Error("x"), { name: "NotAllowedError" }))
+  );
+  const writeText = vi.fn().mockResolvedValue();
+  setNavigator("clipboard", { writeText });
+
+  expect(await offerPlaceLink({ url, place, label: "School" })).toEqual({
+    feedback: "Share link copied.",
+    url: "",
+  });
+  expect(writeText).toHaveBeenCalledWith(url);
+});
+
 test("shows the link to copy by hand when sharing and copying both fail", async () => {
   setNavigator("share", vi.fn().mockRejectedValue(new Error("NotAllowedError")));
+  setNavigator("clipboard", {
+    writeText: vi.fn().mockRejectedValue(new Error("NotAllowedError")),
+  });
 
   expect(await offerPlaceLink({ url, place, label: "School" })).toEqual({
     feedback: "Copy the share link below.",
