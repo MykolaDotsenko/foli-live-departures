@@ -23,6 +23,7 @@ export default function PlaceCard({
   onSetPrimaryStop,
   onReplace,
   onRemove,
+  locating = false,
 }) {
   const [showDriver, setShowDriver] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
@@ -161,6 +162,7 @@ export default function PlaceCard({
         label={label}
         onReplace={onReplace}
         onRemove={onRemove}
+        locating={locating}
       />
 
       {showDriver && (

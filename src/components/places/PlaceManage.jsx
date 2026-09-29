@@ -8,7 +8,13 @@ import styles from "../MyPlaces.module.css";
 import { PLACE_PHRASES } from "./placePhrases";
 import { offerPlaceLink } from "./sharePlace";
 
-export default function PlaceManage({ place, label, onReplace, onRemove }) {
+export default function PlaceManage({
+  place,
+  label,
+  onReplace,
+  onRemove,
+  locating = false,
+}) {
   // The phrase, worded when shown, so it follows a language switch.
   const [shareFeedback, setShareFeedback] = useState("");
   const [shareUrl, setShareUrl] = useState("");
@@ -37,7 +43,13 @@ export default function PlaceManage({ place, label, onReplace, onRemove }) {
         <button
           type="button"
           className={styles.textButton}
-          onClick={() => onReplace(place.id)}
+          // Busy rather than disabled: a disabled button drops keyboard
+          // focus to the page mid-lookup.
+          onClick={() => {
+            if (!locating) onReplace(place.id);
+          }}
+          aria-disabled={locating}
+          aria-busy={locating}
         >
           {t("Replace using where I am now")}
         </button>

@@ -244,6 +244,11 @@
   color: #00656f;
 }
 
+/* Looking up the location: tapping again does nothing, so do not invite it. */
+.textButton[aria-busy="true"] {
+  cursor: progress;
+}
+
 .dangerButton {
   color: #a33127;
 }

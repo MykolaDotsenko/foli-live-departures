@@ -785,3 +785,61 @@ test("a blocked location is explained in Finnish in the Finnish interface", asyn
   ).toBeInTheDocument();
   expect(screen.queryByText(/Location access is blocked/)).not.toBeInTheDocument();
 });
+
+// A double tap on "Replace using where I am now" started two location
+// lookups, and whichever answered last reopened the setup.
+test("a double tap on replace starts one location lookup, and keeps focus", async () => {
+  let deliverFix;
+  const getCurrentPosition = vi.fn((success) => {
+    deliverFix = () =>
+      success({
+        coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+      });
+  });
+  setGeolocation(getCurrentPosition);
+
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={
+        new Map([
+          [
+            "home",
+            {
+              id: "home",
+              label: "Home",
+              icon: "⌂",
+              primaryStopId: "164",
+              stops: [{ id: "164", name: "Kauppatori" }],
+            },
+          ],
+        ])
+      }
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByText("Manage Home"));
+  const replace = screen.getByRole("button", {
+    name: "Replace using where I am now",
+  });
+  replace.focus();
+  fireEvent.click(replace);
+  fireEvent.click(replace);
+
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  expect(replace).toHaveAttribute("aria-disabled", "true");
+  expect(replace).not.toBeDisabled();
+  expect(replace).toHaveFocus();
+
+  await act(async () => deliverFix());
+
+  expect(
+    await screen.findByRole("heading", { name: "Choose stops for Home" })
+  ).toBeInTheDocument();
+  expect(replace).toHaveAttribute("aria-disabled", "false");
+});

@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { t, useLanguage } from "../i18n";
 import {
   findNearestStops,
@@ -36,6 +36,11 @@ function MyPlaces({
   const [setupAccuracy, setSetupAccuracy] = useState(null);
   const [setupPreselectFirst, setSetupPreselectFirst] = useState(false);
   const [status, setStatus] = useState("idle");
+  // One location lookup at a time. A double tap on "Replace using where I
+  // am now" started two, and whichever answered last reopened the setup
+  // over the one the passenger had begun. A ref, not the status, so a
+  // second tap in the same frame is caught too.
+  const lookupInFlightRef = useRef(false);
   // How to word the problem, not the words, so a language switch while it
   // shows rewords it.
   const [error, setError] = useState(null);
@@ -59,7 +64,7 @@ function MyPlaces({
 
   const startSetup = async (placeId) => {
     const preset = PLACE_PRESETS.find((candidate) => candidate.id === placeId);
-    if (!preset) return;
+    if (!preset || lookupInFlightRef.current) return;
 
     if (!hasStopCoordinates) {
       showError(() =>
@@ -77,6 +82,7 @@ function MyPlaces({
 
     setStatus("locating");
     setError(null);
+    lookupInFlightRef.current = true;
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
@@ -123,6 +129,8 @@ function MyPlaces({
     } catch (locationError) {
       setStatus("idle");
       showError(() => t(locationErrorMessage(locationError)));
+    } finally {
+      lookupInFlightRef.current = false;
     }
   };
 
@@ -199,6 +207,7 @@ function MyPlaces({
                   onOpenStop={onOpenStop}
                   onSetPrimaryStop={onSetPrimaryStop}
                   onReplace={startSetup}
+                  locating={status === "locating"}
                   onRemove={onRemovePlace}
                 />
                 {setupForm}
