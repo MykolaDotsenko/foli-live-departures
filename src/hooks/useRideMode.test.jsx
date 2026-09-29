@@ -292,6 +292,128 @@ async function waitForShortRide(result, { departsInSec = 1200 } = {}) {
   });
 }
 
+test("a rejected forward snap does not reset the accepted route-anchor clock", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const startMs = Date.UTC(2026, 8, 29, 7, 0, 0);
+  vi.setSystemTime(startMs);
+
+  mocks.fetchTripShape.mockResolvedValueOnce([
+    { lat: 60.45, lon: 22.25, traveled: 0 },
+    { lat: 60.45, lon: 22.27, traveled: 1100 },
+    { lat: 60.4515, lon: 22.27, traveled: 1267 },
+    { lat: 60.4515, lon: 22.25, traveled: 2367 },
+  ]);
+
+  let deliverGps = null;
+  watchPosition.mockImplementation((success) => {
+    deliverGps = success;
+    return 188;
+  });
+
+  const nowSec = Math.floor(startMs / 1000);
+  const boarding = {
+    id: "164",
+    name: "Board",
+    lat: 60.45,
+    lon: 22.25,
+    shapeDistTraveled: 0,
+    predictedEpochSec: nowSec - 60,
+  };
+  const target = {
+    id: "32",
+    name: "Target",
+    lat: 60.4515,
+    lon: 22.25,
+    shapeDistTraveled: 2367,
+    predictedEpochSec: nowSec + 900,
+  };
+  const previousStop = {
+    id: "31",
+    name: "Before",
+    shapeDistTraveled: 1800,
+    predictedEpochSec: nowSec + 780,
+  };
+
+  const { result, unmount } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      shapeId: "loop-shape",
+      boardingStop: boarding,
+      targetStop: target,
+      previousStop,
+      plan: {
+        boardingStop: boarding,
+        targetStop: target,
+        previousStop,
+        targetPredictedEpochSec: target.predictedEpochSec,
+        stopsToTarget: [
+          { id: "a", predictedEpochSec: nowSec + 300 },
+          { id: "b", predictedEpochSec: nowSec + 500 },
+          { id: "31", predictedEpochSec: nowSec + 780 },
+          target,
+        ],
+      },
+    });
+  });
+
+  await waitFor(() => expect(result.current.gps.shapeStatus).toBe("ready"));
+
+  const outboundFix = {
+    latitude: 60.45,
+    longitude: 22.254,
+    accuracy: 15,
+    speed: 8,
+  };
+  act(() => deliverGps({ coords: outboundFix }));
+  act(() => deliverGps({ coords: outboundFix }));
+
+  expect(result.current.session?.underway).toBe(true);
+  expect(result.current.gps.alongRouteM).toBeLessThan(400);
+  const acceptedAt = result.current.gps.alongRouteUpdatedAt;
+
+  // Thirty seconds later the phone lands on a future parallel leg almost
+  // two kilometres ahead. That jump is not physically plausible yet.
+  vi.setSystemTime(startMs + 30_000);
+  act(() => {
+    deliverGps({
+      coords: {
+        latitude: 60.4515,
+        longitude: 22.254,
+        accuracy: 15,
+        speed: 10,
+      },
+    });
+  });
+
+  expect(result.current.gps.onRoute).toBe(false);
+  expect(result.current.gps.alongRouteM).toBeLessThan(400);
+  expect(result.current.gps.alongRouteUpdatedAt).toBe(acceptedAt);
+
+  // Fifteen seconds later it is plausible relative to the last accepted
+  // anchor. A rejected sample must not shorten that elapsed-time window.
+  vi.setSystemTime(startMs + 45_000);
+  act(() => {
+    deliverGps({
+      coords: {
+        latitude: 60.4515,
+        longitude: 22.254,
+        accuracy: 15,
+        speed: 10,
+      },
+    });
+  });
+
+  expect(result.current.gps.onRoute).toBe(true);
+  expect(result.current.gps.alongRouteM).toBeGreaterThan(1_800);
+  expect(result.current.gps.alongRouteUpdatedAt).toBe(startMs + 45_000);
+
+  act(() => result.current.endRide());
+  expect(clearWatch).toHaveBeenCalledWith(188);
+  unmount();
+});
+
 test("location says nothing while the passenger still waits at the boarding stop", async () => {
   mocks.announceRideStage.mockClear();
   let deliverGps = null;
