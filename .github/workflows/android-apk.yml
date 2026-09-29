@@ -5,6 +5,13 @@ on:
   push:
     paths:
       - ".github/workflows/android-apk.yml"
+      - "scripts/build-sw.mjs"
+      - "src/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.*"
 
 permissions:
   contents: read
@@ -148,7 +155,19 @@ jobs:
 
       - name: Build installable APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            if ./gradlew assembleDebug --no-daemon; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "Gradle build failed after 3 attempts."
+              exit 1
+            fi
+            echo "Gradle build attempt $attempt failed; retrying after a short delay."
+            sleep $((attempt * 10))
+          done
 
       - name: Normalize APK filename
         run: |
