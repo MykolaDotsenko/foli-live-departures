@@ -265,7 +265,8 @@ test("aborts an in-flight alerts request when the consumer unmounts", () => {
   expect(signal.aborted).toBe(true);
 });
 
-// Route-membership enrichment must never outlive the stop selection that started it.\ntest("aborts the previous stop-membership lookup when the selected stop changes", async () => {
+// Route-membership enrichment must never outlive the stop selection that started it.
+test("aborts the previous stop-membership lookup when the selected stop changes", async () => {
   const membershipSignals = [];
   mocks.fetchStopServedRouteIds.mockImplementation(
     (_stopId, _routeIds, signal) => {
