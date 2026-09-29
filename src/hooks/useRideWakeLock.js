@@ -20,16 +20,28 @@ export default function useRideWakeLock(rideId) {
 
     let active = true;
     let sentinel = null;
+    let requestInFlight = false;
 
     const request = async () => {
-      if (!active || document.visibilityState !== "visible") return;
+      if (
+        !active ||
+        requestInFlight ||
+        sentinel ||
+        document.visibilityState !== "visible"
+      ) {
+        return;
+      }
 
+      requestInFlight = true;
       try {
-        sentinel = await globalThis.navigator.wakeLock.request("screen");
+        const acquired = await globalThis.navigator.wakeLock.request("screen");
+
         if (!active) {
-          await sentinel.release?.();
+          await acquired.release?.();
           return;
         }
+
+        sentinel = acquired;
         setWakeLockState("active");
         sentinel.addEventListener?.("release", () => {
           sentinel = null;
@@ -37,11 +49,17 @@ export default function useRideWakeLock(rideId) {
         });
       } catch {
         if (active) setWakeLockState("inactive");
+      } finally {
+        requestInFlight = false;
       }
     };
 
     const handleVisibility = () => {
-      if (document.visibilityState === "visible" && !sentinel) {
+      if (
+        document.visibilityState === "visible" &&
+        !sentinel &&
+        !requestInFlight
+      ) {
         void request();
       }
     };
