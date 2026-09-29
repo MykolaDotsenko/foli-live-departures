@@ -70,10 +70,17 @@ function tripOffsetSeconds(scheduleSec, boardingScheduleSec) {
   return rolled > 0 && rolled <= MAX_TRIP_SECONDS ? rolled : null;
 }
 
-function stopTimeSeconds(item) {
+function boardingStopTimeSeconds(item) {
   return (
     gtfsTimeToSeconds(item?.departureTime) ??
     gtfsTimeToSeconds(item?.arrivalTime)
+  );
+}
+
+function alightingStopTimeSeconds(item) {
+  return (
+    gtfsTimeToSeconds(item?.arrivalTime) ??
+    gtfsTimeToSeconds(item?.departureTime)
   );
 }
 
@@ -152,7 +159,7 @@ export function resolveRideBoardingIndex(
     .map((index) => ({
       index,
       delta: circularClockDeltaSeconds(
-        stopTimeSeconds(rows[index]),
+        boardingStopTimeSeconds(rows[index]),
         aimedClock
       ),
     }))
@@ -193,7 +200,7 @@ export function buildRidePlan({
   );
   if (targetIndex < 0) return null;
 
-  const boardingScheduleSec = stopTimeSeconds(stopTimes[boardingIndex]);
+  const boardingScheduleSec = boardingStopTimeSeconds(stopTimes[boardingIndex]);
   const departure = finiteNumber(departureEpochSec);
   if (boardingScheduleSec === null || departure === null || departure <= 0) {
     return null;
@@ -204,8 +211,15 @@ export function buildRidePlan({
     Math.min(stopTimes.length, targetIndex + 2)
   );
 
-  const routeStops = throughRecovery.map((item) => {
-    const scheduleSec = stopTimeSeconds(item);
+  const routeStops = throughRecovery.map((item, routeIndex) => {
+    // The ride is anchored to when the passenger's bus leaves the boarding
+    // stop, but every downstream stop is about when the bus arrives there.
+    // Using departure_time for a layover stop delays "next"/"now" by the
+    // entire dwell.
+    const scheduleSec =
+      routeIndex === 0
+        ? boardingScheduleSec
+        : alightingStopTimeSeconds(item);
     const offsetSec = tripOffsetSeconds(scheduleSec, boardingScheduleSec);
 
     return {
@@ -261,7 +275,10 @@ function rowEpochSec(row) {
 // tell apart are not guessed at: no match leaves the timetable in charge,
 // which can warn but never says "get off now".
 function chooseVisit(candidates, plannedEpochSec) {
-  if (candidates.length <= 1) return candidates[0] || null;
+  if (candidates.length === 0) return { status: "absent" };
+  if (candidates.length === 1) {
+    return { status: "matched", arrival: candidates[0] };
+  }
 
   const times = candidates.map(rowEpochSec);
   const known = times.filter((time) => time !== null);
@@ -269,11 +286,11 @@ function chooseVisit(candidates, plannedEpochSec) {
     known.length === times.length &&
     Math.max(...known) - Math.min(...known) <= 60
   ) {
-    return candidates[0];
+    return { status: "matched", arrival: candidates[0] };
   }
 
   const planned = finiteNumber(plannedEpochSec);
-  if (planned === null) return null;
+  if (planned === null) return { status: "ambiguous" };
 
   const ranked = candidates
     .map((arrival, index) => ({
@@ -285,12 +302,18 @@ function chooseVisit(candidates, plannedEpochSec) {
     }))
     .sort((a, b) => a.delta - b.delta);
 
-  return ranked[1].delta - ranked[0].delta >= 300 ? ranked[0].arrival : null;
+  return ranked[1].delta - ranked[0].delta >= 300
+    ? { status: "matched", arrival: ranked[0].arrival }
+    : { status: "ambiguous" };
 }
 
-export function matchRideArrival(arrivals, identity) {
+// Richer than matchRideArrival(): provider polling needs to distinguish
+// "the bus is absent" from "the feed lists our journey more than once and we
+// cannot safely tell which visit is ours". Ambiguity is neutral evidence; it
+// must never increment a "bus has left" counter.
+export function resolveRideArrivalMatch(arrivals, identity) {
   const rows = Array.isArray(arrivals) ? arrivals : [];
-  if (rows.length === 0 || !identity) return null;
+  if (rows.length === 0 || !identity) return { status: "absent" };
 
   const journey = normalizedString(identity.datedVehicleJourneyRef);
   if (journey) {
@@ -298,8 +321,10 @@ export function matchRideArrival(arrivals, identity) {
       (row) => normalizedString(row?.datedvehiclejourneyref) === journey
     );
     if (candidates.length > 0) {
-      const arrival = chooseVisit(candidates, identity.plannedEpochSec);
-      return arrival ? { arrival, matchedBy: "dated-journey" } : null;
+      const visit = chooseVisit(candidates, identity.plannedEpochSec);
+      return visit.status === "matched"
+        ? { ...visit, matchedBy: "dated-journey" }
+        : visit;
     }
   }
 
@@ -309,8 +334,10 @@ export function matchRideArrival(arrivals, identity) {
       (row) => normalizedString(row?.tripref) === trip
     );
     if (candidates.length > 0) {
-      const arrival = chooseVisit(candidates, identity.plannedEpochSec);
-      return arrival ? { arrival, matchedBy: "trip" } : null;
+      const visit = chooseVisit(candidates, identity.plannedEpochSec);
+      return visit.status === "matched"
+        ? { ...visit, matchedBy: "trip" }
+        : visit;
     }
   }
 
@@ -319,11 +346,6 @@ export function matchRideArrival(arrivals, identity) {
 
   const vehicle = normalizedString(identity.vehicleRef);
   if (vehicle) {
-    // A registration is not a journey. A bus that reaches its terminus starts
-    // a new run, often under a different line number, so a stop served in
-    // both directions lists the same vehicle twice. Taking whichever row the
-    // feed happened to put first would track the wrong run and time the
-    // get-off alarm against it.
     const sameVehicle = rows.filter(
       (row) =>
         normalizedString(row?.vehicleref) === vehicle &&
@@ -331,7 +353,26 @@ export function matchRideArrival(arrivals, identity) {
     );
 
     if (sameVehicle.length === 1) {
-      return { arrival: sameVehicle[0], matchedBy: "vehicle" };
+      const arrival = sameVehicle[0];
+
+      // A physical bus can finish one run and start another on the same line.
+      // When the run's origin time is known, vehicle identity alone is not
+      // enough: require the one row to agree with that run too.
+      if (originTime === null) {
+        return { status: "matched", arrival, matchedBy: "vehicle" };
+      }
+
+      const candidateOrigin = finiteNumber(arrival?.originaimeddeparturetime);
+      if (
+        candidateOrigin !== null &&
+        Math.abs(candidateOrigin - originTime) <= 90
+      ) {
+        return {
+          status: "matched",
+          arrival,
+          matchedBy: "vehicle-origin-time",
+        };
+      }
     }
 
     if (sameVehicle.length > 1 && originTime !== null) {
@@ -347,19 +388,19 @@ export function matchRideArrival(arrivals, identity) {
 
       if (ranked[0].delta <= 90 && ranked[1].delta - ranked[0].delta >= 90) {
         return {
+          status: "matched",
           arrival: ranked[0].arrival,
           matchedBy: "vehicle-origin-time",
         };
+      }
+
+      if (ranked.some((candidate) => Number.isFinite(candidate.delta))) {
+        return { status: "ambiguous" };
       }
     }
   }
 
   if (line && originTime !== null) {
-    // This is the weakest identity left, so it is also the one most likely to
-    // land on the wrong row. A loop route serves the same stop twice on one
-    // journey and a terminus lists departures minutes apart, so taking the
-    // first row that fits the window can be a visit the passenger already
-    // rode past. Rank by closeness and only answer when one row clearly wins.
     const ranked = rows
       .filter((row) => normalizedString(row?.lineref) === line)
       .map((arrival) => ({
@@ -372,15 +413,34 @@ export function matchRideArrival(arrivals, identity) {
       .filter((candidate) => candidate.delta <= 90)
       .sort((a, b) => a.delta - b.delta);
 
-    if (
-      ranked.length === 1 ||
-      (ranked.length > 1 && ranked[1].delta - ranked[0].delta >= 30)
-    ) {
-      return { arrival: ranked[0].arrival, matchedBy: "line-origin-time" };
+    if (ranked.length === 1) {
+      return {
+        status: "matched",
+        arrival: ranked[0].arrival,
+        matchedBy: "line-origin-time",
+      };
+    }
+
+    if (ranked.length > 1) {
+      if (ranked[1].delta - ranked[0].delta >= 30) {
+        return {
+          status: "matched",
+          arrival: ranked[0].arrival,
+          matchedBy: "line-origin-time",
+        };
+      }
+      return { status: "ambiguous" };
     }
   }
 
-  return null;
+  return { status: "absent" };
+}
+
+export function matchRideArrival(arrivals, identity) {
+  const result = resolveRideArrivalMatch(arrivals, identity);
+  return result.status === "matched"
+    ? { arrival: result.arrival, matchedBy: result.matchedBy }
+    : null;
 }
 
 export function arrivalEtaSeconds(arrival, referenceTimeSec) {
