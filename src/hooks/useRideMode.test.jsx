@@ -1805,3 +1805,42 @@ test("a provider coordinate without recorded time cannot say get off now", async
   unmount();
   mocks.fetchStopMonitor.mockImplementation(() => new Promise(() => {}));
 });
+
+
+test("a stale vehicle-at-stop observation cannot say get off now", async () => {
+  vi.useFakeTimers();
+  const startMs = Date.UTC(2026, 8, 29, 12, 0, 0);
+  vi.setSystemTime(startMs);
+  const nowSec = Math.floor(startMs / 1000);
+  mocks.announceRideStage.mockClear();
+
+  exitStopAnswersOnce(
+    {
+      serverTime: nowSec,
+      arrivals: [
+        {
+          datedvehiclejourneyref: "journey-1",
+          monitored: true,
+          vehicleatstop: true,
+          recordedattime: nowSec - 300,
+          expectedarrivaltime: nowSec + 60,
+        },
+      ],
+    },
+    offline
+  );
+
+  const { result, unmount } = renderHook(() => useRideMode());
+  startTimedRide(result, nowSec, [60]);
+  await advance(0);
+
+  expect(result.current.session?.stage).toBe("next");
+  expect(result.current.session?.stageReason).not.toBe("target-at-stop");
+  expect(
+    mocks.announceRideStage.mock.calls.map(([stage]) => stage)
+  ).not.toContain("now");
+
+  act(() => result.current.endRide());
+  unmount();
+  mocks.fetchStopMonitor.mockImplementation(() => new Promise(() => {}));
+});

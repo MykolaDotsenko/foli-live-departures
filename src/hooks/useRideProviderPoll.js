@@ -4,6 +4,7 @@ import { RIDE_STAGE, resolveRideArrivalMatch } from "../utils/rideProgress";
 import { ridePollDelayMs } from "../utils/retry";
 
 const REALTIME_ONLY = Object.freeze({ scheduleFallback: false });
+const FRESH_PROVIDER_OBSERVATION_SEC = 120;
 
 // What one stop's answer says about the ride. Only a row the feed is tracking
 // is evidence of where the bus is. The feed also lists journeys it is not
@@ -109,17 +110,32 @@ export default function useRideProviderPoll({
             // next poll gets through.
             next.targetSeenAt = Date.now();
             next.targetMissingCount = 0;
+
+            const arrivalSignals = readArrivalSignals(
+              targetMatch.arrival,
+              targetResult.value.serverTime,
+              current.targetStop
+            );
+            Object.assign(next, arrivalSignals);
+
+            const observationAgeSec = Number(
+              arrivalSignals?.providerPositionAgeSec
+            );
+            const freshObservation =
+              arrivalSignals?.providerPositionAgeSec !== null &&
+              arrivalSignals?.providerPositionAgeSec !== undefined &&
+              Number.isFinite(observationAgeSec) &&
+              observationAgeSec <= FRESH_PROVIDER_OBSERVATION_SEC;
+
+            // vehicleatstop is a physical-state claim. Once a fresh one is
+            // seen we keep it as historical evidence that the bus really
+            // reached the target. A stale/undated row must never arm that
+            // latch: otherwise one old observation can later turn "bus gone"
+            // into a false passed-target confirmation.
             next.targetWasAtStop =
               next.targetWasAtStop ||
-              targetMatch.arrival.vehicleatstop === true;
-            Object.assign(
-              next,
-              readArrivalSignals(
-                targetMatch.arrival,
-                targetResult.value.serverTime,
-                current.targetStop
-              )
-            );
+              (freshObservation &&
+                targetMatch.arrival.vehicleatstop === true);
           } else if (target.kind === "ambiguous") {
             // The journey is present, but more than one visit fits and the
             // planned time cannot safely choose between them. This is not
