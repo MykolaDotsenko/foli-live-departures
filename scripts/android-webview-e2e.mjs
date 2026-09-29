@@ -275,6 +275,16 @@ const selected = await evaluate(`(() => {
 
 record("Kauppatori suggestion can be selected", selected?.clicked === true, selected || {});
 
+const selectedStopId = await retry("selected stop URL", async () => {
+  return evaluate(`new URL(location.href).searchParams.get("stop") || ""`);
+}, { attempts: 20, delayMs: 250 });
+
+record(
+  "selected suggestion opens a concrete Föli stop",
+  /^\d+$/.test(selectedStopId),
+  { selectedStopId }
+);
+
 await sleep(500);
 
 const showDepartures = await evaluate(`(() => {
@@ -308,11 +318,16 @@ const board = await retry("live departure board", async () => {
 }, { attempts: 25, delayMs: 750 });
 
 record(
-  "live Föli departure board opens for stop 164",
-  /[?&]stop=164(?:&|$)/.test(board.url) &&
+  "live Föli departure board opens for the selected stop",
+  new URL(board.url).searchParams.get("stop") === selectedStopId &&
     /Kauppatori/i.test(board.heading || board.text) &&
     Number(board.rows) > 0,
-  { url: board.url, heading: board.heading, rows: board.rows }
+  {
+    url: board.url,
+    selectedStopId,
+    heading: board.heading,
+    rows: board.rows
+  }
 );
 
 const liveSemantics = await evaluate(`(() => {
@@ -364,7 +379,7 @@ const offlineState = await evaluate(`({
 record(
   "offline transition keeps the selected stop UI usable",
   offlineState.online === false &&
-    /[?&]stop=164(?:&|$)/.test(offlineState.url) &&
+    new URL(offlineState.url).searchParams.get("stop") === selectedStopId &&
     offlineState.textLength > 50 &&
     offlineState.hasMainContent === true,
   offlineState
@@ -399,7 +414,9 @@ const persistedUrl = await evaluate("location.href");
 await evaluate("location.reload(); true");
 await retry("reload after selected stop", async () => {
   return evaluate(
-    `document.readyState === "complete" && /[?&]stop=164(?:&|$)/.test(location.href) && /Kauppatori/i.test(document.body.innerText)`
+    `document.readyState === "complete" &&
+      new URL(location.href).searchParams.get("stop") === ${JSON.stringify(selectedStopId)} &&
+      /Kauppatori/i.test(document.body.innerText)`
   );
 }, { attempts: 25, delayMs: 500 });
 
@@ -411,7 +428,8 @@ const reloaded = await evaluate(`({
 
 record(
   "selected stop survives Android WebView reload",
-  /[?&]stop=164(?:&|$)/.test(reloaded.url) && /Kauppatori/i.test(reloaded.text),
+  new URL(reloaded.url).searchParams.get("stop") === selectedStopId &&
+    /Kauppatori/i.test(reloaded.text),
   { before: persistedUrl, after: reloaded.url, rows: reloaded.rows }
 );
 
