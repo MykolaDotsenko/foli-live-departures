@@ -346,12 +346,11 @@ export default function useRideMode() {
       }
       const reportedPositionAge = Number(nextRuntime.providerPositionAgeSec);
       const providerPositionAgeSec =
-        sinceTargetSec === null
+        sinceTargetSec === null ||
+        nextRuntime.providerPositionAgeSec === null ||
+        !Number.isFinite(reportedPositionAge)
           ? null
-          : (nextRuntime.providerPositionAgeSec !== null &&
-            Number.isFinite(reportedPositionAge)
-              ? reportedPositionAge
-              : 0) + sinceTargetSec;
+          : reportedPositionAge + sinceTargetSec;
 
       // Riding pace, from a fix recent enough to still describe the phone.
       const gpsSpeed = Number(nextGps.speedMps);
