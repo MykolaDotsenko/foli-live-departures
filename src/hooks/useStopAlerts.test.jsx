@@ -289,7 +289,7 @@ test("aborts the previous stop-membership lookup when the selected stop changes"
     }
   );
 
-  const { rerender } = renderHook(
+  const { rerender, unmount } = renderHook(
     ({ stopId }) => useStopAlerts(stopId, noLines, routesById),
     { initialProps: { stopId: "164" } }
   );
@@ -302,12 +302,29 @@ test("aborts the previous stop-membership lookup when the selected stop changes"
   await waitFor(() => expect(membershipSignals).toHaveLength(2));
   expect(membershipSignals[0].aborted).toBe(true);
   expect(membershipSignals[1].aborted).toBe(false);
+
+  unmount();
+  expect(membershipSignals[1].aborted).toBe(true);
 });
 
 test("a realtime line match does not wait for static membership enrichment", async () => {
-  mocks.fetchStopServedRouteIds.mockImplementation(() => new Promise(() => {}));
+  mocks.fetchStopServedRouteIds.mockImplementation((_stopId, _routeIds, signal) =>
+    new Promise((_resolve, reject) => {
+      signal.addEventListener(
+        "abort",
+        () =>
+          reject(
+            new globalThis.DOMException(
+              "The operation was aborted.",
+              "AbortError"
+            )
+          ),
+        { once: true }
+      );
+    })
+  );
 
-  const { result } = renderHook(() =>
+  const { result, unmount } = renderHook(() =>
     useStopAlerts("164", ["50"], routesById)
   );
 
@@ -320,4 +337,6 @@ test("a realtime line match does not wait for static membership enrichment", asy
   // The active line already proves relevance, so no optional GTFS membership
   // request is needed before the disruption can reach the passenger.
   expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
+
+  unmount();
 });
