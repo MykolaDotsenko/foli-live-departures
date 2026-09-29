@@ -15,6 +15,25 @@ describe("GTFS scheduled departure helpers", () => {
     );
   });
 
+
+  it("anchors spring-forward service times to GTFS noon-minus-12 semantics", () => {
+    // GTFS times are elapsed service-day time, not naive local wall-clock.
+    // In Helsinki on 2026-03-29, local noon is 09:00Z; noon minus 12h is
+    // 21:00Z on the previous day. Therefore 02:30:00 is 23:30Z.
+    expect(gtfsServiceEpoch("20260329", "02:30:00")).toBe(
+      Date.parse("2026-03-28T23:30:00Z") / 1000
+    );
+  });
+
+  it("anchors fall-back service times to GTFS noon-minus-12 semantics", () => {
+    // On 2026-10-25 Helsinki noon is 10:00Z; noon minus 12h is 22:00Z on
+    // the previous day. Therefore GTFS 02:30:00 is 00:30Z, independent of
+    // the repeated local hour later that night.
+    expect(gtfsServiceEpoch("20261025", "02:30:00")).toBe(
+      Date.parse("2026-10-25T00:30:00Z") / 1000
+    );
+  });
+
   it("keeps GTFS times beyond 24:00 on the originating service date", () => {
     expect(gtfsServiceEpoch("20260921", "24:10:00")).toBe(
       Date.parse("2026-09-21T21:10:00Z") / 1000

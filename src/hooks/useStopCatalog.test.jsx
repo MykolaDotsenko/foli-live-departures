@@ -264,3 +264,47 @@ test("fetches the catalogue again when nothing saved in it was a stop", async ()
     expect.objectContaining({ id: "164", name: "Kauppatori" }),
   ]);
 });
+
+
+test("refreshes a cache that becomes stale during a long-lived session", async () => {
+  const start = Date.UTC(2026, 8, 29, 9, 0, 0);
+  let now = start;
+  const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+
+  localStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({
+      savedAt: start,
+      stops: [
+        {
+          id: "164",
+          name: "Kauppatori",
+          lat: 60.4518,
+          lon: 22.2666,
+        },
+      ],
+    })
+  );
+
+  vi.mocked(fetchStopCatalog).mockResolvedValue([
+    { id: "164", name: "Kauppatori updated" },
+  ]);
+  vi.mocked(fetchStopCoordinates).mockResolvedValue(
+    new Map([["164", { lat: 60.4518, lon: 22.2666 }]])
+  );
+
+  const { result, rerender } = renderHook(() => useStopCatalog());
+
+  expect(result.current.catalogStatus).toBe("ready");
+  expect(fetchStopCatalog).not.toHaveBeenCalled();
+
+  now = start + 24 * 60 * 60 * 1000 + 1;
+  rerender();
+
+  await waitFor(() => expect(fetchStopCatalog).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(result.current.stops[0].name).toBe("Kauppatori updated")
+  );
+
+  dateNow.mockRestore();
+});
