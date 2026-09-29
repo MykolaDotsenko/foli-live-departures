@@ -246,3 +246,71 @@ describe("GTFS scheduled departure helpers", () => {
     expect(mergeRealtimeAndScheduled(realtime, scheduled)).toHaveLength(1);
   });
 });
+
+
+it("one realtime row without trip identity replaces at most one nearby scheduled departure", () => {
+  const realtime = [
+    {
+      tripref: "",
+      lineref: "1",
+      monitored: true,
+      aimeddeparturetime: 1_000,
+      expecteddeparturetime: 1_020,
+    },
+  ];
+  const scheduled = [
+    {
+      tripref: "scheduled-a",
+      lineref: "1",
+      monitored: false,
+      aimeddeparturetime: 1_000,
+    },
+    {
+      tripref: "scheduled-b",
+      lineref: "1",
+      monitored: false,
+      aimeddeparturetime: 1_090,
+    },
+  ];
+
+  const merged = mergeRealtimeAndScheduled(realtime, scheduled, {
+    timeToleranceSeconds: 120,
+  });
+
+  expect(merged.map((row) => row.tripref)).toEqual(["", "scheduled-b"]);
+});
+
+
+it("exact trip identity wins before fuzzy line-time matching", () => {
+  const realtime = [
+    {
+      tripref: "trip-exact",
+      lineref: "1",
+      monitored: true,
+      aimeddeparturetime: 1_090,
+    },
+  ];
+  const scheduled = [
+    {
+      tripref: "trip-nearby",
+      lineref: "1",
+      monitored: false,
+      aimeddeparturetime: 1_000,
+    },
+    {
+      tripref: "trip-exact",
+      lineref: "1",
+      monitored: false,
+      aimeddeparturetime: 1_090,
+    },
+  ];
+
+  const merged = mergeRealtimeAndScheduled(realtime, scheduled, {
+    timeToleranceSeconds: 120,
+  });
+
+  expect(merged.map((row) => row.tripref)).toEqual([
+    "trip-exact",
+    "trip-nearby",
+  ]);
+});

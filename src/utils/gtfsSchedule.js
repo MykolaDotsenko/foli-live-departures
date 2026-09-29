@@ -269,30 +269,77 @@ export function mergeRealtimeAndScheduled(
   const scheduled = Array.isArray(scheduledRows) ? scheduledRows : [];
   const tolerance = Math.max(0, Number(timeToleranceSeconds) || 0);
 
-  const isDuplicate = (scheduledRow) =>
-    realtime.some((liveRow) => {
-      if (
-        scheduledRow?.tripref &&
-        liveRow?.tripref &&
-        String(scheduledRow.tripref) === String(liveRow.tripref)
-      ) {
-        return true;
-      }
+  // A realtime row represents one physical departure. When SIRI omits the
+  // trip reference, line+time is only a fuzzy fallback identity: it must not
+  // suppress every static departure inside the tolerance window. Match rows
+  // one-to-one, with exact trip identity taking precedence over proximity.
+  const matchedRealtime = new Set();
+  const matchedScheduled = new Set();
 
-      const sameLine =
-        scheduledRow?.lineref &&
-        liveRow?.lineref &&
-        String(scheduledRow.lineref) === String(liveRow.lineref);
-      if (!sameLine) return false;
+  scheduled.forEach((scheduledRow, scheduledIndex) => {
+    const tripref = String(scheduledRow?.tripref || "").trim();
+    if (!tripref) return;
 
-      const scheduledTime = finiteNumber(scheduledRow?.aimeddeparturetime);
+    const realtimeIndex = realtime.findIndex(
+      (liveRow, index) =>
+        !matchedRealtime.has(index) &&
+        String(liveRow?.tripref || "").trim() === tripref
+    );
+
+    if (realtimeIndex >= 0) {
+      matchedRealtime.add(realtimeIndex);
+      matchedScheduled.add(scheduledIndex);
+    }
+  });
+
+  const fuzzyCandidates = [];
+
+  scheduled.forEach((scheduledRow, scheduledIndex) => {
+    if (matchedScheduled.has(scheduledIndex)) return;
+
+    const scheduledLine = String(scheduledRow?.lineref || "").trim();
+    const scheduledTime = finiteNumber(scheduledRow?.aimeddeparturetime);
+    if (!scheduledLine || scheduledTime === null) return;
+
+    realtime.forEach((liveRow, realtimeIndex) => {
+      if (matchedRealtime.has(realtimeIndex)) return;
+
+      const liveLine = String(liveRow?.lineref || "").trim();
+      if (!liveLine || liveLine !== scheduledLine) return;
+
       const liveAimed =
         finiteNumber(liveRow?.aimeddeparturetime) ??
         finiteNumber(liveRow?.aimedarrivaltime);
-      if (scheduledTime === null || liveAimed === null) return false;
+      if (liveAimed === null) return;
 
-      return Math.abs(scheduledTime - liveAimed) <= tolerance;
+      const delta = Math.abs(scheduledTime - liveAimed);
+      if (delta <= tolerance) {
+        fuzzyCandidates.push({ scheduledIndex, realtimeIndex, delta });
+      }
+    });
+  });
+
+  fuzzyCandidates
+    .sort(
+      (left, right) =>
+        left.delta - right.delta ||
+        left.scheduledIndex - right.scheduledIndex ||
+        left.realtimeIndex - right.realtimeIndex
+    )
+    .forEach(({ scheduledIndex, realtimeIndex }) => {
+      if (
+        matchedScheduled.has(scheduledIndex) ||
+        matchedRealtime.has(realtimeIndex)
+      ) {
+        return;
+      }
+
+      matchedScheduled.add(scheduledIndex);
+      matchedRealtime.add(realtimeIndex);
     });
 
-  return [...realtime, ...scheduled.filter((row) => !isDuplicate(row))];
+  return [
+    ...realtime,
+    ...scheduled.filter((_, index) => !matchedScheduled.has(index)),
+  ];
 }
