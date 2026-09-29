@@ -211,6 +211,37 @@ describe("ride get-off notifications", () => {
       ["Seuraava pysäkki: Puistokatu", "Paina STOP-nappia nyt.", "fi"],
     ]);
   });
+
+  it("closes the active service-worker ride notification when the ride ends", async () => {
+    const close = vi.fn();
+    const getNotifications = vi.fn(() =>
+      Promise.resolve([{ close }])
+    );
+    stubServiceWorker({
+      showNotification: vi.fn(() => Promise.resolve()),
+      getNotifications,
+    });
+
+    await showRideNotification("now", "Puistokatu");
+    await stopRideAlerts();
+
+    expect(getNotifications).toHaveBeenCalledWith({
+      tag: "foli-active-ride",
+    });
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it("closes the page-level fallback notification when the ride ends", async () => {
+    stubServiceWorker(null);
+
+    await showRideNotification("now", "Puistokatu");
+    expect(created).toHaveLength(1);
+    expect(created[0].close).not.toHaveBeenCalled();
+
+    await stopRideAlerts();
+
+    expect(created[0].close).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("spoken get-off alerts", () => {

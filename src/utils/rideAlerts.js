@@ -26,6 +26,7 @@ const ALERT_PATTERNS = {
 };
 
 let audioContext = null;
+let activePageRideNotification = null;
 
 function AudioContextConstructor() {
   return globalThis.AudioContext || globalThis.webkitAudioContext || null;
@@ -373,13 +374,24 @@ export async function showRideNotification(
       // Without a service worker the tap lands on the page, and it has to be
       // sent somewhere: a get-off alert that does nothing when pressed costs
       // the passenger the seconds it was meant to buy them.
+      try {
+        activePageRideNotification?.close?.();
+      } catch {
+        // Replacing an older fallback notification is best effort.
+      }
+
       const notification = new NotificationApi(copy.title, options);
+      activePageRideNotification = notification;
       notification.onclick = () => {
         try {
           globalThis.focus?.();
           notification.close?.();
         } catch {
           // Focusing is best effort; the alert has already been delivered.
+        } finally {
+          if (activePageRideNotification === notification) {
+            activePageRideNotification = null;
+          }
         }
       };
       return true;
@@ -425,6 +437,38 @@ export async function runRideTestAlert(stop, notificationsEnabled = true) {
   }
 }
 
+async function closeRideNotifications() {
+  const pageNotification = activePageRideNotification;
+  activePageRideNotification = null;
+
+  try {
+    pageNotification?.close?.();
+  } catch {
+    // A fallback page notification may already have been dismissed.
+  }
+
+  try {
+    const registration =
+      typeof globalThis.navigator?.serviceWorker?.getRegistration === "function"
+        ? await globalThis.navigator.serviceWorker.getRegistration()
+        : null;
+    const notifications =
+      typeof registration?.getNotifications === "function"
+        ? await registration.getNotifications({ tag: "foli-active-ride" })
+        : [];
+
+    for (const notification of notifications || []) {
+      try {
+        notification?.close?.();
+      } catch {
+        // One stale notification must not block cleanup of the others.
+      }
+    }
+  } catch {
+    // Notification cleanup is best effort and must never block ending a ride.
+  }
+}
+
 export function stopRideAlerts() {
   try {
     globalThis.navigator?.vibrate?.(0);
@@ -437,6 +481,8 @@ export function stopRideAlerts() {
   } catch {
     // Speech is optional.
   }
+
+  return closeRideNotifications();
 }
 
 export function rideAlertCapabilities() {
