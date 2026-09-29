@@ -154,6 +154,7 @@ The production GitHub Pages deployment is triggered only after that CI workflow 
 - device coordinates are not persisted;
 - ride GPS is processed on the device;
 - GitHub Pages and data.foli.fi receive the network requests needed to serve the application and transit data.
+- a Content-Security-Policy lets the page run only its own bundle, and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
 
 A browser can suspend a page in the background or on a locked phone, so Get-off Alert does **not** promise guaranteed lock-screen tracking. Reliable background alerts would require a backend/Web Push phase.
 
@@ -191,6 +192,7 @@ npm run verify:api-reference
 npm run build
 npm run verify:pwa
 npm run verify:bundle
+npm run verify:csp
 npm run test:e2e
 ```
 

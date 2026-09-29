@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/build-sw.mjs",
-    "lint": "eslint src e2e scripts playwright.config.mjs",
+    "lint": "eslint --max-warnings 0 src e2e scripts playwright.config.mjs",
     "typecheck": "tsc -p .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -17,6 +17,7 @@
     "preview": "vite preview",
     "verify:pwa": "node scripts/verify-pwa.mjs",
     "verify:bundle": "node scripts/verify-bundle.mjs",
+    "verify:csp": "node scripts/verify-csp.mjs",
     "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
     "verify:brand": "node scripts/verify-branding.mjs",
     "verify:deployment": "node scripts/verify-deploy-workflow.mjs",

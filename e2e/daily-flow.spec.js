@@ -477,6 +477,14 @@ async function mockFoli(page) {
   });
 }
 
+// Browser text zoom, as a passenger with large text has it. Through the
+// CSSOM rather than an injected <style>, which the page's policy refuses.
+async function scaleTextTo200Percent(page) {
+  await page.evaluate(() => {
+    document.documentElement.style.setProperty("font-size", "200%", "important");
+  });
+}
+
 // On a phone the service updates fold into one line; this opens them.
 async function openServiceUpdates(page) {
   await page.locator("#service-alerts-list").waitFor({ state: "attached" });
@@ -484,8 +492,28 @@ async function openServiceUpdates(page) {
   if (await fold.isVisible()) await fold.click();
 }
 
+// The shipped page carries a Content-Security-Policy (vite.config.js). Every
+// scenario doubles as its check: anything the policy blocks, a script, a
+// style, a request, fails the test that met it.
+let cspViolations = [];
+
 test.beforeEach(async ({ page }) => {
+  cspViolations = [];
+  await page.exposeBinding("__reportCspViolation", (_source, violation) => {
+    cspViolations.push(violation);
+  });
+  await page.addInitScript(() => {
+    document.addEventListener("securitypolicyviolation", (event) => {
+      globalThis.__reportCspViolation?.(
+        `${event.effectiveDirective} blocked ${event.blockedURI || "inline code"}`
+      );
+    });
+  });
   await mockFoli(page);
+});
+
+test.afterEach(() => {
+  expect(cspViolations, "Content-Security-Policy violations").toEqual([]);
 });
 
 test("bare URL keeps one-tap location beside search and only fills the field", async ({
@@ -2585,7 +2613,7 @@ test("200 percent text scaling keeps core mobile controls usable", async ({
 
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/?stop=164");
-  await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+  await scaleTextTo200Percent(page);
 
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
   await expect(
@@ -2708,7 +2736,7 @@ test("the mobile guide keeps both actions distinct on a 320px screen", async ({
 
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/");
-  await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+  await scaleTextTo200Percent(page);
   await page
     .locator("footer")
     .getByRole("button", { name: "How to use" })
@@ -2868,7 +2896,7 @@ test("320px dark mode with 200 percent text still reflows without horizontal scr
   await page.setViewportSize({ width: 320, height: 568 });
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/?stop=164");
-  await page.addStyleTag({ content: ":root { font-size: 200% !important; }" });
+  await scaleTextTo200Percent(page);
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();

@@ -61,6 +61,9 @@ jobs:
       - name: Verify production bundle budget
         run: npm run verify:bundle
 
+      - name: Verify Content-Security-Policy
+        run: npm run verify:csp
+
       # Production is served from a GitHub Pages subpath (deploy-pages.yml),
       # and a path that only resolves at "/" passes every check above.
       - name: Verify PWA under the production base path
@@ -69,6 +72,7 @@ jobs:
         run: |
           npm run build
           npm run verify:pwa
+          npm run verify:csp
 
   browser-qa:
     needs: unit-build
