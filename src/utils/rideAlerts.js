@@ -337,6 +337,15 @@ export async function showRideNotification(
   const copy = notificationCopy(stage, stop, routeType, context);
   const options = {
     body: copy.body,
+    // Remember the exact app page that produced the alert. If several Turku
+    // Departures tabs are open, the service worker can return the passenger
+    // to this one instead of focusing an unrelated stop board first.
+    data: {
+      url:
+        typeof globalThis.location?.href === "string"
+          ? globalThis.location.href
+          : "",
+    },
     // So a phone reading notifications aloud picks the right voice.
     lang: getLanguage(),
     tag: "foli-active-ride",
