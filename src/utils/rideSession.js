@@ -74,45 +74,69 @@ export function emptyGps() {
 }
 
 /**
+ * Whether a record read back from storage is a ride record inside its
+ * lifetime, whatever its plan says about where the bus is by now.
+ * @param {any} value Parsed from storage, so nothing about it is trusted.
+ * @param {number} now Epoch milliseconds.
+ * @returns {boolean}
+ */
+function liveStoredRecord(value, now) {
+  const startedAt = Number(value?.startedAt);
+  const expiresAt = Number(value?.expiresAt);
+
+  return Boolean(
+    value &&
+      typeof value === "object" &&
+      typeof value.id === "string" &&
+      value.targetStop &&
+      /^\d+$/.test(String(value.targetStop.id || "")) &&
+      value.plan &&
+      Number.isFinite(startedAt) &&
+      startedAt > 0 &&
+      startedAt <= now &&
+      now - startedAt <= RIDE_TTL_MS &&
+      Number.isFinite(expiresAt) &&
+      expiresAt > now &&
+      expiresAt <= startedAt + RIDE_TTL_MS
+  );
+}
+
+/**
  * Whether a record read back from storage is a ride still worth resuming.
  * @param {any} value Parsed from storage, so nothing about it is trusted.
  * @param {number} [now] Epoch milliseconds.
  * @returns {value is RideSession} Truthy only for a resumable ride.
  */
 export function validStoredRide(value, now = Date.now()) {
-  const startedAt = Number(value?.startedAt);
-  const expiresAt = Number(value?.expiresAt);
-
   return (
-    value &&
-    typeof value === "object" &&
-    typeof value.id === "string" &&
-    value.targetStop &&
-    /^\d+$/.test(String(value.targetStop.id || "")) &&
-    value.plan &&
-    Number.isFinite(startedAt) &&
-    startedAt > 0 &&
-    startedAt <= now &&
-    now - startedAt <= RIDE_TTL_MS &&
-    Number.isFinite(expiresAt) &&
-    expiresAt > now &&
-    expiresAt <= startedAt + RIDE_TTL_MS &&
-    !rideLongOver(value.plan, now / 1000)
+    liveStoredRecord(value, now) && !rideLongOver(value.plan, now / 1000)
+  );
+}
+
+/** @returns {unknown} The stored record, parsed; null when there is none. */
+function parseStoredRide() {
+  // A missing record reads as null, and JSON.parse(null) is null.
+  return JSON.parse(
+    /** @type {string} */ (localStorage.getItem(RIDE_STORAGE_KEY))
   );
 }
 
 /**
- * The saved ride, or null. A record that is no longer valid is removed.
+ * The saved ride, or null. A record that is corrupt or past its lifetime is
+ * removed. One only long past its planned exit is left alone: the tab that
+ * runs it may know the bus is very late and still coming, and removing it
+ * here ended that ride there, just by opening a second tab. That tab ends
+ * the ride when it is over, and the record expires with its lifetime anyway.
  * @returns {RideSession | null}
  */
 export function readStoredRide() {
   try {
-    // A missing record reads as null, and JSON.parse(null) is null.
-    const parsed = JSON.parse(
-      /** @type {string} */ (localStorage.getItem(RIDE_STORAGE_KEY))
-    );
-    if (validStoredRide(parsed)) return parsed;
-    localStorage.removeItem(RIDE_STORAGE_KEY);
+    const parsed = parseStoredRide();
+    const now = Date.now();
+    if (validStoredRide(parsed, now)) return parsed;
+    if (!liveStoredRecord(parsed, now)) {
+      localStorage.removeItem(RIDE_STORAGE_KEY);
+    }
   } catch {
     // A corrupt convenience record must never block the departure board.
     // Left in place, it was read, and failed, on every load for good.
@@ -123,6 +147,21 @@ export function readStoredRide() {
     }
   }
   return null;
+}
+
+/**
+ * The id of the ride storage holds, resumable or not, or "" when it holds
+ * none inside its lifetime. Removes nothing: a tab asks this to learn
+ * whether its own ride is still the stored one.
+ * @returns {string}
+ */
+export function storedRideId() {
+  try {
+    const parsed = /** @type {any} */ (parseStoredRide());
+    return liveStoredRecord(parsed, Date.now()) ? parsed.id : "";
+  } catch {
+    return "";
+  }
 }
 
 /**

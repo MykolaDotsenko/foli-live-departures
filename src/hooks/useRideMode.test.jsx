@@ -1629,8 +1629,58 @@ test("a ride nobody ended is not brought back hours after its stop", () => {
   const { result } = renderHook(() => useRideMode());
 
   expect(result.current.session).toBeNull();
-  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+  // Not this tab's to delete inside its lifetime: another tab may still be
+  // running it (below). It expires with that lifetime.
+  expect(localStorage.getItem("foli-active-ride-v1")).not.toBeNull();
   expect(mocks.announceRideStage).not.toHaveBeenCalled();
+});
+
+// A very late bus: the tab running the ride still has it coming, live, well
+// past the planned exit. A second tab opened then read the record as long
+// over and deleted it, and the first tab, hearing the ride had gone, ended it.
+test("opening a second tab does not end a very late ride running in the first", () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const startMs = Date.UTC(2026, 8, 23, 9, 0, 0);
+  vi.setSystemTime(startMs);
+  const nowSec = Math.floor(startMs / 1000);
+  const first = renderHook(() => useRideMode());
+  act(() => {
+    first.result.current.startRide({
+      ...rideConfig,
+      shapeId: "",
+      options: { locationBackup: false, notifications: false },
+      plan: {
+        ...rideConfig.plan,
+        targetPredictedEpochSec: nowSec + 500,
+        stopsToTarget: [
+          { id: "32", name: "Puistokatu", predictedEpochSec: nowSec + 500 },
+        ],
+      },
+    });
+  });
+  const rideId = first.result.current.session.id;
+  const stored = localStorage.getItem("foli-active-ride-v1");
+
+  // An hour on, past the planned exit by more than 45 minutes.
+  vi.setSystemTime(startMs + 60 * 60 * 1000);
+  const second = renderHook(() => useRideMode());
+
+  expect(second.result.current.session).toBeNull();
+  expect(localStorage.getItem("foli-active-ride-v1")).toBe(stored);
+  // Whatever the second tab did to storage, the first tab hears of it.
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: localStorage.getItem("foli-active-ride-v1"),
+      })
+    );
+  });
+  expect(first.result.current.session?.id).toBe(rideId);
+
+  second.unmount();
+  act(() => first.result.current.endRide());
+  first.unmount();
 });
 
 test("a ride long past its stop ends quietly while nothing live says the bus is coming", async () => {

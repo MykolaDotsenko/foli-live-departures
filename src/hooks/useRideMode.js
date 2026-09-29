@@ -36,6 +36,7 @@ import {
   persistRide,
   readStoredRide,
   rideIdentity,
+  storedRideId,
 } from "../utils/rideSession";
 import useRideAudioReadiness from "./useRideAudioReadiness";
 import useRideGps from "./useRideGps";
@@ -125,12 +126,15 @@ export default function useRideMode() {
   // alerting and later wrote its copy back, so the ride the passenger had
   // ended was there again on the next reload. A ride ended or replaced in
   // another tab is followed here, and nothing is written back: storage
-  // already says what the passenger chose.
+  // already says what the passenger chose. The stored ride still being this
+  // one is asked of the record itself, not of whether it looks resumable:
+  // a ride long past its planned exit is ended by the tab that runs it,
+  // which may know its bus is very late and still coming.
   useEffect(() => {
     const takeOtherTabRide = (event) => {
       if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
+      if (storedRideId() === (sessionRef.current?.id || "")) return;
       const stored = readStoredRide();
-      if ((stored?.id || "") === (sessionRef.current?.id || "")) return;
 
       stopRideAlerts();
       shapeRef.current = null;
