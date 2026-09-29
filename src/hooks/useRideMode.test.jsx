@@ -170,6 +170,84 @@ test("restores a non-expired active ride", () => {
   expect(result.current.session?.stage).toBe("next");
 });
 
+// What another tab does to the stored ride, as this tab hears of it.
+function otherTabWrites(value) {
+  if (value === null) {
+    localStorage.removeItem("foli-active-ride-v1");
+  } else {
+    localStorage.setItem("foli-active-ride-v1", value);
+  }
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: value,
+      })
+    );
+  });
+}
+
+// Turned off in one tab, the ride kept alerting in the other, which then
+// wrote its copy back: the next reload brought the ended ride back.
+test("a ride turned off in another tab ends here too and stays off", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  mocks.stopRideAlerts.mockClear();
+
+  otherTabWrites(null);
+
+  expect(result.current.session).toBeNull();
+  expect(mocks.stopRideAlerts).toHaveBeenCalled();
+  expect(clearWatch).toHaveBeenCalledWith(77);
+
+  // Later clock ticks have no ride left to write back.
+  act(() => {
+    vi.advanceTimersByTime(60_000);
+  });
+  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+});
+
+test("a ride started in another tab replaces this tab's ride without a write back", () => {
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  const oldId = result.current.session.id;
+
+  const replacement = JSON.stringify({
+    id: "ride-other-tab",
+    ...rideConfig,
+    stage: "boarded",
+    stageReason: "tracking",
+    stageConfidence: "live",
+    startedAt: Date.now() - 1_000,
+    stageChangedAt: Date.now() - 1_000,
+    expiresAt: Date.now() + 60_000,
+  });
+  otherTabWrites(replacement);
+
+  expect(result.current.session?.id).toBe("ride-other-tab");
+  expect(result.current.session?.id).not.toBe(oldId);
+  expect(localStorage.getItem("foli-active-ride-v1")).toBe(replacement);
+});
+
+test("another tab's progress on the same ride leaves this tab's ride running", () => {
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  const session = result.current.session;
+  mocks.stopRideAlerts.mockClear();
+
+  otherTabWrites(JSON.stringify({ ...session, stageChangedAt: Date.now() }));
+
+  expect(result.current.session).toBe(session);
+  expect(mocks.stopRideAlerts).not.toHaveBeenCalled();
+});
+
 test("drops a stored ride whose start time is in the future", () => {
   const now = Date.now();
   localStorage.setItem(

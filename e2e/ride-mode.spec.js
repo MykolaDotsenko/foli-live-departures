@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
 import { atMorningCommute, gtfsClockAt } from "./support/clock.js";
-import { monitorPayload } from "./support/foli.js";
+import { mockFoli, monitorPayload } from "./support/foli.js";
 import { routeTargetStop, turnOffNotifications, startRide } from "./support/ride.js";
 
 test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
@@ -603,4 +603,43 @@ test("switching to another get-off alert asks before replacing the active ride",
   await expect(
     ridePanel.getByRole("group", { name: "Alert sound check" })
   ).toBeVisible();
+});
+
+// The same ride open in two tabs: turned off in one, the other kept alerting
+// and later wrote its copy back, so the ride returned on the next reload.
+test("a get-off alert turned off in one tab ends in the other and stays off", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await routeTargetStop(page);
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+  const ready = (tab) =>
+    tab.getByRole("heading", { name: "Get ready to press STOP" });
+  await expect(ready(page)).toBeVisible();
+
+  const otherTab = await context.newPage();
+  await mockFoli(otherTab);
+  await routeTargetStop(otherTab);
+  await otherTab.goto("/?stop=164");
+  await expect(ready(otherTab)).toBeVisible();
+
+  await page.getByRole("button", { name: "Turn off alert" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
+  await expect(ready(page)).toHaveCount(0);
+
+  // The other tab follows without a reload and writes nothing back, however
+  // long it keeps running.
+  await expect(ready(otherTab)).toHaveCount(0);
+  await otherTab.waitForTimeout(11_000);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await expect(ready(page)).toHaveCount(0);
+  expect(
+    await page.evaluate(() => localStorage.getItem("foli-active-ride-v1"))
+  ).toBeNull();
+  await otherTab.close();
 });

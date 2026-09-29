@@ -28,6 +28,7 @@ import {
   rideLongOver,
 } from "../utils/rideProgress";
 import {
+  RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
   emptyGps,
@@ -119,6 +120,30 @@ export default function useRideMode() {
     commitRuntime(emptyRuntime());
     commitGps(emptyGps());
   }, [commitGps, commitRuntime, commitSession, shapeRef]);
+
+  // The same ride can be open in two tabs. Turned off in one, the other kept
+  // alerting and later wrote its copy back, so the ride the passenger had
+  // ended was there again on the next reload. A ride ended or replaced in
+  // another tab is followed here, and nothing is written back: storage
+  // already says what the passenger chose.
+  useEffect(() => {
+    const takeOtherTabRide = (event) => {
+      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
+      const stored = readStoredRide();
+      if ((stored?.id || "") === (sessionRef.current?.id || "")) return;
+
+      stopRideAlerts();
+      shapeRef.current = null;
+      sessionRef.current = stored;
+      setSession(stored);
+      // Like a ride picked up on load, it knows nothing live yet.
+      restoredRideIdRef.current = stored?.id || "";
+      commitRuntime(emptyRuntime());
+      commitGps(emptyGps());
+    };
+    window.addEventListener("storage", takeOtherTabRide);
+    return () => window.removeEventListener("storage", takeOtherTabRide);
+  }, [commitGps, commitRuntime, shapeRef]);
 
   const applyProgress = useCallback(
     (nextRuntime = runtimeRef.current, nextGps = gpsRef.current) => {
