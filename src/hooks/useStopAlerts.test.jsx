@@ -16,6 +16,7 @@ import { reportProviderReached } from "./useOnlineStatus";
 
 const routesById = new Map([["50", { id: "50", shortName: "50" }]]);
 const noLines = [];
+const line50 = ["50"];
 
 beforeEach(() => {
   mocks.fetchAlerts.mockReset();
@@ -311,7 +312,7 @@ test("a realtime line match does not wait for static membership enrichment", asy
   mocks.fetchStopServedRouteIds.mockResolvedValue(new Set());
 
   const { result, unmount } = renderHook(() =>
-    useStopAlerts("164", ["50"], routesById)
+    useStopAlerts("164", line50, routesById)
   );
 
   await waitFor(() =>
