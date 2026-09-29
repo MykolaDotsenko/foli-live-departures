@@ -238,7 +238,19 @@ test("aborts an in-flight alerts request when the consumer unmounts", () => {
   let signal = null;
   mocks.fetchAlerts.mockImplementation((requestSignal) => {
     signal = requestSignal;
-    return new Promise(() => {});
+    return new Promise((_resolve, reject) => {
+      requestSignal.addEventListener(
+        "abort",
+        () =>
+          reject(
+            new globalThis.DOMException(
+              "The operation was aborted.",
+              "AbortError"
+            )
+          ),
+        { once: true }
+      );
+    });
   });
 
   const { unmount } = renderHook(() =>
@@ -258,7 +270,19 @@ test("aborts the previous stop-membership lookup when the selected stop changes"
   mocks.fetchStopServedRouteIds.mockImplementation(
     (_stopId, _routeIds, signal) => {
       membershipSignals.push(signal);
-      return new Promise(() => {});
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () =>
+            reject(
+              new globalThis.DOMException(
+                "The operation was aborted.",
+                "AbortError"
+              )
+            ),
+          { once: true }
+        );
+      });
     }
   );
 
