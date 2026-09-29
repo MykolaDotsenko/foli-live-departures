@@ -271,6 +271,8 @@ test("aborts the previous stop-membership lookup when the selected stop changes"
   mocks.fetchStopServedRouteIds.mockImplementation(
     (_stopId, _routeIds, signal) => {
       membershipSignals.push(signal);
+      if (membershipSignals.length > 1) return Promise.resolve(new Set());
+
       return new Promise((_resolve, reject) => {
         signal.addEventListener(
           "abort",
