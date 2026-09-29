@@ -1,1 +1,5 @@
 blank_issues_enabled: false
+contact_links:
+  - name: Buses, tickets or drivers / Bussit, liput tai kuljettajat
+    url: https://www.foli.fi
+    about: "Föli's own customer service / Fölin asiakaspalvelu"

@@ -48,11 +48,7 @@
 
 ## Get-off alert
 
-The get-off alert combines three independent signals:
-
-1. **Föli's live bus data** (SIRI);
-2. **the trip's exact stop order** from the timetable (GTFS);
-3. **optional GPS on your phone, matched to the bus route**.
+The alert follows your bus in Föli’s live data, knows the order of the stops on your trip, and can use your phone’s location if you allow it.
 
 The alert moves through three steps:
 
@@ -60,7 +56,7 @@ The alert moves through three steps:
 get ready → press STOP → get off now
 ```
 
-Weak or off-route GPS is ignored. The timetable alone can warn you early, but it never triggers **Get off now**.
+A weak or off-route location is not trusted. The timetable alone can warn you early, but it never triggers **Get off now**.
 
 The exact stop order is kept, including loop routes that visit the same stop more than once.
 
@@ -69,7 +65,7 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 - no account, ads or analytics;
 - saved places are public stops, never street addresses;
 - your location is not stored;
-- GPS during a ride is processed on the phone;
+- your location during a ride stays on the phone;
 - GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
 - a Content-Security-Policy lets the page run only its own code and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
 
@@ -81,11 +77,12 @@ Turku Departures is not a ticketing app and does not replace Föli's official jo
 
 **Turku Departures näyttää bussien reaaliaikaiset ajat ja häiriöt sekä kertoo, milloin painaa STOP-nappia.**
 
-> Itsenäinen projekti, joka käyttää Fölin avointa dataa. Sovellus ei ole Fölin tai Turun kaupungin tekemä.
+> Itsenäinen projekti, joka käyttää Fölin avointa dataa. Sovellus ei ole Fölin tai Turun kaupungin tekemä eikä niihin sidoksissa. Liput ja virallinen reittiopas: foli.fi.
 
 - reaaliaikaiset ja aikataulun mukaiset lähdöt erotetaan toisistaan;
 - pysäkkihälytys auttaa valmistautumaan oikeaan aikaan;
 - tallennetut paikat ovat julkisia pysäkkejä, eivät osoitteita;
+- ”Vie minut kotiin” ja varapysäkit auttavat, jos tavallinen matka ei onnistu;
 - sijaintia käytetään vain pyydettäessä tai pysäkkihälytyksen aikana, jos sallit sen;
 - ei käyttäjätiliä, mainoksia tai analytiikkaa.
 
@@ -105,6 +102,16 @@ Transit data is easy when everything is fresh and the passenger already knows th
 - scheduled and realtime departures must not look equally certain.
 
 Turku Departures keeps **live, scheduled, stale and unknown** states distinct instead of flattening them into one timestamp.
+
+### How the get-off alert decides
+
+The alert combines three independent signals:
+
+1. **Föli's live bus data** (SIRI);
+2. **the trip's exact stop order** from the timetable (GTFS), including loop routes that visit the same stop more than once;
+3. **optional GPS on the phone, matched to the bus route**; weak or off-route fixes are ignored.
+
+Timetable-only estimates can raise the early steps but never **Get off now**.
 
 ### Engineering edge cases
 

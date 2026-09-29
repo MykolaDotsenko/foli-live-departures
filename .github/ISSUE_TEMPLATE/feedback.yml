@@ -16,7 +16,7 @@ body:
     id: task
     attributes:
       label: What were you trying to do? / Mitä yritit tehdä?
-      placeholder: e.g. I was checking the next bus home after work.
+      placeholder: e.g. checking the next bus home after work / esim. katsoin seuraavaa bussia kotiin töiden jälkeen
     validations:
       required: true
   - type: textarea
