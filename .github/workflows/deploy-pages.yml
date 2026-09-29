@@ -9,7 +9,19 @@ permissions:
   contents: read
 
 concurrency:
-  group: "github-pages"
+  # Only a CI run that is actually allowed to deploy shares the production
+  # concurrency group. An ineligible workflow_run (for example Dependabot's
+  # PR CI) gets its own group, so it cannot cancel a valid Pages deployment
+  # before the build job's trust condition is evaluated.
+  group: >-
+    ${{
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'master' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      'github-pages' ||
+      format('non-production-{0}', github.run_id)
+    }}
   cancel-in-progress: true
 
 jobs:
