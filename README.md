@@ -8,6 +8,7 @@
 **Live departures, disruptions and get-off alerts for Turku — privacy-first, no account, no ads.**
 
 [**Open Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/) ·
+[**Download Android APK ↓**](https://github.com/MykolaDotsenko/foli-live-departures/releases/download/android-latest/Turku-Departures.apk) ·
 [Suomeksi](#suomeksi) ·
 [Report a problem](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
 
@@ -34,6 +35,17 @@
     width="260"
   >
 </p>
+
+## Android APK
+
+An installable Android sideload build is published from `master`:
+
+[**Download Turku-Departures.apk →**](https://github.com/MykolaDotsenko/foli-live-departures/releases/download/android-latest/Turku-Departures.apk) ·
+[SHA-256 checksum](https://github.com/MykolaDotsenko/foli-live-departures/releases/download/android-latest/Turku-Departures.apk.sha256)
+
+The APK uses the same web application and Android permissions exercised by the repository's Android emulator E2E workflow. It is a GitHub-built prerelease for direct installation, not a Google Play release. Android may ask you to allow installs from your browser or file manager.
+
+The downloadable APK is currently a debug-signed sideload build. Because CI runners do not hold a persistent production signing key, a later APK may require uninstalling the previous sideload build before installation.
 
 ## What the app does
 
