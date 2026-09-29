@@ -170,3 +170,127 @@ test("a superseded alert request cannot mark a newer successful refresh as faile
   // refresh state.
   expect(result.current.error).toBe(false);
 });
+
+
+test("keeps the last successful cancellation when a later alerts refresh fails", async () => {
+  const cancellationPayload = {
+    cancellations: [
+      {
+        id: "cancel-50",
+        line: "50",
+        departure: 1_900_000_000,
+        stops: [
+          {
+            stop: "164",
+            arrival: 1_900_000_600,
+            isactive: true,
+          },
+        ],
+      },
+    ],
+    messages: [],
+  };
+
+  mocks.fetchAlerts
+    .mockResolvedValueOnce(cancellationPayload)
+    .mockRejectedValueOnce(new Error("temporary alerts outage"));
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts).toEqual([
+      expect.objectContaining({
+        type: "cancellation",
+        line: "50",
+        scheduledTime: 1_900_000_600,
+        originDepartureTime: 1_900_000_000,
+      }),
+    ])
+  );
+
+  const firstReceivedAt = result.current.receivedAtMs;
+  expect(firstReceivedAt).toEqual(expect.any(Number));
+
+  act(() => {
+    window.dispatchEvent(new globalThis.Event("online"));
+  });
+
+  await waitFor(() => expect(result.current.error).toBe(true));
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2);
+
+  // A failed refresh must not make a known cancelled departure look live
+  // again while the previous successful alerts payload is still the best
+  // information we have.
+  expect(result.current.alerts).toEqual([
+    expect.objectContaining({
+      type: "cancellation",
+      line: "50",
+      scheduledTime: 1_900_000_600,
+      originDepartureTime: 1_900_000_000,
+    }),
+  ]);
+  expect(result.current.receivedAtMs).toBe(firstReceivedAt);
+});
+
+test("aborts an in-flight alerts request when the consumer unmounts", () => {
+  let signal = null;
+  mocks.fetchAlerts.mockImplementation((requestSignal) => {
+    signal = requestSignal;
+    return new Promise(() => {});
+  });
+
+  const { unmount } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  expect(signal).not.toBeNull();
+  expect(signal.aborted).toBe(false);
+
+  unmount();
+
+  expect(signal.aborted).toBe(true);
+});
+
+test("aborts the previous stop-membership lookup when the selected stop changes", async () => {
+  const membershipSignals = [];
+  mocks.fetchStopServedRouteIds.mockImplementation(
+    (_stopId, _routeIds, signal) => {
+      membershipSignals.push(signal);
+      return new Promise(() => {});
+    }
+  );
+
+  const { rerender } = renderHook(
+    ({ stopId }) => useStopAlerts(stopId, noLines, routesById),
+    { initialProps: { stopId: "164" } }
+  );
+
+  await waitFor(() => expect(membershipSignals).toHaveLength(1));
+  expect(membershipSignals[0].aborted).toBe(false);
+
+  rerender({ stopId: "32" });
+
+  await waitFor(() => expect(membershipSignals).toHaveLength(2));
+  expect(membershipSignals[0].aborted).toBe(true);
+  expect(membershipSignals[1].aborted).toBe(false);
+});
+
+test("a realtime line match does not wait for static membership enrichment", async () => {
+  mocks.fetchStopServedRouteIds.mockImplementation(() => new Promise(() => {}));
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", ["50"], routesById)
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts.map((alert) => alert.title)).toEqual([
+      "Line 50 stop moved",
+    ])
+  );
+
+  // The active line already proves relevance, so no optional GTFS membership
+  // request is needed before the disruption can reach the passenger.
+  expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
+});
