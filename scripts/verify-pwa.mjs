@@ -184,6 +184,16 @@ if (!sw.includes("clientUrl.pathname.startsWith(BASE_PATH)")) {
   );
 }
 
+if (
+  !sw.includes("event.notification.data?.url") ||
+  !sw.includes("clientUrl.pathname === requestedUrl.pathname") ||
+  !sw.includes("clientUrl.search === requestedUrl.search")
+) {
+  throw new Error(
+    "Notification taps do not prefer the exact Turku Departures page that produced the alert."
+  );
+}
+
 if (!sw.includes('foli-claim-clients')) {
   throw new Error(
     "Generated service worker cannot take over a page that reloaded during install, so that visit has no offline shell."
