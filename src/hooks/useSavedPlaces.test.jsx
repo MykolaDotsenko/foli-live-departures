@@ -186,6 +186,41 @@ test("clears a place's review state once every saved stop exists again", () => {
 });
 
 
+test("future stored validation timestamps cannot block catalogue revalidation", () => {
+  const now = Date.now();
+  localStorage.setItem(
+    "foli-my-places-v1",
+    JSON.stringify([
+      {
+        id: "home",
+        label: "Home",
+        stops: [{ id: "164", name: "Old name" }],
+        primaryStopId: "164",
+        updatedAt: now + 60_000,
+        validatedAt: now + 60_000,
+      },
+    ])
+  );
+
+  const { result } = renderHook(() => useSavedPlaces());
+
+  expect(result.current.byId.get("home").validatedAt).toBe(0);
+
+  act(() => {
+    result.current.revalidatePlaces(
+      [{ id: "164", name: "Kauppatori" }],
+      now
+    );
+  });
+
+  expect(result.current.byId.get("home")).toEqual(
+    expect.objectContaining({
+      validatedAt: now,
+      stops: [{ id: "164", name: "Kauppatori" }],
+    })
+  );
+});
+
 test("validates a place saved after the catalogue was already loaded", () => {
   const { result } = renderHook(() => useSavedPlaces());
 
