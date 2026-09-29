@@ -52,7 +52,7 @@ test("publishes a prepared GTFS-distance shape as ready", async () => {
   await waitFor(() => expect(props.onStatus).toHaveBeenCalledWith("ready"));
   expect(mocks.fetchTripShape).toHaveBeenCalledWith(
     "shape-1",
-    expect.any(AbortSignal)
+    expect.objectContaining({ aborted: false })
   );
   expect(mocks.prepareRideShape).toHaveBeenCalledWith(points);
   expect(result.current.current).toBe(prepared);
