@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import {
   distanceInMeters,
@@ -75,6 +75,7 @@ function NearbyStops({
   activeStopId,
   serviceBoundary = null,
   online = true,
+  searchEdits = () => 0,
   onSelect,
 }) {
   useLanguage();
@@ -82,6 +83,15 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   // A phrase, put into words when shown, so it follows a language change.
   const [error, setError] = useState("");
+  // A location fix can take seconds. By the time it lands the passenger may
+  // already have searched for another stop, and jumping the board to the
+  // nearest one then would take away the stop they chose themselves. The
+  // lookup compares against the stop showing now, not the one at the tap.
+  // Typing in the stop search counts too, before any stop is chosen: the
+  // jump made the search put the nearest stop's name over the half-typed
+  // one. searchEdits reads how many edits the search field has had.
+  const activeStopIdRef = useRef(activeStopId);
+  activeStopIdRef.current = activeStopId;
 
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
@@ -127,6 +137,8 @@ function NearbyStops({
 
     setStatus("locating");
     setError("");
+    const stopIdAtTap = activeStopIdRef.current;
+    const searchEditsAtTap = searchEdits();
 
     try {
       const nextPosition = await requestOneTimePosition(
@@ -157,7 +169,11 @@ function NearbyStops({
         insideServiceArea !== false &&
         !ambiguousChoice &&
         closest.distanceMeters <= AUTO_SELECT_MAX_DISTANCE_METERS &&
-        closest.id !== activeStopId
+        // Chose a stop, or started searching for one, while we waited: keep
+        // it, the list below still offers the nearest one a tap away.
+        activeStopIdRef.current === stopIdAtTap &&
+        searchEdits() === searchEditsAtTap &&
+        closest.id !== activeStopIdRef.current
       ) {
         onSelect(closest.id);
       }
@@ -221,15 +237,22 @@ function NearbyStops({
             {t("Near you")}
           </h2>
           <p className={styles.description}>
-            {t("Find the closest stop with a one-time location check.")}
+            {t("Uses your location once. It isn’t saved.")}
           </p>
         </div>
 
         <button
           type="button"
           className={styles.locateButton}
-          onClick={locate}
-          disabled={status === "locating" || !hasStopCoordinates}
+          // Busy rather than disabled: a disabled button drops keyboard
+          // focus to the page while the location is looked up. The note
+          // below says why it waits while stop locations load.
+          onClick={() => {
+            if (status !== "locating" && hasStopCoordinates) locate();
+          }}
+          aria-disabled={
+            status === "locating" || !hasStopCoordinates ? "true" : undefined
+          }
           aria-busy={status === "locating"}
         >
           <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>

@@ -52,7 +52,7 @@ test("location button fills the nearest stop but waits for explicit submit", asy
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Use current location",
+        name: "Use my location",
       })
     );
 
@@ -62,6 +62,58 @@ test("location button fills the nearest stop but waits for explicit submit", asy
 
     fireEvent.click(screen.getByRole("button", { name: "Show departures" }));
     expect(onSubmit).toHaveBeenCalledWith("164");
+  } finally {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: originalGeolocation,
+    });
+  }
+});
+
+// A slow fix used to land after the passenger had started typing and
+// replace their words with the nearest stop, marked as resolved.
+test("a late location fix does not overwrite what was typed meanwhile", async () => {
+  const originalGeolocation = navigator.geolocation;
+  let deliverFix;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: (success) => {
+        deliverFix = () =>
+          success({
+            coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+          });
+      },
+    },
+  });
+
+  try {
+    const onSubmit = vi.fn();
+    render(
+      <BusStopForm
+        activeStopId=""
+        stops={[
+          { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
+          { id: "32", name: "Puistokatu", lat: 60.4488, lon: 22.255 },
+        ]}
+        coordinatesStatus="ready"
+        onSubmit={onSubmit}
+      />
+    );
+
+    const locate = screen.getByRole("button", { name: "Use my location" });
+    fireEvent.click(locate);
+    const input = screen.getByRole("combobox", { name: "Find your stop" });
+    fireEvent.change(input, { target: { value: "Puistokatu" } });
+
+    await act(async () => deliverFix());
+
+    await waitFor(() => expect(locate).not.toHaveAttribute("aria-disabled"));
+    expect(input).toHaveValue("Puistokatu");
+
+    // The typed text is still looked up as typed, not as a resolved stop.
+    fireEvent.click(screen.getByRole("button", { name: "Show departures" }));
+    expect(onSubmit).toHaveBeenCalledWith("32");
   } finally {
     Object.defineProperty(navigator, "geolocation", {
       configurable: true,
@@ -299,7 +351,7 @@ async function locateWith(coords, extraProps = {}) {
         {...extraProps}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Use current location" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toBeInTheDocument()
     );
@@ -368,6 +420,93 @@ test("offers one-tap location before a stop is open", () => {
   render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
 
   expect(
-    screen.getByRole("button", { name: "Use current location" })
+    screen.getByRole("button", { name: "Use my location" })
   ).toBeInTheDocument();
+});
+
+// Escape closed the list for good: typing on gave no suggestions until the
+// field was left and focused again, which a keyboard user had no reason to
+// guess.
+test("typing after Escape brings the suggestions back", () => {
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
+
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.change(input, { target: { value: "Kaupp" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-expanded", "true");
+});
+
+test("the down arrow reopens suggestions that Escape closed", () => {
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
+
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  fireEvent.keyDown(input, { key: "Escape" });
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+});
+
+// Disabled while it looked, the button dropped keyboard focus to the page.
+test("the location button keeps focus while it looks and ignores a second press", () => {
+  const originalGeolocation = navigator.geolocation;
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+
+  try {
+    render(
+      <BusStopForm
+        activeStopId=""
+        stops={[{ id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 }]}
+        coordinatesStatus="ready"
+        onSubmit={vi.fn()}
+      />
+    );
+
+    const locate = screen.getByRole("button", { name: "Use my location" });
+    locate.focus();
+    fireEvent.click(locate);
+    fireEvent.click(locate);
+
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    expect(locate).toHaveAttribute("aria-disabled", "true");
+    expect(locate).not.toBeDisabled();
+    expect(locate).toHaveFocus();
+  } finally {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: originalGeolocation,
+    });
+  }
+});
+
+// Left open after a choice, the list went on offering the stop just
+// picked, and a screen reader still heard the box as expanded.
+test("the suggestion list closes once a stop is chosen", () => {
+  const onSubmit = vi.fn();
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={onSubmit} />);
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  fireEvent.keyDown(input, { key: "Enter" });
+
+  expect(onSubmit).toHaveBeenCalledWith("164");
+  expect(input).toHaveAttribute("aria-expanded", "false");
 });

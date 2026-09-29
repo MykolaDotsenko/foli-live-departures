@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useMemo, useRef, useState } from "react";
 import { t, useLanguage } from "../i18n";
 import {
   findNearestStops,
@@ -8,12 +8,29 @@ import {
 } from "../utils/geo";
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { PLACE_PRESETS } from "../hooks/useSavedPlaces";
+import usePendingFocus from "../hooks/usePendingFocus";
 import styles from "./MyPlaces.module.css";
 import EmptyPlaceCard from "./places/EmptyPlaceCard";
 import PlaceCard from "./places/PlaceCard";
 import { isAccurateFix, MAX_SETUP_DISTANCE_METERS } from "./places/placeSetup";
 import SetupPlace from "./places/SetupPlace";
 import SharedPlaceImport from "./places/SharedPlaceImport";
+
+// On a phone a card folds down to its summary button and the buttons
+// inside are hidden, so "visible" is asked of the browser. Where it cannot
+// say (no layout), nothing counts as visible and the caller falls back.
+function isShown(element) {
+  return typeof element.checkVisibility === "function"
+    ? element.checkVisibility()
+    : element.getClientRects().length > 0;
+}
+
+function cardControls(grid, placeId) {
+  const card = grid?.querySelector(`[data-place="${placeId}"]`);
+  return card
+    ? [...card.querySelectorAll("a[href], button:not(:disabled)")]
+    : [];
+}
 
 function MyPlaces({
   stops,
@@ -36,11 +53,47 @@ function MyPlaces({
   const [setupAccuracy, setSetupAccuracy] = useState(null);
   const [setupPreselectFirst, setSetupPreselectFirst] = useState(false);
   const [status, setStatus] = useState("idle");
+  // One location lookup at a time. A double tap on "Replace using where I
+  // am now" started two, and whichever answered last reopened the setup
+  // over the one the passenger had begun. A ref, not the status, so a
+  // second tap in the same frame is caught too.
+  const lookupInFlightRef = useRef(false);
   // How to word the problem, not the words, so a language switch while it
   // shows rewords it.
   const [error, setError] = useState(null);
   const showError = (text) => setError({ text });
+  // Opening the setup replaces an empty place's card, and closing it
+  // brings the card back: both times the button pressed was taken away and
+  // focus fell to the top of the page. The setup's heading takes focus as
+  // it opens; on the way out focus goes back to the button that opened it,
+  // or, when that has gone with its card, to the card's first control.
+  const requestFocus = usePendingFocus();
+  const gridRef = useRef(null);
+  const setupOpenerRef = useRef(null);
+  const focusSetupHeading = (placeId) => {
+    setupOpenerRef.current = document.activeElement;
+    requestFocus(() => document.getElementById(`setup-${placeId}-title`));
+  };
+  const focusPlaceCard = (placeId) => {
+    const opener = setupOpenerRef.current;
+    setupOpenerRef.current = null;
+    requestFocus(() => {
+      const openerStillThere =
+        opener instanceof globalThis.HTMLElement &&
+        opener.isConnected &&
+        !opener.matches(":disabled") &&
+        gridRef.current?.contains(opener);
+      if (openerStillThere && isShown(opener)) return opener;
+      const controls = cardControls(gridRef.current, placeId);
+      return (
+        controls.find(isShown) ||
+        (openerStillThere ? opener : null) ||
+        controls[0]
+      );
+    });
+  };
   const closeSetup = () => {
+    if (setupId) focusPlaceCard(setupId);
     setSetupId("");
     setSetupCandidates([]);
     setSetupAccuracy(null);
@@ -59,7 +112,7 @@ function MyPlaces({
 
   const startSetup = async (placeId) => {
     const preset = PLACE_PRESETS.find((candidate) => candidate.id === placeId);
-    if (!preset) return;
+    if (!preset || lookupInFlightRef.current) return;
 
     if (!hasStopCoordinates) {
       showError(() =>
@@ -77,6 +130,11 @@ function MyPlaces({
 
     setStatus("locating");
     setError(null);
+    lookupInFlightRef.current = true;
+    // Asked now, while focus is still on the button pressed: if the
+    // passenger has gone elsewhere by the time the location answers, the
+    // setup opens without pulling them back.
+    focusSetupHeading(preset.id);
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
@@ -123,6 +181,8 @@ function MyPlaces({
     } catch (locationError) {
       setStatus("idle");
       showError(() => t(locationErrorMessage(locationError)));
+    } finally {
+      lookupInFlightRef.current = false;
     }
   };
 
@@ -131,6 +191,7 @@ function MyPlaces({
     if (!preset || !activeStop) return;
 
     setError(null);
+    focusSetupHeading(preset.id);
     setSetupId(preset.id);
     setSetupCandidates([{ id: activeStop.id, name: activeStop.name }]);
     setSetupAccuracy(null);
@@ -145,7 +206,7 @@ function MyPlaces({
           <h2 id="my-places-title">{t("My Places")}</h2>
           <p className={styles.description}>
             {t(
-              "Save Home, School or Work as public stops — no address to type or remember."
+              "Save the stop nearest Home, School or Work. No address needed."
             )}
           </p>
         </div>
@@ -166,7 +227,7 @@ function MyPlaces({
         </p>
       )}
 
-      <div className={styles.grid}>
+      <div className={styles.grid} ref={gridRef}>
         {PLACE_PRESETS.map((preset) => {
           const place = placesById.get(preset.id);
           // The form opens where its place is, instead of after Work with
@@ -199,6 +260,7 @@ function MyPlaces({
                   onOpenStop={onOpenStop}
                   onSetPrimaryStop={onSetPrimaryStop}
                   onReplace={startSetup}
+                  locating={status === "locating"}
                   onRemove={onRemovePlace}
                 />
                 {setupForm}
@@ -231,7 +293,7 @@ function MyPlaces({
           heading's promise three times over. */}
       {PLACE_PRESETS.some((preset) => !placesById.get(preset.id)) && (
         <p className={styles.meta}>
-          {t("Not at the stop? Open its departures first, then use it here.")}
+          {t("Not at the stop? Search for it first, then choose it here.")}
         </p>
       )}
 

@@ -141,7 +141,7 @@ test("service updates speak Finnish, with Föli's cause codes in words", () => {
   );
 
   expect(screen.getByRole("heading", { name: "Liikennetiedotteet" })).toBeInTheDocument();
-  expect(screen.getByLabelText("1 liikennetiedote")).toBeInTheDocument();
+  expect(screen.getByText("1 liikennetiedote")).toBeInTheDocument();
   expect(screen.getByText("Linja 32 · Tekninen vika")).toBeInTheDocument();
 });
 

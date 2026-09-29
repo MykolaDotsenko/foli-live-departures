@@ -28,6 +28,7 @@ import {
   rideLongOver,
 } from "../utils/rideProgress";
 import {
+  RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
   emptyGps,
@@ -35,6 +36,7 @@ import {
   persistRide,
   readStoredRide,
   rideIdentity,
+  storedRideId,
 } from "../utils/rideSession";
 import useRideAudioReadiness from "./useRideAudioReadiness";
 import useRideGps from "./useRideGps";
@@ -119,6 +121,39 @@ export default function useRideMode() {
     commitRuntime(emptyRuntime());
     commitGps(emptyGps());
   }, [commitGps, commitRuntime, commitSession, shapeRef]);
+
+  // The same ride can be open in two tabs. Turned off in one, the other kept
+  // alerting and later wrote its copy back, so the ride the passenger had
+  // ended was there again on the next reload. A ride ended or replaced in
+  // another tab is followed here, and nothing is written back: storage
+  // already says what the passenger chose. Only by a tab running a ride,
+  // though: every open tab took up a ride started in any of them, and each
+  // polled, watched the location, held the screen on and said "Get off now"
+  // on its own. A tab with no ride leaves a new one to the tab that started
+  // it, and picks it up on its next load, as it always has. The stored ride
+  // still being this one is asked of the record itself, not of whether it
+  // looks resumable: a ride long past its planned exit is ended by the tab
+  // that runs it, which may know its bus is very late and still coming.
+  useEffect(() => {
+    const takeOtherTabRide = (event) => {
+      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
+      const current = sessionRef.current;
+      if (!current) return;
+      if (storedRideId() === current.id) return;
+      const stored = readStoredRide();
+
+      stopRideAlerts();
+      shapeRef.current = null;
+      sessionRef.current = stored;
+      setSession(stored);
+      // Like a ride picked up on load, it knows nothing live yet.
+      restoredRideIdRef.current = stored?.id || "";
+      commitRuntime(emptyRuntime());
+      commitGps(emptyGps());
+    };
+    window.addEventListener("storage", takeOtherTabRide);
+    return () => window.removeEventListener("storage", takeOtherTabRide);
+  }, [commitGps, commitRuntime, shapeRef]);
 
   const applyProgress = useCallback(
     (nextRuntime = runtimeRef.current, nextGps = gpsRef.current) => {

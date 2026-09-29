@@ -117,6 +117,54 @@ test("an open get-off setup survives an earlier bus leaving the board", async ()
   ).toBeChecked();
 });
 
+// The alert is set up for the bus being boarded, so the setup is often still
+// open as that bus leaves. Half a minute later its row went, and the setup
+// with it, chosen stop and all, before the passenger could press Start.
+test("an open get-off setup stays as its bus pulls away, and after the feed drops it", async () => {
+  const onStartRide = vi.fn();
+  const atStop = { aimeddeparturetime: NOW + 20, expecteddeparturetime: NOW + 20 };
+  const { rerender } = render(
+    board([departure(atStop)], KAUPPATORI, { onStartRide })
+  );
+  await openSetupAndChooseTurunLinna();
+
+  // A minute gone, still listed.
+  rerender(
+    board(
+      [departure({ ...atStop, expecteddeparturetime: NOW - 60 })],
+      KAUPPATORI,
+      { onStartRide }
+    )
+  );
+  expect(setupPanels()).toHaveLength(1);
+  expect(document.querySelector('input[type="radio"][value="3"]')).toBeChecked();
+
+  // Then no longer listed at all.
+  rerender(board([], KAUPPATORI, { onStartRide }));
+  expect(setupPanels()).toHaveLength(1);
+  expect(document.querySelector('input[type="radio"][value="3"]')).toBeChecked();
+
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+  expect(onStartRide).toHaveBeenCalledTimes(1);
+  expect(onStartRide.mock.calls[0][0]).toMatchObject({ tripRef: "trip-1" });
+  // Started, the row it held goes the way of any departed bus.
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Get-off alert" })).toBeNull();
+});
+
+test("cancelling the setup of a departed bus lets its row go", async () => {
+  const atStop = { aimeddeparturetime: NOW + 20, expecteddeparturetime: NOW + 20 };
+  const { rerender } = render(board([departure(atStop)]));
+  await openSetupAndChooseTurunLinna();
+  rerender(board([departure({ ...atStop, expecteddeparturetime: NOW - 60 })]));
+  expect(setupPanels()).toHaveLength(1);
+
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.queryByRole("button", { name: "Get-off alert" })).toBeNull();
+});
+
 test("an expanded next-stops list stays open across a refresh", async () => {
   const { rerender } = render(board([departure()]));
   fireEvent.click(screen.getByRole("button", { name: "Next stops" }));
@@ -125,7 +173,7 @@ test("an expanded next-stops list stays open across a refresh", async () => {
   rerender(board([departure({ expecteddeparturetime: NOW + 320 })]));
 
   expect(
-    screen.getByRole("button", { name: "Hide next stops" })
+    screen.getByRole("button", { name: "Hide stops" })
   ).toBeInTheDocument();
 });
 
@@ -146,8 +194,11 @@ test("two visits of one looping trip keep separate rows and panels", async () =>
   );
 
   expect(setupPanels()).toHaveLength(1);
+  // The row button keeps its name open or closed; aria-expanded says which.
   expect(
-    screen.getAllByRole("button", { name: "Get-off alert" })
+    screen
+      .getAllByRole("button", { name: "Get-off alert" })
+      .filter((button) => button.getAttribute("aria-expanded") === "true")
   ).toHaveLength(1);
   expect(
     consoleError.mock.calls.some((call) =>
@@ -225,9 +276,8 @@ test("an expanded next-stops list does not carry over to another stop", async ()
 });
 
 // Back and Forward change the stop under the same board. Remounting the whole
-// board for it dropped keyboard focus to the page and replaced the polite
-// live region that announces the stop, so the new stop was not read out.
-test("the board header keeps focus and its live region across a stop change", () => {
+// board for it dropped keyboard focus to the page and redrew the header.
+test("the board header keeps focus and its meta line across a stop change", () => {
   const { rerender } = render(board([departure()]));
   const refresh = screen.getByRole("button", { name: "Refresh" });
   refresh.focus();
@@ -237,4 +287,103 @@ test("the board header keeps focus and its live region across a stop change", ()
 
   expect(document.activeElement).toBe(refresh);
   expect(screen.getByText(/^Stop 4/)).toBe(stopLine);
+});
+
+// The meta line carries the update time, so as a live region it was read
+// out twice on every 30-second refresh: "Refreshing…", then "Updated". A
+// change of stop is announced by App instead, and Refreshing is said by the
+// button alone.
+test("a routine refresh is not announced by the meta line", () => {
+  const props = (refreshing) => ({ ...board([departure()]).props, refreshing });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const stopLine = screen.getByText(/^Stop 164/);
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  expect(stopLine).not.toHaveAttribute("aria-live");
+  expect(stopLine.closest("[aria-live], [role='status']")).toBeNull();
+  expect(stopLine).not.toHaveTextContent("Refreshing");
+  expect(screen.getByRole("button", { name: "Refreshing…" })).toBeInTheDocument();
+});
+
+// Cancel goes away with the setup it closes. Focus used to fall to the top
+// of the page; it goes back to the row's own button instead.
+test("cancelling the get-off setup returns focus to the row's alert button", async () => {
+  render(board([departure()]));
+  fireEvent.click(screen.getByRole("button", { name: "Get-off alert" }));
+  await screen.findByText("Turun linna");
+
+  const cancel = screen.getByRole("button", { name: "Cancel" });
+  cancel.focus();
+  fireEvent.click(cancel);
+
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.getByRole("button", { name: "Get-off alert" })).toHaveFocus();
+});
+
+// Refresh is busy every half minute. Disabled, it dropped keyboard focus to
+// the page each time; busy, it keeps focus and a press does nothing.
+test("a busy Refresh keeps keyboard focus and ignores presses", () => {
+  const onRefresh = vi.fn();
+  const props = (refreshing) => ({ ...board([departure()]).props, refreshing, onRefresh });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const refresh = screen.getByRole("button", { name: "Refresh" });
+  refresh.focus();
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  const busy = screen.getByRole("button", { name: "Refreshing…" });
+  expect(busy).toBe(refresh);
+  expect(busy).toHaveFocus();
+  expect(busy).not.toBeDisabled();
+  expect(busy).toHaveAttribute("aria-disabled", "true");
+  fireEvent.click(busy);
+  expect(onRefresh).not.toHaveBeenCalled();
+
+  rerender(<BusStopDisplay {...props(false)} />);
+  expect(refresh).not.toHaveAttribute("aria-disabled");
+  fireEvent.click(refresh);
+  expect(onRefresh).toHaveBeenCalledTimes(1);
+});
+
+// A name that changed with the state as well as aria-pressed read "Remove
+// Kauppatori from favourites, pressed". One name; pressed says it is saved.
+test("the favourite button keeps one name and says whether it is saved", () => {
+  const props = (isFavorite) => ({
+    ...board([departure()]).props,
+    isFavorite,
+    onToggleFavorite: () => {},
+  });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const favourite = screen.getByRole("button", {
+    name: "Save Kauppatori to favourites",
+    pressed: false,
+  });
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  expect(
+    screen.getByRole("button", {
+      name: "Save Kauppatori to favourites",
+      pressed: true,
+    })
+  ).toBe(favourite);
+});
+
+// A label on a plain div is not read; as a group its name is.
+test("the departure counts are a named group", () => {
+  render(board([departure()]));
+
+  expect(
+    screen.getByRole("group", { name: "Departure data summary" })
+  ).toHaveTextContent("1 upcoming");
+});
+
+// The gap between the sign and its translation is a margin, and a screen
+// reader ran the two together: "SatamaHarbour".
+test("a destination and its translation are read apart", () => {
+  render(board([departure({ destinationdisplay_en: "Harbour" })]));
+
+  const cell = screen.getByText("Harbour").closest("td");
+  expect(cell.textContent).toMatch(/^Satama · Harbour/);
 });

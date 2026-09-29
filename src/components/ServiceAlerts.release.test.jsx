@@ -26,7 +26,7 @@ test("keeps retained disruption information visible when a refresh fails", () =>
   );
 
   expect(screen.getByText("Update 1")).toBeInTheDocument();
-  expect(screen.getByText(/Update check failed.*2 min ago/i)).toBeInTheDocument();
+  expect(screen.getByText(/Update failed.*2 min ago/i)).toBeInTheDocument();
 });
 
 test("an emergency is expanded immediately and cannot be folded behind the phone summary", () => {
@@ -98,7 +98,7 @@ test("stale empty disruption data is not presented as a clean no-alert state", (
   );
 
   expect(
-    screen.getByRole("heading", { name: "Service update check unavailable" })
+    screen.getByRole("heading", { name: "Couldn’t check service updates" })
   ).toBeInTheDocument();
   expect(screen.getByText(/last checked 11 min ago/i)).toBeInTheDocument();
 });

@@ -29,13 +29,16 @@
 .input {
   width: 100%;
   padding: 0 13px;
-  border: 1px solid #afc5ca;
+  /* 3:1 against the white panel (WCAG 1.4.11): the field has to be
+     findable before anything is typed in it. */
+  border: 1px solid #6b858c;
   background: #fff;
   color: #17212b;
 }
 
+/* 4.5:1: the example is read before anything is typed. */
 .input::placeholder {
-  color: #8a9ba3;
+  color: #5f7680;
 }
 
 .input:hover {
@@ -71,20 +74,26 @@
   font-weight: 900;
 }
 
-.locateButton:hover:not(:disabled) {
+.locateButton:hover:not([aria-disabled="true"]) {
   border-color: #5f949c;
   background: #eaf7f7;
 }
 
-.locateButton:disabled {
+.locateButton[aria-disabled="true"] {
   cursor: wait;
   opacity: 0.65;
+}
+
+/* Busy, it keeps keyboard focus, and a faded focus ring fell below 3:1
+   against the page. Focused, it is drawn at full strength. */
+.locateButton[aria-disabled="true"]:focus-visible {
+  opacity: 1;
 }
 
 .locateButton:focus-visible,
 .button:focus-visible,
 .input:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -136,7 +145,7 @@
 
 .suggestionId {
   flex: 0 0 auto;
-  color: #6e8088;
+  color: #4d626b;
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -251,8 +260,9 @@
     color: var(--dm-soft);
   }
 
+  /* 3:1 against the dark panel, like the light field's border. */
   :root[data-theme="dark"] .input {
-    border-color: var(--dm-line-strong);
+    border-color: #5f7f87;
     background: var(--dm-sunken);
     color: var(--dm-text);
   }
@@ -279,7 +289,7 @@
     color: var(--dm-accent);
   }
 
-  :root[data-theme="dark"] .locateButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .locateButton:hover:not([aria-disabled="true"]) {
     border-color: #5f949c;
     background: var(--dm-accent-surface);
   }

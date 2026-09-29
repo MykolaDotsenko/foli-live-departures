@@ -1,4 +1,7 @@
 // The README's and the install sheet's product screenshots, written to artifacts/screenshots.
+// They are copied into the repository by hand when the screens change:
+//   turku-departures-{mobile,mobile-fi,ride-now,desktop}.png -> docs/assets/
+//   manifest-{board-phone,board-wide,ride-phone}.jpg -> public/screenshots/{board-phone,board-wide,ride-phone}.jpg
 import fs from "node:fs";
 import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
@@ -28,10 +31,10 @@ test("captures the README's product screenshots", async ({ page }, testInfo) => 
   fs.mkdirSync("artifacts/screenshots", { recursive: true });
   const fileName =
     testInfo.project.name === "webkit-mobile"
-      ? "foli-mobile-ios.png"
+      ? "turku-departures-mobile-ios.png"
       : testInfo.project.name === "chromium-mobile"
-        ? "foli-mobile-android.png"
-        : "foli-desktop.png";
+        ? "turku-departures-mobile.png"
+        : "turku-departures-desktop.png";
 
   // A phone is shown as a passenger first sees it, one screen; a laptop
   // page is short enough to show whole.

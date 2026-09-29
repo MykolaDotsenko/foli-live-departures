@@ -62,14 +62,20 @@ export function rideConfirmations(runtime, gps) {
 }
 
 /**
- * Seconds from an epoch-millisecond time to now, never negative.
+ * Seconds from an epoch-millisecond time to now, never negative; null when
+ * there is no time to count from.
  * @param {number | null | undefined} atMs
  * @param {number} nowMs
  * @returns {number | null}
  */
 export function secondsSince(atMs, nowMs) {
-  return Number.isFinite(Number(atMs))
-    ? Math.max(0, (nowMs - Number(atMs)) / 1000)
+  // Before the first fix there is no time at all, and Number(null) is 0:
+  // counted from 1970, the panel told a passenger whose location was never
+  // found that it was "last seen 29845074 min ago".
+  if (atMs === null || atMs === undefined) return null;
+  const at = Number(atMs);
+  return Number.isFinite(at) && at > 0
+    ? Math.max(0, (nowMs - at) / 1000)
     : null;
 }
 

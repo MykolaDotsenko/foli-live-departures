@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +34,7 @@ vi.mock("../utils/rideAlerts", () => ({
 }));
 
 import useRideMode from "./useRideMode";
+import RideMode from "../components/RideMode";
 
 const rideConfig = {
   lineRef: "1",
@@ -168,6 +169,118 @@ test("restores a non-expired active ride", () => {
 
   expect(result.current.session?.id).toBe("ride-restored");
   expect(result.current.session?.stage).toBe("next");
+});
+
+// What another tab does to the stored ride, as this tab hears of it.
+function otherTabWrites(value) {
+  if (value === null) {
+    localStorage.removeItem("foli-active-ride-v1");
+  } else {
+    localStorage.setItem("foli-active-ride-v1", value);
+  }
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: value,
+      })
+    );
+  });
+}
+
+// Turned off in one tab, the ride kept alerting in the other, which then
+// wrote its copy back: the next reload brought the ended ride back.
+test("a ride turned off in another tab ends here too and stays off", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "Date"] });
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  mocks.stopRideAlerts.mockClear();
+
+  otherTabWrites(null);
+
+  expect(result.current.session).toBeNull();
+  expect(mocks.stopRideAlerts).toHaveBeenCalled();
+  expect(clearWatch).toHaveBeenCalledWith(77);
+
+  // Later clock ticks have no ride left to write back.
+  act(() => {
+    vi.advanceTimersByTime(60_000);
+  });
+  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+});
+
+test("a ride started in another tab replaces this tab's ride without a write back", () => {
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  const oldId = result.current.session.id;
+
+  const replacement = JSON.stringify({
+    id: "ride-other-tab",
+    ...rideConfig,
+    stage: "boarded",
+    stageReason: "tracking",
+    stageConfidence: "live",
+    startedAt: Date.now() - 1_000,
+    stageChangedAt: Date.now() - 1_000,
+    expiresAt: Date.now() + 60_000,
+  });
+  otherTabWrites(replacement);
+
+  expect(result.current.session?.id).toBe("ride-other-tab");
+  expect(result.current.session?.id).not.toBe(oldId);
+  expect(localStorage.getItem("foli-active-ride-v1")).toBe(replacement);
+});
+
+// Every open tab took up a ride started in any of them, so each polled,
+// watched the location, held the screen on and said "Get off now" itself.
+test("a ride started in another tab is left to that tab when this one has none", async () => {
+  const idle = renderHook(() => useRideMode());
+  const riding = renderHook(() => useRideMode());
+  act(() => {
+    riding.result.current.startRide(rideConfig);
+  });
+  await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
+  const rideId = riding.result.current.session.id;
+
+  // The starting tab's write, as the other tab hears of it.
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: localStorage.getItem("foli-active-ride-v1"),
+      })
+    );
+  });
+
+  expect(idle.result.current.session).toBeNull();
+  expect(riding.result.current.session?.id).toBe(rideId);
+  expect(watchPosition).toHaveBeenCalledTimes(1);
+
+  // Turned off where it runs, it is gone for both, and the idle tab still
+  // follows nothing.
+  act(() => riding.result.current.endRide());
+  otherTabWrites(null);
+  expect(idle.result.current.session).toBeNull();
+  idle.unmount();
+  riding.unmount();
+});
+
+test("another tab's progress on the same ride leaves this tab's ride running", () => {
+  const { result } = renderHook(() => useRideMode());
+  act(() => {
+    result.current.startRide(rideConfig);
+  });
+  const session = result.current.session;
+  mocks.stopRideAlerts.mockClear();
+
+  otherTabWrites(JSON.stringify({ ...session, stageChangedAt: Date.now() }));
+
+  expect(result.current.session).toBe(session);
+  expect(mocks.stopRideAlerts).not.toHaveBeenCalled();
 });
 
 test("drops a stored ride whose start time is in the future", () => {
@@ -1550,8 +1663,58 @@ test("a ride nobody ended is not brought back hours after its stop", () => {
   const { result } = renderHook(() => useRideMode());
 
   expect(result.current.session).toBeNull();
-  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+  // Not this tab's to delete inside its lifetime: another tab may still be
+  // running it (below). It expires with that lifetime.
+  expect(localStorage.getItem("foli-active-ride-v1")).not.toBeNull();
   expect(mocks.announceRideStage).not.toHaveBeenCalled();
+});
+
+// A very late bus: the tab running the ride still has it coming, live, well
+// past the planned exit. A second tab opened then read the record as long
+// over and deleted it, and the first tab, hearing the ride had gone, ended it.
+test("opening a second tab does not end a very late ride running in the first", () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  const startMs = Date.UTC(2026, 8, 23, 9, 0, 0);
+  vi.setSystemTime(startMs);
+  const nowSec = Math.floor(startMs / 1000);
+  const first = renderHook(() => useRideMode());
+  act(() => {
+    first.result.current.startRide({
+      ...rideConfig,
+      shapeId: "",
+      options: { locationBackup: false, notifications: false },
+      plan: {
+        ...rideConfig.plan,
+        targetPredictedEpochSec: nowSec + 500,
+        stopsToTarget: [
+          { id: "32", name: "Puistokatu", predictedEpochSec: nowSec + 500 },
+        ],
+      },
+    });
+  });
+  const rideId = first.result.current.session.id;
+  const stored = localStorage.getItem("foli-active-ride-v1");
+
+  // An hour on, past the planned exit by more than 45 minutes.
+  vi.setSystemTime(startMs + 60 * 60 * 1000);
+  const second = renderHook(() => useRideMode());
+
+  expect(second.result.current.session).toBeNull();
+  expect(localStorage.getItem("foli-active-ride-v1")).toBe(stored);
+  // Whatever the second tab did to storage, the first tab hears of it.
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: localStorage.getItem("foli-active-ride-v1"),
+      })
+    );
+  });
+  expect(first.result.current.session?.id).toBe(rideId);
+
+  second.unmount();
+  act(() => first.result.current.endRide());
+  first.unmount();
 });
 
 test("a ride long past its stop ends quietly while nothing live says the bus is coming", async () => {
@@ -1843,4 +2006,45 @@ test("a stale vehicle-at-stop observation cannot say get off now", async () => {
   act(() => result.current.endRide());
   unmount();
   mocks.fetchStopMonitor.mockImplementation(() => new Promise(() => {}));
+});
+
+// With no fix yet, the fix time is null, and Number(null) is 0: the panel
+// said "Lost track of your location · last seen 29845074 min ago" to a
+// passenger who had denied location or was still waiting for the first fix.
+test("before any location fix the panel never says when it was last seen", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  watchPosition.mockImplementation((_success, failure) => {
+    failure({ code: 1 });
+    return 77;
+  });
+
+  function Panel() {
+    const ride = useRideMode();
+    Panel.ride = ride;
+    return ride.session ? (
+      <RideMode
+        session={ride.session}
+        runtime={ride.runtime}
+        gps={ride.gps}
+        wakeLockState={ride.wakeLockState}
+        onTestAlert={() => {}}
+        onEndRide={() => {}}
+        onOpenStop={() => {}}
+      />
+    ) : null;
+  }
+
+  render(<Panel />);
+  act(() => {
+    Panel.ride.startRide(rideConfig);
+  });
+  // The clock tick weighs the evidence and publishes the fix's age.
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10_000);
+  });
+
+  expect(Panel.ride.runtime.gpsAgeSec).toBeNull();
+  expect(screen.queryByText(/last seen/i)).not.toBeInTheDocument();
+  expect(screen.queryByText("Lost track of your location")).not.toBeInTheDocument();
+  expect(screen.getByText("Cannot use your location")).toBeInTheDocument();
 });

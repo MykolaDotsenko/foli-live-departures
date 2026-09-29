@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import { rideExitInstruction } from "../utils/rideInstructions";
 import { RIDE_STAGE, rideStageRank } from "../utils/rideProgress";
 import styles from "./RideMode.module.css";
+import useScrollPaddingFor from "../hooks/useScrollPaddingFor";
 import { realStopName, stopLabel } from "../utils/stopNames";
 
 const STAGE_COPY = {
@@ -41,8 +42,10 @@ const STAGE_COPY = {
 // and "about now" two minutes late. A live or location estimate is trusted
 // as it stands.
 const RUNNING_LATE_AFTER_SEC = 30;
-// How long "Turn off alert" waits for its second tap.
-const END_CONFIRM_MS = 4_000;
+// How long "Turn off alert" waits for its second tap. Four seconds was
+// less than it takes a screen reader to say the button's new name, let
+// alone for the passenger to act on it (WCAG 2.2.1).
+const END_CONFIRM_MS = 10_000;
 
 function etaLabel(seconds, stage, { source = "" } = {}) {
   if (stage === RIDE_STAGE.NOW) return t("now");
@@ -57,6 +60,20 @@ function etaLabel(seconds, stage, { source = "" } = {}) {
   }
   const minutes = Math.max(1, Math.ceil(value / 60));
   return `~${t("{minutes} min", { minutes })}`;
+}
+
+// "~2 min" was read "tilde 2 min". The eye keeps the tilde; the ear gets
+// "about 2 min" in the language on screen.
+function EtaText({ eta }) {
+  if (!eta.startsWith("~")) return eta;
+  return (
+    <>
+      <span aria-hidden="true">{eta}</span>
+      <span className={styles.srOnly}>
+        {t("about {time}", { time: eta.slice(1) })}
+      </span>
+    </>
+  );
 }
 
 function remainingLabel(value, stage) {
@@ -84,7 +101,7 @@ function liveEvidence(runtime, session) {
   if (runtime.targetLive === true) {
     return {
       title: t("Your bus is confirmed"),
-      detail: t("in Föli’s live arrival data"),
+      detail: t("seen in Föli’s live times"),
     };
   }
   if (runtime.trackingHealth === "live" && runtime.previousSeen === true) {
@@ -94,7 +111,7 @@ function liveEvidence(runtime, session) {
         ? t("on its way to {name}", {
             name: realStopName(session.previousStop.name),
           })
-        : t("in Föli’s live arrival data"),
+        : t("seen in Föli’s live times"),
     };
   }
   if (runtime.trackingHealth === "delayed") {
@@ -105,7 +122,7 @@ function liveEvidence(runtime, session) {
   }
   return {
     title: t("Looking for your bus"),
-    detail: t("in Föli’s live arrival data"),
+    detail: t("in Föli’s live times"),
   };
 }
 
@@ -128,7 +145,7 @@ function staleLabel(ageSec) {
 }
 
 function gpsDetail(gps, enabled, ageSec) {
-  if (!enabled) return t("using arrival data only");
+  if (!enabled) return t("going by bus times only");
   if (gpsIsStale(ageSec)) return staleLabel(ageSec);
 
   if (
@@ -146,7 +163,7 @@ function gpsDetail(gps, enabled, ageSec) {
     gps.distanceM !== undefined &&
     Number.isFinite(Number(gps.distanceM))
   ) {
-    return t("roughly {meters} m away", { meters: Math.round(gps.distanceM) });
+    return t("≈{meters} m from your stop", { meters: Math.round(gps.distanceM) });
   }
   return t("waiting for a location");
 }
@@ -243,6 +260,13 @@ export default function RideMode({
   // alerts escalate, so the panel comes back into view with them, unless it
   // is already there.
   const panelRef = useRef(null);
+  // Pinned over the page on a wide screen: tabbing must not land under it.
+  const [panelElement, setPanelElement] = useState(null);
+  useScrollPaddingFor(panelElement, "top");
+  const attachPanel = useCallback((node) => {
+    panelRef.current = node;
+    setPanelElement(node);
+  }, []);
   const stage = session?.stage;
   useEffect(() => {
     if (
@@ -364,7 +388,7 @@ export default function RideMode({
 
   return (
     <section
-      ref={panelRef}
+      ref={attachPanel}
       className={styles.panel}
       data-stage={session.stage}
       aria-labelledby="ride-mode-title"
@@ -373,7 +397,11 @@ export default function RideMode({
       <div className={styles.topline}>
         <div>
           <p className={styles.eyebrow}>{t(copy.eyebrow)}</p>
-          <h2 id="ride-mode-title">{t(copy.title, copy.params)}</h2>
+          {/* Where focus lands when the alert starts: the setup and its
+              Start button are gone by then. */}
+          <h2 id="ride-mode-title" tabIndex={-1}>
+            {t(copy.title, copy.params)}
+          </h2>
         </div>
         <span
           className={styles.health}
@@ -423,7 +451,7 @@ export default function RideMode({
               <ul>
                 <li>{t("Turn the media volume up.")}</li>
                 <li>{t("Switch off silent or focus mode.")}</li>
-                <li>{t("Check the sound is not going to other headphones.")}</li>
+                <li>{t("Check the sound isn’t going to a Bluetooth device.")}</li>
               </ul>
               <div className={styles.soundCheckActions}>
                 <button type="button" onClick={onTestAlert}>
@@ -439,16 +467,31 @@ export default function RideMode({
         </div>
       )}
 
-      <p
-        className={styles.instruction}
-        role={urgent ? "alert" : "status"}
-        aria-live={urgent ? "assertive" : "polite"}
-      >
-        {t(copy.instruction, copy.params)}
+      {/* Two regions that are always there, and the instruction goes to
+          the one that fits: calm news politely, "Press STOP" and "Get off
+          now" at once. One node that changed its role from status to alert
+          as the stop came up was, to some screen readers, a new region
+          with nothing new in it, and the most urgent words went unsaid.
+          The empty one is out of sight but stays in the page (CSS). */}
+      <p className={styles.instruction} role="status">
+        {urgent ? "" : t(copy.instruction, copy.params)}
+      </p>
+      <p className={styles.instruction} role="alert">
+        {urgent ? t(copy.instruction, copy.params) : ""}
+      </p>
+      {/* The button's new name is not announced by every screen reader:
+          the second tap it is waiting for is said here as well. */}
+      <p className={styles.srOnly} role="status">
+        {endArmed ? t("Tap again to turn it off") : ""}
       </p>
 
       {!gettingOffNow && (
-      <div className={styles.metrics} aria-label={t("Ride progress")}>
+      // A group, so its name is read: on a plain div the label was ignored.
+      <div
+        className={styles.metrics}
+        role="group"
+        aria-label={t("Ride progress")}
+      >
         <div>
           <span>{t("Line")}</span>
           <strong>{session.lineRef || "—"}</strong>
@@ -462,7 +505,7 @@ export default function RideMode({
           <span>
             {runtime.etaSource === "schedule" ? t("By timetable") : t("Estimate")}
           </span>
-          <strong>{eta || "—"}</strong>
+          <strong>{eta ? <EtaText eta={eta} /> : "—"}</strong>
         </div>
       </div>
 
@@ -561,9 +604,7 @@ export default function RideMode({
                 ? t("Cannot keep your screen on")
                 : t("Your screen may switch off")}
           </strong>
-          <small>
-            {t("Most reliable while this page stays open and visible")}
-          </small>
+          <small>{t("Keep this screen open")}</small>
         </span>
       </div>
       )}
@@ -611,7 +652,7 @@ export default function RideMode({
         session.options?.locationBackup && (
           <p className={styles.degraded} role="status">
             {t(
-              "We could not load this route's path, so we are following your distance to the stop instead. Live arrival data still applies."
+              "The route map didn’t load, so we use straight-line distance to your stop. Live bus times still work."
             )}
           </p>
         )}

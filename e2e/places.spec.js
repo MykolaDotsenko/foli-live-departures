@@ -5,11 +5,12 @@ import { encodeSharedPlaceForTest, seedHome } from "./support/places.js";
 test("saves Home as a privacy-first safe arrival zone", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-desktop");
 
   await context.grantPermissions(["geolocation"], {
-    origin: "http://127.0.0.1:4173",
+    origin: new globalThis.URL(baseURL).origin,
   });
   await context.setGeolocation({
     latitude: 60.45182,
@@ -57,6 +58,39 @@ test("saves Home as a privacy-first safe arrival zone", async ({
   expect(placeStorage).not.toContain("60.45182");
   expect(placeStorage).not.toContain("22.26662");
   expect(placeStorage).not.toContain("distanceMeters");
+});
+
+// The setup takes the place of School's card, and the card comes back in
+// place of the setup: the button pressed went away both times, and focus
+// fell to the top of the page. The setup's heading takes it as it opens,
+// and the card's first visible button as it closes.
+test("the place setup keeps keyboard focus as it opens and closes", async ({
+  page,
+}) => {
+  await page.goto("/?stop=164");
+  const card = page.locator('[data-place="school"]');
+  const useStop = card.getByRole("button", { name: "Use Kauppatori for School" });
+  await expect(card).toBeVisible();
+  if (!(await useStop.isVisible())) {
+    // A phone folds the card to its summary until tapped.
+    await card.getByRole("button", { expanded: false }).click();
+  }
+
+  await useStop.focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Choose stops for School" })
+  ).toBeFocused();
+
+  await page
+    .locator('[aria-labelledby="setup-school-title"]')
+    .getByRole("button", { name: "Cancel" })
+    .focus();
+  await page.keyboard.press("Enter");
+
+  await expect(card).toBeVisible();
+  await expect(card.locator("button:focus")).toHaveCount(1);
+  await expect(card.locator("button:focus")).toBeVisible();
 });
 
 test("imports a parent-shared place only after explicit confirmation", async ({

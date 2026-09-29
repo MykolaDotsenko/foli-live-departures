@@ -126,6 +126,7 @@ function BusStopForm({
   coordinatesStatus = "idle",
   serviceBoundary = null,
   onSubmit,
+  onEdit,
 }) {
   useLanguage();
   // The field accepts a name or a number equally, so it should give back
@@ -149,12 +150,18 @@ function BusStopForm({
   // merge, so `stops` changes identity mid-session. Resetting the field on
   // every one of those wiped whatever was being typed at that moment.
   const syncedStopIdRef = useRef(activeStopId);
+  // Counts every change to the field made by the passenger or by moving to
+  // another stop. A location fix can take seconds; if the text changed in
+  // the meantime, the late answer is about a question nobody is asking any
+  // more and must not replace what they typed.
+  const fieldEditsRef = useRef(0);
 
   useEffect(() => {
     const stop =
       stops.find((item) => String(item.id) === String(activeStopId)) || null;
     const navigated = syncedStopIdRef.current !== activeStopId;
     syncedStopIdRef.current = activeStopId;
+    if (navigated) fieldEditsRef.current += 1;
 
     setResolved(stop);
     setValue((current) => {
@@ -175,6 +182,9 @@ function BusStopForm({
     setResolved(stop);
     setValidationError(null);
     setActiveIndex(-1);
+    // Chosen, the list has done its job: left open it went on offering the
+    // stop just picked (aria-expanded stayed true). Typing opens it again.
+    setFocused(false);
     onSubmit(stop.id);
   };
 
@@ -230,6 +240,8 @@ function BusStopForm({
   };
 
   const locateNearestStop = async () => {
+    // Busy, the button stays focusable but does nothing (see below).
+    if (locating) return;
     setValidationError(null);
     setActiveIndex(-1);
 
@@ -254,9 +266,12 @@ function BusStopForm({
     }
 
     setLocating(true);
+    const editsAtTap = fieldEditsRef.current;
+    const superseded = () => fieldEditsRef.current !== editsAtTap;
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
+      if (superseded()) return;
       const { verdict, stop: nearest } = judgeNearestStop(
         stops,
         position,
@@ -275,6 +290,7 @@ function BusStopForm({
       setResolved(nearest);
       setFocused(false);
     } catch (error) {
+      if (superseded()) return;
       setValidationError(message(locationErrorMessage(error)));
     } finally {
       setLocating(false);
@@ -290,7 +306,14 @@ function BusStopForm({
   }, [activeIndex]);
 
   const handleKeyDown = (event) => {
-    if (!showSuggestions) return;
+    if (!showSuggestions) {
+      // Down arrow opens a list Escape closed, as in any combobox.
+      if (event.key === "ArrowDown" && value.trim() && matches.length > 0) {
+        event.preventDefault();
+        setFocused(true);
+      }
+      return;
+    }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -327,11 +350,17 @@ function BusStopForm({
             className={styles.input}
             value={value}
             onChange={(event) => {
+              fieldEditsRef.current += 1;
+              onEdit?.();
               setValue(event.target.value);
               // Editing the text means it is no longer the stop we resolved.
               setResolved(null);
               setValidationError(null);
               setActiveIndex(-1);
+              // Escape closes the list; typing again reopens it. Without
+              // this a keyboard user who pressed Escape got no more
+              // suggestions until they left the field and came back.
+              setFocused(true);
             }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -360,10 +389,12 @@ function BusStopForm({
             className={styles.locateButton}
             type="button"
             onClick={locateNearestStop}
-            disabled={locating}
+            // Busy rather than disabled: a disabled button drops keyboard
+            // focus to the page while the location is looked up.
+            aria-disabled={locating ? "true" : undefined}
             aria-busy={locating}
-            aria-label={t("Use current location")}
-            title={t("Use current location")}
+            aria-label={t("Use my location")}
+            title={t("Use my location")}
           >
             <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
           </button>

@@ -48,6 +48,7 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 10px;
 }
 
@@ -134,15 +135,22 @@
   color: #294851;
 }
 
-.secondaryButton:hover:not(:disabled) {
+.secondaryButton:hover:not(:disabled):not([aria-disabled="true"]) {
   background: #f1f8f8;
 }
 
 .goButton:disabled,
 .primaryButton:disabled,
-.secondaryButton:disabled {
+.secondaryButton:disabled,
+.secondaryButton[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.58;
+}
+
+/* "Use my location" is busy rather than disabled while it looks, so it
+   keeps keyboard focus; faded, its focus ring fell below 3:1. */
+.secondaryButton[aria-disabled="true"]:focus-visible {
+  opacity: 1;
 }
 
 /* Not pressable yet, and legible: faded, "Save School" read as broken. */
@@ -193,7 +201,7 @@
 }
 
 .setupDetails summary:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -241,6 +249,11 @@
 
 .textButton {
   color: #00656f;
+}
+
+/* Looking up the location: tapping again does nothing, so do not invite it. */
+.textButton[aria-busy="true"] {
+  cursor: progress;
 }
 
 .dangerButton {
@@ -366,6 +379,20 @@
   color: #415960;
   font-size: 0.7rem;
   font-weight: 800;
+}
+
+/* Heard, not seen: which stop a "Main stop" choice is for. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 
@@ -496,7 +523,7 @@
   }
 
   .mobileSummary:focus-visible {
-    outline: 3px solid rgba(0, 121, 133, 0.28);
+    outline: 3px solid #007985;
     outline-offset: -3px;
   }
 
@@ -509,13 +536,13 @@
     font-size: 0.875rem;
   }
 
+  /* Wraps rather than ending in "…": with large text "Ei vielä
+     tallennettu" and a stop's name were cut to half a word. */
   .mobileSummaryText small {
-    overflow: hidden;
     margin-top: 2px;
     color: #4d626b;
     font-size: 0.8125rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 
   .mobileSummaryAction {
@@ -707,7 +734,7 @@
   }
 
   :root[data-theme="dark"] .mobileSummary:hover,
-  :root[data-theme="dark"] .secondaryButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .secondaryButton:hover:not(:disabled):not([aria-disabled="true"]) {
     background: var(--dm-accent-surface);
   }
 

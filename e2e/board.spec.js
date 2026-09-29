@@ -27,6 +27,56 @@ test("Back keeps keyboard focus on the departure board", async ({ page }) => {
   ).toBeFocused();
 });
 
+// A change of stop is said once, by a line that changes with nothing else.
+// The board's meta line used to be the live region, and with the update
+// time in it every 30-second refresh was read out twice.
+test("a change of stop is announced, and a refresh is not", async ({ page }) => {
+  await page.goto("/?stop=164");
+  const announcer = page.locator("p.visually-hidden[role='status']");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+  // The stop the page opened on is its heading, not news.
+  await expect(announcer).toHaveText("");
+
+  await page.getByLabel("Find your stop").fill("4");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(announcer).toHaveText("Departures for Turun linna, stop 4");
+
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(announcer).toHaveText("Departures for Turun linna, stop 4");
+  await expect(
+    page.locator('[aria-labelledby="departures-title"] [aria-live]')
+  ).toHaveCount(0);
+});
+
+// A saved stop's chip leaves the list once its stop is open, so the button
+// pressed went away and focus fell to the top of the page. It lands on the
+// board it opened instead, where a screen reader reads the stop's name.
+test("choosing a recent stop's chip puts focus on its board", async ({ page }) => {
+  await page.goto("/?stop=164");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+  await page.getByLabel("Find your stop").fill("4");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Turun linna", exact: true })
+  ).toBeVisible();
+
+  const recent = page
+    .getByRole("navigation", { name: "Saved and recent stops" })
+    .getByRole("button", { name: /Kauppatori/ });
+  await recent.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(page).toHaveURL(/stop=164/);
+  const heading = page.locator("#departures-title");
+  await expect(heading).toHaveText("Kauppatori");
+  await expect(heading).toBeFocused();
+});
+
 test("daily flow: search, save, navigate and restore with Back", async ({ page }) => {
   await page.goto("/?stop=164");
 
@@ -75,8 +125,9 @@ test("daily flow: search, save, navigate and restore with Back", async ({ page }
   await expect(lineOneBadge).toHaveCSS("color", "rgb(0, 0, 0)");
 
   await page.getByRole("button", { name: "Save Kauppatori to favourites" }).click();
+  // One name either way; pressed is what says it is saved.
   await expect(
-    page.getByRole("button", { name: "Remove Kauppatori from favourites" })
+    page.getByRole("button", { name: "Save Kauppatori to favourites", pressed: true })
   ).toHaveAttribute("aria-pressed", "true");
 
   const search = page.getByRole("combobox", { name: "Find your stop" });
@@ -187,7 +238,7 @@ test("each stop gets its own tab title, and the app says who makes it", async ({
     "href",
     /^mailto:/
   );
-  await expect(page.getByRole("link", { name: "Report a problem" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Report a problem (GitHub)" })).toHaveAttribute(
     "href",
     /issues\/new\?template=bug_report\.yml/
   );
@@ -405,7 +456,7 @@ test("six simultaneous alerts stay compact and keep departures reachable", async
   });
 
   await page.goto("/?stop=164");
-  await expect(page.getByLabel("6 service updates")).toBeAttached();
+  await expect(page.getByText("6 service updates", { exact: true })).toBeAttached();
   await openServiceUpdates(page);
   await expect(
     page.getByRole("button", { name: "Show 2 more updates" })

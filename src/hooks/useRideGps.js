@@ -34,7 +34,7 @@ export default function useRideGps({
       commitGps((value) => ({
         ...value,
         status: "unavailable",
-        error: msg("Location backup is unavailable on this device."),
+        error: msg("Location isn’t available on this device."),
       }));
       return undefined;
     }
@@ -71,8 +71,8 @@ export default function useRideGps({
           status: "error",
           error:
             error?.code === 1
-              ? msg("Location backup was not allowed.")
-              : msg("Location backup is temporarily unavailable."),
+              ? msg("Location wasn’t allowed.")
+              : msg("Location isn’t available right now."),
         }));
       },
       {

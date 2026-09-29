@@ -35,6 +35,8 @@ The promise is intentionally concrete. It describes what the product can help wi
 
 The name is not translated. Use it exactly across the app header, browser title, PWA install surface, README, screenshots and social sharing.
 
+The manifest's `short_name` is the full name too, so some home screens and launchers cut it to something like "Turku Depar…". That is accepted: a clipped real name is better than a second, shorter name.
+
 ### 2. Descriptor
 
 **Live bus times, disruptions & get-off alerts.**

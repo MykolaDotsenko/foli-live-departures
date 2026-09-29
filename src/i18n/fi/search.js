@@ -33,10 +33,10 @@ export default {
   "Stop locations are still loading. Try again in a moment.":
     "Pysäkkien sijainteja ladataan vielä. Yritä hetken kuluttua uudelleen.",
   "Stop locations are temporarily unavailable. Search manually instead.":
-    "Pysäkkien sijainnit eivät ole tilapäisesti saatavilla. Hae pysäkki itse.",
+    "Pysäkkien sijainnit eivät ole juuri nyt saatavilla. Hae pysäkki itse.",
   "Find your stop": "Etsi pysäkki",
   "e.g. Kauppatori": "esim. Kauppatori",
-  "Use current location": "Käytä nykyistä sijaintia",
+  "Use my location": "Käytä sijaintiani",
   "Find nearest stop": "Etsi lähin pysäkki",
   "Show departures": "Näytä lähdöt",
   Show: "Näytä",
@@ -58,7 +58,7 @@ export default {
   "Nearby-stop data is still loading. Try again in a moment.":
     "Lähipysäkkien tietoja ladataan vielä. Yritä hetken kuluttua uudelleen.",
   "Stop locations are temporarily unavailable. Search for your stop by name, and try again later.":
-    "Pysäkkien sijainnit eivät ole tilapäisesti saatavilla. Hae pysäkki nimellä ja yritä myöhemmin uudelleen.",
+    "Pysäkkien sijainnit eivät ole juuri nyt saatavilla. Hae pysäkki nimellä ja yritä myöhemmin uudelleen.",
   "Your location is approximate, so compare the nearby options before choosing.":
     "Sijaintisi on likimääräinen, joten vertaa lähellä olevia vaihtoehtoja ennen valintaa.",
   "Your location appears outside Föli’s published service area. Nearby stops are shown for reference, but none was selected automatically.":
@@ -70,13 +70,13 @@ export default {
   "Two stops are almost equally close. Choose the stop that serves your travel direction.":
     "Kaksi pysäkkiä on lähes yhtä lähellä. Valitse pysäkki, joka palvelee kulkusuuntaasi.",
   "Near you": "Lähelläsi",
-  "Find the closest stop with a one-time location check.":
-    "Etsi lähin pysäkki sijaintisi avulla – sijaintia ei tallenneta.",
+  "Uses your location once. It isn’t saved.":
+    "Käyttää sijaintiasi kerran. Sitä ei tallenneta.",
   "Locating…": "Paikannetaan…",
   "Update location": "Päivitä sijainti",
   "Getting stop locations…": "Haetaan pysäkkien sijainteja…",
   "Location search is temporarily unavailable; stop search still works normally.":
-    "Sijaintihaku ei ole tilapäisesti käytettävissä; pysäkkihaku toimii normaalisti.",
+    "Sijaintihaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii normaalisti.",
   "One-time location only": "Sijaintia ei seurata",
   "Accuracy ±{accuracy}": "Tarkkuus ±{accuracy}",
   "Selected stop ≈ {distance} away": "Valittu pysäkki ≈ {distance} päässä",

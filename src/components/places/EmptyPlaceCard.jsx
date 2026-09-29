@@ -21,6 +21,7 @@ export default function EmptyPlaceCard({
   return (
     <article
       className={styles.emptyCard}
+      data-place={preset.id}
       data-mobile-expanded={mobileExpanded ? "true" : "false"}
     >
       <button
@@ -42,18 +43,26 @@ export default function EmptyPlaceCard({
       </button>
 
       <div className={styles.emptyBody}>
-        <span className={styles.placeIcon} aria-hidden="true">
-          <PlaceIcon id={preset.id} />
-        </span>
-        <div>
-          <h3>{label}</h3>
+        {/* The same heading as a saved place's card: the icon beside the
+            name, not above it, so the three cards line up side by side. */}
+        <div className={styles.placeHeading}>
+          <span className={styles.placeIcon} aria-hidden="true">
+            <PlaceIcon id={preset.id} />
+          </span>
+          <div>
+            <h3>{label}</h3>
+          </div>
         </div>
         <div className={styles.emptyActions}>
           <button
             type="button"
             className={styles.secondaryButton}
-            onClick={() => onStartSetup(preset.id)}
-            disabled={status === "locating"}
+            // Busy rather than disabled: a disabled button drops keyboard
+            // focus to the page mid-lookup.
+            onClick={() => {
+              if (status !== "locating") onStartSetup(preset.id);
+            }}
+            aria-disabled={status === "locating" ? "true" : undefined}
             aria-busy={status === "locating"}
             aria-label={t(PLACE_PHRASES[preset.id].locate)}
           >

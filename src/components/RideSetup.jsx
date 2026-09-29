@@ -7,6 +7,8 @@ import {
 } from "../utils/rideProgress";
 import { formatClock, getDepartureTime } from "../utils/time";
 import styles from "./RideSetup.module.css";
+import StopName from "./StopName";
+import useScrollPaddingFor from "../hooks/useScrollPaddingFor";
 import { stopLabel } from "../utils/stopNames";
 
 function plannedClock(value) {
@@ -124,6 +126,10 @@ export default function RideSetup({
   const [notifications, setNotifications] = useState(false);
   const [startError, setStartError] = useState("");
   const panelRef = useRef(null);
+  // The Start bar is fixed to the bottom of a phone: what is focused below
+  // the fold must stop above it, not behind it.
+  const [actionsElement, setActionsElement] = useState(null);
+  useScrollPaddingFor(actionsElement, "bottom");
 
   // The setup opens inside the tapped row, often below the fold, while the
   // button that starts the ride is pinned to the bottom of a phone screen.
@@ -339,7 +345,9 @@ export default function RideSetup({
       <div className={styles.heading}>
         <div className={styles.headingText}>
           <p className={styles.kicker}>{t("Get-off alert")}</p>
-          <h4>{t("Where do you want to get off?")}</h4>
+          {/* Under the board's h1, so an h2: as an h4 it skipped two
+              levels of the page's outline. */}
+          <h2>{t("Where do you want to get off?")}</h2>
           <p>
             {t(
               "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP."
@@ -424,7 +432,11 @@ export default function RideSetup({
                       }}
                     />
                     <span className={styles.stopCopy}>
-                      <strong>{optionName(item)}</strong>
+                      {/* Föli's name, marked Finnish, so a screen reader in
+                          English says "Puistokatu" as it is written. */}
+                      <strong>
+                        <StopName stop={item.stop} id={item.stopId} />
+                      </strong>
                       <small>
                         {stopsAwayLabel(item.stopsAway)}
                         {clock ? ` · ${t("around {time}", { time: clock })}` : ""}
@@ -434,10 +446,15 @@ export default function RideSetup({
                       </small>
                     </span>
                     {item.places.length > 0 && (
-                      <span className={styles.placeBadge}>
-                        {/* The labels are My Places' own phrases ("Home"). */}
-                        {item.places.map((label) => t(label)).join(" · ")}
-                      </span>
+                      <>
+                        {/* Heard, not seen: without it the badge ran on
+                            from the line before, "…after KauppatoriHome". */}
+                        <span className={styles.srOnly}> · </span>
+                        <span className={styles.placeBadge}>
+                          {/* The labels are My Places' own phrases ("Home"). */}
+                          {item.places.map((label) => t(label)).join(" · ")}
+                        </span>
+                      </>
                     )}
                   </label>
                 );
@@ -472,7 +489,7 @@ export default function RideSetup({
                     <strong>{t("Also show notifications")}</strong>
                     <small>
                       {t(
-                        "Only while this page stays open: a browser can pause a page it thinks you have left, and a locked phone often does."
+                        "Only while this page is open. A locked phone often pauses it."
                       )}
                     </small>
                   </span>
@@ -504,7 +521,7 @@ export default function RideSetup({
               </span>
             </div>
 
-            <div className={styles.actions}>
+            <div ref={setActionsElement} className={styles.actions}>
               {startError && (
                 <p className={styles.startError} role="alert">
                   {t(startError)}

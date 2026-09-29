@@ -89,8 +89,10 @@ describe("ageing the phone's evidence", () => {
     expect(secondsSince(NOW - 5_000, NOW)).toBe(5);
     expect(secondsSince(NOW + 5_000, NOW)).toBe(0);
     expect(secondsSince(undefined, NOW)).toBeNull();
-    // Number(null) is 0, so a missing fix time reads as ancient, not unknown.
-    expect(secondsSince(null, NOW)).toBe(NOW / 1000);
+    // No fix yet is no age at all, not an age counted from 1970.
+    expect(secondsSince(null, NOW)).toBeNull();
+    expect(secondsSince(emptyGps().updatedAt, NOW)).toBeNull();
+    expect(secondsSince(0, NOW)).toBeNull();
   });
 
   it("trusts riding pace only from a recent fix", () => {

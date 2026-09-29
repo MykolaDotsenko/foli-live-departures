@@ -7,6 +7,7 @@ import { SERVICE_TIME_ZONE } from "./time";
  *   CalendarDates,
  *   CalendarEntry,
  *   ClockCandidate,
+ *   ClockCandidateWindow,
  *   EpochSeconds,
  *   GtfsClock,
  *   ServiceDateKey,
@@ -269,7 +270,23 @@ export function serviceRunsOnDate(
  * @param {{ lookaheadSeconds?: number, graceSeconds?: number, maxRows?: number }} [options]
  * @returns {ClockCandidate<Row>[]}
  */
-export function scheduledClockCandidates(
+export function scheduledClockCandidates(rows, referenceTimeSec, options) {
+  return scheduledClockWindow(rows, referenceTimeSec, options).candidates;
+}
+
+// The same list, saying whether maxRows cut it short. A caller that runs out
+// of candidates without finding enough buses must know whether the window
+// really ended there or only the list did: at 02:00 on a Sunday, 300
+// weekday-only trips before the first Sunday one filled the whole list, and
+// "nothing found" was reported as "no buses".
+/**
+ * @template {Partial<Pick<StopTimetableRow, "tripId" | "arrivalTime" | "departureTime" | "pickupType">>} [Row=StopTimetableRow]
+ * @param {readonly Row[] | null | undefined} rows
+ * @param {EpochSeconds | null | undefined} referenceTimeSec
+ * @param {{ lookaheadSeconds?: number, graceSeconds?: number, maxRows?: number }} [options]
+ * @returns {ClockCandidateWindow<Row>}
+ */
+export function scheduledClockWindow(
   rows,
   referenceTimeSec,
   {
@@ -279,7 +296,9 @@ export function scheduledClockCandidates(
   } = {}
 ) {
   const reference = finiteNumber(referenceTimeSec);
-  if (reference === null || reference <= 0) return [];
+  if (reference === null || reference <= 0) {
+    return { candidates: [], truncated: false };
+  }
 
   const lookahead = Math.max(0, Number(lookaheadSeconds) || 0);
   const daysAhead = Math.max(1, Math.ceil(lookahead / (24 * 60 * 60)) + 1);
@@ -327,9 +346,13 @@ export function scheduledClockCandidates(
     }
   }
 
-  return candidates
-    .sort((a, b) => a.aimedDepartureTime - b.aimedDepartureTime)
-    .slice(0, Math.max(1, Number(maxRows) || 64));
+  const limit = Math.max(1, Number(maxRows) || 64);
+  return {
+    candidates: candidates
+      .sort((a, b) => a.aimedDepartureTime - b.aimedDepartureTime)
+      .slice(0, limit),
+    truncated: candidates.length > limit,
+  };
 }
 
 /**

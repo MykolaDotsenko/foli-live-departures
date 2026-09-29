@@ -143,6 +143,32 @@ test("the theme switch overrides the phone theme and persists", async ({ page })
   );
 });
 
+// A screen reader moves by landmark and heading. The header and footer sat
+// inside <main>, so the page had no banner or contentinfo, and a first
+// visit had no h1 at all: the name was a paragraph.
+test("the page has its landmarks and exactly one h1, before and after a stop is open", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.getByRole("banner")).toHaveCount(1);
+  await expect(page.getByRole("main")).toHaveCount(1);
+  await expect(page.getByRole("contentinfo")).toHaveCount(1);
+  await expect(page.getByRole("main").getByRole("banner")).toHaveCount(0);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "Turku Departures"
+  );
+
+  await page.getByLabel("Find your stop").fill("164");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Kauppatori" })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  // The name keeps its look as a paragraph.
+  await expect(page.locator(".brand")).toHaveText("Turku Departures");
+});
+
 test("landscape phone keeps onboarding actions in reach", async ({
   page,
 }, testInfo) => {
@@ -199,10 +225,10 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     dialog.getByRole("heading", { name: "Check the next bus" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Use Get-off Alert" })
+    dialog.getByRole("heading", { name: "Use the get-off alert" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Watch for disruptions" })
+    dialog.getByRole("heading", { name: "Check service updates" })
   ).toHaveCount(0);
 
   const quickHeader = dialog.locator("header");
@@ -224,7 +250,7 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     page.getByRole("dialog", { name: "How to use Turku Departures" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Watch for disruptions" })
+    dialog.getByRole("heading", { name: "Check service updates" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Save familiar places" })
@@ -281,7 +307,7 @@ test.describe("on a Finnish phone", () => {
     // The README's Finnish picture, a phone's first screen.
     if (testInfo.project.name === "chromium-mobile") {
       fs.mkdirSync("artifacts/screenshots", { recursive: true });
-      await page.screenshot({ path: "artifacts/screenshots/foli-mobile-fi.png" });
+      await page.screenshot({ path: "artifacts/screenshots/turku-departures-mobile-fi.png" });
     }
 
     const nextStops = page.getByRole("button", { name: "Seuraavat pysäkit" }).first();

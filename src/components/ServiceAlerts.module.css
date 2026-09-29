@@ -61,6 +61,20 @@
   color: #7b271f;
 }
 
+/* Heard, not seen: what the count counts. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  border: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .list {
   display: grid;
 }
@@ -180,7 +194,7 @@
 }
 
 .moreButton:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.25);
+  outline: 3px solid #8b641d;
   outline-offset: -3px;
 }
 
@@ -231,7 +245,7 @@
 }
 
 .mediaLink:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.28);
+  outline: 3px solid #8b641d;
   outline-offset: 3px;
   border-radius: 12px;
 }
@@ -372,7 +386,7 @@
 }
 
 .alertSummary:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.28);
+  outline: 3px solid #8b641d;
   outline-offset: -3px;
 }
 
@@ -567,7 +581,8 @@
     min-height: 48px;
     align-items: center;
     gap: 10px;
-    padding: 8px 15px;
+    /* In line with the service updates it opens. */
+    padding: 8px 11px;
     border: 0;
     background: transparent;
     color: #3d3320;
@@ -609,7 +624,7 @@
   }
 
   .phoneToggle:focus-visible {
-    outline: 3px solid rgba(139, 100, 29, 0.35);
+    outline: 3px solid #8b641d;
     outline-offset: -3px;
   }
 

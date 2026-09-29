@@ -1,7 +1,7 @@
 {
   "name": "Turku Departures",
   "short_name": "Turku Departures",
-  "description": "Live Turku bus times, disruptions and get-off alerts. Privacy-first, no account, no ads. Independent app using Föli open data.",
+  "description": "Live Turku bus times, disruptions and get-off alerts. Privacy-first: no account, no ads. Independent app using Föli open data.",
   "lang": "en",
   "start_url": "./",
   "id": "./",

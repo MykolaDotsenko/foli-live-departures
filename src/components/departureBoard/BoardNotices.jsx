@@ -9,8 +9,10 @@ import { formatClock, formatElapsedAge } from "../../utils/time";
 
 export function DepartureSummary({ visibleCount, realtimeCount }) {
   return (
+    // A group, so its name is read: on a plain div the label was ignored.
     <div
       className={styles.summary}
+      role="group"
       aria-label={t("Departure data summary")}
     >
       <span>{t("{count} upcoming", { count: visibleCount })}</span>
@@ -38,7 +40,7 @@ export function FreshnessNotice({ offlineSince, error, receiptAgeSeconds }) {
         t("Offline · last updated {time}", { time: formatClock(offlineSince) })
       ) : (
         <>
-          {error ? t("Live update failed") : t("Live data is getting old")}
+          {error ? t("Live update failed") : t("Live times may be out of date")}
           {receiptAgeSeconds !== null
             ? ` · ${t("last successful update {age}", {
                 age: formatElapsedAge(receiptAgeSeconds),
@@ -54,10 +56,8 @@ export function ScheduleNotice({ realtimeAvailable, scheduleIncomplete }) {
   return (
     <p className={styles.staleNotice} role="status">
       {realtimeAvailable === false
-        ? t("Live updates are unavailable · showing scheduled Föli times.")
-        : t(
-            "No live departure is published right now · showing the next scheduled Föli times."
-          )}
+        ? t("Live times aren’t available · showing the timetable.")
+        : t("No live times right now · showing the timetable.")}
       {scheduleIncomplete
         ? ` ${t(
             "Later departures could not be checked, so more buses may run after these."

@@ -45,6 +45,8 @@ export default {
   now: "nyt",
   "running late": "myöhässä",
   "about now": "ihan kohta",
+  // What a screen reader says for "~2 min": the tilde is only for the eye.
+  "about {time}": "noin {time}",
   "you are here": "olet perillä",
   "behind you": "jäi taakse",
   "almost there": "melkein perillä",
@@ -64,7 +66,8 @@ export default {
   "Live tracking is catching up": "Reaaliaikatieto viivästyy",
   "Going by the timetable": "Aikataulun mukaan",
   "Your bus is confirmed": "Bussi löytyi",
-  "in Föli’s live arrival data": "Fölin reaaliaikatiedoista",
+  "seen in Föli’s live times": "näkyy Fölin reaaliaikatiedoissa",
+  "in Föli’s live times": "Fölin reaaliaikatiedoista",
   "on its way to {name}": "matkalla pysäkille {name}",
   "Waiting for a live update": "Odotetaan reaaliaikapäivitystä",
   "last seen in Föli’s live data about a minute ago":
@@ -74,10 +77,10 @@ export default {
   // Where the phone is
   "last seen {minutes} min ago": "viimeisin sijainti {minutes} min sitten",
   "last seen over a minute ago": "viimeisin sijainti yli minuutti sitten",
-  "using arrival data only": "käytetään vain saapumistietoja",
+  "going by bus times only": "vain bussin aikatietojen perusteella",
   "about {meters} m past your stop": "noin {meters} m pysäkkisi jälkeen",
   "about {meters} m to go": "noin {meters} m jäljellä",
-  "roughly {meters} m away": "suunnilleen {meters} m päässä",
+  "≈{meters} m from your stop": "≈{meters} m pysäkiltäsi",
   "waiting for a location": "odotetaan sijaintia",
   "Not using your location": "Sijaintiasi ei käytetä",
   "Lost track of your location": "Sijaintisi seuranta katkesi",
@@ -89,11 +92,11 @@ export default {
   "Cannot use your location": "Sijaintiasi ei voi käyttää",
   "This phone cannot share location": "Tämä puhelin ei voi jakaa sijaintia",
   "Waiting for your location": "Odotetaan sijaintiasi",
-  "Location backup is unavailable on this device.":
+  "Location isn’t available on this device.":
     "Sijainnin seuranta ei ole käytettävissä tällä laitteella.",
-  "Location backup was not allowed.": "Sijainnin käyttöä ei sallittu.",
-  "Location backup is temporarily unavailable.":
-    "Sijainnin seuranta ei ole tilapäisesti käytettävissä.",
+  "Location wasn’t allowed.": "Sijainnin käyttöä ei sallittu.",
+  "Location isn’t available right now.":
+    "Sijainnin seuranta ei ole juuri nyt käytettävissä.",
   "The alert keeps going without your location.":
     "Hälytys toimii ilman sijaintiasi.",
 
@@ -108,8 +111,8 @@ export default {
   "Turn the media volume up.": "Nosta median äänenvoimakkuutta.",
   "Switch off silent or focus mode.":
     "Poista äänetön tila tai keskittymistila käytöstä.",
-  "Check the sound is not going to other headphones.":
-    "Tarkista, ettei ääni mene muihin kuulokkeisiin.",
+  "Check the sound isn’t going to a Bluetooth device.":
+    "Tarkista, ettei ääni mene Bluetooth-laitteeseen.",
   "Play it again": "Toista uudelleen",
   "I can hear it now": "Nyt kuuluu",
   "Tracking is already running. Your phone will also vibrate and show a notification.":
@@ -129,8 +132,7 @@ export default {
   "Keeping your screen on": "Näyttö pidetään päällä",
   "Cannot keep your screen on": "Näyttöä ei voi pitää päällä",
   "Your screen may switch off": "Näyttö voi sammua",
-  "Most reliable while this page stays open and visible":
-    "Toimii varmimmin, kun sivu on auki ja näkyvissä",
+  "Keep this screen open": "Pidä tämä näkymä auki",
   "We cannot see your bus in the live data right now, so we are going by the timetable. You will still get the early warnings, but we will not say “get off now” on the timetable alone.":
     "Emme näe bussiasi reaaliaikatiedoissa juuri nyt, joten seuraamme aikataulua. Saat silti ennakkovaroitukset, mutta pelkän aikataulun perusteella emme sano ”jää pois nyt”.",
   "Check your bus": "Tarkista bussisi",
@@ -143,14 +145,14 @@ export default {
   "For two minutes you have not been moving along this route. Are you still on this bus?":
     "Et ole kahteen minuuttiin liikkunut tätä reittiä pitkin. Oletko yhä tässä bussissa?",
   "Yes, keep tracking": "Kyllä, jatka seurantaa",
-  "We could not load this route's path, so we are following your distance to the stop instead. Live arrival data still applies.":
-    "Emme saaneet ladattua tämän reitin kulkua, joten seuraamme sen sijaan etäisyyttäsi pysäkille. Reaaliaikaiset saapumistiedot ovat yhä käytössä.",
+  "The route map didn’t load, so we use straight-line distance to your stop. Live bus times still work.":
+    "Reitin kulkua ei saatu ladattua, joten käytämme linnuntie-etäisyyttä pysäkillesi. Bussin reaaliaikatiedot toimivat yhä.",
   "The get-off alert is travel help, not a guaranteed alarm. A browser can pause a page it thinks you have left, so keep this screen open with the sound on.":
     "Pysäkkihälytys on matka-apu, eikä sen toimintaa voida taata. Selain voi keskeyttää sivun, jolta se luulee sinun poistuneen, joten pidä tämä sivu auki ja ääni päällä.",
 
   // Setup
   "Set up get-off alerts": "Aseta pysäkkihälytys",
-  "Where do you want to get off?": "Missä haluat jäädä pois?",
+  "Where do you want to get off?": "Millä pysäkillä jäät pois?",
   "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP.":
     "Valitse pysäkkisi ja pidä tämä sivu auki ääni päällä. Sitä ei tarvitse katsoa: kerromme, kun on aika painaa STOP-nappia.",
   Cancel: "Peruuta",
@@ -169,7 +171,7 @@ export default {
   "Times the alerts to where you really are, not only to the timetable. Your location stays on this phone and is forgotten when the ride ends.":
     "Hälytys perustuu sijaintiisi eikä pelkkään aikatauluun. Sijainti pysyy puhelimessa ja unohtuu, kun matka päättyy.",
   "Also show notifications": "Näytä myös ilmoitukset",
-  "Only while this page stays open: a browser can pause a page it thinks you have left, and a locked phone often does.":
+  "Only while this page is open. A locked phone often pauses it.":
     "Toimii vain, kun tämä sivu on auki. Lukittu puhelin pysäyttää sivun usein.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). Sound and vibration work here as long as this page stays open.":
     "iPhonessa ilmoitukset vaativat, että sovellus on lisätty Koti-valikkoon (Jaa ja sitten Lisää Koti-valikkoon). Ääni ja värinä toimivat täällä niin kauan kuin tämä sivu pysyy auki.",
@@ -213,7 +215,7 @@ export default {
   "{name} is coming up soon.": "{name} lähestyy pian.",
   "Next stop: {name}": "Seuraava pysäkki: {name}",
   "This is your stop: {name}": "Tämä on pysäkkisi: {name}",
-  "Get off at the next stop and check the app for how to get back.":
-    "Jää pois seuraavalla pysäkillä ja katso sovelluksesta, miten pääset takaisin.",
+  "Get off at the next stop and open its departures in the app.":
+    "Jää pois seuraavalla pysäkillä ja avaa sen lähdöt sovelluksessa.",
   "Your get-off alert is working": "Pysäkkihälytys toimii",
 };

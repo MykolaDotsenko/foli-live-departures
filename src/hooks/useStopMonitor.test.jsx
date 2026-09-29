@@ -421,3 +421,45 @@ test("an answer that arrives after a stop switch is not applied", async () => {
   expect(screen.getByText("Puistokatu")).toBeInTheDocument();
   expect(screen.queryByText("Kauppatori")).not.toBeInTheDocument();
 });
+
+// A focused Refresh button changed its name to "Refreshing…" and back on
+// every half-minute poll, and a screen reader read it out each time.
+test("only a refresh the passenger asks for says it is refreshing", async () => {
+  vi.useFakeTimers();
+  try {
+    let resolvePoll;
+    vi.mocked(fetchStopMonitor)
+      .mockResolvedValueOnce({ stopName: "Kauppatori", arrivals: [], serverTime: 1 })
+      .mockImplementationOnce(() => new Promise((resolve) => { resolvePoll = resolve; }))
+      .mockImplementation(() => new Promise(() => {}));
+    const seen = [];
+    function Probe() {
+      const { refreshing, refresh } = useStopMonitor("164");
+      seen.push(refreshing);
+      return (
+        <button type="button" onClick={() => refresh()}>
+          Refresh
+        </button>
+      );
+    }
+    render(<Probe />);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+    });
+    expect(fetchStopMonitor).toHaveBeenCalledTimes(2);
+    expect(seen.at(-1)).toBe(false);
+    expect(seen).not.toContain(true);
+
+    await act(async () => {
+      resolvePoll({ stopName: "Kauppatori", arrivals: [], serverTime: 2 });
+      fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+    });
+    expect(seen.at(-1)).toBe(true);
+  } finally {
+    vi.useRealTimers();
+  }
+});

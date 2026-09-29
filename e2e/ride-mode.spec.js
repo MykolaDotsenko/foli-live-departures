@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
 import { atMorningCommute, gtfsClockAt } from "./support/clock.js";
-import { monitorPayload } from "./support/foli.js";
+import { mockFoli, monitorPayload } from "./support/foli.js";
 import { routeTargetStop, turnOffNotifications, startRide } from "./support/ride.js";
 
 test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
@@ -272,7 +272,7 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
     fs.mkdirSync("artifacts/screenshots", { recursive: true });
     await page
       .locator('section[aria-labelledby="ride-mode-title"]')
-      .screenshot({ path: "artifacts/screenshots/foli-ride-now.png" });
+      .screenshot({ path: "artifacts/screenshots/turku-departures-ride-now.png" });
     // And the whole screen, for the install sheet (public/screenshots),
     // over the board of the stop being got off at: under it, Kauppatori's
     // board showed the same bus four minutes from Kauppatori.
@@ -294,6 +294,48 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
   await expect(page.getByRole("heading", { name: "Get off now" })).toHaveCount(
     0
   );
+  // The button went with the panel. Focus lands on the board's heading,
+  // not at the top of the page.
+  await expect(page.locator("#departures-title")).toBeFocused();
+});
+
+// Start, Cancel and Turn off alert each take away the button pressed, and
+// focus fell to the top of the page every time. It follows the passenger
+// instead: back to the row, on to the alert, and back to the board.
+test("keyboard focus follows a get-off alert from setup to the end of the ride", async ({
+  page,
+}) => {
+  await routeTargetStop(page);
+  await page.goto("/?stop=164");
+  await seedHome(page);
+
+  const setup = page.locator('section[aria-label="Set up get-off alerts"]');
+  await page.getByRole("button", { name: "Get-off alert" }).first().focus();
+  await page.keyboard.press("Enter");
+  await expect(setup).toBeVisible();
+  await setup.getByRole("button", { name: "Cancel" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(setup).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Get-off alert" }).first()
+  ).toBeFocused();
+
+  await page.keyboard.press("Enter");
+  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page.getByRole("checkbox", { name: /Follow my location/i }).uncheck();
+  await turnOffNotifications(page);
+  await page.getByRole("button", { name: "Start get-off alert" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#ride-mode-title")).toBeFocused();
+
+  await page.getByRole("button", { name: "Turn off alert" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Tap again to turn it off" })
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#ride-mode-title")).toHaveCount(0);
+  await expect(page.locator("#departures-title")).toBeFocused();
 });
 
 test("Ride Mode offers recovery after the passenger rides past the stop", async ({
@@ -332,7 +374,7 @@ test("Ride Mode offers recovery after the passenger rides past the stop", async 
     longitude: 22.255,
     accuracy: 25,
   });
-  await expect(page.getByText(/roughly 7[0-9] m away/)).toBeVisible();
+  await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
   // The bus carried on without them.
   await context.setGeolocation({
@@ -603,4 +645,74 @@ test("switching to another get-off alert asks before replacing the active ride",
   await expect(
     ridePanel.getByRole("group", { name: "Alert sound check" })
   ).toBeVisible();
+});
+
+// The same ride open in two tabs: turned off in one, the other kept alerting
+// and later wrote its copy back, so the ride returned on the next reload.
+test("a get-off alert turned off in one tab ends in the other and stays off", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await routeTargetStop(page);
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+  const ready = (tab) =>
+    tab.getByRole("heading", { name: "Get ready to press STOP" });
+  await expect(ready(page)).toBeVisible();
+
+  const otherTab = await context.newPage();
+  await mockFoli(otherTab);
+  await routeTargetStop(otherTab);
+  await otherTab.goto("/?stop=164");
+  await expect(ready(otherTab)).toBeVisible();
+
+  await page.getByRole("button", { name: "Turn off alert" }).click();
+  await page.getByRole("button", { name: "Tap again to turn it off" }).click();
+  await expect(ready(page)).toHaveCount(0);
+
+  // The other tab follows without a reload and writes nothing back, however
+  // long it keeps running.
+  await expect(ready(otherTab)).toHaveCount(0);
+  await otherTab.waitForTimeout(11_000);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await expect(ready(page)).toHaveCount(0);
+  expect(
+    await page.evaluate(() => localStorage.getItem("foli-active-ride-v1"))
+  ).toBeNull();
+  await otherTab.close();
+});
+
+// On a wide screen the running alert stays pinned to the top of the page.
+// Tabbing on through the page put focused controls underneath it, out of
+// sight (WCAG 2.4.11): the page now keeps focus below the panel.
+test("keyboard focus is never hidden under the pinned ride panel", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await routeTargetStop(page, {
+    expectedarrivaltime: Math.floor(Date.now() / 1000) + 900,
+  });
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+
+  const panel = page.locator("[data-stage]");
+  await expect(panel).toBeVisible();
+
+  for (const target of [
+    page.getByRole("combobox", { name: "Find your stop" }),
+    page.getByRole("button", { name: "Next stops" }).first(),
+    page.getByRole("link", { name: "Get me Home by public transit" }),
+  ]) {
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await target.focus();
+    const panelBox = await panel.boundingBox();
+    const box = await target.boundingBox();
+    expect(box.y).toBeGreaterThanOrEqual(panelBox.y + panelBox.height - 1);
+  }
 });

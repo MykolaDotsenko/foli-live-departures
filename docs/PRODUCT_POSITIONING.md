@@ -1,6 +1,6 @@
 # Product positioning
 
-This document defines how Turku Departures should be explained to passengers, recruiters, product reviewers and potential investors without overstating what has been validated.
+This document defines how Turku Departures should be explained to passengers, engineering reviewers and product reviewers without overstating what has been validated.
 
 ## Position in one sentence
 
@@ -50,7 +50,7 @@ The product is not currently trying to replace:
 | Capability | Why it matters |
 | --- | --- |
 | Conservative live/scheduled semantics | A passenger can see when information is realtime, planned, stale or unknown instead of receiving false certainty. |
-| Get-off Alert | Converts trip order, realtime and optional device location into a concrete passenger action. |
+| Get-off alert | Converts trip order, realtime and optional device location into a concrete passenger action. |
 | Multiple evidence sources | No single provider or GPS signal is trusted beyond what it can safely prove. |
 | Disruption relevance | Notices appear in the context where the passenger is making the decision. |
 | Privacy-first saved places | Home, School and Work can be represented by public stop identities rather than street addresses. |
@@ -72,7 +72,7 @@ The product is not currently trying to replace:
 
 **Uncertainty:** How close am I? Is the timetable still useful? When should I press STOP?
 
-**Product response:** Get-off Alert using realtime, exact GTFS stop order and optional on-device route-matched GPS.
+**Product response:** a get-off alert using realtime, exact GTFS stop order and optional on-device route-matched GPS.
 
 **Desired outcome:** the passenger can pay attention to the journey instead of repeatedly checking a map.
 
@@ -116,7 +116,7 @@ These are hypotheses or future validation areas and should not be presented as e
 
 ### 60-second version
 
-Turku Departures is a privacy-first Turku transit companion for the moments when a normal timetable is not enough. It distinguishes realtime from planned and stale information, brings relevant disruptions into the departure flow, and offers an evidence-based Get-off Alert that combines Föli realtime, exact GTFS trip order and optional on-device GPS. It also keeps useful recovery tools available when connectivity or the normal travel flow fails.
+Turku Departures is a privacy-first Turku transit companion for the moments when a normal timetable is not enough. It distinguishes realtime from planned and stale information, brings relevant disruptions into the departure flow, and offers an evidence-based get-off alert that combines Föli realtime, exact GTFS trip order and optional on-device GPS. It also keeps useful recovery tools available when connectivity or the normal travel flow fails.
 
 ### Technical-review version
 
@@ -135,7 +135,7 @@ Lead with the outcome:
 
 Avoid API terminology unless it explains trust.
 
-### Recruiter / engineering reviewer
+### Engineering reviewer
 
 Lead with the product problem, then evidence:
 
@@ -147,7 +147,7 @@ Lead with the product problem, then evidence:
 
 Avoid presenting test count alone as the product value.
 
-### Product / investor reviewer
+### Product reviewer
 
 Lead with:
 
@@ -182,7 +182,7 @@ Do not:
 
 A plausible sequence is:
 
-1. validate Get-off Alert in real rides across representative routes and devices;
+1. validate the get-off alert in real rides across representative routes and devices;
 2. measure recurring use and identify the user segments that value the product most;
 3. validate the locked-phone Web Push phase if background reliability is a real user need;
 4. add Swedish and deepen accessibility validation;

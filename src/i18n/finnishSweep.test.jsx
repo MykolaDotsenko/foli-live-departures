@@ -320,7 +320,7 @@ test("the departure board, in every state it can be in", async () => {
   fireEvent.click(screen.getByRole("button", { name: /Seuraavat pysäkit/ }));
   await screen.findByText("Turun linna");
   sweep("board with next stops open");
-  fireEvent.click(screen.getByRole("button", { name: "Pysäkkihälytys" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Pysäkki\u00AD?hälytys$/ }));
   await screen.findByDisplayValue("3");
   sweep("board with get-off setup open");
 
@@ -382,7 +382,7 @@ test("the stop search, and every way finding a stop can go wrong", async () => {
     locateWith(getCurrentPosition);
     // The search's own location button is offered with a board open.
     render(form({ activeStopId: "164" }));
-    fireEvent.click(screen.getByRole("button", { name: "Käytä nykyistä sijaintia" }));
+    fireEvent.click(screen.getByRole("button", { name: "Käytä sijaintiani" }));
     await screen.findByRole("alert");
     sweep(state);
     cleanup();
@@ -396,7 +396,7 @@ test("the stop search, and every way finding a stop can go wrong", async () => {
       stops: [{ id: "164", name: "Kauppatori" }],
     })
   );
-  fireEvent.click(screen.getByRole("button", { name: "Käytä nykyistä sijaintia" }));
+  fireEvent.click(screen.getByRole("button", { name: "Käytä sijaintiani" }));
   sweep("search before stop locations have loaded");
 
   expect(leaks).toEqual([]);
@@ -661,7 +661,7 @@ test("Ride Mode, from the start of a ride to a missed stop", () => {
     "ride past the stop": ["missed", { trackingHealth: "delayed", liveEtaSec: -90, remainingStops: 0 }, { status: "active", shapeUsable: true, onRoute: true, routeDistanceM: -180, error: "" }],
     "ride with an old location": ["soon", { trackingHealth: "delayed", etaSec: 240, remainingStops: 2, gpsAgeSec: 300 }, onRoute],
     "ride that may be on the wrong bus": ["soon", { trackingHealth: "live", etaSec: 240, remainingStops: 2 }, { status: "off-route", distanceM: 900, offRouteSuspected: true, error: "" }],
-    "ride with location refused": ["soon", { trackingHealth: "live", etaSec: 240, remainingStops: 2 }, { status: "error", error: "Location backup was not allowed." }],
+    "ride with location refused": ["soon", { trackingHealth: "live", etaSec: 240, remainingStops: 2 }, { status: "error", error: "Location wasn’t allowed." }],
     "ride going by the timetable": ["soon", { trackingHealth: "schedule", etaSec: 200, remainingStops: 2, targetMatchBy: "dated-journey" }, { status: "off", error: "" }],
     "ride with live data lost": ["soon", { trackingHealth: "lost", etaSec: 200, remainingStops: 2 }, { status: "searching", error: "" }],
   };

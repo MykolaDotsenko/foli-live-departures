@@ -43,10 +43,18 @@ test("production PWA reopens offline with My Places and driver help", async ({
   await page.reload({ waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("Offline", { exact: true })).toBeVisible();
-  // Announced, once, and shown once, by the banner.
+  // Announced once, by the header's status line, and shown once, by the
+  // banner, which is not a live region of its own.
   await expect(page.getByText("Offline mode", { exact: true })).toHaveCount(1);
+  expect(
+    await page
+      .getByText(/saved places and show to driver still work/i)
+      .evaluate((node) =>
+        Boolean(node.closest('[aria-live], [role="status"], [role="alert"]'))
+      )
+  ).toBe(false);
   await expect(
-    page.getByText(/saved places and the driver card still work/i)
+    page.getByText(/saved places and show to driver still work/i)
   ).toBeVisible();
 
   const recovery = page.locator(
@@ -87,6 +95,7 @@ test("production PWA reopens offline with My Places and driver help", async ({
 test("production PWA opens from its cache when the network stalls", async ({
   page,
   context,
+  baseURL,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "chromium-pwa");
 
@@ -101,7 +110,7 @@ test("production PWA opens from its cache when the network stalls", async ({
   // One bar of signal, or a captive portal: requests go out and nothing
   // comes back. Only an outright failure used to reach the cached shell, so
   // the page stayed blank until the browser gave up on its own.
-  await context.route(/127\.0\.0\.1:4173/, () => {});
+  await context.route(`${new globalThis.URL(baseURL).origin}/**`, () => {});
 
   const started = Date.now();
   await page.reload({ waitUntil: "commit", timeout: 20_000 });

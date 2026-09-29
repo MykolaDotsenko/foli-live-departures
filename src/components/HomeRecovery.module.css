@@ -145,7 +145,7 @@
 .secondaryAction:focus-visible,
 .backupActions a:focus-visible,
 .backupActions button:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -260,7 +260,7 @@
 }
 
 .printButton:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -306,7 +306,10 @@
     visibility: hidden !important;
   }
 
+  /* The main content is a level down from the shell, beside the header
+     and footer, so its other parts are taken out there. */
   :global(.app-shell) > :not(:has(.printCard)),
+  :global(.app-main) > :not(:has(.printCard)),
   .wrapper > :not(.printCard) {
     display: none !important;
   }
@@ -618,7 +621,7 @@
   }
 
   .mobileOptionsToggle:focus-visible {
-    outline: 3px solid rgba(0, 121, 133, 0.28);
+    outline: 3px solid #007985;
     outline-offset: 2px;
   }
 
@@ -801,4 +804,17 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Beside the search on a wide screen the card has half the width, and
+   three buttons in a row wrapped "Avaa kotipysäkki" onto two lines. Get me
+   Home takes the full width and the other two share a row. */
+@media (min-width: 1100px) {
+  .actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .actions > .primaryAction {
+    grid-column: 1 / -1;
+  }
 }

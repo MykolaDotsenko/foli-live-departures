@@ -352,7 +352,7 @@ test("shares a configured place through the native share sheet when available", 
   );
 
   fireEvent.click(screen.getByText("Manage Home"));
-  fireEvent.click(screen.getByRole("button", { name: "Share Home" }));
+  fireEvent.click(screen.getByRole("button", { name: "Share this place" }));
 
   await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
 
@@ -705,13 +705,13 @@ test("shares and removes in Finnish, with the same link as in English", async ()
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
 
   const english = renderSavedHome();
-  fireEvent.click(screen.getByRole("button", { name: "Share Home" }));
+  fireEvent.click(screen.getByRole("button", { name: "Share this place" }));
   await screen.findByText("Link shared.");
   english.unmount();
 
   resetLanguageForTests("fi");
   renderSavedHome();
-  fireEvent.click(screen.getByRole("button", { name: "Jaa Koti" }));
+  fireEvent.click(screen.getByRole("button", { name: "Jaa tämä paikka" }));
   expect(await screen.findByText("Linkki jaettu.")).toBeInTheDocument();
 
   const [englishShare, finnishShare] = share.mock.calls.map(([data]) => data);
@@ -719,8 +719,16 @@ test("shares and removes in Finnish, with the same link as in English", async ()
   expect(finnishShare.text).toBe("Lisää koti Omiin paikkoihin");
   expect(finnishShare.url).toBe(englishShare.url);
 
-  fireEvent.click(screen.getByRole("button", { name: "Poista Koti" }));
-  expect(confirm).toHaveBeenCalledWith("Poistetaanko Koti Omista paikoista?");
+  // The button says "this place"; which place is read after it.
+  expect(
+    screen.getByRole("button", { name: "Jaa tämä paikka" })
+  ).toHaveAccessibleDescription("Koti");
+  expect(
+    screen.getByRole("button", { name: "Poista tämä paikka" })
+  ).toHaveAccessibleDescription("Koti");
+
+  fireEvent.click(screen.getByRole("button", { name: "Poista tämä paikka" }));
+  expect(confirm).toHaveBeenCalledWith("Poistetaanko paikka Koti Omista paikoista?");
 });
 
 test("rewords a message already on screen when the language changes", () => {
@@ -784,4 +792,242 @@ test("a blocked location is explained in Finnish in the Finnish interface", asyn
     await screen.findByText(/^Sijainnin käyttö on estetty\./)
   ).toBeInTheDocument();
   expect(screen.queryByText(/Location access is blocked/)).not.toBeInTheDocument();
+});
+
+// A double tap on "Replace using where I am now" started two location
+// lookups, and whichever answered last reopened the setup.
+test("a double tap on replace starts one location lookup, and keeps focus", async () => {
+  let deliverFix;
+  const getCurrentPosition = vi.fn((success) => {
+    deliverFix = () =>
+      success({
+        coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+      });
+  });
+  setGeolocation(getCurrentPosition);
+
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={
+        new Map([
+          [
+            "home",
+            {
+              id: "home",
+              label: "Home",
+              icon: "⌂",
+              primaryStopId: "164",
+              stops: [{ id: "164", name: "Kauppatori" }],
+            },
+          ],
+        ])
+      }
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByText("Manage Home"));
+  const replace = screen.getByRole("button", {
+    name: "Replace using where I am now",
+  });
+  replace.focus();
+  fireEvent.click(replace);
+  fireEvent.click(replace);
+
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  expect(replace).toHaveAttribute("aria-disabled", "true");
+  expect(replace).not.toBeDisabled();
+  expect(replace).toHaveFocus();
+
+  await act(async () => deliverFix());
+
+  expect(
+    await screen.findByRole("heading", { name: "Choose stops for Home" })
+  ).toBeInTheDocument();
+  expect(replace).toHaveAttribute("aria-disabled", "false");
+});
+
+// A place without a stop read the id of its missing main stop and crashed,
+// taking the rest of My Places, and the page, down with it.
+test("a saved place with no stops is left out instead of crashing the page", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={
+        new Map([
+          ["home", { id: "home", label: "Home", icon: "⌂", primaryStopId: "", stops: [] }],
+          [
+            "work",
+            {
+              id: "work",
+              label: "Work",
+              icon: "▣",
+              primaryStopId: "32",
+              stops: [{ id: "32", name: "Puistokatu" }],
+            },
+          ],
+        ])
+      }
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  expect(screen.queryByRole("heading", { name: "Home" })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Work" })).toBeInTheDocument();
+});
+
+// "Use Puistokatu for School" is on the card the setup replaces, and Cancel
+// is on the setup the card comes back in place of. Both times focus fell to
+// the top of the page.
+test("the place setup takes focus as it opens and hands it back to its card", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  const useStop = screen.getByRole("button", { name: "Use Puistokatu for School" });
+  useStop.focus();
+  fireEvent.click(useStop);
+
+  expect(
+    screen.getByRole("heading", { name: "Choose stops for School" })
+  ).toHaveFocus();
+
+  const cancel = screen.getByRole("button", { name: "Cancel" });
+  cancel.focus();
+  fireEvent.click(cancel);
+
+  const card = document.querySelector('[data-place="school"]');
+  expect(card).not.toBeNull();
+  expect(within(card).getAllByRole("button")[0]).toHaveFocus();
+});
+
+test("a replaced place's setup hands focus back to the button that opened it", async () => {
+  setGeolocation((success) =>
+    success({
+      coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+    })
+  );
+  renderSavedHome();
+
+  fireEvent.click(screen.getByText("Manage Home"));
+  const replace = screen.getByRole("button", {
+    name: "Replace using where I am now",
+  });
+  replace.focus();
+  fireEvent.click(replace);
+
+  const heading = await screen.findByRole("heading", {
+    name: "Choose stops for Home",
+  });
+  await waitFor(() => expect(heading).toHaveFocus());
+
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(replace).toHaveFocus();
+});
+
+// Busy rather than disabled, so the button pressed keeps focus while the
+// location is looked up.
+test("Use my location keeps focus while it looks, and a second press does nothing", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", {
+    name: "Use my location to set up Home",
+  });
+  locate.focus();
+  fireEvent.click(locate);
+  fireEvent.click(locate);
+
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  expect(locate).toHaveAttribute("aria-disabled", "true");
+  expect(locate).not.toBeDisabled();
+  expect(locate).toHaveFocus();
+});
+
+// Every radio was called "Main stop", so going through them a screen reader
+// could not say which stop each would make the main one.
+test("each main-stop choice is named for its stop", async () => {
+  setGeolocation((success) =>
+    success({
+      coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+    })
+  );
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Use my location to set up Home" })
+  );
+  await screen.findByRole("heading", { name: "Choose stops for Home" });
+
+  const names = screen
+    .getAllByRole("radio")
+    .map((radio) => radio.labels[0].textContent);
+  expect(names).toEqual([
+    "Main stop: Kauppatori",
+    "Main stop: Puistokatu",
+    "Main stop: Turun linna",
+  ]);
+  expect(
+    screen.getByRole("radio", { name: "Main stop: Puistokatu" })
+  ).toBeInTheDocument();
+});
+
+// A stop chosen by hand has no distance, and its line ended "Stop 32 ·".
+test("a stop chosen by hand is not followed by a dangling separator", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Use Puistokatu for Home" })
+  );
+
+  expect(screen.getByText("Stop 32", { exact: true })).toBeInTheDocument();
 });

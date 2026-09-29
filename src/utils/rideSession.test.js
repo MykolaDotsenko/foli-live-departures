@@ -8,6 +8,7 @@ import {
   persistRide,
   readStoredRide,
   rideIdentity,
+  storedRideId,
   validStoredRide,
 } from "./rideSession";
 
@@ -144,9 +145,50 @@ describe("stored ride", () => {
     expect(localStorage.getItem(RIDE_STORAGE_KEY)).toBeNull();
   });
 
-  it("never lets a corrupt record throw", () => {
+  // Another tab may be running it, and know its bus is very late.
+  it("does not resume, or remove, a ride long past its exit inside its lifetime", () => {
+    const longOver = storedRide({
+      plan: { targetPredictedEpochSec: NOW / 1000 - 46 * 60 },
+    });
+    localStorage.setItem(RIDE_STORAGE_KEY, JSON.stringify(longOver));
+    expect(readStoredRide()).toBeNull();
+    expect(JSON.parse(localStorage.getItem(RIDE_STORAGE_KEY))).toEqual(longOver);
+    expect(storedRideId()).toBe("ride-1");
+  });
+
+  it("names no stored ride for a record past its lifetime or corrupt", () => {
+    expect(storedRideId()).toBe("");
+    localStorage.setItem(
+      RIDE_STORAGE_KEY,
+      JSON.stringify(storedRide({ expiresAt: NOW - 1 }))
+    );
+    expect(storedRideId()).toBe("");
+    localStorage.setItem(RIDE_STORAGE_KEY, "{not json");
+    expect(storedRideId()).toBe("");
+    // Asking removes nothing.
+    expect(localStorage.getItem(RIDE_STORAGE_KEY)).toBe("{not json");
+  });
+
+  it("never lets a corrupt record throw, and removes it", () => {
     localStorage.setItem(RIDE_STORAGE_KEY, "{not json");
     expect(readStoredRide()).toBeNull();
+    expect(localStorage.getItem(RIDE_STORAGE_KEY)).toBeNull();
+  });
+
+  it("reads no ride when storage cannot be read or cleaned", () => {
+    const getItem = vi
+      .spyOn(globalThis.Storage.prototype, "getItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError");
+      });
+    const removeItem = vi
+      .spyOn(globalThis.Storage.prototype, "removeItem")
+      .mockImplementation(() => {
+        throw new Error("SecurityError");
+      });
+    expect(readStoredRide()).toBeNull();
+    getItem.mockRestore();
+    removeItem.mockRestore();
   });
 
   it("keeps going when storage refuses to save", () => {

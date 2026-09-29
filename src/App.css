@@ -31,8 +31,12 @@ input {
 
 button:focus-visible,
 input:focus-visible,
-[role="option"]:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+[role="option"]:focus-visible,
+/* A heading focus is moved to after the button pressed goes away (the
+   board's stop name, the get-off alert, a place's setup): it shows the
+   same ring, so a keyboard user can see where they have landed. */
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -208,13 +212,15 @@ input:focus-visible,
 
 .language-switch:focus-visible,
 .theme-switch:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
 /* Heard, not seen: the Offline banner shows the same news, and the pill
-   beside it made three notices of one and pushed the header about. */
-.live-pill {
+   beside it made three notices of one and pushed the header about. The
+   same for anything else only a screen reader needs to hear. */
+.live-pill,
+.visually-hidden {
   position: absolute;
   width: 1px;
   min-height: 0;
@@ -255,7 +261,7 @@ input:focus-visible,
 }
 
 .source-note a:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -278,10 +284,13 @@ input:focus-visible,
   gap: 0 12px;
 }
 
+/* Taps well above the 24px minimum, without a text line's worth of gap
+   between every row of links. */
 .project-links a {
   display: inline-flex;
-  min-height: 44px;
+  min-height: 32px;
   align-items: center;
+  padding-block: 4px;
 }
 
 .footer-actions {
@@ -289,7 +298,7 @@ input:focus-visible,
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 4px 14px;
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 .guide-button {
@@ -313,7 +322,7 @@ input:focus-visible,
 }
 
 .guide-button:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -336,7 +345,7 @@ input:focus-visible,
 }
 
 .about summary:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -478,6 +487,21 @@ input:focus-visible,
   }
 }
 
+/* 320px in Finnish: "Tumma" and "In English" missed the eyebrow's row by
+   a few pixels, so the lockup came apart over three rows. The controls
+   keep their 44px hit area (the ::after inset). */
+@media (max-width: 380px) {
+  .eyebrow-row,
+  .header-controls {
+    gap: 6px;
+  }
+
+  .language-switch,
+  .theme-switch {
+    padding: 0 7px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -532,6 +556,7 @@ input:focus-visible,
   :root[data-theme="dark"] button:focus-visible,
   :root[data-theme="dark"] input:focus-visible,
   :root[data-theme="dark"] [role="option"]:focus-visible,
+  :root[data-theme="dark"] [tabindex="-1"]:focus-visible,
   :root[data-theme="dark"] .source-note a:focus-visible,
   :root[data-theme="dark"] .about summary:focus-visible {
     outline-color: var(--dm-focus);

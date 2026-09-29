@@ -400,3 +400,124 @@ test("does not auto-select when the position is outside the published Föli boun
   ).toBeInTheDocument();
   expect(onSelect).not.toHaveBeenCalled();
 });
+
+// A slow fix used to land after the passenger had already searched for
+// another stop and jump the board away from it to the nearest one.
+test("a late location fix does not replace a stop chosen while locating", async () => {
+  let deliverFix;
+  setGeolocation(
+    vi.fn((success) => {
+      deliverFix = () =>
+        success({
+          coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+        });
+    })
+  );
+  const onSelect = vi.fn();
+
+  const { rerender } = render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="4"
+      onSelect={onSelect}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+
+  // The passenger searches for stop 32 before the fix arrives.
+  rerender(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={onSelect}
+    />
+  );
+
+  deliverFix();
+
+  // The nearest stops are still offered, but none is chosen for them.
+  await screen.findByRole("group", { name: "Nearest Föli stops" });
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+// Typing a search is choosing a stop too, not yet finished. The jump made
+// the search field put the nearest stop's name over the half-typed one.
+test("a late location fix does not jump away from a search typed while locating", async () => {
+  let deliverFix;
+  setGeolocation(
+    vi.fn((success) => {
+      deliverFix = () =>
+        success({
+          coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+        });
+    })
+  );
+  const onSelect = vi.fn();
+  let searchEdits = 0;
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="4"
+      searchEdits={() => searchEdits}
+      onSelect={onSelect}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  searchEdits += 1;
+  deliverFix();
+
+  const nearest = await screen.findByRole("group", { name: "Nearest Föli stops" });
+  expect(within(nearest).getByText("Nearest")).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+// Disabled while it looked, the button dropped keyboard focus to the page.
+test("Find nearest stop keeps focus while it looks and ignores a second press", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      onSelect={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", { name: "Find nearest stop" });
+  locate.focus();
+  fireEvent.click(locate);
+
+  const busy = screen.getByRole("button", { name: "Locating…" });
+  expect(busy).toBe(locate);
+  expect(busy).toHaveAttribute("aria-disabled", "true");
+  expect(busy).not.toBeDisabled();
+  expect(busy).toHaveFocus();
+  fireEvent.click(busy);
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+});
+
+test("Find nearest stop does nothing until stop locations have loaded", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <NearbyStops
+      stops={[{ id: "164", name: "Kauppatori" }]}
+      coordinatesStatus="loading"
+      activeStopId=""
+      onSelect={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", { name: "Find nearest stop" });
+  expect(locate).toHaveAttribute("aria-disabled", "true");
+  fireEvent.click(locate);
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});

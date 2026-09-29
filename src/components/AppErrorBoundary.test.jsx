@@ -20,7 +20,7 @@ test("replaces a render crash with a usable recovery surface", () => {
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Reload app" })).toBeVisible();
   expect(
-    screen.getByText(/saved public stop preferences remain/i)
+    screen.getByText(/your saved stops are still on this phone/i)
   ).toBeInTheDocument();
 
   consoleSpy.mockRestore();

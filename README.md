@@ -5,10 +5,10 @@
 ![PWA](https://img.shields.io/badge/PWA-installable-5A0FC8)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**Live departures, disruptions and get-off guidance for Turku — privacy-first, no account, no ads.**
+**Live departures, disruptions and get-off alerts for Turku — privacy-first, no account, no ads.**
 
 [**Open Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/) ·
-[Product audit](docs/PRODUCT_AUDIT.md) ·
+[Suomeksi](#suomeksi) ·
 [Report a problem](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
 
 > Independent project using Föli open data. Not made by or affiliated with Föli or the City of Turku.
@@ -17,25 +17,81 @@
 
 <p align="center">
   <img
-    src="docs/assets/foli-mobile.png"
+    src="docs/assets/turku-departures-mobile.png"
     alt="Turku Departures showing live and scheduled departures from Kauppatori"
     width="260"
   >
   &nbsp;
   <img
-    src="docs/assets/foli-ride-now.png"
+    src="docs/assets/turku-departures-ride-now.png"
     alt="Turku Departures get-off alert telling the passenger to get off now"
     width="260"
   >
   &nbsp;
   <img
-    src="docs/assets/foli-mobile-fi.png"
+    src="docs/assets/turku-departures-mobile-fi.png"
     alt="Turku Departures in Finnish"
     width="260"
   >
 </p>
 
-## The problem
+## What the app does
+
+| Passenger question | What the app does |
+| --- | --- |
+| What leaves next? | Live and scheduled times, each clearly marked |
+| Is the trip disrupted? | Service updates shown with your stop and lines |
+| Which stop is nearest? | Nearby stops from a one-time location check |
+| When should I press STOP? | A get-off alert that tells you when to get ready, press STOP and get off |
+| How do I get home? | Your saved Home stop, backup stops and Show to driver |
+| What if the connection drops? | An installable app that says plainly what still works offline |
+
+## Get-off alert
+
+The alert follows your bus in Föli’s live data, knows the order of the stops on your trip, and can use your phone’s location if you allow it.
+
+The alert moves through three steps:
+
+```text
+get ready → press STOP → get off now
+```
+
+A weak or off-route location is not trusted. The timetable alone can warn you early, but it never triggers **Get off now**.
+
+The exact stop order is kept, including loop routes that visit the same stop more than once.
+
+## Privacy and limits
+
+- no account, ads or analytics;
+- saved places are public stops, never street addresses;
+- your location is not stored;
+- your location during a ride stays on the phone;
+- GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
+- a Content-Security-Policy lets the page run only its own code and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
+
+A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
+
+Turku Departures is not a ticketing app and does not replace Föli's official journey planner.
+
+## Suomeksi
+
+**Turku Departures näyttää bussien reaaliaikaiset ajat ja häiriöt sekä kertoo, milloin painaa STOP-nappia.**
+
+> Itsenäinen projekti, joka käyttää Fölin avointa dataa. Sovellus ei ole Fölin tai Turun kaupungin tekemä eikä niihin sidoksissa. Liput ja virallinen reittiopas: foli.fi.
+
+- reaaliaikaiset ja aikataulun mukaiset lähdöt erotetaan toisistaan;
+- pysäkkihälytys auttaa valmistautumaan oikeaan aikaan;
+- tallennetut paikat ovat julkisia pysäkkejä, eivät osoitteita;
+- ”Vie minut kotiin” ja varapysäkit auttavat, jos tavallinen matka ei onnistu;
+- sijaintia käytetään vain pyydettäessä tai pysäkkihälytyksen aikana, jos sallit sen;
+- ei käyttäjätiliä, mainoksia tai analytiikkaa.
+
+[**Avaa Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/) ·
+[Ilmoita ongelmasta](https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml)
+
+## For developers
+
+### The problem
 
 Transit data is easy when everything is fresh and the passenger already knows the route. Real use is messier:
 
@@ -47,36 +103,17 @@ Transit data is easy when everything is fresh and the passenger already knows th
 
 Turku Departures keeps **live, scheduled, stale and unknown** states distinct instead of flattening them into one timestamp.
 
-## What the app does
+### How the get-off alert decides
 
-| Passenger question | Product response |
-| --- | --- |
-| What leaves next? | Live + planned departures with explicit data state |
-| Is the trip disrupted? | Service alerts in stop context |
-| What stop is useful nearby? | Location + nearby-stop comparison |
-| When should I press STOP? | Get-off Alert using realtime, GTFS and optional GPS |
-| How do I get home? | Saved Home stop and fallback stops |
-| What if the connection drops? | Installable PWA with an honest offline state |
+The alert combines three independent signals:
 
-## Get-off Alert
+1. **Föli's live bus data** (SIRI);
+2. **the trip's exact stop order** from the timetable (GTFS), including loop routes that visit the same stop more than once;
+3. **optional GPS on the phone, matched to the bus route**; weak or off-route fixes are ignored.
 
-Ride Mode combines three independent signals:
+Timetable-only estimates can raise the early steps but never **Get off now**.
 
-1. **Föli SIRI realtime**;
-2. **exact GTFS trip/stop order**;
-3. **optional on-device GPS matched to the trip shape**.
-
-The guidance progresses through:
-
-```text
-get ready → press STOP → get off now
-```
-
-Weak or off-route GPS is ignored. Timetable-only evidence can warn early, but it cannot trigger **Get off now**.
-
-The exact GTFS stop sequence is preserved, including loop routes that visit the same stop multiple times.
-
-## Engineering edge cases
+### Engineering edge cases
 
 The code explicitly handles:
 
@@ -91,9 +128,7 @@ The code explicitly handles:
 - service-worker deployment under a GitHub Pages subpath;
 - upstream Föli API contract drift.
 
-These are the parts of the project I would discuss in a technical interview.
-
-## Architecture
+### Architecture
 
 | Area | Technology |
 | --- | --- |
@@ -120,10 +155,10 @@ realtime · disruptions · places · connectivity · Ride Mode
         │
         ▼
 Passenger UI
-departures · alerts · get-off guidance · recovery
+departures · alerts · get-off alerts · recovery
 ```
 
-## Quality evidence
+### Quality evidence
 
 The verification suite covers:
 
@@ -147,32 +182,7 @@ lint → typecheck → brand/reference checks → tests + coverage
 
 The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
 
-## Privacy and limits
-
-- no account, ads or analytics;
-- saved places use public stop identities rather than street addresses;
-- device coordinates are not persisted;
-- ride GPS is processed on the device;
-- GitHub Pages and data.foli.fi receive the network requests needed to serve the application and transit data.
-- a Content-Security-Policy lets the page run only its own bundle, and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
-
-A browser can suspend a page in the background or on a locked phone, so Get-off Alert does **not** promise guaranteed lock-screen tracking. Reliable background alerts would require a backend/Web Push phase.
-
-Turku Departures is not a ticketing app and does not replace the official journey planner.
-
-## Suomeksi
-
-**Turku Departures näyttää bussien reaaliaikaiset ajat ja häiriöt sekä auttaa muistamaan, milloin pitää painaa STOP.**
-
-- reaaliaikaiset ja aikataulun mukaiset lähdöt erotetaan toisistaan;
-- Pysäkkihälytys auttaa valmistautumaan oikeaan aikaan;
-- tallennetut paikat ovat julkisia pysäkkejä, eivät osoitteita;
-- sijaintia käytetään vain pyydettäessä tai aktiivisen Pysäkkihälytyksen aikana;
-- ei käyttäjätiliä, mainoksia tai analytiikkaa.
-
-[**Avaa Turku Departures →**](https://mykoladotsenko.github.io/foli-live-departures/)
-
-## Run locally
+### Run locally
 
 Requires Node.js 20.19+.
 
@@ -196,7 +206,7 @@ npm run verify:csp
 npm run test:e2e
 ```
 
-## Documentation
+### Documentation
 
 - [Product audit](docs/PRODUCT_AUDIT.md)
 - [Ride Mode design](docs/RIDE_MODE_SPEC.md)

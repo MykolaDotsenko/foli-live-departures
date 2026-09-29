@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import styles from "../BusStopDisplay.module.css";
 import RideSetup from "../RideSetup";
 import TripJourneyDetails from "../TripJourneyDetails";
@@ -70,6 +71,7 @@ function DepartureRow({
   onCloseRideSetup,
   onStartRide,
 }) {
+  const rideButtonRef = useRef(null);
   const departureTime = getDepartureTime(arrival, referenceTime);
   const tripDetails = arrival.tripref ? tripDetailsById.get(arrival.tripref) : null;
   const route =
@@ -117,12 +119,19 @@ function DepartureRow({
         <td className={styles.destination}>
           <span lang={destinationLang || undefined}>{destination}</span>
           {destinationName.translation && (
-            <span
-              className={styles.destinationTranslation}
-              lang={destinationName.lang}
-            >
-              {destinationName.translation}
-            </span>
+            <>
+              {/* A real space, so the line can break between the sign and
+                  its translation (with only the hidden one, "SatamaHarbour"
+                  was one word and split as "Harbou/r"), and a hidden dot so
+                  a screen reader pauses between the two names. */}{" "}
+              <span className={styles.srOnly}>· </span>
+              <span
+                className={styles.destinationTranslation}
+                lang={destinationName.lang}
+              >
+                {destinationName.translation}
+              </span>
+            </>
           )}
           {/* One line on a phone: the clock went under the countdown, and
               an accessible bus is a symbol here rather than a chip wrapping
@@ -182,6 +191,7 @@ function DepartureRow({
                 stopsById={stopsById}
               />
               <button
+                ref={rideButtonRef}
                 type="button"
                 className={styles.rideButton}
                 disabled={sameRideActive}
@@ -192,11 +202,16 @@ function DepartureRow({
                     read as "remind me before this bus leaves", and the
                     feature that sets the app apart went unfound on the
                     phones it is for. */}
-                {sameRideActive
-                  ? t("Alert on")
-                  : rideSetupOpen
-                    ? t("Close get-off setup")
-                    : t("Get-off alert")}
+                {/* Open or closed, the same name: the setup has its own
+                    Cancel, and aria-expanded says which it is. */}
+                {sameRideActive ? (
+                  <>
+                    <span aria-hidden="true">✓ </span>
+                    {t("Alert on")}
+                  </>
+                ) : (
+                  t("Get-off alert")
+                )}
               </button>
             </div>
           )}
@@ -223,7 +238,21 @@ function DepartureRow({
               placesById={placesById}
               routesById={routesById}
               routesByShortName={routesByShortName}
-              onCancel={onCloseRideSetup}
+              onCancel={() => {
+                onCloseRideSetup();
+                // Cancel goes with the setup. Back to the button that
+                // opened it, so the passenger is where they were on the
+                // board instead of at the top of the page.
+                rideButtonRef.current?.focus();
+                // A bus that had already left was kept on the board only for
+                // its open setup, and goes with it: its button with it. The
+                // board's heading takes focus instead of the page.
+                globalThis.requestAnimationFrame?.(() => {
+                  if (!rideButtonRef.current) {
+                    globalThis.document?.getElementById("departures-title")?.focus();
+                  }
+                });
+              }}
               onStart={(config) => {
                 const replacingAnotherRide =
                   Boolean(activeRideTripRef) &&

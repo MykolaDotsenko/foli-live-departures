@@ -4,6 +4,7 @@ const PRODUCT_NAME = "Turku Departures";
 
 const publicBrandFiles = [
   "src/App.jsx",
+  "src/components/AppErrorBoundary.jsx",
   "src/components/HelpGuide.jsx",
   "src/i18n/fi/app.js",
   "index.html",

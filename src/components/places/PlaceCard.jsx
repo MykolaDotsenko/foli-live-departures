@@ -1,7 +1,7 @@
 // One saved place on the page: the button that gets a passenger there, the
 // stop to open, the card to show the driver, and any backup stops. On a
 // phone it folds down to a one-line summary until tapped.
-import { useState } from "react";
+import { useId, useState } from "react";
 import { t } from "../../i18n";
 import { hasCoordinates } from "../../utils/geo";
 import { buildTransitDirectionsUrl } from "../../utils/maps";
@@ -23,22 +23,28 @@ export default function PlaceCard({
   onSetPrimaryStop,
   onReplace,
   onRemove,
+  locating = false,
 }) {
   const [showDriver, setShowDriver] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+  const titleId = useId();
   const label = placeLabel(place);
   const resolvedStops = resolvePlaceStops(place, stops);
   const primaryStop = primaryStopOf(resolvedStops, place.primaryStopId);
+  // A place with no stop has nowhere to send anyone, and reading the id of
+  // the stop it does not have took the whole page down with it.
+  if (!primaryStop) return null;
+
   const backupCount = resolvedStops.length - 1;
   const transitUrl =
     online && hasCoordinates(primaryStop)
       ? buildTransitDirectionsUrl(primaryStop)
       : "";
 
-
   return (
     <article
       className={styles.placeCard}
+      data-place={place.id}
       data-mobile-expanded={mobileExpanded ? "true" : "false"}
     >
       <button
@@ -72,7 +78,7 @@ export default function PlaceCard({
           <PlaceIcon id={place.id} />
         </span>
         <div>
-          <h3>{label}</h3>
+          <h3 id={titleId}>{label}</h3>
           <p>
             {t("Main stop: {name} · stop {id}", {
               name: stopLabel(primaryStop),
@@ -159,8 +165,10 @@ export default function PlaceCard({
       <PlaceManage
         place={place}
         label={label}
+        titleId={titleId}
         onReplace={onReplace}
         onRemove={onRemove}
+        locating={locating}
       />
 
       {showDriver && (

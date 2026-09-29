@@ -4,9 +4,12 @@ import { formatClock, formatElapsedAge } from "../../utils/time";
 import { LineFilterButton } from "./LineFilter";
 
 // The top of the board: which stop this is, whether it is saved, how old
-// its times are, and the controls that change what the board shows. The
-// meta line is a live region, so a screen reader hears the stop change and
-// the board refresh without leaving the departures.
+// its times are, and the controls that change what the board shows.
+//
+// A screen reader hears a change of stop from App, in a line of its own
+// that changes only with the stop. This meta line used to be that live
+// region, and every 30-second refresh read it out twice: "Refreshing…",
+// then "Updated 08:11". Refreshing is said by the button alone.
 function BoardHeader({
   stopId,
   stopName,
@@ -21,6 +24,7 @@ function BoardHeader({
   lineFilterOpen,
   onToggleLineFilter,
   onRefresh,
+  unknownStop = false,
 }) {
   return (
     <header
@@ -29,7 +33,13 @@ function BoardHeader({
     >
       <div className={styles.stopHeading}>
         <div className={styles.stopTitleRow}>
-          <h1 id="departures-title" className={styles.stopName}>
+          {/* Focusable from code only: choosing a saved stop, or ending a
+              ride, brings focus here once the button pressed is gone. */}
+          <h1
+            id="departures-title"
+            className={styles.stopName}
+            tabIndex={-1}
+          >
             {stopName ? (
               <span lang="fi">{stopName}</span>
             ) : loading ? (
@@ -43,26 +53,25 @@ function BoardHeader({
               type="button"
               className={styles.favoriteButton}
               onClick={onToggleFavorite}
+              // One name, and pressed says whether it is saved. A name that
+              // changed with the state as well read "Remove Kauppatori from
+              // favourites, pressed", which says the opposite of itself.
               aria-pressed={isFavorite}
-              aria-label={
-                isFavorite
-                  ? t("Remove {name} from favourites", { name: stopName })
-                  : t("Save {name} to favourites", { name: stopName })
-              }
+              aria-label={t("Save {name} to favourites", { name: stopName })}
               title={isFavorite ? t("Remove favourite") : t("Save favourite")}
             >
               <span aria-hidden="true">{isFavorite ? "★" : "☆"}</span>
             </button>
           )}
         </div>
-        <p className={styles.stopMeta} aria-live="polite">
+        <p className={styles.stopMeta}>
           {[
-            t("Stop {id}", { id: stopId }),
+            // Without Föli's name the heading already says "Stop {id}".
+            stopName || loading ? t("Stop {id}", { id: stopId }) : "",
             serverTime ? t("Updated {time}", { time: formatClock(serverTime) }) : "",
             receiptAgeSeconds !== null && receiptAgeSeconds >= 60
               ? formatElapsedAge(receiptAgeSeconds)
               : "",
-            refreshing ? t("Refreshing…") : "",
           ]
             .filter(Boolean)
             .join(" · ")}
@@ -80,14 +89,21 @@ function BoardHeader({
             onToggle={onToggleLineFilter}
           />
         )}
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={onRefresh}
-          disabled={loading || refreshing}
-        >
-          {refreshing ? t("Refreshing…") : t("Refresh")}
-        </button>
+        {/* Busy rather than disabled: a disabled button drops keyboard
+            focus to the page, and this one is busy every half minute. */}
+        {/* A number Föli does not have gets nothing new from asking again. */}
+        {!unknownStop && (
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => {
+              if (!loading && !refreshing) onRefresh?.();
+            }}
+            aria-disabled={loading || refreshing ? "true" : undefined}
+          >
+            {refreshing ? t("Refreshing…") : t("Refresh")}
+          </button>
+        )}
       </div>
     </header>
   );

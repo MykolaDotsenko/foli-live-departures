@@ -16,17 +16,17 @@ test("a phone is told what the app is until it no longer needs telling", async (
 
   const intro = page.locator(".context");
   await expect(intro).toBeVisible();
-  await expect(intro).toHaveText("Live bus times, disruptions and get-off alerts for Turku.");
+  await expect(intro).toHaveText("Live bus times, disruptions and get-off alerts.");
 
   // These two sections are three bare rows and a lone button on a phone;
   // nothing else ever says what they are for.
   await expect(
-    page.getByText("Save Home, School or Work as public stops", {
+    page.getByText("Save the stop nearest Home, School or Work", {
       exact: false,
     })
   ).toBeVisible();
   await expect(
-    page.getByText("Find the closest stop with a one-time location check")
+    page.getByText("Uses your location once. It isn’t saved.")
   ).toBeVisible();
   await expect(page.getByText("Search by stop name or number.")).toBeVisible();
 
@@ -232,7 +232,7 @@ test("ten departures remain scan-friendly without horizontal table scrolling", a
   await page
     .locator('[aria-labelledby="departures-title"]')
     .screenshot({
-      path: `artifacts/screenshots/foli-${testInfo.project.name}-ten-departures.png`,
+      path: `artifacts/screenshots/turku-departures-${testInfo.project.name}-ten-departures.png`,
       animations: "disabled",
     });
 });
@@ -348,7 +348,7 @@ test("first-visit search row keeps location and Show inside the card", async ({
     await page.goto("/");
 
     const input = page.getByRole("combobox", { name: "Find your stop" });
-    const locate = page.getByRole("button", { name: "Use current location" });
+    const locate = page.getByRole("button", { name: "Use my location", exact: true });
     const show = page.getByRole("button", { name: "Show departures" });
 
     await expect(input).toBeVisible();

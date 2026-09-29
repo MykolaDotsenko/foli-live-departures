@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
@@ -13,6 +13,7 @@ import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
+import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
 import useSavedPlaces from "./hooks/useSavedPlaces";
@@ -28,6 +29,27 @@ import { realStopName } from "./utils/stopNames";
 
 const PRODUCT_NAME = "Turku Departures";
 const MAKER_NAME = "Mykola Dotsenko";
+
+// The page's one h1: the stop's name on the board, or the app's own name
+// before a stop is open. It is where focus goes when the button pressed
+// has gone and the page itself is the answer.
+function pageHeading() {
+  return (
+    document.getElementById("departures-title") ||
+    document.getElementById("app-title")
+  );
+}
+
+function rideHeading() {
+  return document.getElementById("ride-mode-title");
+}
+
+function announceStop(stopId, name, loading) {
+  if (name) return t("Departures for {name}, stop {id}", { name, id: stopId });
+  // Still loading, the name may be a moment away: one announcement, with
+  // it, rather than the number and then the name.
+  return loading ? "" : t("Departures for stop {id}", { id: stopId });
+}
 
 
 function stopFromLocation() {
@@ -99,6 +121,16 @@ function App() {
   );
   const online = useOnlineStatus();
   const ride = useRideMode();
+  const requestFocus = usePendingFocus();
+  // The passenger's own edits to the stop search, counted, so a late "Near
+  // you" fix can tell that they started typing while it was on its way. A
+  // ref, not state: nothing is drawn from it, and every key would redraw
+  // the whole page.
+  const searchEditsRef = useRef(0);
+  const noteSearchEdit = useCallback(() => {
+    searchEditsRef.current += 1;
+  }, []);
+  const readSearchEdits = useCallback(() => searchEditsRef.current, []);
   const { geometry: serviceBoundary } = useServiceBoundary();
   const {
     stops,
@@ -209,6 +241,7 @@ function App() {
       // The shareable URL is the single source of truth for browser history.
       // Avoid duplicating stop identity in history.state, which can diverge
       // across same-document navigation implementations.
+      setFocusSaysStopId("");
       setStopId(stopFromLocation());
     };
     const handleHashChange = () =>
@@ -253,6 +286,21 @@ function App() {
       : t("Turku Departures · Live bus times & get-off alerts");
   }, [displayStopName, language, stopId]);
 
+  // A change of stop is said, once, by a line that changes with nothing
+  // else. The board's meta line did it before, and as it also carried the
+  // update time, every 30-second refresh was read out twice. The stop the
+  // page opened on is not announced: it is the page's own heading.
+  const [openedStopId] = useState(stopId);
+  const [stopChanged, setStopChanged] = useState(false);
+  if (!stopChanged && stopId !== openedStopId) setStopChanged(true);
+  // A stop whose heading is given focus is said by the heading itself:
+  // announcing it as well read "Turun linna" twice.
+  const [focusSaysStopId, setFocusSaysStopId] = useState("");
+  const stopAnnouncement =
+    stopChanged && stopId && stopId !== focusSaysStopId
+      ? announceStop(stopId, displayStopName, loading)
+      : "";
+
   const selectStop = (nextStopId) => {
     if (!/^\d+$/.test(nextStopId || "")) return;
 
@@ -265,7 +313,33 @@ function App() {
     // in the shareable URL so Back/Forward has one canonical source of truth.
     canonicalizeCurrentStop(stopId);
     window.history.pushState(currentHistoryState(), "", stopUrl(nextStopId));
+    setFocusSaysStopId("");
     setStopId(nextStopId);
+  };
+
+  // A saved stop's chip leaves the list once its stop is open, so the
+  // button pressed is gone. Focus goes to the board it opened, and a screen
+  // reader starts at the new stop's name.
+  const selectSavedStop = (nextStopId) => {
+    requestFocus(pageHeading);
+    selectStop(nextStopId);
+    setFocusSaysStopId(nextStopId);
+  };
+
+  // Start takes the setup away, and the alert that replaces it is at the
+  // top of the page. Focus goes to its heading, so a screen reader hears
+  // "No need to watch for your stop" instead of nothing.
+  const startRide = (config) => {
+    const started = ride.startRide(config);
+    if (started) requestFocus(rideHeading);
+    return started;
+  };
+
+  // Turning the alert off, or getting off, takes the whole panel away with
+  // the button in it. Focus goes back to the board, which is what is left.
+  const endRide = () => {
+    requestFocus(pageHeading);
+    ride.endRide();
   };
 
   const currentStop = stopId
@@ -288,7 +362,10 @@ function App() {
   };
 
   return (
-    <main className="app-shell">
+    // The header and footer sit beside the main content, not inside it, so
+    // they are the page's banner and contentinfo: inside <main> they were
+    // neither, and a screen reader's landmark list had only "main".
+    <div className="app-shell">
       <header className="topbar">
         <div className="brandLockup">
           {/* The favicon, and the source scripts/build-icons.mjs renders the
@@ -319,17 +396,26 @@ function App() {
                 <LanguageSwitch />
               </div>
             </div>
-            {/* The name stays English in either interface, and is read so. */}
-            <p className="brand" lang="en">
-              {PRODUCT_NAME}
-            </p>
+            {/* The name stays English in either interface, and is read so.
+                Before a stop is open it is the page's heading: a first
+                visit had no h1 at all. With a stop open, the stop's name on
+                the board is the h1, and a page has only one. */}
+            {stopId ? (
+              <p className="brand" lang="en">
+                {PRODUCT_NAME}
+              </p>
+            ) : (
+              <h1 id="app-title" className="brand" lang="en" tabIndex={-1}>
+                {PRODUCT_NAME}
+              </h1>
+            )}
             <p
               className="context"
               data-firstrun={
                 placesById.size === 0 && (firstVisit || !stopId) ? "true" : "false"
               }
             >
-              {t("Live bus times, disruptions and get-off alerts for Turku.")}
+              {t("Live bus times, disruptions and get-off alerts.")}
             </p>
           </div>
         </div>
@@ -341,147 +427,158 @@ function App() {
         </span>
       </header>
 
-      <ConnectivityStatus online={online} />
+      <main className="app-main">
+        <ConnectivityStatus online={online} />
 
-      {ride.session && (
-        <RideMode
-          session={ride.session}
-          runtime={ride.runtime}
-          gps={ride.gps}
-          wakeLockState={ride.wakeLockState}
-          onTestAlert={ride.testAlert}
-          onEndRide={ride.endRide}
-          onOpenStop={selectStop}
-        />
-      )}
-
-      {sharedPlace && (
-        <MyPlaces
-          stops={stops}
-          coordinatesStatus={coordinatesStatus}
-          activeStopId={stopId}
-          placesById={placesById}
-          sharedPlace={sharedPlace}
-          serviceBoundary={serviceBoundary}
-          online={online}
-          onSavePlace={savePlace}
-          onImportSharedPlace={importSharedPlace}
-          onDismissSharedPlace={dismissSharedPlace}
-          onRemovePlace={removePlace}
-          onSetPrimaryStop={setPrimaryStop}
-          onOpenStop={selectStop}
-        />
-      )}
-
-      {/* One column on a phone. On a wide screen, Get me Home takes the
-          left and search, saved stops and service updates the right, so
-          the board starts on the first screen (App.css). */}
-      <div className="top-section">
-        {/* During a ride its route link would open Google Maps and leave
-            the page the alert runs in. It comes back when the ride ends. */}
-        {!ride.session && (
-          <HomeRecovery
-            home={placesById.get("home") || null}
-            stops={stops}
-            online={online}
-            compact={Boolean(stopId)}
+        {ride.session && (
+          <RideMode
+            session={ride.session}
+            runtime={ride.runtime}
+            gps={ride.gps}
+            wakeLockState={ride.wakeLockState}
+            onTestAlert={ride.testAlert}
+            onEndRide={endRide}
             onOpenStop={selectStop}
           />
         )}
 
-        <section className="search-panel" aria-label={t("Choose a bus stop")}>
-          <BusStopForm
-            compact={Boolean(stopId) && !firstVisit}
-            activeStopId={stopId}
+        {sharedPlace && (
+          <MyPlaces
             stops={stops}
             coordinatesStatus={coordinatesStatus}
+            activeStopId={stopId}
+            placesById={placesById}
+            sharedPlace={sharedPlace}
             serviceBoundary={serviceBoundary}
-            onSubmit={selectStop}
+            online={online}
+            onSavePlace={savePlace}
+            onImportSharedPlace={importSharedPlace}
+            onDismissSharedPlace={dismissSharedPlace}
+            onRemovePlace={removePlace}
+            onSetPrimaryStop={setPrimaryStop}
+            onOpenStop={selectStop}
           />
-        </section>
+        )}
 
-        <QuickStops
-          favorites={namedFavorites}
-          recents={namedRecents}
-          activeStopId={stopId}
+        {/* One column on a phone. On a wide screen, Get me Home takes the
+            left and search, saved stops and service updates the right, so
+            the board starts on the first screen (App.css). */}
+        <div className="top-section">
+          {/* During a ride its route link would open Google Maps and leave
+              the page the alert runs in. It comes back when the ride ends. */}
+          {!ride.session && (
+            <HomeRecovery
+              home={placesById.get("home") || null}
+              stops={stops}
+              online={online}
+              compact={Boolean(stopId)}
+              onOpenStop={selectStop}
+            />
+          )}
+
+          <section className="search-panel" aria-label={t("Choose a bus stop")}>
+            <BusStopForm
+              compact={Boolean(stopId) && !firstVisit}
+              activeStopId={stopId}
+              stops={stops}
+              coordinatesStatus={coordinatesStatus}
+              serviceBoundary={serviceBoundary}
+              onSubmit={selectStop}
+              onEdit={noteSearchEdit}
+            />
+          </section>
+
+          <QuickStops
+            favorites={namedFavorites}
+            recents={namedRecents}
+            activeStopId={stopId}
+            onSelect={selectSavedStop}
+          />
+
+          {stopId && (
+            <ServiceAlerts
+              alerts={serviceAlerts}
+              error={serviceAlertsError}
+              receivedAtMs={serviceAlertsReceivedAtMs}
+            />
+          )}
+        </div>
+
+        {/* Always in the page, so a change is announced: a live region
+            added at that moment often is not. */}
+        <p className="visually-hidden" role="status">
+          {stopAnnouncement}
+        </p>
+
+        {stopId && (
+          <>
+            <BusStopDisplay
+              stopId={stopId}
+              stopName={displayStopName}
+              stop={selectedStop}
+              stops={stops}
+              arrivals={arrivals}
+              routesById={routesById}
+              routesByShortName={routesByShortName}
+              serverTime={serverTime}
+              receivedAtMs={receivedAtMs}
+              realtimeAvailable={realtimeAvailable}
+              scheduleAvailable={scheduleAvailable}
+              scheduleFailed={scheduleFailed === true}
+              scheduleIncomplete={scheduleIncomplete === true}
+              loading={loading}
+              refreshing={refreshing}
+              error={error}
+              onRefresh={() => refresh()}
+              isFavorite={favoriteIds.has(stopId)}
+              onToggleFavorite={() =>
+                currentStop && toggleFavorite(currentStop)
+              }
+              placesById={placesById}
+              onStartRide={startRide}
+              activeRideTripRef={ride.session?.tripRef || ""}
+              cancellations={stopCancellations}
+              unknownStop={unknownStop}
+              online={online}
+              lineNotices={lineNotices}
+            />
+          </>
+        )}
+
+        {/* Before a stop is chosen, location is the quickest way to one, and
+            with no board yet this is where it lands. One instance in one place:
+            a second copy for first visits unmounted under the passenger's
+            finger as they chose a stop, dropping keyboard focus to the page
+            and the list they had just found. */}
+        <NearbyStops
+          stops={stops}
+          coordinatesStatus={coordinatesStatus}
+          activeStopId={stopId || ""}
+          serviceBoundary={serviceBoundary}
+          online={online}
+          searchEdits={readSearchEdits}
           onSelect={selectStop}
         />
 
-        {stopId && (
-          <ServiceAlerts
-            alerts={serviceAlerts}
-            error={serviceAlertsError}
-            receivedAtMs={serviceAlertsReceivedAtMs}
+        {!sharedPlace && (
+          <MyPlaces
+            stops={stops}
+            coordinatesStatus={coordinatesStatus}
+            activeStopId={stopId}
+            placesById={placesById}
+            sharedPlace={sharedPlace}
+            serviceBoundary={serviceBoundary}
+            online={online}
+            onSavePlace={savePlace}
+            onImportSharedPlace={importSharedPlace}
+            onDismissSharedPlace={dismissSharedPlace}
+            onRemovePlace={removePlace}
+            onSetPrimaryStop={setPrimaryStop}
+            onOpenStop={selectStop}
           />
         )}
-      </div>
 
-      {stopId && (
-        <>
-          <BusStopDisplay
-            stopId={stopId}
-            stopName={displayStopName}
-            stop={selectedStop}
-            stops={stops}
-            arrivals={arrivals}
-            routesById={routesById}
-            routesByShortName={routesByShortName}
-            serverTime={serverTime}
-            receivedAtMs={receivedAtMs}
-            realtimeAvailable={realtimeAvailable}
-            scheduleAvailable={scheduleAvailable}
-            scheduleFailed={scheduleFailed === true}
-            scheduleIncomplete={scheduleIncomplete === true}
-            loading={loading}
-            refreshing={refreshing}
-            error={error}
-            onRefresh={() => refresh()}
-            isFavorite={favoriteIds.has(stopId)}
-            onToggleFavorite={() =>
-              currentStop && toggleFavorite(currentStop)
-            }
-            placesById={placesById}
-            onStartRide={ride.startRide}
-            activeRideTripRef={ride.session?.tripRef || ""}
-            cancellations={stopCancellations}
-            unknownStop={unknownStop}
-            online={online}
-            lineNotices={lineNotices}
-          />
-        </>
-      )}
-
-      {/* Before a stop is chosen, location is the quickest way to one, and
-          with no board yet this is where it lands. One instance in one place:
-          a second copy for first visits unmounted under the passenger's
-          finger as they chose a stop, dropping keyboard focus to the page
-          and the list they had just found. */}
-      <NearbyStops
-        stops={stops}
-        coordinatesStatus={coordinatesStatus}
-        activeStopId={stopId || ""}
-        serviceBoundary={serviceBoundary}
-        online={online}
-        onSelect={selectStop}
-      />
-
-      {!sharedPlace && (
-        <MyPlaces
-          stops={stops}
-          coordinatesStatus={coordinatesStatus}
-          activeStopId={stopId}
-          placesById={placesById}
-          sharedPlace={sharedPlace}
-          serviceBoundary={serviceBoundary}
-          online={online}
-          onSavePlace={savePlace}
-          onImportSharedPlace={importSharedPlace}
-          onDismissSharedPlace={dismissSharedPlace}
-          onRemovePlace={removePlace}
-          onSetPrimaryStop={setPrimaryStop}
-          onOpenStop={selectStop}
-        />
-      )}
+      </main>
 
       <footer className="source-note">
         <p className="source-line">
@@ -522,7 +619,7 @@ function App() {
               target="_blank"
               rel="noreferrer"
             >
-              {t("Report a problem")}
+              {t("Report a problem (GitHub)")}
             </a>
             <a
               href="https://github.com/MykolaDotsenko/foli-live-departures"
@@ -566,19 +663,30 @@ function App() {
                 "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, and a ride in progress for up to six hours. Clearing this site’s data removes all of it."
               )}
             </dd>
-            <dt>{t("What leaves it")}</dt>
+            <dt>{t("What leaves the phone")}</dt>
+            {/* One fact per entry: a single paragraph ran to 90 words. */}
             <dd>
               {t(
-                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, each bus whose stops you open, and during a ride the stop you get off at and the one before it are requested from data.foli.fi, which sees your IP address and what was asked for. Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved. Google Maps opens only when you tap a route link: it is sent the stop you chose, and may then use your location to plan the route."
+                "The app is loaded from GitHub Pages, which sees your IP address. The stops you look up and the buses whose stops you open are fetched from data.foli.fi, which sees your IP address and what was asked for. During a ride, so are your exit stop and the one before it."
               )}
             </dd>
-            <dt>{t("What there is not")}</dt>
+            <dd>
+              {t(
+                "Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved."
+              )}
+            </dd>
+            <dd>
+              {t(
+                "Google Maps opens only when you tap a route link. It gets the stop you chose and may then use your location to plan the route."
+              )}
+            </dd>
+            <dt>{t("What it doesn’t have")}</dt>
             <dd>{t("No account, no ads, no analytics.")}</dd>
           </dl>
           </details>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }
 

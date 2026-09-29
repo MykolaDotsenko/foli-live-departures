@@ -152,7 +152,7 @@ const html = `<!doctype html>
       <p class="trust">Independent · Privacy-first · No account · No ads</p>
     </section>
 
-    <aside class="ride" aria-label="Get-off Alert preview">
+    <aside class="ride" aria-label="Get-off alert preview">
       <div class="eyebrow">Next stop</div>
       <h2>Your stop is next</h2>
       <div class="label">Your stop</div>

@@ -8,7 +8,14 @@ import styles from "../MyPlaces.module.css";
 import { PLACE_PHRASES } from "./placePhrases";
 import { offerPlaceLink } from "./sharePlace";
 
-export default function PlaceManage({ place, label, onReplace, onRemove }) {
+export default function PlaceManage({
+  place,
+  label,
+  titleId,
+  onReplace,
+  onRemove,
+  locating = false,
+}) {
   // The phrase, worded when shown, so it follows a language switch.
   const [shareFeedback, setShareFeedback] = useState("");
   const [shareUrl, setShareUrl] = useState("");
@@ -37,7 +44,13 @@ export default function PlaceManage({ place, label, onReplace, onRemove }) {
         <button
           type="button"
           className={styles.textButton}
-          onClick={() => onReplace(place.id)}
+          // Busy rather than disabled: a disabled button drops keyboard
+          // focus to the page mid-lookup.
+          onClick={() => {
+            if (!locating) onReplace(place.id);
+          }}
+          aria-disabled={locating}
+          aria-busy={locating}
         >
           {t("Replace using where I am now")}
         </button>
@@ -45,19 +58,22 @@ export default function PlaceManage({ place, label, onReplace, onRemove }) {
           type="button"
           className={styles.textButton}
           onClick={sharePlace}
+          // The name is what it says; the place it is for is read after.
+          aria-describedby={titleId}
         >
-          {t("Share {label}", { label })}
+          {t("Share this place")}
         </button>
         <button
           type="button"
           className={styles.dangerButton}
+          aria-describedby={titleId}
           onClick={() => {
             if (window.confirm(t("Remove {label} from My Places?", { label }))) {
               onRemove(place.id);
             }
           }}
         >
-          {t("Remove {label}", { label })}
+          {t("Remove this place")}
         </button>
       </div>
       {shareFeedback && (
