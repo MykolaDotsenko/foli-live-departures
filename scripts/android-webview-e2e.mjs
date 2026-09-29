@@ -228,8 +228,8 @@ async function readAndroidGeolocation(enableHighAccuracy, timeout) {
 
 // Mirror the product's reliability contract: ask for a fresh high-accuracy fix
 // first, then fall back when Android reports a timeout. The assertion below
-// remains strict about the injected Turku coordinates, so this retries provider
-// readiness rather than accepting a wrong or stale location.
+// remains strict about the injected Turku coordinates, so this retries Android
+// location-provider readiness rather than accepting a wrong or stale location.
 let geo = await readAndroidGeolocation(true, 8000);
 if (!geo?.ok && geo?.code === 3) {
   geo = await retry(
@@ -317,11 +317,11 @@ await evaluate(`(() => {
     })
   );
 
-  location.reload();
   return true;
 })()`);
 
 await Network.setBlockedURLs({ urls: ["https://data.foli.fi/*"] });
+await evaluate("location.reload(); true");
 
 await retry("fixture-backed app reload", async () => {
   return evaluate(
