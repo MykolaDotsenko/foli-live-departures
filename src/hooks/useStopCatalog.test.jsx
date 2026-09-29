@@ -359,3 +359,109 @@ test("refreshes catalogue and coordinates after a first network load ages past t
 
   dateNow.mockRestore();
 });
+
+
+test("refreshes legacy cached coordinates once without re-fetching a fresh catalogue", async () => {
+  const now = Date.now();
+  localStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({
+      savedAt: now,
+      // Legacy v2 cache: coordinates exist, but there is no independent
+      // coordinatesSavedAt yet.
+      stops: [
+        {
+          id: "164",
+          name: "Kauppatori",
+          lat: 60.4517,
+          lon: 22.2665,
+        },
+      ],
+    })
+  );
+
+  vi.mocked(fetchStopCoordinates).mockResolvedValue(
+    new Map([["164", { lat: 60.4518, lon: 22.2666 }]])
+  );
+
+  const { result } = renderHook(() => useStopCatalog());
+
+  await waitFor(() => expect(fetchStopCoordinates).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(result.current.stops[0]).toEqual(
+      expect.objectContaining({ lat: 60.4518, lon: 22.2666 })
+    )
+  );
+
+  expect(fetchStopCatalog).not.toHaveBeenCalled();
+
+  const stored = JSON.parse(localStorage.getItem(CACHE_KEY));
+  expect(stored.coordinatesSavedAt).toBeGreaterThan(0);
+});
+
+test("a successful catalogue refresh never disguises stale coordinates as fresh", async () => {
+  const start = Date.UTC(2026, 8, 29, 10, 0, 0);
+  const staleAt = start - 2 * 24 * 60 * 60 * 1000;
+  const dateNow = vi.spyOn(Date, "now").mockReturnValue(start);
+
+  localStorage.setItem(
+    CACHE_KEY,
+    JSON.stringify({
+      savedAt: staleAt,
+      coordinatesSavedAt: staleAt,
+      stops: [
+        {
+          id: "164",
+          name: "Old Kauppatori",
+          lat: 60.4517,
+          lon: 22.2665,
+        },
+      ],
+    })
+  );
+
+  vi.mocked(fetchStopCatalog).mockResolvedValue([
+    { id: "164", name: "Fresh Kauppatori" },
+  ]);
+  vi.mocked(fetchStopCoordinates).mockRejectedValue(
+    new Error("coordinates unavailable")
+  );
+
+  const first = renderHook(() => useStopCatalog());
+
+  await waitFor(() => expect(first.result.current.catalogStatus).toBe("ready"));
+  await waitFor(() => expect(fetchStopCoordinates).toHaveBeenCalledTimes(1));
+
+  const storedAfterCatalogue = JSON.parse(localStorage.getItem(CACHE_KEY));
+  expect(storedAfterCatalogue.savedAt).toBe(start);
+  expect(storedAfterCatalogue.coordinatesSavedAt).toBe(staleAt);
+  expect(storedAfterCatalogue.stops[0]).toEqual(
+    expect.objectContaining({
+      name: "Fresh Kauppatori",
+      lat: 60.4517,
+      lon: 22.2665,
+    })
+  );
+
+  first.unmount();
+  vi.mocked(fetchStopCatalog).mockClear();
+  vi.mocked(fetchStopCoordinates).mockClear();
+  vi.mocked(fetchStopCoordinates).mockResolvedValue(
+    new Map([["164", { lat: 60.4518, lon: 22.2666 }]])
+  );
+
+  const reopened = renderHook(() => useStopCatalog());
+
+  await waitFor(() => expect(fetchStopCoordinates).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(reopened.result.current.stops[0]).toEqual(
+      expect.objectContaining({ lat: 60.4518, lon: 22.2666 })
+    )
+  );
+
+  // The catalogue itself was genuinely fresh, so only the failed resource
+  // is retried after reload.
+  expect(fetchStopCatalog).not.toHaveBeenCalled();
+
+  dateNow.mockRestore();
+});
