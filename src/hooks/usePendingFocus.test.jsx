@@ -104,3 +104,64 @@ test("a late target takes focus while the passenger is still waiting on it", () 
 
   expect(screen.getByRole("heading", { name: "Late" })).toHaveFocus();
 });
+
+// Tapping plain text leaves focus on the page, just as a control that has
+// gone does. A slow "Use my location" answered after that pulled focus, and
+// the page's scroll, back to the place setup the passenger had left.
+test("a late target does not take focus after the passenger tapped elsewhere", () => {
+  render(
+    <>
+      <Late />
+      <p>Some text</p>
+    </>
+  );
+  const ask = screen.getByRole("button", { name: "Ask" });
+  ask.focus();
+  fireEvent.click(ask);
+
+  fireEvent.pointerDown(screen.getByText("Some text"));
+  ask.blur();
+  fireEvent.click(screen.getByRole("button", { name: "Answer" }));
+
+  expect(screen.getByRole("heading", { name: "Late" })).not.toHaveFocus();
+  expect(document.body).toHaveFocus();
+});
+
+test("focus on the page is not the asking control's while it is still there", () => {
+  render(<Late />);
+  const ask = screen.getByRole("button", { name: "Ask" });
+  ask.focus();
+  fireEvent.click(ask);
+
+  ask.blur();
+  fireEvent.click(screen.getByRole("button", { name: "Answer" }));
+
+  expect(screen.getByRole("heading", { name: "Late" })).not.toHaveFocus();
+});
+
+test("focus moving to another control withdraws the request", () => {
+  render(<Late />);
+  const ask = screen.getByRole("button", { name: "Ask" });
+  ask.focus();
+  fireEvent.click(ask);
+
+  const answer = screen.getByRole("button", { name: "Answer" });
+  answer.focus();
+  ask.focus();
+  fireEvent.click(answer);
+
+  expect(screen.getByRole("heading", { name: "Late" })).not.toHaveFocus();
+  expect(ask).toHaveFocus();
+});
+
+test("a press on the asking control itself keeps the request", () => {
+  render(<Late />);
+  const ask = screen.getByRole("button", { name: "Ask" });
+  ask.focus();
+  fireEvent.click(ask);
+
+  fireEvent.pointerDown(ask);
+  fireEvent.click(screen.getByRole("button", { name: "Answer" }));
+
+  expect(screen.getByRole("heading", { name: "Late" })).toHaveFocus();
+});
