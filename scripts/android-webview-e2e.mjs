@@ -66,7 +66,6 @@ const session = await retry(
         client: candidateClient,
         Runtime,
         Network,
-        Log,
       };
     } catch (error) {
       try {
@@ -85,7 +84,6 @@ const {
   client,
   Runtime,
   Network,
-  Log,
 } = session;
 
 console.log("CDP target:", {
