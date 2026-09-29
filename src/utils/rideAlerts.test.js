@@ -114,6 +114,33 @@ describe("ride get-off notifications", () => {
     expect(options.badge).toMatch(/\/notification-badge-96\.png$/);
   });
 
+  it("closes an active service-worker ride notification when the ride ends", async () => {
+    const close = vi.fn();
+    const getNotifications = vi.fn(() =>
+      Promise.resolve([{ tag: "foli-active-ride", close }])
+    );
+    const showNotification = vi.fn(() => Promise.resolve());
+    stubServiceWorker({ showNotification, getNotifications });
+
+    await expect(showRideNotification("now", "Puistokatu")).resolves.toBe(true);
+
+    stopRideAlerts();
+
+    await vi.waitFor(() => expect(getNotifications).toHaveBeenCalled());
+    await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
+  });
+
+  it("closes the page-level fallback notification when the ride ends", async () => {
+    stubServiceWorker(null);
+
+    await expect(showRideNotification("now", "Puistokatu")).resolves.toBe(true);
+    expect(created).toHaveLength(1);
+
+    stopRideAlerts();
+
+    expect(created[0].close).toHaveBeenCalledTimes(1);
+  });
+
   it("sends a tap on the page-level fallback back to the app", async () => {
     stubServiceWorker(null);
     const focus = vi.fn();
