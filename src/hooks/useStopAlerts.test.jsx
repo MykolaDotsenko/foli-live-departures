@@ -264,3 +264,65 @@ test("aborts an in-flight alerts request when the consumer unmounts", () => {
 
   expect(signal.aborted).toBe(true);
 });
+
+// Route-membership enrichment must never outlive the stop selection that started it.
+test("aborts the previous stop-membership lookup when the selected stop changes", async () => {
+  const membershipSignals = [];
+  mocks.fetchStopServedRouteIds.mockImplementation(
+    (_stopId, _routeIds, signal) => {
+      membershipSignals.push(signal);
+      if (membershipSignals.length > 1) return Promise.resolve(new Set());
+
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () =>
+            reject(
+              new globalThis.DOMException(
+                "The operation was aborted.",
+                "AbortError"
+              )
+            ),
+          { once: true }
+        );
+      });
+    }
+  );
+
+  const { rerender, unmount } = renderHook(
+    ({ stopId }) => useStopAlerts(stopId, noLines, routesById),
+    { initialProps: { stopId: "164" } }
+  );
+
+  await waitFor(() => expect(membershipSignals).toHaveLength(1));
+  expect(membershipSignals[0].aborted).toBe(false);
+
+  rerender({ stopId: "32" });
+
+  await waitFor(() => expect(membershipSignals).toHaveLength(2));
+  expect(membershipSignals[0].aborted).toBe(true);
+  expect(membershipSignals[1].aborted).toBe(false);
+
+  unmount();
+  expect(membershipSignals[1].aborted).toBe(true);
+});
+
+test("a realtime line match does not wait for static membership enrichment", async () => {
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set());
+
+  const { result, unmount } = renderHook(() =>
+    useStopAlerts("164", ["50"], routesById)
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts.map((alert) => alert.title)).toEqual([
+      "Line 50 stop moved",
+    ])
+  );
+
+  // The active line already proves relevance, so no optional GTFS membership
+  // request is needed before the disruption can reach the passenger.
+  expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
+
+  unmount();
+});
