@@ -369,6 +369,19 @@ export async function showRideNotification(
 
     if (registration?.showNotification) {
       await registration.showNotification(copy.title, options);
+
+      // If an earlier stage had to use the page-level fallback before the
+      // service worker became available, the newly delivered SW notification
+      // supersedes it. Close the old fallback only after the SW call succeeds
+      // so a failed takeover cannot leave the passenger with no alert at all.
+      try {
+        pageRideNotification?.close?.();
+      } catch {
+        // The new service-worker notification is already delivered.
+      } finally {
+        pageRideNotification = null;
+      }
+
       return true;
     }
 
