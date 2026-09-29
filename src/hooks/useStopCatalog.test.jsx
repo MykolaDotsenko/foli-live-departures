@@ -308,3 +308,54 @@ test("refreshes a cache that becomes stale during a long-lived session", async (
 
   dateNow.mockRestore();
 });
+
+
+test("refreshes catalogue and coordinates after a first network load ages past the TTL", async () => {
+  const start = Date.UTC(2026, 8, 29, 10, 0, 0);
+  let now = start;
+  const dateNow = vi.spyOn(Date, "now").mockImplementation(() => now);
+
+  vi.mocked(fetchStopCatalog)
+    .mockResolvedValueOnce([{ id: "164", name: "Kauppatori v1" }])
+    .mockResolvedValueOnce([{ id: "164", name: "Kauppatori v2" }]);
+  vi.mocked(fetchStopCoordinates)
+    .mockResolvedValueOnce(
+      new Map([["164", { lat: 60.4518, lon: 22.2666 }]])
+    )
+    .mockResolvedValueOnce(
+      new Map([["164", { lat: 60.4519, lon: 22.2667 }]])
+    );
+
+  const { result, rerender } = renderHook(() => useStopCatalog());
+
+  await waitFor(() => expect(result.current.catalogStatus).toBe("ready"));
+  await waitFor(() => expect(result.current.coordinatesStatus).toBe("ready"));
+  expect(fetchStopCatalog).toHaveBeenCalledTimes(1);
+  expect(fetchStopCoordinates).toHaveBeenCalledTimes(1);
+  expect(result.current.stops).toEqual([
+    {
+      id: "164",
+      name: "Kauppatori v1",
+      lat: 60.4518,
+      lon: 22.2666,
+    },
+  ]);
+
+  now = start + 24 * 60 * 60 * 1000 + 1;
+  rerender();
+
+  await waitFor(() => expect(fetchStopCatalog).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(fetchStopCoordinates).toHaveBeenCalledTimes(2));
+  await waitFor(() =>
+    expect(result.current.stops).toEqual([
+      {
+        id: "164",
+        name: "Kauppatori v2",
+        lat: 60.4519,
+        lon: 22.2667,
+      },
+    ])
+  );
+
+  dateNow.mockRestore();
+});
