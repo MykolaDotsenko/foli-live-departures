@@ -135,15 +135,22 @@
   color: #294851;
 }
 
-.secondaryButton:hover:not(:disabled) {
+.secondaryButton:hover:not(:disabled):not([aria-disabled="true"]) {
   background: #f1f8f8;
 }
 
 .goButton:disabled,
 .primaryButton:disabled,
-.secondaryButton:disabled {
+.secondaryButton:disabled,
+.secondaryButton[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.58;
+}
+
+/* "Use my location" is busy rather than disabled while it looks, so it
+   keeps keyboard focus; faded, its focus ring fell below 3:1. */
+.secondaryButton[aria-disabled="true"]:focus-visible {
+  opacity: 1;
 }
 
 /* Not pressable yet, and legible: faded, "Save School" read as broken. */
@@ -713,7 +720,7 @@
   }
 
   :root[data-theme="dark"] .mobileSummary:hover,
-  :root[data-theme="dark"] .secondaryButton:hover:not(:disabled) {
+  :root[data-theme="dark"] .secondaryButton:hover:not(:disabled):not([aria-disabled="true"]) {
     background: var(--dm-accent-surface);
   }
 

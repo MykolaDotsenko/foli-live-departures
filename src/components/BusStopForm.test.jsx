@@ -108,7 +108,7 @@ test("a late location fix does not overwrite what was typed meanwhile", async ()
 
     await act(async () => deliverFix());
 
-    await waitFor(() => expect(locate).not.toBeDisabled());
+    await waitFor(() => expect(locate).not.toHaveAttribute("aria-disabled"));
     expect(input).toHaveValue("Puistokatu");
 
     // The typed text is still looked up as typed, not as a resolved stop.
@@ -422,4 +422,73 @@ test("offers one-tap location before a stop is open", () => {
   expect(
     screen.getByRole("button", { name: "Use current location" })
   ).toBeInTheDocument();
+});
+
+// Escape closed the list for good: typing on gave no suggestions until the
+// field was left and focused again, which a keyboard user had no reason to
+// guess.
+test("typing after Escape brings the suggestions back", () => {
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
+
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.change(input, { target: { value: "Kaupp" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+  expect(input).toHaveAttribute("aria-expanded", "true");
+});
+
+test("the down arrow reopens suggestions that Escape closed", () => {
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
+
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  fireEvent.keyDown(input, { key: "Escape" });
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+});
+
+// Disabled while it looked, the button dropped keyboard focus to the page.
+test("the location button keeps focus while it looks and ignores a second press", () => {
+  const originalGeolocation = navigator.geolocation;
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+
+  try {
+    render(
+      <BusStopForm
+        activeStopId=""
+        stops={[{ id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 }]}
+        coordinatesStatus="ready"
+        onSubmit={vi.fn()}
+      />
+    );
+
+    const locate = screen.getByRole("button", { name: "Use current location" });
+    locate.focus();
+    fireEvent.click(locate);
+    fireEvent.click(locate);
+
+    expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+    expect(locate).toHaveAttribute("aria-disabled", "true");
+    expect(locate).not.toBeDisabled();
+    expect(locate).toHaveFocus();
+  } finally {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: originalGeolocation,
+    });
+  }
 });

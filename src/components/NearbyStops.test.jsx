@@ -442,3 +442,48 @@ test("a late location fix does not replace a stop chosen while locating", async 
   await screen.findByRole("group", { name: "Nearest Föli stops" });
   expect(onSelect).not.toHaveBeenCalled();
 });
+
+// Disabled while it looked, the button dropped keyboard focus to the page.
+test("Find nearest stop keeps focus while it looks and ignores a second press", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      onSelect={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", { name: "Find nearest stop" });
+  locate.focus();
+  fireEvent.click(locate);
+
+  const busy = screen.getByRole("button", { name: "Locating…" });
+  expect(busy).toBe(locate);
+  expect(busy).toHaveAttribute("aria-disabled", "true");
+  expect(busy).not.toBeDisabled();
+  expect(busy).toHaveFocus();
+  fireEvent.click(busy);
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+});
+
+test("Find nearest stop does nothing until stop locations have loaded", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <NearbyStops
+      stops={[{ id: "164", name: "Kauppatori" }]}
+      coordinatesStatus="loading"
+      activeStopId=""
+      onSelect={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", { name: "Find nearest stop" });
+  expect(locate).toHaveAttribute("aria-disabled", "true");
+  fireEvent.click(locate);
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});

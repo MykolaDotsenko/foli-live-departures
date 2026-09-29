@@ -21,6 +21,7 @@ export default function EmptyPlaceCard({
   return (
     <article
       className={styles.emptyCard}
+      data-place={preset.id}
       data-mobile-expanded={mobileExpanded ? "true" : "false"}
     >
       <button
@@ -52,8 +53,12 @@ export default function EmptyPlaceCard({
           <button
             type="button"
             className={styles.secondaryButton}
-            onClick={() => onStartSetup(preset.id)}
-            disabled={status === "locating"}
+            // Busy rather than disabled: a disabled button drops keyboard
+            // focus to the page mid-lookup.
+            onClick={() => {
+              if (status !== "locating") onStartSetup(preset.id);
+            }}
+            aria-disabled={status === "locating" ? "true" : undefined}
             aria-busy={status === "locating"}
             aria-label={t(PLACE_PHRASES[preset.id].locate)}
           >

@@ -51,13 +51,19 @@
   font-weight: 850;
 }
 
-.locateButton:hover:not(:disabled) {
+.locateButton:hover:not([aria-disabled="true"]) {
   background: #edf8f8;
 }
 
-.locateButton:disabled {
+.locateButton[aria-disabled="true"] {
   cursor: wait;
   opacity: 0.65;
+}
+
+/* Busy, it keeps keyboard focus, and a faded focus ring fell below 3:1
+   against the page. Focused, it is drawn at full strength. */
+.locateButton[aria-disabled="true"]:focus-visible {
+  opacity: 1;
 }
 
 .meta {
@@ -377,7 +383,7 @@
     color: var(--dm-accent);
   }
 
-  :root[data-theme="dark"] .locateButton:hover:not(:disabled),
+  :root[data-theme="dark"] .locateButton:hover:not([aria-disabled="true"]),
   :root[data-theme="dark"] .stopButton:hover,
   :root[data-theme="dark"] .walkLink:hover {
     background: var(--dm-accent-surface);

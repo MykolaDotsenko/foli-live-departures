@@ -27,6 +27,32 @@ test("Back keeps keyboard focus on the departure board", async ({ page }) => {
   ).toBeFocused();
 });
 
+// A saved stop's chip leaves the list once its stop is open, so the button
+// pressed went away and focus fell to the top of the page. It lands on the
+// board it opened instead, where a screen reader reads the stop's name.
+test("choosing a recent stop's chip puts focus on its board", async ({ page }) => {
+  await page.goto("/?stop=164");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+  await page.getByLabel("Find your stop").fill("4");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Turun linna", exact: true })
+  ).toBeVisible();
+
+  const recent = page
+    .getByRole("navigation", { name: "Saved and recent stops" })
+    .getByRole("button", { name: /Kauppatori/ });
+  await recent.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(page).toHaveURL(/stop=164/);
+  const heading = page.locator("#departures-title");
+  await expect(heading).toHaveText("Kauppatori");
+  await expect(heading).toBeFocused();
+});
+
 test("daily flow: search, save, navigate and restore with Back", async ({ page }) => {
   await page.goto("/?stop=164");
 

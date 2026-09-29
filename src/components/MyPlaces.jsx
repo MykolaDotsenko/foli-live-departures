@@ -8,12 +8,29 @@ import {
 } from "../utils/geo";
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { PLACE_PRESETS } from "../hooks/useSavedPlaces";
+import usePendingFocus from "../hooks/usePendingFocus";
 import styles from "./MyPlaces.module.css";
 import EmptyPlaceCard from "./places/EmptyPlaceCard";
 import PlaceCard from "./places/PlaceCard";
 import { isAccurateFix, MAX_SETUP_DISTANCE_METERS } from "./places/placeSetup";
 import SetupPlace from "./places/SetupPlace";
 import SharedPlaceImport from "./places/SharedPlaceImport";
+
+// On a phone a card folds down to its summary button and the buttons
+// inside are hidden, so "visible" is asked of the browser. Where it cannot
+// say (no layout), nothing counts as visible and the caller falls back.
+function isShown(element) {
+  return typeof element.checkVisibility === "function"
+    ? element.checkVisibility()
+    : element.getClientRects().length > 0;
+}
+
+function cardControls(grid, placeId) {
+  const card = grid?.querySelector(`[data-place="${placeId}"]`);
+  return card
+    ? [...card.querySelectorAll("a[href], button:not(:disabled)")]
+    : [];
+}
 
 function MyPlaces({
   stops,
@@ -45,7 +62,38 @@ function MyPlaces({
   // shows rewords it.
   const [error, setError] = useState(null);
   const showError = (text) => setError({ text });
+  // Opening the setup replaces an empty place's card, and closing it
+  // brings the card back: both times the button pressed was taken away and
+  // focus fell to the top of the page. The setup's heading takes focus as
+  // it opens; on the way out focus goes back to the button that opened it,
+  // or, when that has gone with its card, to the card's first control.
+  const requestFocus = usePendingFocus();
+  const gridRef = useRef(null);
+  const setupOpenerRef = useRef(null);
+  const focusSetupHeading = (placeId) => {
+    setupOpenerRef.current = document.activeElement;
+    requestFocus(() => document.getElementById(`setup-${placeId}-title`));
+  };
+  const focusPlaceCard = (placeId) => {
+    const opener = setupOpenerRef.current;
+    setupOpenerRef.current = null;
+    requestFocus(() => {
+      const openerStillThere =
+        opener instanceof globalThis.HTMLElement &&
+        opener.isConnected &&
+        !opener.matches(":disabled") &&
+        gridRef.current?.contains(opener);
+      if (openerStillThere && isShown(opener)) return opener;
+      const controls = cardControls(gridRef.current, placeId);
+      return (
+        controls.find(isShown) ||
+        (openerStillThere ? opener : null) ||
+        controls[0]
+      );
+    });
+  };
   const closeSetup = () => {
+    if (setupId) focusPlaceCard(setupId);
     setSetupId("");
     setSetupCandidates([]);
     setSetupAccuracy(null);
@@ -83,6 +131,10 @@ function MyPlaces({
     setStatus("locating");
     setError(null);
     lookupInFlightRef.current = true;
+    // Asked now, while focus is still on the button pressed: if the
+    // passenger has gone elsewhere by the time the location answers, the
+    // setup opens without pulling them back.
+    focusSetupHeading(preset.id);
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
@@ -139,6 +191,7 @@ function MyPlaces({
     if (!preset || !activeStop) return;
 
     setError(null);
+    focusSetupHeading(preset.id);
     setSetupId(preset.id);
     setSetupCandidates([{ id: activeStop.id, name: activeStop.name }]);
     setSetupAccuracy(null);
@@ -174,7 +227,7 @@ function MyPlaces({
         </p>
       )}
 
-      <div className={styles.grid}>
+      <div className={styles.grid} ref={gridRef}>
         {PLACE_PRESETS.map((preset) => {
           const place = placesById.get(preset.id);
           // The form opens where its place is, instead of after Work with

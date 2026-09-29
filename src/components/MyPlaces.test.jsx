@@ -876,3 +876,92 @@ test("a saved place with no stops is left out instead of crashing the page", () 
   expect(screen.queryByRole("heading", { name: "Home" })).not.toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Work" })).toBeInTheDocument();
 });
+
+// "Use Puistokatu for School" is on the card the setup replaces, and Cancel
+// is on the setup the card comes back in place of. Both times focus fell to
+// the top of the page.
+test("the place setup takes focus as it opens and hands it back to its card", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  const useStop = screen.getByRole("button", { name: "Use Puistokatu for School" });
+  useStop.focus();
+  fireEvent.click(useStop);
+
+  expect(
+    screen.getByRole("heading", { name: "Choose stops for School" })
+  ).toHaveFocus();
+
+  const cancel = screen.getByRole("button", { name: "Cancel" });
+  cancel.focus();
+  fireEvent.click(cancel);
+
+  const card = document.querySelector('[data-place="school"]');
+  expect(card).not.toBeNull();
+  expect(within(card).getAllByRole("button")[0]).toHaveFocus();
+});
+
+test("a replaced place's setup hands focus back to the button that opened it", async () => {
+  setGeolocation((success) =>
+    success({
+      coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 18 },
+    })
+  );
+  renderSavedHome();
+
+  fireEvent.click(screen.getByText("Manage Home"));
+  const replace = screen.getByRole("button", {
+    name: "Replace using where I am now",
+  });
+  replace.focus();
+  fireEvent.click(replace);
+
+  const heading = await screen.findByRole("heading", {
+    name: "Choose stops for Home",
+  });
+  await waitFor(() => expect(heading).toHaveFocus());
+
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+  expect(replace).toHaveFocus();
+});
+
+// Busy rather than disabled, so the button pressed keeps focus while the
+// location is looked up.
+test("Use my location keeps focus while it looks, and a second press does nothing", () => {
+  const getCurrentPosition = vi.fn();
+  setGeolocation(getCurrentPosition);
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={new Map()}
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  const locate = screen.getByRole("button", {
+    name: "Use my location to set up Home",
+  });
+  locate.focus();
+  fireEvent.click(locate);
+  fireEvent.click(locate);
+
+  expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+  expect(locate).toHaveAttribute("aria-disabled", "true");
+  expect(locate).not.toBeDisabled();
+  expect(locate).toHaveFocus();
+});

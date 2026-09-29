@@ -238,8 +238,15 @@ function NearbyStops({
         <button
           type="button"
           className={styles.locateButton}
-          onClick={locate}
-          disabled={status === "locating" || !hasStopCoordinates}
+          // Busy rather than disabled: a disabled button drops keyboard
+          // focus to the page while the location is looked up. The note
+          // below says why it waits while stop locations load.
+          onClick={() => {
+            if (status !== "locating" && hasStopCoordinates) locate();
+          }}
+          aria-disabled={
+            status === "locating" || !hasStopCoordinates ? "true" : undefined
+          }
           aria-busy={status === "locating"}
         >
           <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>

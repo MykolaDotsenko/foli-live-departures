@@ -31,7 +31,11 @@ input {
 
 button:focus-visible,
 input:focus-visible,
-[role="option"]:focus-visible {
+[role="option"]:focus-visible,
+/* A heading focus is moved to after the button pressed goes away (the
+   board's stop name, the get-off alert, a place's setup): it shows the
+   same ring, so a keyboard user can see where they have landed. */
+[tabindex="-1"]:focus-visible {
   outline: 3px solid #007985;
   outline-offset: 2px;
 }
@@ -547,6 +551,7 @@ input:focus-visible,
   :root[data-theme="dark"] button:focus-visible,
   :root[data-theme="dark"] input:focus-visible,
   :root[data-theme="dark"] [role="option"]:focus-visible,
+  :root[data-theme="dark"] [tabindex="-1"]:focus-visible,
   :root[data-theme="dark"] .source-note a:focus-visible,
   :root[data-theme="dark"] .about summary:focus-visible {
     outline-color: var(--dm-focus);

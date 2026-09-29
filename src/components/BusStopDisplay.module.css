@@ -82,15 +82,21 @@
   border-radius: 10px;
 }
 
-.refreshButton:hover:not(:disabled),
+.refreshButton:hover:not([aria-disabled="true"]),
 .retryButton:hover {
   border-color: #91adb3;
   background: #f6f9fa;
 }
 
-.refreshButton:disabled {
+.refreshButton[aria-disabled="true"] {
   cursor: progress;
   opacity: 0.55;
+}
+
+/* Busy, it keeps keyboard focus, and a faded focus ring fell below 3:1
+   against the page. Focused, it is drawn at full strength. */
+.refreshButton[aria-disabled="true"]:focus-visible {
+  opacity: 1;
 }
 
 .summary {
@@ -888,7 +894,7 @@
     background: var(--dm-accent-surface);
   }
 
-  :root[data-theme="dark"] .refreshButton:hover:not(:disabled),
+  :root[data-theme="dark"] .refreshButton:hover:not([aria-disabled="true"]),
   :root[data-theme="dark"] .retryButton:hover {
     border-color: #5f949c;
     background: var(--dm-accent-surface);

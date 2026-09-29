@@ -238,3 +238,43 @@ test("the board header keeps focus and its live region across a stop change", ()
   expect(document.activeElement).toBe(refresh);
   expect(screen.getByText(/^Stop 4/)).toBe(stopLine);
 });
+
+// Cancel goes away with the setup it closes. Focus used to fall to the top
+// of the page; it goes back to the row's own button instead.
+test("cancelling the get-off setup returns focus to the row's alert button", async () => {
+  render(board([departure()]));
+  fireEvent.click(screen.getByRole("button", { name: "Get-off alert" }));
+  await screen.findByText("Turun linna");
+
+  const cancel = screen.getByRole("button", { name: "Cancel" });
+  cancel.focus();
+  fireEvent.click(cancel);
+
+  expect(setupPanels()).toHaveLength(0);
+  expect(screen.getByRole("button", { name: "Get-off alert" })).toHaveFocus();
+});
+
+// Refresh is busy every half minute. Disabled, it dropped keyboard focus to
+// the page each time; busy, it keeps focus and a press does nothing.
+test("a busy Refresh keeps keyboard focus and ignores presses", () => {
+  const onRefresh = vi.fn();
+  const props = (refreshing) => ({ ...board([departure()]).props, refreshing, onRefresh });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const refresh = screen.getByRole("button", { name: "Refresh" });
+  refresh.focus();
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  const busy = screen.getByRole("button", { name: "Refreshing…" });
+  expect(busy).toBe(refresh);
+  expect(busy).toHaveFocus();
+  expect(busy).not.toBeDisabled();
+  expect(busy).toHaveAttribute("aria-disabled", "true");
+  fireEvent.click(busy);
+  expect(onRefresh).not.toHaveBeenCalled();
+
+  rerender(<BusStopDisplay {...props(false)} />);
+  expect(refresh).not.toHaveAttribute("aria-disabled");
+  fireEvent.click(refresh);
+  expect(onRefresh).toHaveBeenCalledTimes(1);
+});

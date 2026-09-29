@@ -29,7 +29,13 @@ function BoardHeader({
     >
       <div className={styles.stopHeading}>
         <div className={styles.stopTitleRow}>
-          <h1 id="departures-title" className={styles.stopName}>
+          {/* Focusable from code only: choosing a saved stop, or ending a
+              ride, brings focus here once the button pressed is gone. */}
+          <h1
+            id="departures-title"
+            className={styles.stopName}
+            tabIndex={-1}
+          >
             {stopName ? (
               <span lang="fi">{stopName}</span>
             ) : loading ? (
@@ -81,11 +87,15 @@ function BoardHeader({
             onToggle={onToggleLineFilter}
           />
         )}
+        {/* Busy rather than disabled: a disabled button drops keyboard
+            focus to the page, and this one is busy every half minute. */}
         <button
           type="button"
           className={styles.refreshButton}
-          onClick={onRefresh}
-          disabled={loading || refreshing}
+          onClick={() => {
+            if (!loading && !refreshing) onRefresh?.();
+          }}
+          aria-disabled={loading || refreshing ? "true" : undefined}
         >
           {refreshing ? t("Refreshing…") : t("Refresh")}
         </button>

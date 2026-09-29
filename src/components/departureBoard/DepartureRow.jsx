@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import styles from "../BusStopDisplay.module.css";
 import RideSetup from "../RideSetup";
 import TripJourneyDetails from "../TripJourneyDetails";
@@ -70,6 +71,7 @@ function DepartureRow({
   onCloseRideSetup,
   onStartRide,
 }) {
+  const rideButtonRef = useRef(null);
   const departureTime = getDepartureTime(arrival, referenceTime);
   const tripDetails = arrival.tripref ? tripDetailsById.get(arrival.tripref) : null;
   const route =
@@ -182,6 +184,7 @@ function DepartureRow({
                 stopsById={stopsById}
               />
               <button
+                ref={rideButtonRef}
                 type="button"
                 className={styles.rideButton}
                 disabled={sameRideActive}
@@ -223,7 +226,13 @@ function DepartureRow({
               placesById={placesById}
               routesById={routesById}
               routesByShortName={routesByShortName}
-              onCancel={onCloseRideSetup}
+              onCancel={() => {
+                onCloseRideSetup();
+                // Cancel goes with the setup. Back to the button that
+                // opened it, so the passenger is where they were on the
+                // board instead of at the top of the page.
+                rideButtonRef.current?.focus();
+              }}
               onStart={(config) => {
                 const replacingAnotherRide =
                   Boolean(activeRideTripRef) &&

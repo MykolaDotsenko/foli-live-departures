@@ -373,7 +373,11 @@ export default function RideMode({
       <div className={styles.topline}>
         <div>
           <p className={styles.eyebrow}>{t(copy.eyebrow)}</p>
-          <h2 id="ride-mode-title">{t(copy.title, copy.params)}</h2>
+          {/* Where focus lands when the alert starts: the setup and its
+              Start button are gone by then. */}
+          <h2 id="ride-mode-title" tabIndex={-1}>
+            {t(copy.title, copy.params)}
+          </h2>
         </div>
         <span
           className={styles.health}

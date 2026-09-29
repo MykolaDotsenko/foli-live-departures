@@ -56,7 +56,9 @@ export default function SetupPlace({
       <div className={styles.setupHeader}>
         <div>
           <p className={styles.kicker}>{t("My Places")}</p>
-          <h3 id={`setup-${preset.id}-title`}>
+          {/* Takes focus as the setup opens: the button that opened it is
+              gone with the card it was on. */}
+          <h3 id={`setup-${preset.id}-title`} tabIndex={-1}>
             {t(phrases.setupTitle)}
           </h3>
         </div>

@@ -43,6 +43,7 @@ export default function PlaceCard({
   return (
     <article
       className={styles.placeCard}
+      data-place={place.id}
       data-mobile-expanded={mobileExpanded ? "true" : "false"}
     >
       <button

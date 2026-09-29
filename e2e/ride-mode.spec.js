@@ -294,6 +294,48 @@ test("Ride Mode says get off now once the bus is standing at the stop", async ({
   await expect(page.getByRole("heading", { name: "Get off now" })).toHaveCount(
     0
   );
+  // The button went with the panel. Focus lands on the board's heading,
+  // not at the top of the page.
+  await expect(page.locator("#departures-title")).toBeFocused();
+});
+
+// Start, Cancel and Turn off alert each take away the button pressed, and
+// focus fell to the top of the page every time. It follows the passenger
+// instead: back to the row, on to the alert, and back to the board.
+test("keyboard focus follows a get-off alert from setup to the end of the ride", async ({
+  page,
+}) => {
+  await routeTargetStop(page);
+  await page.goto("/?stop=164");
+  await seedHome(page);
+
+  const setup = page.locator('section[aria-label="Set up get-off alerts"]');
+  await page.getByRole("button", { name: "Get-off alert" }).first().focus();
+  await page.keyboard.press("Enter");
+  await expect(setup).toBeVisible();
+  await setup.getByRole("button", { name: "Cancel" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(setup).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Get-off alert" }).first()
+  ).toBeFocused();
+
+  await page.keyboard.press("Enter");
+  await expect(page.locator('input[type="radio"][value="2"]')).toBeChecked();
+  await page.getByRole("checkbox", { name: /Follow my location/i }).uncheck();
+  await turnOffNotifications(page);
+  await page.getByRole("button", { name: "Start get-off alert" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#ride-mode-title")).toBeFocused();
+
+  await page.getByRole("button", { name: "Turn off alert" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("button", { name: "Tap again to turn it off" })
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#ride-mode-title")).toHaveCount(0);
+  await expect(page.locator("#departures-title")).toBeFocused();
 });
 
 test("Ride Mode offers recovery after the passenger rides past the stop", async ({

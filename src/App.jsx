@@ -13,6 +13,7 @@ import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
+import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
 import useSavedPlaces from "./hooks/useSavedPlaces";
@@ -28,6 +29,20 @@ import { realStopName } from "./utils/stopNames";
 
 const PRODUCT_NAME = "Turku Departures";
 const MAKER_NAME = "Mykola Dotsenko";
+
+// The page's one h1: the stop's name on the board, or the app's own name
+// before a stop is open. It is where focus goes when the button pressed
+// has gone and the page itself is the answer.
+function pageHeading() {
+  return (
+    document.getElementById("departures-title") ||
+    document.getElementById("app-title")
+  );
+}
+
+function rideHeading() {
+  return document.getElementById("ride-mode-title");
+}
 
 
 function stopFromLocation() {
@@ -99,6 +114,7 @@ function App() {
   );
   const online = useOnlineStatus();
   const ride = useRideMode();
+  const requestFocus = usePendingFocus();
   const { geometry: serviceBoundary } = useServiceBoundary();
   const {
     stops,
@@ -268,6 +284,30 @@ function App() {
     setStopId(nextStopId);
   };
 
+  // A saved stop's chip leaves the list once its stop is open, so the
+  // button pressed is gone. Focus goes to the board it opened, and a screen
+  // reader starts at the new stop's name.
+  const selectSavedStop = (nextStopId) => {
+    requestFocus(pageHeading);
+    selectStop(nextStopId);
+  };
+
+  // Start takes the setup away, and the alert that replaces it is at the
+  // top of the page. Focus goes to its heading, so a screen reader hears
+  // "No need to watch for your stop" instead of nothing.
+  const startRide = (config) => {
+    const started = ride.startRide(config);
+    if (started) requestFocus(rideHeading);
+    return started;
+  };
+
+  // Turning the alert off, or getting off, takes the whole panel away with
+  // the button in it. Focus goes back to the board, which is what is left.
+  const endRide = () => {
+    requestFocus(pageHeading);
+    ride.endRide();
+  };
+
   const currentStop = stopId
     ? {
         id: stopId,
@@ -350,7 +390,7 @@ function App() {
           gps={ride.gps}
           wakeLockState={ride.wakeLockState}
           onTestAlert={ride.testAlert}
-          onEndRide={ride.endRide}
+          onEndRide={endRide}
           onOpenStop={selectStop}
         />
       )}
@@ -404,7 +444,7 @@ function App() {
           favorites={namedFavorites}
           recents={namedRecents}
           activeStopId={stopId}
-          onSelect={selectStop}
+          onSelect={selectSavedStop}
         />
 
         {stopId && (
@@ -441,7 +481,7 @@ function App() {
               currentStop && toggleFavorite(currentStop)
             }
             placesById={placesById}
-            onStartRide={ride.startRide}
+            onStartRide={startRide}
             activeRideTripRef={ride.session?.tripRef || ""}
             cancellations={stopCancellations}
             unknownStop={unknownStop}

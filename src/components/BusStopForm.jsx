@@ -236,6 +236,8 @@ function BusStopForm({
   };
 
   const locateNearestStop = async () => {
+    // Busy, the button stays focusable but does nothing (see below).
+    if (locating) return;
     setValidationError(null);
     setActiveIndex(-1);
 
@@ -300,7 +302,14 @@ function BusStopForm({
   }, [activeIndex]);
 
   const handleKeyDown = (event) => {
-    if (!showSuggestions) return;
+    if (!showSuggestions) {
+      // Down arrow opens a list Escape closed, as in any combobox.
+      if (event.key === "ArrowDown" && value.trim() && matches.length > 0) {
+        event.preventDefault();
+        setFocused(true);
+      }
+      return;
+    }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -343,6 +352,10 @@ function BusStopForm({
               setResolved(null);
               setValidationError(null);
               setActiveIndex(-1);
+              // Escape closes the list; typing again reopens it. Without
+              // this a keyboard user who pressed Escape got no more
+              // suggestions until they left the field and came back.
+              setFocused(true);
             }}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
@@ -371,7 +384,9 @@ function BusStopForm({
             className={styles.locateButton}
             type="button"
             onClick={locateNearestStop}
-            disabled={locating}
+            // Busy rather than disabled: a disabled button drops keyboard
+            // focus to the page while the location is looked up.
+            aria-disabled={locating ? "true" : undefined}
             aria-busy={locating}
             aria-label={t("Use current location")}
             title={t("Use current location")}
