@@ -1,33 +1,37 @@
-name: Product feedback
-description: Suggest an improvement or tell us what was confusing or useful.
+name: Product feedback / Palaute
+description: Suggest an improvement or tell us what was confusing or useful. / Ehdota parannusta tai kerro, mikä oli hämmentävää tai hyödyllistä.
 title: "[Feedback] "
 body:
   - type: markdown
     attributes:
       value: |
-        Feedback is most useful when it describes the travel task you were trying to complete.
+        Feedback is most useful when it describes the travel task you were trying to complete. You can write in English or Finnish.
 
         Please do not include private addresses, exact GPS history or other unnecessary personal information.
+
+        Palaute auttaa eniten, kun kerrot, mitä yritit matkallasi tehdä. Voit kirjoittaa suomeksi tai englanniksi.
+
+        Älä kirjoita osoitteita, tarkkaa sijaintihistoriaa tai muita tarpeettomia henkilötietoja.
   - type: textarea
     id: task
     attributes:
-      label: What were you trying to do?
+      label: What were you trying to do? / Mitä yritit tehdä?
       placeholder: e.g. I was checking the next bus home after work.
     validations:
       required: true
   - type: textarea
     id: feedback
     attributes:
-      label: What would make that easier?
+      label: What would make that easier? / Mikä helpottaisi sitä?
     validations:
       required: true
   - type: dropdown
     id: frequency
     attributes:
-      label: How often do you use Föli?
+      label: How often do you use Föli? / Kuinka usein käytät Föliä?
       options:
-        - Daily
-        - A few times a week
-        - Occasionally
-        - First time / visitor
-        - Prefer not to say
+        - Daily / Päivittäin
+        - A few times a week / Muutaman kerran viikossa
+        - Occasionally / Silloin tällöin
+        - First time or visiting / Ensimmäistä kertaa tai vierailulla
+        - Prefer not to say / En halua kertoa
