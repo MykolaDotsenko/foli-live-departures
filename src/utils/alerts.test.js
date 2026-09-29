@@ -406,3 +406,31 @@ test.each([
 
   expect(alert.title).toBe(title);
 });
+
+
+test("keeps the cancelled trip's origin departure identity", () => {
+  const result = extractStopAlerts(
+    {
+      cancellations: [
+        {
+          id: "c-origin",
+          line: "1",
+          departure: 1_900_000_000,
+          stops: [
+            { stop: "164", arrival: 1_900_000_900, isactive: true },
+          ],
+        },
+      ],
+    },
+    { stopId: "164", lineRefs: ["1"], routesById }
+  );
+
+  expect(result).toEqual([
+    expect.objectContaining({
+      type: "cancellation",
+      line: "1",
+      scheduledTime: 1_900_000_900,
+      originDepartureTime: 1_900_000_000,
+    }),
+  ]);
+});
