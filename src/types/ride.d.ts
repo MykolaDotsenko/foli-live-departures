@@ -279,3 +279,117 @@ export interface PrepareExitInstruction extends RideExitInstructionBase {
 }
 
 export type RideExitInstruction = RequestStopInstruction | PrepareExitInstruction;
+
+// ---------------------------------------------------------------------------
+// The ride as useRideMode keeps it
+
+export interface RideOptions {
+  locationBackup?: boolean;
+  notifications?: boolean;
+}
+
+/** What RideSetup hands to startRide(). */
+export interface RideConfig {
+  lineRef?: string;
+  destination?: string;
+  tripRef?: string;
+  datedVehicleJourneyRef?: string;
+  vehicleRef?: string;
+  originAimedDepartureTime?: EpochSeconds | null;
+  routeId?: string;
+  /** The trip's GTFS route_type, or null when the route is not known. */
+  routeType?: number | null;
+  shapeId?: string;
+  boardingStop?: RidePlanStop;
+  targetStop: RidePlanStop;
+  previousStop?: RidePlanStop | null;
+  nextStop?: RidePlanStop | null;
+  plan: RidePlan;
+  options?: RideOptions;
+}
+
+/** The ride saved to storage and read back after a reload. */
+export interface RideSession extends RideConfig {
+  id: string;
+  stage: RideStage;
+  stageReason: RideStageReason;
+  stageConfidence: RideConfidence;
+  /** Epoch milliseconds, like every other time kept on the session. */
+  startedAt: number;
+  stageChangedAt: number;
+  expiresAt: number;
+  /** The phone has ridden away from the boarding stop. Kept once known. */
+  underway?: boolean;
+  /** The bus has left the stop before the exit. Kept once known. */
+  previousLeft?: boolean;
+}
+
+export type RideTrackingHealth = "live" | "delayed" | "schedule";
+
+/** Which evidence the panel's estimate comes from. */
+export type RideEtaSource = "location" | "live" | "schedule";
+
+/** What the live feed has said about the ride, and what the panel shows. */
+export interface RideRuntime {
+  /** Epoch milliseconds, or null until it first happens. */
+  lastPollAt: number | null;
+  lastProviderSuccessAt: number | null;
+  lastLiveMatchAt: number | null;
+  targetSeenAt: number | null;
+  previousSeen: boolean;
+  previousMissingCount: number;
+  targetMissingCount: number;
+  targetWasAtStop: boolean;
+  targetListed: boolean;
+  targetMatchBy: RideMatchMethod | "";
+  liveEtaSec: number | null;
+  providerDistanceM: number | null;
+  providerPositionAgeSec: number | null;
+  scheduleEtaSec: number | null;
+  remainingStops: number | null;
+  etaSec: number | null;
+  gpsAgeSec: number | null;
+  trackingHealth: RideTrackingHealth;
+  lastError: string;
+  notificationPermission: "unknown" | "granted" | "unavailable";
+  /** Set once progress has first been weighed. */
+  etaSource?: RideEtaSource;
+  targetLive?: boolean;
+}
+
+export type RideGpsStatus =
+  | "off"
+  | "unavailable"
+  | "starting"
+  | "weak"
+  | "off-route"
+  | "active"
+  | "error";
+
+/** The phone's own location evidence, never saved with the ride. */
+export interface RideGpsState {
+  status: RideGpsStatus;
+  distanceM: number | null;
+  accuracyM: number | null;
+  speedMps: number | null;
+  minimumDistanceM: number | null;
+  wasNearTarget: boolean;
+  movedAwayAfterNear: boolean;
+  shapeStatus: "idle" | "ready" | "unavailable";
+  shapeError: string;
+  shapeUsable: boolean;
+  onRoute: boolean;
+  alongRouteM: number | null;
+  /** Epoch milliseconds of the fix that set alongRouteM. */
+  alongRouteUpdatedAt: number | null;
+  lateralDistanceM: number | null;
+  routeDistanceM: number | null;
+  routeEtaSec: number | null;
+  offRouteSinceMs: number | null;
+  offRouteSuspected: boolean;
+  passedTarget: boolean;
+  leftBoardingFixes: number;
+  leftPreviousFixes: number;
+  updatedAt: number | null;
+  error: string;
+}
