@@ -235,6 +235,40 @@ test("a ride started in another tab replaces this tab's ride without a write bac
   expect(localStorage.getItem("foli-active-ride-v1")).toBe(replacement);
 });
 
+// Every open tab took up a ride started in any of them, so each polled,
+// watched the location, held the screen on and said "Get off now" itself.
+test("a ride started in another tab is left to that tab when this one has none", async () => {
+  const idle = renderHook(() => useRideMode());
+  const riding = renderHook(() => useRideMode());
+  act(() => {
+    riding.result.current.startRide(rideConfig);
+  });
+  await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
+  const rideId = riding.result.current.session.id;
+
+  // The starting tab's write, as the other tab hears of it.
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: localStorage.getItem("foli-active-ride-v1"),
+      })
+    );
+  });
+
+  expect(idle.result.current.session).toBeNull();
+  expect(riding.result.current.session?.id).toBe(rideId);
+  expect(watchPosition).toHaveBeenCalledTimes(1);
+
+  // Turned off where it runs, it is gone for both, and the idle tab still
+  // follows nothing.
+  act(() => riding.result.current.endRide());
+  otherTabWrites(null);
+  expect(idle.result.current.session).toBeNull();
+  idle.unmount();
+  riding.unmount();
+});
+
 test("another tab's progress on the same ride leaves this tab's ride running", () => {
   const { result } = renderHook(() => useRideMode());
   act(() => {
