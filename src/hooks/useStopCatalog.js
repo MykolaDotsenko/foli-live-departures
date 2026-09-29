@@ -40,16 +40,25 @@ function readCache() {
       const stops = cached.stops.filter(isStoredStop);
       // A catalogue with nothing left in it is not a fresh one: kept as
       // fresh, it was never fetched again and search stayed off for a day.
+      const hasCoordinates = stops.some(stopHasCoordinates);
       return {
         stops,
         savedAt: stops.length > 0 ? Number(cached.savedAt) || 0 : 0,
+        // Older v2 entries did not track coordinate freshness separately.
+        // Treat those coordinates as usable stale-while-revalidate data, but
+        // refresh them once so a successful catalogue fetch cannot make old
+        // coordinates look newly fresh after a reload.
+        coordinatesSavedAt:
+          hasCoordinates && Number.isFinite(Number(cached.coordinatesSavedAt))
+            ? Number(cached.coordinatesSavedAt)
+            : 0,
       };
     }
   } catch {
     // Suggestions are optional; direct stop lookup still works.
   }
 
-  return { stops: [], savedAt: 0 };
+  return { stops: [], savedAt: 0, coordinatesSavedAt: 0 };
 }
 
 function cacheIsFresh(cache) {
@@ -108,11 +117,19 @@ export default function useStopCatalog() {
   // including stops that the cached list did not have yet.
   const latestCoordinatesRef = useRef(null);
 
-  const isFresh = cacheIsFresh(initialCache);
-  const hasCachedCoordinates = initialCache.stops.some(stopHasCoordinates);
+  // Freshness follows the data currently held by this long-lived hook, not
+  // only the snapshot that happened to exist when the tab opened. Catalogue
+  // metadata and stop coordinates are independent provider resources, so each
+  // keeps its own timestamp and can recover without falsely refreshing the
+  // other.
+  const isFresh = cacheIsFresh(cache);
+  const hasCachedCoordinates = cache.stops.some(stopHasCoordinates);
+  const coordinatesAreFresh =
+    hasCachedCoordinates &&
+    timestampIsFresh(cache.coordinatesSavedAt, CACHE_TTL_MS);
 
   useEffect(() => {
-    if (isFresh && hasCachedCoordinates) {
+    if (coordinatesAreFresh) {
       setCoordinatesStatus("ready");
       return undefined;
     }
@@ -124,11 +141,13 @@ export default function useStopCatalog() {
         if (controller.signal.aborted) return;
 
         latestCoordinatesRef.current = freshCoordinates;
+        const coordinatesSavedAt = Date.now();
         reportCoordinatesSuccess();
         setCoordinatesStatus("ready");
         setCache((current) => {
           const next = {
             ...current,
+            coordinatesSavedAt,
             stops: mergeCoordinates(current.stops, freshCoordinates),
           };
           persistCache(next);
@@ -144,9 +163,9 @@ export default function useStopCatalog() {
 
     return () => controller.abort();
   }, [
+    coordinatesAreFresh,
     coordinatesAttempt,
     hasCachedCoordinates,
-    isFresh,
     reportCoordinatesFailure,
     reportCoordinatesSuccess,
   ]);
@@ -165,6 +184,7 @@ export default function useStopCatalog() {
         setCatalogStatus("ready");
         setCache((current) => {
           const next = {
+            ...current,
             savedAt,
             stops: mergeCoordinates(
               freshStops,
@@ -182,14 +202,14 @@ export default function useStopCatalog() {
         // fallback while the retry runs.
         reportCatalogFailure();
         setCatalogStatus(
-          initialCache.stops.length > 0 ? "stale" : "unavailable"
+          cache.stops.length > 0 ? "stale" : "unavailable"
         );
       });
 
     return () => controller.abort();
   }, [
+    cache.stops.length,
     catalogAttempt,
-    initialCache,
     isFresh,
     reportCatalogFailure,
     reportCatalogSuccess,
