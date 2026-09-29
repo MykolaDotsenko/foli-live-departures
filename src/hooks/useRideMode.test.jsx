@@ -170,6 +170,50 @@ test("restores a non-expired active ride", () => {
   expect(result.current.session?.stage).toBe("next");
 });
 
+test("drops a stored ride whose start time is in the future", () => {
+  const now = Date.now();
+  localStorage.setItem(
+    "foli-active-ride-v1",
+    JSON.stringify({
+      id: "ride-future-clock",
+      ...rideConfig,
+      options: { locationBackup: false, notifications: false },
+      stage: "next",
+      stageReason: "schedule-fallback",
+      stageConfidence: "schedule",
+      startedAt: now + 60_000,
+      expiresAt: now + 6 * 60 * 60 * 1000,
+    })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  expect(result.current.session).toBeNull();
+  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+});
+
+test("drops a stored ride whose expiry exceeds the ride lifetime", () => {
+  const now = Date.now();
+  localStorage.setItem(
+    "foli-active-ride-v1",
+    JSON.stringify({
+      id: "ride-corrupt-expiry",
+      ...rideConfig,
+      options: { locationBackup: false, notifications: false },
+      stage: "next",
+      stageReason: "schedule-fallback",
+      stageConfidence: "schedule",
+      startedAt: now - 60_000,
+      expiresAt: now + 24 * 60 * 60 * 1000,
+    })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  expect(result.current.session).toBeNull();
+  expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
+});
+
 
 test("map-matched GPS can advance Ride Mode to NEXT without SIRI proximity", async () => {
   let deliverGps = null;

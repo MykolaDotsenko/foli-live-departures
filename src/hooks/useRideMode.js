@@ -121,6 +121,10 @@ function emptyGps() {
 }
 
 function validStoredRide(value) {
+  const now = Date.now();
+  const startedAt = Number(value?.startedAt);
+  const expiresAt = Number(value?.expiresAt);
+
   return (
     value &&
     typeof value === "object" &&
@@ -128,8 +132,14 @@ function validStoredRide(value) {
     value.targetStop &&
     /^\d+$/.test(String(value.targetStop.id || "")) &&
     value.plan &&
-    Number(value.expiresAt) > Date.now() &&
-    !rideLongOver(value.plan, Date.now() / 1000)
+    Number.isFinite(startedAt) &&
+    startedAt > 0 &&
+    startedAt <= now &&
+    now - startedAt <= RIDE_TTL_MS &&
+    Number.isFinite(expiresAt) &&
+    expiresAt > now &&
+    expiresAt <= startedAt + RIDE_TTL_MS &&
+    !rideLongOver(value.plan, now / 1000)
   );
 }
 
