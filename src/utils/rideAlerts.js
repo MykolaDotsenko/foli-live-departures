@@ -25,7 +25,10 @@ const ALERT_PATTERNS = {
   },
 };
 
+const ACTIVE_RIDE_NOTIFICATION_TAG = "foli-active-ride";
+
 let audioContext = null;
+let pageRideNotification = null;
 
 function AudioContextConstructor() {
   return globalThis.AudioContext || globalThis.webkitAudioContext || null;
@@ -348,7 +351,7 @@ export async function showRideNotification(
     },
     // So a phone reading notifications aloud picks the right voice.
     lang: getLanguage(),
-    tag: "foli-active-ride",
+    tag: ACTIVE_RIDE_NOTIFICATION_TAG,
     // Every stage replaces the one before under one tag, and a replacement
     // without renotify is silent: "Press STOP" reached a locked phone
     // without a sound. Only the start-up test stays quiet.
@@ -373,11 +376,21 @@ export async function showRideNotification(
       // Without a service worker the tap lands on the page, and it has to be
       // sent somewhere: a get-off alert that does nothing when pressed costs
       // the passenger the seconds it was meant to buy them.
+      try {
+        pageRideNotification?.close?.();
+      } catch {
+        // Replacement is best effort; the new alert is still more important.
+      }
+
       const notification = new NotificationApi(copy.title, options);
+      pageRideNotification = notification;
       notification.onclick = () => {
         try {
           globalThis.focus?.();
           notification.close?.();
+          if (pageRideNotification === notification) {
+            pageRideNotification = null;
+          }
         } catch {
           // Focusing is best effort; the alert has already been delivered.
         }
@@ -425,6 +438,37 @@ export async function runRideTestAlert(stop, notificationsEnabled = true) {
   }
 }
 
+async function clearRideNotifications() {
+  try {
+    pageRideNotification?.close?.();
+  } catch {
+    // Page-level notification cleanup is best effort.
+  } finally {
+    pageRideNotification = null;
+  }
+
+  try {
+    const registration =
+      typeof globalThis.navigator?.serviceWorker?.getRegistration === "function"
+        ? await globalThis.navigator.serviceWorker.getRegistration()
+        : null;
+    if (typeof registration?.getNotifications !== "function") return;
+
+    const notifications = await registration.getNotifications({
+      tag: ACTIVE_RIDE_NOTIFICATION_TAG,
+    });
+    for (const notification of notifications || []) {
+      try {
+        notification?.close?.();
+      } catch {
+        // One broken notification must not prevent the rest from closing.
+      }
+    }
+  } catch {
+    // Notification cleanup must never interfere with ending the ride.
+  }
+}
+
 export function stopRideAlerts() {
   try {
     globalThis.navigator?.vibrate?.(0);
@@ -437,6 +481,8 @@ export function stopRideAlerts() {
   } catch {
     // Speech is optional.
   }
+
+  void clearRideNotifications();
 }
 
 export function rideAlertCapabilities() {
