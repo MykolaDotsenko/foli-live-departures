@@ -45,6 +45,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       }
     } catch (requestError) {
       if (
+        !controller.signal.aborted &&
         requestError?.name !== "CanceledError" &&
         requestError?.name !== "AbortError"
       ) {

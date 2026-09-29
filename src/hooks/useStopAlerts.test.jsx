@@ -115,3 +115,58 @@ test("checks failed notices again once Föli answers the board", async () => {
   reportProviderReached();
   expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2);
 });
+
+
+test("a superseded alert request cannot mark a newer successful refresh as failed", async () => {
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set(["50"]));
+
+  let calls = 0;
+  mocks.fetchAlerts.mockImplementation((signal) => {
+    calls += 1;
+
+    if (calls === 1) {
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () => reject(new Error("superseded request")),
+          { once: true }
+        );
+      });
+    }
+
+    return Promise.resolve({
+      messages: [
+        {
+          message_id: 51,
+          isactive: true,
+          priority: 500,
+          affected_routes: ["50"],
+          affected_stops: [],
+          header: "Fresh notice",
+        },
+      ],
+    });
+  });
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1));
+
+  window.dispatchEvent(new globalThis.Event("online"));
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(result.current.receivedAtMs).not.toBeNull());
+  await waitFor(() =>
+    expect(result.current.alerts.map((alert) => alert.title)).toEqual([
+      "Fresh notice",
+    ])
+  );
+
+  // The first request was deliberately aborted by the second one. Even if
+  // that aborted adapter surfaces a generic Error instead of CanceledError,
+  // it is not a failed provider check and must not overwrite the successful
+  // refresh state.
+  expect(result.current.error).toBe(false);
+});
