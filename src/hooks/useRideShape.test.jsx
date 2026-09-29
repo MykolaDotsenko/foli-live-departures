@@ -128,3 +128,29 @@ test("aborts the previous shape before starting a different ride shape", () => {
   expect(signals).toHaveLength(2);
   expect(signals[1].aborted).toBe(false);
 });
+
+
+test("recovers map matching after a transient shape lookup failure without restarting the ride", async () => {
+  const points = [{ lat: 60.45, lon: 22.26, traveled: 0 }];
+  const prepared = { usesGtfsDistance: true, points: ["prepared"] };
+
+  mocks.fetchTripShape
+    .mockRejectedValueOnce(new Error("temporary GTFS shape failure"))
+    .mockResolvedValueOnce(points);
+  mocks.prepareRideShape.mockReturnValue(prepared);
+
+  const props = harness();
+  const { result } = renderHook(() => useRideShape(props));
+
+  await waitFor(() =>
+    expect(props.onStatus).toHaveBeenCalledWith("unavailable")
+  );
+  expect(result.current.current).toBeNull();
+  expect(mocks.fetchTripShape).toHaveBeenCalledTimes(1);
+
+  window.dispatchEvent(new globalThis.Event("online"));
+
+  await waitFor(() => expect(mocks.fetchTripShape).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(props.onStatus).toHaveBeenCalledWith("ready"));
+  expect(result.current.current).toBe(prepared);
+});
