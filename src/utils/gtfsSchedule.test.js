@@ -314,3 +314,32 @@ it("exact trip identity wins before fuzzy line-time matching", () => {
     "trip-nearby",
   ]);
 });
+
+
+it("never fuzzy-deduplicates two departures with different known trip identities", () => {
+  const realtime = [
+    {
+      tripref: "live-trip",
+      lineref: "1",
+      monitored: true,
+      aimeddeparturetime: 1_000,
+    },
+  ];
+  const scheduled = [
+    {
+      tripref: "scheduled-trip",
+      lineref: "1",
+      monitored: false,
+      aimeddeparturetime: 1_060,
+    },
+  ];
+
+  const merged = mergeRealtimeAndScheduled(realtime, scheduled, {
+    timeToleranceSeconds: 120,
+  });
+
+  expect(merged.map((row) => row.tripref)).toEqual([
+    "live-trip",
+    "scheduled-trip",
+  ]);
+});
