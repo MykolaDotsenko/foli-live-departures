@@ -308,21 +308,7 @@ test("aborts the previous stop-membership lookup when the selected stop changes"
 });
 
 test("a realtime line match does not wait for static membership enrichment", async () => {
-  mocks.fetchStopServedRouteIds.mockImplementation((_stopId, _routeIds, signal) =>
-    new Promise((_resolve, reject) => {
-      signal.addEventListener(
-        "abort",
-        () =>
-          reject(
-            new globalThis.DOMException(
-              "The operation was aborted.",
-              "AbortError"
-            )
-          ),
-        { once: true }
-      );
-    })
-  );
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set());
 
   const { result, unmount } = renderHook(() =>
     useStopAlerts("164", ["50"], routesById)
