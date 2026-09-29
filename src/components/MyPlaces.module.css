@@ -194,7 +194,7 @@
 }
 
 .setupDetails summary:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -497,7 +497,7 @@
   }
 
   .mobileSummary:focus-visible {
-    outline: 3px solid rgba(0, 121, 133, 0.28);
+    outline: 3px solid #007985;
     outline-offset: -3px;
   }
 
@@ -510,13 +510,13 @@
     font-size: 0.875rem;
   }
 
+  /* Wraps rather than ending in "…": with large text "Ei vielä
+     tallennettu" and a stop's name were cut to half a word. */
   .mobileSummaryText small {
-    overflow: hidden;
     margin-top: 2px;
     color: #4d626b;
     font-size: 0.8125rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow-wrap: break-word;
   }
 
   .mobileSummaryAction {

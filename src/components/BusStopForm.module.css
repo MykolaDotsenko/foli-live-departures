@@ -29,7 +29,9 @@
 .input {
   width: 100%;
   padding: 0 13px;
-  border: 1px solid #afc5ca;
+  /* 3:1 against the white panel (WCAG 1.4.11): the field has to be
+     findable before anything is typed in it. */
+  border: 1px solid #6b858c;
   background: #fff;
   color: #17212b;
 }
@@ -84,7 +86,7 @@
 .locateButton:focus-visible,
 .button:focus-visible,
 .input:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -136,7 +138,7 @@
 
 .suggestionId {
   flex: 0 0 auto;
-  color: #6e8088;
+  color: #4d626b;
   font-size: 0.78rem;
   font-weight: 700;
 }

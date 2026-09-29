@@ -185,7 +185,7 @@
 
 .filterButton:focus-visible,
 .lineChip:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -777,12 +777,20 @@
     width: 92px;
   }
 
+  /* Break only a word that cannot fit (and hyphenate where the language
+     allows): "anywhere" split "Satama" and "Runosmäki" at 200% text. The
+     countdown may wrap to "4 / min" rather than be cut to "4 mi". */
   .destination,
   .destinationTranslation,
   .tripMeta,
   .proximity {
     min-width: 0;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .due {
+    white-space: normal;
   }
 
   .rowActions > * {
@@ -801,16 +809,17 @@
     padding-inline: 0.5rem;
   }
 
+  /* In em, so enlarged text takes the room back from the padding. */
   .table td {
-    padding-inline: 7px;
+    padding-inline: 0.45em;
   }
 
   .table td:first-child {
-    padding-left: 12px;
+    padding-left: 0.75em;
   }
 
   .table td:last-child {
-    padding-right: 12px;
+    padding-right: 0.75em;
   }
 }
 

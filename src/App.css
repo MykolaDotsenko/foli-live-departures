@@ -32,7 +32,7 @@ input {
 button:focus-visible,
 input:focus-visible,
 [role="option"]:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -208,7 +208,7 @@ input:focus-visible,
 
 .language-switch:focus-visible,
 .theme-switch:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -255,7 +255,7 @@ input:focus-visible,
 }
 
 .source-note a:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -313,7 +313,7 @@ input:focus-visible,
 }
 
 .guide-button:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -336,7 +336,7 @@ input:focus-visible,
 }
 
 .about summary:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
   border-radius: 4px;
 }

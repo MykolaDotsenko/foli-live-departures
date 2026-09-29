@@ -180,7 +180,7 @@
 }
 
 .moreButton:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.25);
+  outline: 3px solid #8b641d;
   outline-offset: -3px;
 }
 
@@ -231,7 +231,7 @@
 }
 
 .mediaLink:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.28);
+  outline: 3px solid #8b641d;
   outline-offset: 3px;
   border-radius: 12px;
 }
@@ -372,7 +372,7 @@
 }
 
 .alertSummary:focus-visible {
-  outline: 3px solid rgba(139, 100, 29, 0.28);
+  outline: 3px solid #8b641d;
   outline-offset: -3px;
 }
 
@@ -609,7 +609,7 @@
   }
 
   .phoneToggle:focus-visible {
-    outline: 3px solid rgba(139, 100, 29, 0.35);
+    outline: 3px solid #8b641d;
     outline-offset: -3px;
   }
 

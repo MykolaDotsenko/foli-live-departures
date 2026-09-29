@@ -128,7 +128,7 @@
 
 .speakButton:focus-visible,
 .closeButton:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.35);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 

@@ -145,7 +145,7 @@
 .secondaryAction:focus-visible,
 .backupActions a:focus-visible,
 .backupActions button:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -260,7 +260,7 @@
 }
 
 .printButton:focus-visible {
-  outline: 3px solid rgba(0, 121, 133, 0.28);
+  outline: 3px solid #007985;
   outline-offset: 2px;
 }
 
@@ -618,7 +618,7 @@
   }
 
   .mobileOptionsToggle:focus-visible {
-    outline: 3px solid rgba(0, 121, 133, 0.28);
+    outline: 3px solid #007985;
     outline-offset: 2px;
   }
 
