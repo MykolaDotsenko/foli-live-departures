@@ -209,3 +209,65 @@ test("a late location fix does not overwrite the search being typed", async ({
   await expect(input).toHaveValue("Puistokatu");
   await expect(page).not.toHaveURL(/stop=/);
 });
+
+// The "Near you" fix, released by hand once the passenger is typing.
+async function heldGeolocation(page) {
+  await page.addInitScript(() => {
+    let pending = null;
+    globalThis.__releaseFix = (latitude, longitude) => {
+      const success = pending;
+      pending = null;
+      success?.({
+        coords: {
+          latitude,
+          longitude,
+          accuracy: 10,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+        },
+        timestamp: Date.now(),
+      });
+      return Boolean(success);
+    };
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition(success) {
+          pending = success;
+        },
+        watchPosition() {
+          return 0;
+        },
+        clearWatch() {},
+      },
+    });
+  });
+}
+
+// Typing a search is choosing a stop too, only not yet finished. A late
+// "Near you" fix jumped the board to the nearest stop, and the search field,
+// following the board, put that stop's name over the half-typed one.
+test("a late near-you fix leaves a half-typed search and its board alone", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await heldGeolocation(page);
+
+  await page.goto("/?stop=4");
+  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  const input = page.getByRole("combobox", { name: "Find your stop" });
+  await input.fill("Puisto");
+  expect(
+    await page.evaluate(() => globalThis.__releaseFix(60.45182, 22.26662))
+  ).toBe(true);
+
+  // The fix has landed once the nearby list is up; nothing else moved.
+  await expect(page.getByText("Nearest", { exact: true })).toBeVisible();
+  await expect(input).toHaveValue("Puisto");
+  await expect(page).toHaveURL(/[?&]stop=4(&|$)/);
+  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+});

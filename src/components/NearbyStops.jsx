@@ -75,6 +75,7 @@ function NearbyStops({
   activeStopId,
   serviceBoundary = null,
   online = true,
+  searchEdits = () => 0,
   onSelect,
 }) {
   useLanguage();
@@ -86,6 +87,9 @@ function NearbyStops({
   // already have searched for another stop, and jumping the board to the
   // nearest one then would take away the stop they chose themselves. The
   // lookup compares against the stop showing now, not the one at the tap.
+  // Typing in the stop search counts too, before any stop is chosen: the
+  // jump made the search put the nearest stop's name over the half-typed
+  // one. searchEdits reads how many edits the search field has had.
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
 
@@ -134,6 +138,7 @@ function NearbyStops({
     setStatus("locating");
     setError("");
     const stopIdAtTap = activeStopIdRef.current;
+    const searchEditsAtTap = searchEdits();
 
     try {
       const nextPosition = await requestOneTimePosition(
@@ -164,9 +169,10 @@ function NearbyStops({
         insideServiceArea !== false &&
         !ambiguousChoice &&
         closest.distanceMeters <= AUTO_SELECT_MAX_DISTANCE_METERS &&
-        // Chose a stop while we waited: keep it, the list below still
-        // offers the nearest one a tap away.
+        // Chose a stop, or started searching for one, while we waited: keep
+        // it, the list below still offers the nearest one a tap away.
         activeStopIdRef.current === stopIdAtTap &&
+        searchEdits() === searchEditsAtTap &&
         closest.id !== activeStopIdRef.current
       ) {
         onSelect(closest.id);

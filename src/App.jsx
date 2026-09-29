@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
@@ -122,6 +122,15 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const requestFocus = usePendingFocus();
+  // The passenger's own edits to the stop search, counted, so a late "Near
+  // you" fix can tell that they started typing while it was on its way. A
+  // ref, not state: nothing is drawn from it, and every key would redraw
+  // the whole page.
+  const searchEditsRef = useRef(0);
+  const noteSearchEdit = useCallback(() => {
+    searchEditsRef.current += 1;
+  }, []);
+  const readSearchEdits = useCallback(() => searchEditsRef.current, []);
   const { geometry: serviceBoundary } = useServiceBoundary();
   const {
     stops,
@@ -467,6 +476,7 @@ function App() {
               coordinatesStatus={coordinatesStatus}
               serviceBoundary={serviceBoundary}
               onSubmit={selectStop}
+              onEdit={noteSearchEdit}
             />
           </section>
 
@@ -538,6 +548,7 @@ function App() {
           activeStopId={stopId || ""}
           serviceBoundary={serviceBoundary}
           online={online}
+          searchEdits={readSearchEdits}
           onSelect={selectStop}
         />
 

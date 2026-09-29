@@ -126,6 +126,7 @@ function BusStopForm({
   coordinatesStatus = "idle",
   serviceBoundary = null,
   onSubmit,
+  onEdit,
 }) {
   useLanguage();
   // The field accepts a name or a number equally, so it should give back
@@ -347,6 +348,7 @@ function BusStopForm({
             value={value}
             onChange={(event) => {
               fieldEditsRef.current += 1;
+              onEdit?.();
               setValue(event.target.value);
               // Editing the text means it is no longer the stop we resolved.
               setResolved(null);

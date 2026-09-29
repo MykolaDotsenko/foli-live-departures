@@ -443,6 +443,40 @@ test("a late location fix does not replace a stop chosen while locating", async 
   expect(onSelect).not.toHaveBeenCalled();
 });
 
+// Typing a search is choosing a stop too, not yet finished. The jump made
+// the search field put the nearest stop's name over the half-typed one.
+test("a late location fix does not jump away from a search typed while locating", async () => {
+  let deliverFix;
+  setGeolocation(
+    vi.fn((success) => {
+      deliverFix = () =>
+        success({
+          coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+        });
+    })
+  );
+  const onSelect = vi.fn();
+  let searchEdits = 0;
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="4"
+      searchEdits={() => searchEdits}
+      onSelect={onSelect}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  searchEdits += 1;
+  deliverFix();
+
+  const nearest = await screen.findByRole("group", { name: "Nearest Föli stops" });
+  expect(within(nearest).getByText("Nearest")).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
 // Disabled while it looked, the button dropped keyboard focus to the page.
 test("Find nearest stop keeps focus while it looks and ignores a second press", () => {
   const getCurrentPosition = vi.fn();
