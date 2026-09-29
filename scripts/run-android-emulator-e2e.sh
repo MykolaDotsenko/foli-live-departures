@@ -45,7 +45,10 @@ for _ in $(seq 1 30); do
   SOCKET="$(
     adb shell cat /proc/net/unix \
       | tr -d '\r' \
-      | awk -v pid="$PID" '$8 ~ ("webview_devtools_remote_" pid "$") { print $8; exit }'
+      | awk -v pid="$PID" '
+          $8 ~ ("webview_devtools_remote_" pid "$") && found == "" { found = $8 }
+          END { if (found != "") print found }
+        '
   )"
   if [[ -n "$SOCKET" ]]; then
     break
