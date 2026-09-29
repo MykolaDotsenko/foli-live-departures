@@ -333,6 +333,31 @@ test("includes route-only disruptions discovered from static stop membership", (
   ]);
 });
 
+// Föli's document does not always carry servertime. "Now" is then this
+// phone's clock, not 1970: read as 0, every period lay in the future and a
+// notice showed its first period instead of the one running today.
+test("picks the current validity period when Föli sends no server time", () => {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const past = [nowSec - 7 * 86_400, nowSec - 6 * 86_400];
+  const current = [nowSec - 3_600, nowSec + 3_600];
+  const result = extractStopAlerts(
+    {
+      messages: [
+        {
+          message_id: 91,
+          isactive: true,
+          affected_stops: ["164"],
+          header: "Evening roadworks",
+          repeat: [past, current],
+        },
+      ],
+    },
+    { stopId: "164", lineRefs: [], routesById }
+  );
+
+  expect(result[0].validity).toEqual({ start: current[0], end: current[1] });
+});
+
 test("normalizes HTTPS alert images and the active validity window", () => {
   const result = extractStopAlerts(
     {

@@ -228,9 +228,13 @@ function normalizeValidity(repeat, referenceTime) {
 
   if (periods.length === 0) return null;
 
-  const now = Number.isFinite(Number(referenceTime))
-    ? Number(referenceTime)
-    : Math.floor(Date.now() / 1000);
+  // Number(null) is 0: a document without servertime must fall back to the
+  // clock, not to 1970, or every period looks like it has yet to begin.
+  const reference = Number(referenceTime);
+  const now =
+    Number.isFinite(reference) && reference > 0
+      ? reference
+      : Math.floor(Date.now() / 1000);
 
   return (
     periods.find(
