@@ -65,8 +65,10 @@ done
 test "$CDP_READY" -eq 1
 cat artifacts/android-e2e/cdp-targets.json
 
+E2E_STATUS=0
 node scripts/android-webview-e2e.mjs \
-  | tee artifacts/android-e2e/webview-e2e.log
+  | tee artifacts/android-e2e/webview-e2e.log \
+  || E2E_STATUS=$?
 
 adb shell uiautomator dump /sdcard/window-final.xml || true
 adb pull /sdcard/window-final.xml artifacts/android-e2e/window-final.xml || true
@@ -86,3 +88,8 @@ grep -q "ACCESS_FINE_LOCATION: granted=true" \
   artifacts/android-e2e/package-dump.txt
 grep -q "ACCESS_COARSE_LOCATION: granted=true" \
   artifacts/android-e2e/package-dump.txt
+
+if [[ "$E2E_STATUS" -ne 0 ]]; then
+  echo "Android WebView E2E failed with exit code $E2E_STATUS"
+  exit "$E2E_STATUS"
+fi
