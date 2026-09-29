@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { msg, t } from "../i18n";
+import { normalizedPastTimestamp } from "../utils/cacheTime";
 import { realStopName } from "../utils/stopNames";
 
 const STORAGE_KEY = "foli-my-places-v1";
@@ -64,8 +65,8 @@ function normalizePlace(place) {
     ...preset,
     stops,
     primaryStopId,
-    updatedAt: Number(place.updatedAt) || 0,
-    validatedAt: Number(place.validatedAt) || 0,
+    updatedAt: normalizedPastTimestamp(place.updatedAt),
+    validatedAt: normalizedPastTimestamp(place.validatedAt),
     needsReview: place.needsReview === true,
   };
 }
