@@ -6,7 +6,7 @@
 export function resolvePlaceStops(place, stops) {
   const byId = new Map(stops.map((stop) => [stop.id, stop]));
 
-  return place.stops.map((savedStop) => ({
+  return (Array.isArray(place?.stops) ? place.stops : []).map((savedStop) => ({
     ...savedStop,
     ...(byId.get(savedStop.id) || {}),
   }));

@@ -32,3 +32,9 @@ test("sends a passenger to the main stop, or the first one if it is missing", ()
   expect(primaryStopOf(resolved, "32").id).toBe("32");
   expect(primaryStopOf(resolved, "nope").id).toBe("164");
 });
+
+// The card shows nothing for such a place; it must be able to ask.
+test("a place without stops has no main stop", () => {
+  expect(primaryStopOf(resolvePlaceStops({ id: "home", stops: [] }, []), "")).toBeUndefined();
+  expect(resolvePlaceStops({ id: "home" }, [])).toEqual([]);
+});

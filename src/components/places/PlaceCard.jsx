@@ -30,12 +30,15 @@ export default function PlaceCard({
   const label = placeLabel(place);
   const resolvedStops = resolvePlaceStops(place, stops);
   const primaryStop = primaryStopOf(resolvedStops, place.primaryStopId);
+  // A place with no stop has nowhere to send anyone, and reading the id of
+  // the stop it does not have took the whole page down with it.
+  if (!primaryStop) return null;
+
   const backupCount = resolvedStops.length - 1;
   const transitUrl =
     online && hasCoordinates(primaryStop)
       ? buildTransitDirectionsUrl(primaryStop)
       : "";
-
 
   return (
     <article

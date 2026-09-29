@@ -843,3 +843,36 @@ test("a double tap on replace starts one location lookup, and keeps focus", asyn
   ).toBeInTheDocument();
   expect(replace).toHaveAttribute("aria-disabled", "false");
 });
+
+// A place without a stop read the id of its missing main stop and crashed,
+// taking the rest of My Places, and the page, down with it.
+test("a saved place with no stops is left out instead of crashing the page", () => {
+  render(
+    <MyPlaces
+      stops={stops}
+      coordinatesStatus="ready"
+      placesById={
+        new Map([
+          ["home", { id: "home", label: "Home", icon: "⌂", primaryStopId: "", stops: [] }],
+          [
+            "work",
+            {
+              id: "work",
+              label: "Work",
+              icon: "▣",
+              primaryStopId: "32",
+              stops: [{ id: "32", name: "Puistokatu" }],
+            },
+          ],
+        ])
+      }
+      onSavePlace={vi.fn()}
+      onRemovePlace={vi.fn()}
+      onSetPrimaryStop={vi.fn()}
+      onOpenStop={vi.fn()}
+    />
+  );
+
+  expect(screen.queryByRole("heading", { name: "Home" })).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Work" })).toBeInTheDocument();
+});
