@@ -161,9 +161,19 @@ export interface ClockCandidate<Row = StopTimetableRow> {
   aimedArrivalTime: EpochSeconds;
 }
 
+/** Clock candidates in time order, and whether the row cap cut the list. */
+export interface ClockCandidateWindow<Row = StopTimetableRow> {
+  candidates: ClockCandidate<Row>[];
+  /** True when rows inside the look-ahead window were left off the list. */
+  truncated: boolean;
+}
+
 export interface ScheduledDepartures {
   departures: ScheduledArrival[];
-  /** False when the list stops early at a trip whose metadata could not be read. */
+  /**
+   * False when the list stops early at a trip whose metadata could not be
+   * read, or the search ran out of candidates before the window ended.
+   */
   complete: boolean;
 }
 

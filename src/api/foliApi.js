@@ -4,6 +4,7 @@ import { timestampIsFresh } from "../utils/cacheTime";
 import {
   mergeRealtimeAndScheduled,
   scheduledClockCandidates,
+  scheduledClockWindow,
   serviceRunsOnDate,
 } from "../utils/gtfsSchedule";
 
@@ -63,11 +64,17 @@ const GTFS_DATASET_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_BOARD_ROWS = 100;
 // How many timetable departures of each followed line to show.
 const LINE_TIMETABLE_ROWS = 3;
+// How many timetable rows one empty-board lookup may check, each one a trip
+// metadata request the first time it is seen.
+const STOP_SCHEDULE_CANDIDATES = 256;
 
 // Dataset-scoped responses. Bounded so a display left running for days cannot
 // grow its memory without limit.
+// Room for one full empty-board lookup and then some. Smaller than the scan,
+// its own later lookups evicted the first ones, so every 30-second refresh
+// of a quiet board asked for all of them again.
 /** @type {BoundedCache<string, TripDetails>} */
-const tripDetailsCache = createBoundedCache(200);
+const tripDetailsCache = createBoundedCache(STOP_SCHEDULE_CANDIDATES * 2);
 /** @type {BoundedCache<string, TripStopTime[]>} */
 const tripStopTimesCache = createBoundedCache(60);
 /** @type {BoundedCache<string, string[]>} */
@@ -821,14 +828,19 @@ export async function fetchScheduledStopDepartures(
     fetchRouteCatalog(signal),
   ]);
 
-  const clockCandidates = scheduledClockCandidates(rows, reference, {
-    // SIRI can legitimately be empty even though the next published service
-    // is later tonight or tomorrow morning. Search far enough to bridge that
-    // gap without turning this into a week-long timetable browser.
-    lookaheadSeconds: 36 * 60 * 60,
-    graceSeconds: 30,
-    maxRows: 256,
-  });
+  const { candidates: clockCandidates, truncated } = scheduledClockWindow(
+    rows,
+    reference,
+    {
+      // SIRI can legitimately be empty even though the next published
+      // service is later tonight or tomorrow morning. Search far enough to
+      // bridge that gap without turning this into a week-long timetable
+      // browser.
+      lookaheadSeconds: 36 * 60 * 60,
+      graceSeconds: 30,
+      maxRows: STOP_SCHEDULE_CANDIDATES,
+    }
+  );
 
   if (clockCandidates.length === 0) return { departures: [], complete: true };
 
@@ -884,12 +896,17 @@ export async function fetchScheduledStopDepartures(
   }
 
   const cutoff = uncheckedFrom;
+  // Every candidate was checked without finding a full board, but the list
+  // was cut short of the window: buses after its last row were never looked
+  // at. Reporting that as the whole answer said "no upcoming departures" at
+  // a stop whose first Sunday bus was simply past the 256th weekday row.
+  const ranOutEarly = truncated && scheduled.length < 24;
   return {
     departures: scheduled
       .filter((row) => cutoff === null || row.aimeddeparturetime < cutoff)
       .sort((a, b) => a.aimeddeparturetime - b.aimeddeparturetime)
       .slice(0, 24),
-    complete: cutoff === null,
+    complete: cutoff === null && !ranOutEarly,
   };
 }
 
@@ -1140,10 +1157,18 @@ export async function fetchScheduledLineDepartures(
     for (const trip of routeTrips[index]) trips.set(trip.tripId, { trip, route });
   });
 
+  // Each route's trip list already says which service a trip runs on, so
+  // checking a row costs no request and every row in the window is read. A
+  // cap here let a timetable full of weekday trips hide the line's Sunday
+  // buses behind it.
   const candidates = scheduledClockCandidates(
     rows.filter((row) => trips.has(String(row.tripId))),
     reference,
-    { lookaheadSeconds: 36 * 60 * 60, graceSeconds: 30, maxRows: 256 }
+    {
+      lookaheadSeconds: 36 * 60 * 60,
+      graceSeconds: 30,
+      maxRows: Number.POSITIVE_INFINITY,
+    }
   );
 
   /** @type {Map<string, number>} */

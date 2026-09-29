@@ -3,6 +3,7 @@ import {
   gtfsServiceEpoch,
   mergeRealtimeAndScheduled,
   scheduledClockCandidates,
+  scheduledClockWindow,
   serviceDateKey,
   serviceRunsOnDate,
 } from "./gtfsSchedule";
@@ -189,6 +190,27 @@ describe("GTFS scheduled departure helpers", () => {
     );
 
     expect(candidates.map((item) => item.tripId)).toEqual(["boardable"]);
+  });
+
+  it("says when the row cap cut candidates inside the window", () => {
+    const reference = Date.parse("2026-09-21T12:15:00Z") / 1000; // 15:15 Helsinki
+    const rows = ["15:20:00", "15:30:00", "15:40:00"].map((time, index) => ({
+      tripId: `trip-${index}`,
+      departureTime: time,
+      pickupType: 0,
+    }));
+    const options = { lookaheadSeconds: 60 * 60 };
+
+    const cut = scheduledClockWindow(rows, reference, { ...options, maxRows: 2 });
+    expect(cut.candidates.map((item) => item.tripId)).toEqual(["trip-0", "trip-1"]);
+    expect(cut.truncated).toBe(true);
+
+    const whole = scheduledClockWindow(rows, reference, { ...options, maxRows: 3 });
+    expect(whole.candidates).toHaveLength(3);
+    expect(whole.truncated).toBe(false);
+    expect(scheduledClockCandidates(rows, reference, { ...options, maxRows: 2 })).toEqual(
+      cut.candidates
+    );
   });
 
   it("lets a realtime row replace its scheduled copy", () => {
