@@ -42,8 +42,10 @@ const STAGE_COPY = {
 // and "about now" two minutes late. A live or location estimate is trusted
 // as it stands.
 const RUNNING_LATE_AFTER_SEC = 30;
-// How long "Turn off alert" waits for its second tap.
-const END_CONFIRM_MS = 4_000;
+// How long "Turn off alert" waits for its second tap. Four seconds was
+// less than it takes a screen reader to say the button's new name, let
+// alone for the passenger to act on it (WCAG 2.2.1).
+const END_CONFIRM_MS = 10_000;
 
 function etaLabel(seconds, stage, { source = "" } = {}) {
   if (stage === RIDE_STAGE.NOW) return t("now");
@@ -476,6 +478,11 @@ export default function RideMode({
       </p>
       <p className={styles.instruction} role="alert">
         {urgent ? t(copy.instruction, copy.params) : ""}
+      </p>
+      {/* The button's new name is not announced by every screen reader:
+          the second tap it is waiting for is said here as well. */}
+      <p className={styles.srOnly} role="status">
+        {endArmed ? t("Tap again to turn it off") : ""}
       </p>
 
       {!gettingOffNow && (

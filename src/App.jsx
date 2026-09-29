@@ -241,6 +241,7 @@ function App() {
       // The shareable URL is the single source of truth for browser history.
       // Avoid duplicating stop identity in history.state, which can diverge
       // across same-document navigation implementations.
+      setFocusSaysStopId("");
       setStopId(stopFromLocation());
     };
     const handleHashChange = () =>
@@ -292,8 +293,13 @@ function App() {
   const [openedStopId] = useState(stopId);
   const [stopChanged, setStopChanged] = useState(false);
   if (!stopChanged && stopId !== openedStopId) setStopChanged(true);
+  // A stop whose heading is given focus is said by the heading itself:
+  // announcing it as well read "Turun linna" twice.
+  const [focusSaysStopId, setFocusSaysStopId] = useState("");
   const stopAnnouncement =
-    stopChanged && stopId ? announceStop(stopId, displayStopName, loading) : "";
+    stopChanged && stopId && stopId !== focusSaysStopId
+      ? announceStop(stopId, displayStopName, loading)
+      : "";
 
   const selectStop = (nextStopId) => {
     if (!/^\d+$/.test(nextStopId || "")) return;
@@ -307,6 +313,7 @@ function App() {
     // in the shareable URL so Back/Forward has one canonical source of truth.
     canonicalizeCurrentStop(stopId);
     window.history.pushState(currentHistoryState(), "", stopUrl(nextStopId));
+    setFocusSaysStopId("");
     setStopId(nextStopId);
   };
 
@@ -316,6 +323,7 @@ function App() {
   const selectSavedStop = (nextStopId) => {
     requestFocus(pageHeading);
     selectStop(nextStopId);
+    setFocusSaysStopId(nextStopId);
   };
 
   // Start takes the setup away, and the alert that replaces it is at the

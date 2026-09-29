@@ -244,6 +244,14 @@ function DepartureRow({
                 // opened it, so the passenger is where they were on the
                 // board instead of at the top of the page.
                 rideButtonRef.current?.focus();
+                // A bus that had already left was kept on the board only for
+                // its open setup, and goes with it: its button with it. The
+                // board's heading takes focus instead of the page.
+                globalThis.requestAnimationFrame?.(() => {
+                  if (!rideButtonRef.current) {
+                    globalThis.document?.getElementById("departures-title")?.focus();
+                  }
+                });
               }}
               onStart={(config) => {
                 const replacingAnotherRide =

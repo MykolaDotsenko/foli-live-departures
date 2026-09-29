@@ -492,3 +492,21 @@ test("the location button keeps focus while it looks and ignores a second press"
     });
   }
 });
+
+// Left open after a choice, the list went on offering the stop just
+// picked, and a screen reader still heard the box as expanded.
+test("the suggestion list closes once a stop is chosen", () => {
+  const onSubmit = vi.fn();
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={onSubmit} />);
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  fireEvent.keyDown(input, { key: "Enter" });
+
+  expect(onSubmit).toHaveBeenCalledWith("164");
+  expect(input).toHaveAttribute("aria-expanded", "false");
+});

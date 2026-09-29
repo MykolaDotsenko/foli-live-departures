@@ -139,7 +139,10 @@ export default function useStopMonitor(stopId) {
   const consecutiveFailuresRef = useRef(0);
 
   const refresh = useCallback(
-    async ({ initial = false } = {}) => {
+    // `quiet`: the half-minute poll. Only a refresh the passenger asked for
+    // says "Refreshing…": every poll turned the focused Refresh button into
+    // "Refreshing…" and back, which a screen reader read out each time.
+    async ({ initial = false, quiet = false } = {}) => {
       if (!stopId) return null;
 
       abortRef.current?.abort();
@@ -147,7 +150,8 @@ export default function useStopMonitor(stopId) {
       abortRef.current = controller;
 
       setError(false);
-      initial ? setLoading(true) : setRefreshing(true);
+      if (initial) setLoading(true);
+      else if (!quiet) setRefreshing(true);
 
       try {
         const next = await fetchStopMonitor(stopId, controller.signal);
@@ -203,7 +207,7 @@ export default function useStopMonitor(stopId) {
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(async () => {
         if (document.visibilityState === "visible") {
-          await refresh();
+          await refresh({ quiet: true });
         }
         scheduleNext();
       }, pollDelayMs(consecutiveFailuresRef.current));
@@ -221,7 +225,7 @@ export default function useStopMonitor(stopId) {
     const refreshNowAndReschedule = async () => {
       if (!active) return;
       window.clearTimeout(timeoutId);
-      await refresh();
+      await refresh({ quiet: true });
       scheduleNext();
     };
 

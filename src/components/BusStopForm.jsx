@@ -182,6 +182,9 @@ function BusStopForm({
     setResolved(stop);
     setValidationError(null);
     setActiveIndex(-1);
+    // Chosen, the list has done its job: left open it went on offering the
+    // stop just picked (aria-expanded stayed true). Typing opens it again.
+    setFocused(false);
     onSubmit(stop.id);
   };
 

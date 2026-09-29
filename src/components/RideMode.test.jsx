@@ -897,7 +897,8 @@ test("ends a ride only on a second tap, and forgets the first after a moment", (
     ).toBeInTheDocument();
 
     act(() => {
-      vi.advanceTimersByTime(4_000);
+      // Ten seconds: time for a screen reader to say "Tap again" first.
+      vi.advanceTimersByTime(10_000);
     });
     expect(screen.getByRole("button", { name: "Turn off alert" })).toBeInTheDocument();
 
@@ -967,7 +968,9 @@ test("the instruction moves between two lasting live regions as the stop nears",
     />
   );
   const { rerender } = render(panel("boarded"));
-  const polite = screen.getByRole("status");
+  // The instruction's region comes first; after it sits the one that says
+  // "Tap again to turn it off" while turning off waits for a second tap.
+  const polite = screen.getAllByRole("status")[0];
   const urgent = alertSaying("");
   expect(polite).toHaveTextContent("We will warn you as your stop gets closer.");
   expect(urgent).toBeEmptyDOMElement();
