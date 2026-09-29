@@ -73,10 +73,26 @@ done
 test "$CDP_READY" -eq 1
 cat artifacts/android-e2e/cdp-targets.json
 
+# Keep the emulator's deterministic Turku position alive while the WebView
+# asks Android for its first location. On cold boots the emulator can accept
+# a geo fix before the provider is fully ready, then never deliver that sample
+# to getCurrentPosition(). Re-injecting the same point does not weaken the
+# assertion; it only makes provider readiness deterministic.
+(
+  for _ in $(seq 1 45); do
+    adb emu geo fix 22.2666 60.4518 >/dev/null 2>&1 || exit 0
+    sleep 1
+  done
+) &
+GEO_KEEPALIVE_PID=$!
+
 E2E_STATUS=0
 node scripts/android-webview-e2e.mjs \
   | tee artifacts/android-e2e/webview-e2e.log \
   || E2E_STATUS=$?
+
+kill "$GEO_KEEPALIVE_PID" >/dev/null 2>&1 || true
+wait "$GEO_KEEPALIVE_PID" >/dev/null 2>&1 || true
 
 adb shell uiautomator dump /sdcard/window-final.xml || true
 adb pull /sdcard/window-final.xml artifacts/android-e2e/window-final.xml || true
