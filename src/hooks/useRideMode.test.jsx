@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, render, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -34,6 +34,7 @@ vi.mock("../utils/rideAlerts", () => ({
 }));
 
 import useRideMode from "./useRideMode";
+import RideMode from "../components/RideMode";
 
 const rideConfig = {
   lineRef: "1",
@@ -1921,4 +1922,45 @@ test("a stale vehicle-at-stop observation cannot say get off now", async () => {
   act(() => result.current.endRide());
   unmount();
   mocks.fetchStopMonitor.mockImplementation(() => new Promise(() => {}));
+});
+
+// With no fix yet, the fix time is null, and Number(null) is 0: the panel
+// said "Lost track of your location · last seen 29845074 min ago" to a
+// passenger who had denied location or was still waiting for the first fix.
+test("before any location fix the panel never says when it was last seen", async () => {
+  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] });
+  watchPosition.mockImplementation((_success, failure) => {
+    failure({ code: 1 });
+    return 77;
+  });
+
+  function Panel() {
+    const ride = useRideMode();
+    Panel.ride = ride;
+    return ride.session ? (
+      <RideMode
+        session={ride.session}
+        runtime={ride.runtime}
+        gps={ride.gps}
+        wakeLockState={ride.wakeLockState}
+        onTestAlert={() => {}}
+        onEndRide={() => {}}
+        onOpenStop={() => {}}
+      />
+    ) : null;
+  }
+
+  render(<Panel />);
+  act(() => {
+    Panel.ride.startRide(rideConfig);
+  });
+  // The clock tick weighs the evidence and publishes the fix's age.
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10_000);
+  });
+
+  expect(Panel.ride.runtime.gpsAgeSec).toBeNull();
+  expect(screen.queryByText(/last seen/i)).not.toBeInTheDocument();
+  expect(screen.queryByText("Lost track of your location")).not.toBeInTheDocument();
+  expect(screen.getByText("Cannot use your location")).toBeInTheDocument();
 });
