@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { normalizedPastTimestamp } from "../utils/cacheTime";
 import { realStopName } from "../utils/stopNames";
 
 const STORAGE_KEY = "foli-saved-stops-v1";
@@ -21,7 +22,8 @@ function normalizeStop(stop) {
     name: realStopName(name),
   };
   // Kept for a recent stop, so the app knows how long ago it was looked at.
-  if (Number.isFinite(stop.viewedAt)) normalized.viewedAt = stop.viewedAt;
+  const viewedAt = normalizedPastTimestamp(stop.viewedAt);
+  if (viewedAt > 0) normalized.viewedAt = viewedAt;
   return normalized;
 }
 
@@ -48,7 +50,10 @@ function readStoredState() {
 export function stopToReopen(nowMs = Date.now()) {
   const { favorites, recents } = readStoredState();
   const last = recents[0];
-  if (last && nowMs - last.viewedAt < REOPEN_WINDOW_MS) return last.id;
+  const viewedAt = normalizedPastTimestamp(last?.viewedAt, nowMs);
+  if (last && viewedAt > 0 && nowMs - viewedAt < REOPEN_WINDOW_MS) {
+    return last.id;
+  }
   return favorites[0]?.id || "";
 }
 
