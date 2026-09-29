@@ -64,17 +64,28 @@ const GTFS_DATASET_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_BOARD_ROWS = 100;
 // How many timetable departures of each followed line to show.
 const LINE_TIMETABLE_ROWS = 3;
-// How many timetable rows one empty-board lookup may check, each one a trip
-// metadata request the first time it is seen.
-const STOP_SCHEDULE_CANDIDATES = 256;
+// How many departures an empty-board timetable search looks for.
+const STOP_SCHEDULE_ROWS = 24;
+// How many different trips one empty-board search may look up, each one a
+// trip metadata request the first time it is seen. The search walks the
+// stop's next 36 hours of timetable rows until it has found its buses, and a
+// quiet stop at night can list hundreds of weekday-only trips before its
+// first Sunday one: a cap of 256 rows stopped short of that bus and the
+// board said Föli was down. Rows repeat the same trip on each service day,
+// so this counts trips, not rows. Far above any real stop's trips in 36
+// hours; reaching it leaves the search unfinished, never empty.
+const STOP_SCHEDULE_MAX_TRIPS = 1024;
 
 // Dataset-scoped responses. Bounded so a display left running for days cannot
 // grow its memory without limit.
-// Room for one full empty-board lookup and then some. Smaller than the scan,
-// its own later lookups evicted the first ones, so every 30-second refresh
-// of a quiet board asked for all of them again.
+// Room for the largest empty-board search, STOP_SCHEDULE_MAX_TRIPS, plus a
+// half again for the rides and other stops read beside it. Smaller than the
+// search, its own later lookups evicted the first ones, so every 30-second
+// refresh of a quiet board asked for all of them again.
 /** @type {BoundedCache<string, TripDetails>} */
-const tripDetailsCache = createBoundedCache(STOP_SCHEDULE_CANDIDATES * 2);
+const tripDetailsCache = createBoundedCache(
+  Math.ceil(STOP_SCHEDULE_MAX_TRIPS * 1.5)
+);
 /** @type {BoundedCache<string, TripStopTime[]>} */
 const tripStopTimesCache = createBoundedCache(60);
 /** @type {BoundedCache<string, string[]>} */
@@ -382,10 +393,11 @@ export async function fetchStopMonitor(
       scheduleIncomplete = !schedule.complete;
       // Nothing confirmed before the gap is no answer at all.
       scheduleAvailable = scheduledRows.length > 0 || schedule.complete;
+      // But the timetable was read, and so was SIRI: NO_SIRI_DATA is its
+      // normal answer at night. One trip that could not be checked left the
+      // board saying Föli was down, and backing off its refreshes, at a quiet
+      // stop whose timetable says "maybe later" instead.
       scheduleFailed = !scheduleAvailable;
-      if (scheduleFailed && status !== "OK") {
-        throw new Error("Föli departure data is unavailable.");
-      }
     } catch (error) {
       const name = /** @type {{ name?: unknown } | null | undefined} */ (error)
         ?.name;
@@ -828,7 +840,7 @@ export async function fetchScheduledStopDepartures(
     fetchRouteCatalog(signal),
   ]);
 
-  const { candidates: clockCandidates, truncated } = scheduledClockWindow(
+  const { candidates: clockCandidates } = scheduledClockWindow(
     rows,
     reference,
     {
@@ -838,7 +850,9 @@ export async function fetchScheduledStopDepartures(
       // browser.
       lookaheadSeconds: 36 * 60 * 60,
       graceSeconds: 30,
-      maxRows: STOP_SCHEDULE_CANDIDATES,
+      // The whole window: the search below stops once it has its buses, and
+      // STOP_SCHEDULE_MAX_TRIPS bounds what it may ask for.
+      maxRows: Number.POSITIVE_INFINITY,
     }
   );
 
@@ -852,26 +866,41 @@ export async function fetchScheduledStopDepartures(
   // the list stops at the first one that could not be checked instead.
   /** @type {EpochSeconds | null} */
   let uncheckedFrom = null;
+  // Every trip this search has asked about, answered or not. The same trip
+  // turns up once for each service day in the window, and is asked for once.
+  /** @type {Map<string, TripDetails | null>} */
+  const detailsByTrip = new Map();
 
   // Resolve trip metadata chronologically and stop as soon as we have enough
   // active departures. This keeps the fallback cheap at busy stops while
   // still being able to skip inactive service patterns and reach tomorrow.
-  for (
-    let index = 0;
+  let index = 0;
+  while (
     index < clockCandidates.length &&
-    scheduled.length < 24 &&
-    uncheckedFrom === null;
-    index += 12
+    scheduled.length < STOP_SCHEDULE_ROWS &&
+    uncheckedFrom === null
   ) {
     const batch = clockCandidates.slice(index, index + 12);
-    const tripDetailsById = await fetchTripDetailsInBatches(
-      batch.map((candidate) => candidate.tripId),
-      signal
-    );
+    const unseen = [
+      ...new Set(
+        batch
+          .map((candidate) => candidate.tripId)
+          .filter((tripId) => !detailsByTrip.has(tripId))
+      ),
+    ];
+    // Out of lookups before the buses were found: whatever comes after this
+    // batch was never looked at, so the answer is unfinished, not empty.
+    if (detailsByTrip.size + unseen.length > STOP_SCHEDULE_MAX_TRIPS) {
+      uncheckedFrom = batch[0].aimedDepartureTime;
+      break;
+    }
+    const fetched = await fetchTripDetailsInBatches(unseen, signal);
+    for (const tripId of unseen) {
+      detailsByTrip.set(tripId, fetched.get(tripId) ?? null);
+    }
 
     for (const candidate of batch) {
-      if (uncheckedFrom !== null) break;
-      const details = tripDetailsById.get(candidate.tripId);
+      const details = detailsByTrip.get(candidate.tripId);
       if (!details) {
         uncheckedFrom = candidate.aimedDepartureTime;
         break;
@@ -893,20 +922,16 @@ export async function fetchScheduledStopDepartures(
         scheduledArrival(candidate, details, routesById.get(details.routeId))
       );
     }
+    index += batch.length;
   }
 
   const cutoff = uncheckedFrom;
-  // Every candidate was checked without finding a full board, but the list
-  // was cut short of the window: buses after its last row were never looked
-  // at. Reporting that as the whole answer said "no upcoming departures" at
-  // a stop whose first Sunday bus was simply past the 256th weekday row.
-  const ranOutEarly = truncated && scheduled.length < 24;
   return {
     departures: scheduled
       .filter((row) => cutoff === null || row.aimeddeparturetime < cutoff)
       .sort((a, b) => a.aimeddeparturetime - b.aimeddeparturetime)
-      .slice(0, 24),
-    complete: cutoff === null && !ranOutEarly,
+      .slice(0, STOP_SCHEDULE_ROWS),
+    complete: cutoff === null,
   };
 }
 

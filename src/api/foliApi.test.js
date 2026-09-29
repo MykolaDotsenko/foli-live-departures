@@ -1424,7 +1424,12 @@ test("reads a followed line's next departures from the stop's timetable", async 
 // trips between 05:00 and 06:40 before its first Sunday bus at 08:00.
 const SUNDAY_2AM = Date.UTC(2026, 9, 3, 23, 0, 0) / 1000;
 
-function weekdayHeavyTimetable({ status = "NO_SIRI_DATA", line = "" } = {}) {
+function weekdayHeavyTimetable({
+  status = "NO_SIRI_DATA",
+  line = "",
+  weekdayTrips = 300,
+  failTrips = [],
+} = {}) {
   const days = (weekdays, sunday) => ({
     monday: weekdays,
     tuesday: weekdays,
@@ -1441,7 +1446,7 @@ function weekdayHeavyTimetable({ status = "NO_SIRI_DATA", line = "" } = {}) {
       .map((part) => String(part).padStart(2, "0"))
       .join(":");
   const trips = [
-    ...Array.from({ length: 300 }, (_, index) => ({
+    ...Array.from({ length: weekdayTrips }, (_, index) => ({
       trip_id: `wk-${index}`,
       departure_time: clock(5 * 3600 + index * 20),
       service_id: "WK",
@@ -1494,6 +1499,9 @@ function weekdayHeavyTimetable({ status = "NO_SIRI_DATA", line = "" } = {}) {
       });
     }
     if (url.startsWith(tripUrl)) {
+      if (failTrips.includes(url.slice(tripUrl.length))) {
+        return Promise.reject(new Error("Network Error"));
+      }
       return Promise.resolve({
         data: [
           {
@@ -1511,44 +1519,74 @@ function weekdayHeavyTimetable({ status = "NO_SIRI_DATA", line = "" } = {}) {
 const tripLookups = () =>
   mocks.get.mock.calls.filter(([url]) => url.includes("/trips/trip/")).length;
 
-// The timetable search checks a bounded number of rows. Every one of them was
-// a weekday trip, and running out of rows was taken as the end of service:
-// the board said "No upcoming departures" before an 08:00 Sunday bus.
-test("does not call a timetable search cut short by its row cap complete", async () => {
+const SUNDAY_8AM = Date.UTC(2026, 9, 4, 5, 0, 0) / 1000;
+
+// The timetable search checked at most 256 rows. Every one of them was a
+// weekday trip: first the board said "No upcoming departures" before an
+// 08:00 Sunday bus, then that Föli was down, backing off its refreshes.
+test("finds the first Sunday bus behind a long weekday timetable", async () => {
   weekdayHeavyTimetable();
-
-  const outcome = await fetchStopMonitor("621").then(
-    (value) => ({ value }),
-    (error) => ({ error })
-  );
-
-  // With no live feed either, nothing confirmed is no answer at all.
-  expect(outcome.value).toBeUndefined();
-  expect(outcome.error?.message).toBe("Föli departure data is unavailable.");
-});
-
-test("flags a capped timetable search as incomplete beside a live feed", async () => {
-  weekdayHeavyTimetable({ status: "OK" });
 
   const result = await fetchStopMonitor("621");
 
-  expect(result.arrivals.length > 0 || result.scheduleIncomplete).toBe(true);
-  expect(result.scheduleIncomplete).toBe(true);
-  expect(result.scheduleFailed).toBe(true);
+  expect(result.arrivals[0]?.tripref).toBe("su-1");
+  expect(result.arrivals[0]?.aimeddeparturetime).toBe(SUNDAY_8AM);
+  // Then Monday's first weekday buses, up to a full board.
+  expect(result.arrivals).toHaveLength(24);
+  expect(result.arrivals[1]?.tripref).toBe("wk-0");
+  expect(result.scheduleAvailable).toBe(true);
+  expect(result.scheduleFailed).toBe(false);
+  expect(result.scheduleIncomplete).toBe(false);
 });
 
-// The trip cache held 200 entries and one search reads 256 trips, so each
-// search evicted its own first answers and every refresh asked for all of
-// them again.
+// Each weekday trip appears on Sunday and again on Monday; it is one trip,
+// asked about once, and every refresh after the first asks about none.
 test("a repeated timetable search reuses every trip it already read", async () => {
-  weekdayHeavyTimetable({ status: "OK" });
+  weekdayHeavyTimetable();
 
   await fetchStopMonitor("621");
   const first = tripLookups();
   await fetchStopMonitor("621");
 
-  expect(first).toBe(256);
+  expect(first).toBe(301);
   expect(tripLookups()).toBe(first);
+});
+
+// SIRI's "nothing tonight" is a normal answer, and so was the timetable: one
+// trip that could not be checked is a timetable "maybe", not an outage.
+test("an unchecked trip at a quiet stop leaves the timetable unfinished, not Föli down", async () => {
+  weekdayHeavyTimetable({ failTrips: ["wk-10"] });
+
+  const result = await fetchStopMonitor("621");
+
+  expect(result.arrivals).toEqual([]);
+  expect(result.realtimeAvailable).toBe(false);
+  expect(result.scheduleAvailable).toBe(false);
+  expect(result.scheduleFailed).toBe(true);
+  expect(result.scheduleIncomplete).toBe(true);
+});
+
+test("flags an unchecked trip as an unfinished timetable beside a live feed", async () => {
+  weekdayHeavyTimetable({ status: "OK", failTrips: ["wk-10"] });
+
+  const result = await fetchStopMonitor("621");
+
+  expect(result.arrivals).toEqual([]);
+  expect(result.scheduleIncomplete).toBe(true);
+  expect(result.scheduleFailed).toBe(true);
+});
+
+// The search asks about at most 1024 trips. Reaching that bound keeps what
+// it found and says the rest was not checked.
+test("stops a timetable search at its trip bound and calls it unfinished", async () => {
+  weekdayHeavyTimetable({ weekdayTrips: 1100 });
+
+  const result = await fetchStopMonitor("621");
+
+  expect(tripLookups()).toBeLessThanOrEqual(1024);
+  expect(result.arrivals.map((row) => row.tripref)).toEqual(["su-1"]);
+  expect(result.scheduleAvailable).toBe(true);
+  expect(result.scheduleIncomplete).toBe(true);
 });
 
 // A followed line's timetable checks each row against its route's trip list
