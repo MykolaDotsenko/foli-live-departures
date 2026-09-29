@@ -363,10 +363,10 @@ export function resolveRideArrivalMatch(arrivals, identity) {
       }
 
       const candidateOrigin = finiteNumber(arrival?.originaimeddeparturetime);
-      if (
-        candidateOrigin !== null &&
-        Math.abs(candidateOrigin - originTime) <= 90
-      ) {
+      if (candidateOrigin === null) {
+        return { status: "ambiguous" };
+      }
+      if (Math.abs(candidateOrigin - originTime) <= 90) {
         return {
           status: "matched",
           arrival,
@@ -394,9 +394,7 @@ export function resolveRideArrivalMatch(arrivals, identity) {
         };
       }
 
-      if (ranked.some((candidate) => Number.isFinite(candidate.delta))) {
-        return { status: "ambiguous" };
-      }
+      return { status: "ambiguous" };
     }
   }
 
