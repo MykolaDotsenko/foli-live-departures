@@ -90,3 +90,34 @@ test("releases the lock when the ride ends", async () => {
   unmount();
   expect(sentinel.release).toHaveBeenCalled();
 });
+
+
+test("does not issue a second wake-lock request while the first one is still pending", async () => {
+  let resolveRequest;
+  const request = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+  );
+  stubWakeLock(request);
+
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockReturnValue("visible");
+
+  const sentinel = fakeSentinel();
+  const { result } = renderHook(() => useRideWakeLock("ride-1"));
+
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
+
+  expect(request).toHaveBeenCalledTimes(1);
+
+  resolveRequest(sentinel);
+  await waitFor(() => expect(result.current).toBe("active"));
+
+  visibility.mockRestore();
+});
