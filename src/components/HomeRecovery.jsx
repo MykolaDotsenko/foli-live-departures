@@ -198,7 +198,7 @@ function HomeRecovery({
         >
           {online
             ? t(
-                "Directions will work once stop locations load. Your saved stop and the driver card work now."
+                "Directions will work once stop locations load. Your saved stop and Show to driver work now."
               )
             : t("Directions need an internet connection.")}
         </p>

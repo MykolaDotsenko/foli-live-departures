@@ -332,7 +332,7 @@ test("Ride Mode offers recovery after the passenger rides past the stop", async 
     longitude: 22.255,
     accuracy: 25,
   });
-  await expect(page.getByText(/roughly 7[0-9] m away/)).toBeVisible();
+  await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
   // The bus carried on without them.
   await context.setGeolocation({

@@ -464,7 +464,7 @@ test("sets up the ride in Finnish, with stop names as Föli publishes them", asy
   const onStart = renderThreeStopSetup();
 
   expect(
-    await screen.findByRole("heading", { name: "Missä haluat jäädä pois?" })
+    await screen.findByRole("heading", { name: "Millä pysäkillä jäät pois?" })
   ).toBeInTheDocument();
   expect(
     screen.getByRole("region", { name: "Aseta pysäkkihälytys" })

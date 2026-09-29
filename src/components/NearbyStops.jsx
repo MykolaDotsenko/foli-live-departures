@@ -231,7 +231,7 @@ function NearbyStops({
             {t("Near you")}
           </h2>
           <p className={styles.description}>
-            {t("Find the closest stop with a one-time location check.")}
+            {t("Uses your location once. It isn’t saved.")}
           </p>
         </div>
 

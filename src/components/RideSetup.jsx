@@ -472,7 +472,7 @@ export default function RideSetup({
                     <strong>{t("Also show notifications")}</strong>
                     <small>
                       {t(
-                        "Only while this page stays open: a browser can pause a page it thinks you have left, and a locked phone often does."
+                        "Only while this page is open. A locked phone often pauses it."
                       )}
                     </small>
                   </span>

@@ -12,8 +12,8 @@ export default {
 
   // My Places
   "My Places": "Omat paikat",
-  "Save Home, School or Work as public stops — no address to type or remember.":
-    "Tallenna kodin, koulun tai työpaikan lähin pysäkki – osoitetta ei tarvita.",
+  "Save the stop nearest Home, School or Work. No address needed.":
+    "Tallenna kodin, koulun tai työpaikan lähin pysäkki. Osoitetta ei tarvita.",
   "Finding the closest Föli stops…": "Etsitään lähimpiä Fölin pysäkkejä…",
   "Route links send Google Maps only the stop you’re going to. Google Maps may then use your location to plan the route.":
     "Reittilinkit kertovat Google Mapsille vain määränpääpysäkin. Google Maps voi sitten käyttää sijaintiasi reitin laskemiseen.",
@@ -28,8 +28,8 @@ export default {
   "Tick at least one stop to save.": "Valitse vähintään yksi pysäkki, niin voit tallentaa.",
   "Confirm the stop above to save.": "Vahvista pysäkki yllä, niin voit tallentaa.",
   "Not set": "Ei vielä tallennettu",
-  "Not at the stop? Open its departures first, then use it here.":
-    "Et ole pysäkillä? Avaa ensin sen lähdöt ja käytä sitä sitten tässä.",
+  "Not at the stop? Search for it first, then choose it here.":
+    "Et ole pysäkillä? Hae se ensin ja valitse se sitten tästä.",
   "Use my location": "Käytä sijaintiani",
   "Use {name}": "Käytä pysäkkiä {name}",
 
@@ -138,8 +138,8 @@ export default {
   "Open Home stop": "Avaa kotipysäkki",
   "Get me Home opens a route in Google Maps. Check it before you travel.":
     "”Vie minut kotiin” avaa reitin Google Mapsissa. Tarkista reitti ennen lähtöä.",
-  "Directions will work once stop locations load. Your saved stop and the driver card work now.":
-    "Reittiohjeet toimivat, kun pysäkkien sijainnit latautuvat. Tallennettu pysäkkisi ja kuljettajalle näytettävä kortti toimivat jo nyt.",
+  "Directions will work once stop locations load. Your saved stop and Show to driver work now.":
+    "Reittiohjeet toimivat, kun pysäkkien sijainnit latautuvat. Tallennettu pysäkkisi ja ”Näytä kuljettajalle” toimivat jo nyt.",
   "Directions need an internet connection.": "Reittiohjeet tarvitsevat verkkoyhteyden.",
   "Backup Home stop": "Kodin varapysäkki",
   "Backup Home stops": "Kodin varapysäkit",

@@ -54,10 +54,8 @@ export function ScheduleNotice({ realtimeAvailable, scheduleIncomplete }) {
   return (
     <p className={styles.staleNotice} role="status">
       {realtimeAvailable === false
-        ? t("Live updates are unavailable · showing scheduled Föli times.")
-        : t(
-            "No live departure is published right now · showing the next scheduled Föli times."
-          )}
+        ? t("Live times aren’t available · showing the timetable.")
+        : t("No live times right now · showing the timetable.")}
       {scheduleIncomplete
         ? ` ${t(
             "Later departures could not be checked, so more buses may run after these."

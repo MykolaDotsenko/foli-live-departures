@@ -135,10 +135,10 @@ export default function HelpGuide() {
                 <p id="app-guide-intro" className={styles.intro}>
                   {view === "quick"
                     ? t(
-                        "Find a stop, check the next bus, then use Get-off Alert if you want help during the ride."
+                        "Find a stop, check the next bus, then use a get-off alert if you want help during the ride."
                       )
                     : t(
-                        "The full guide explains departures, disruptions, Get-off Alert and saved places."
+                        "The full guide explains departures, disruptions, get-off alerts and saved places."
                       )}
                 </p>
               </div>
@@ -159,7 +159,7 @@ export default function HelpGuide() {
                     <span className={styles.quickNumber} aria-hidden="true">{1}</span>
                     <div>
                       <h3>{t("Find a stop")}</h3>
-                      <p>{t("Search by name or number, or use Nearby stops.")}</p>
+                      <p>{t("Search by name or number, or tap Find nearest stop.")}</p>
                     </div>
                   </li>
                   <li className={styles.quickStep}>
@@ -176,7 +176,7 @@ export default function HelpGuide() {
                   <li className={styles.quickStep}>
                     <span className={styles.quickNumber} aria-hidden="true">{3}</span>
                     <div>
-                      <h3>{t("Use Get-off Alert")}</h3>
+                      <h3>{t("Use the get-off alert")}</h3>
                       <p>
                         {t(
                           "Tap Get-off alert on your bus and choose where you want to get off."
@@ -233,7 +233,7 @@ export default function HelpGuide() {
                       <h3>{t("Check what leaves next")}</h3>
                       <p>
                         {t(
-                          "Live departures are separated from timetable data, and stale information is marked instead of presented as live."
+                          "Each time says Live or Scheduled. Old live data is marked, never shown as fresh."
                         )}
                       </p>
                     </div>
@@ -242,7 +242,7 @@ export default function HelpGuide() {
                   <li className={styles.step}>
                     <span className={styles.number} aria-hidden="true">{3}</span>
                     <div>
-                      <h3>{t("Use Get-off Alert")}</h3>
+                      <h3>{t("Use the get-off alert")}</h3>
                       <p>
                         {t(
                           "Tap Get-off alert on your bus, choose where you want to get off, then keep the ride screen open. It tells you when to get ready, press STOP and get off."
@@ -269,7 +269,7 @@ export default function HelpGuide() {
                       <h3>{t("Save familiar places")}</h3>
                       <p>
                         {t(
-                          "Save Home, School or Work as public stops. Get me Home, backup stops and the driver card can help when the normal trip goes wrong."
+                          "Save the stop nearest Home, School or Work. Get me Home, backup stops and Show to driver help when your usual trip goes wrong."
                         )}
                       </p>
                     </div>

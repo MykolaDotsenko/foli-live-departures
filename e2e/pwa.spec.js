@@ -46,7 +46,7 @@ test("production PWA reopens offline with My Places and driver help", async ({
   // Announced, once, and shown once, by the banner.
   await expect(page.getByText("Offline mode", { exact: true })).toHaveCount(1);
   await expect(
-    page.getByText(/saved places and the driver card still work/i)
+    page.getByText(/saved places and show to driver still work/i)
   ).toBeVisible();
 
   const recovery = page.locator(

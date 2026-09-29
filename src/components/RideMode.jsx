@@ -146,7 +146,7 @@ function gpsDetail(gps, enabled, ageSec) {
     gps.distanceM !== undefined &&
     Number.isFinite(Number(gps.distanceM))
   ) {
-    return t("roughly {meters} m away", { meters: Math.round(gps.distanceM) });
+    return t("≈{meters} m from your stop", { meters: Math.round(gps.distanceM) });
   }
   return t("waiting for a location");
 }
@@ -423,7 +423,7 @@ export default function RideMode({
               <ul>
                 <li>{t("Turn the media volume up.")}</li>
                 <li>{t("Switch off silent or focus mode.")}</li>
-                <li>{t("Check the sound is not going to other headphones.")}</li>
+                <li>{t("Check the sound isn’t going to a Bluetooth device.")}</li>
               </ul>
               <div className={styles.soundCheckActions}>
                 <button type="button" onClick={onTestAlert}>
@@ -611,7 +611,7 @@ export default function RideMode({
         session.options?.locationBackup && (
           <p className={styles.degraded} role="status">
             {t(
-              "We could not load this route's path, so we are following your distance to the stop instead. Live arrival data still applies."
+              "The route map didn’t load, so we use straight-line distance to your stop. Live bus times still work."
             )}
           </p>
         )}

@@ -80,10 +80,10 @@ export default {
   "Last live estimate": "Viimeisin reaaliaika-arvio",
   "Live data is getting old": "Reaaliaikatiedot eivät ole tuoreita",
   "last successful update {age}": "viimeisin onnistunut päivitys {age}",
-  "Live updates are unavailable · showing scheduled Föli times.":
-    "Reaaliaikatietoja ei ole saatavilla · näytetään Fölin aikataulun mukaiset ajat.",
-  "No live departure is published right now · showing the next scheduled Föli times.":
-    "Reaaliaikaisia lähtöjä ei juuri nyt julkaista · näytetään seuraavat aikataulun mukaiset ajat.",
+  "Live times aren’t available · showing the timetable.":
+    "Reaaliaikatiedot eivät ole saatavilla · näytetään aikataulu.",
+  "No live times right now · showing the timetable.":
+    "Reaaliaikatietoja ei nyt ole · näytetään aikataulu.",
   "Later departures could not be checked, so more buses may run after these.":
     "Myöhempiä lähtöjä ei voitu tarkistaa, joten näiden jälkeen voi kulkea muitakin busseja.",
   "Connecting to Föli": "Yhdistetään Föliin",

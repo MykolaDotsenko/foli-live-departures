@@ -13,7 +13,7 @@ test("explains exactly what remains usable while offline", () => {
 
   expect(screen.getByText("Offline")).toBeInTheDocument();
   expect(
-    screen.getByText(/saved places and the driver card still work/i)
+    screen.getByText(/saved places and show to driver still work/i)
   ).toBeInTheDocument();
   expect(
     screen.getByText(/Live times and directions need a connection/i)

@@ -439,7 +439,7 @@ test("shows scheduled departures when realtime is unavailable instead of an empt
 
   expect(screen.getByText("Varissuo")).toBeInTheDocument();
   expect(
-    screen.getByText(/Live updates are unavailable.*showing scheduled Föli times/i)
+    screen.getByText(/Live times aren’t available.*showing the timetable/i)
   ).toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
@@ -477,7 +477,7 @@ test("shows tomorrow's next scheduled service instead of an empty board", () => 
   expect(screen.getByText("Varissuo")).toBeInTheDocument();
   expect(screen.getByRole("cell", { name: "Tomorrow 06:30" })).toBeInTheDocument();
   expect(
-    screen.getByText(/No live departure is published right now.*next scheduled Föli times/i)
+    screen.getByText(/No live times right now.*showing the timetable/i)
   ).toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });

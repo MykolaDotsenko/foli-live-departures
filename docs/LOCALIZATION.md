@@ -80,7 +80,7 @@ English left on the Finnish screens.
 | try again | yritä uudelleen |
 | offline | ei yhteyttä |
 | near you | lähelläsi |
-| Get-off alert (the feature, everywhere a passenger sees it; "Ride Mode" is the developers' name) | Pysäkkihälytys |
+| Get-off alert (the feature, everywhere a passenger sees it; "Ride Mode" is the developers' name; lower case in running text) | pysäkkihälytys (capitalised only where it starts a label: "Pysäkkihälytys") |
 | Alert on | Hälytys päällä |
 | Turn off alert | Lopeta hälytys |
 | get off | jäädä pois |
@@ -91,7 +91,7 @@ English left on the Finnish screens.
 | backup stop | varapysäkki |
 | backup card (printed) | varakortti |
 | driver | kuljettaja |
-| driver card (Show to driver) | kuljettajakortti |
+| driver card; in passenger copy name its button, Show to driver | kuljettajakortti; in passenger copy name the button in quotes, ”Näytä kuljettajalle” |
 | Get me Home | Vie minut kotiin |
 | recent (stops) | viimeksi käytetyt |
 | About & privacy | Tietoa ja tietosuoja |

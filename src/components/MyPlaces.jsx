@@ -153,7 +153,7 @@ function MyPlaces({
           <h2 id="my-places-title">{t("My Places")}</h2>
           <p className={styles.description}>
             {t(
-              "Save Home, School or Work as public stops — no address to type or remember."
+              "Save the stop nearest Home, School or Work. No address needed."
             )}
           </p>
         </div>
@@ -240,7 +240,7 @@ function MyPlaces({
           heading's promise three times over. */}
       {PLACE_PRESETS.some((preset) => !placesById.get(preset.id)) && (
         <p className={styles.meta}>
-          {t("Not at the stop? Open its departures first, then use it here.")}
+          {t("Not at the stop? Search for it first, then choose it here.")}
         </p>
       )}
 

@@ -187,7 +187,7 @@ test("each stop gets its own tab title, and the app says who makes it", async ({
     "href",
     /^mailto:/
   );
-  await expect(page.getByRole("link", { name: "Report a problem" })).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Report a problem (GitHub)" })).toHaveAttribute(
     "href",
     /issues\/new\?template=bug_report\.yml/
   );

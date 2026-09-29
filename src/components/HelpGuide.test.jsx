@@ -27,7 +27,7 @@ test("starts with three essential actions before revealing the full guide", () =
     screen.getByRole("heading", { name: "Check the next bus" })
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("heading", { name: "Use Get-off Alert" })
+    screen.getByRole("heading", { name: "Use the get-off alert" })
   ).toBeInTheDocument();
   expect(
     screen.queryByRole("heading", { name: "Watch for disruptions" })
@@ -99,7 +99,7 @@ test("the quick start and full guide follow the selected interface language", ()
     })
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("heading", { name: "Käytä Pysäkkihälytystä" })
+    screen.getByRole("heading", { name: "Käytä pysäkkihälytystä" })
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sulje ohje" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Pika-aloitus" })).toBeInTheDocument();

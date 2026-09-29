@@ -16,17 +16,17 @@ test("a phone is told what the app is until it no longer needs telling", async (
 
   const intro = page.locator(".context");
   await expect(intro).toBeVisible();
-  await expect(intro).toHaveText("Live bus times, disruptions and get-off alerts for Turku.");
+  await expect(intro).toHaveText("Live bus times, disruptions and get-off alerts.");
 
   // These two sections are three bare rows and a lone button on a phone;
   // nothing else ever says what they are for.
   await expect(
-    page.getByText("Save Home, School or Work as public stops", {
+    page.getByText("Save the stop nearest Home, School or Work", {
       exact: false,
     })
   ).toBeVisible();
   await expect(
-    page.getByText("Find the closest stop with a one-time location check")
+    page.getByText("Uses your location once. It isn’t saved.")
   ).toBeVisible();
   await expect(page.getByText("Search by stop name or number.")).toBeVisible();
 

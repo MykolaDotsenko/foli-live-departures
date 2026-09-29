@@ -70,8 +70,8 @@ export default {
   "Two stops are almost equally close. Choose the stop that serves your travel direction.":
     "Kaksi pysäkkiä on lähes yhtä lähellä. Valitse pysäkki, joka palvelee kulkusuuntaasi.",
   "Near you": "Lähelläsi",
-  "Find the closest stop with a one-time location check.":
-    "Etsi lähin pysäkki sijaintisi avulla – sijaintia ei tallenneta.",
+  "Uses your location once. It isn’t saved.":
+    "Käyttää sijaintiasi kerran. Sitä ei tallenneta.",
   "Locating…": "Paikannetaan…",
   "Update location": "Päivitä sijainti",
   "Getting stop locations…": "Haetaan pysäkkien sijainteja…",

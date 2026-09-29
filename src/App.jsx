@@ -329,7 +329,7 @@ function App() {
                 placesById.size === 0 && (firstVisit || !stopId) ? "true" : "false"
               }
             >
-              {t("Live bus times, disruptions and get-off alerts for Turku.")}
+              {t("Live bus times, disruptions and get-off alerts.")}
             </p>
           </div>
         </div>
@@ -522,7 +522,7 @@ function App() {
               target="_blank"
               rel="noreferrer"
             >
-              {t("Report a problem")}
+              {t("Report a problem (GitHub)")}
             </a>
             <a
               href="https://github.com/MykolaDotsenko/foli-live-departures"
@@ -566,13 +566,24 @@ function App() {
                 "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, and a ride in progress for up to six hours. Clearing this site’s data removes all of it."
               )}
             </dd>
-            <dt>{t("What leaves it")}</dt>
+            <dt>{t("What leaves the phone")}</dt>
+            {/* One fact per entry: a single paragraph ran to 90 words. */}
             <dd>
               {t(
-                "The app is served by GitHub Pages, which sees your IP address. Each stop you look up, each bus whose stops you open, and during a ride the stop you get off at and the one before it are requested from data.foli.fi, which sees your IP address and what was asked for. Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved. Google Maps opens only when you tap a route link: it is sent the stop you chose, and may then use your location to plan the route."
+                "The app is loaded from GitHub Pages, which sees your IP address. The stops you look up and the buses whose stops you open are fetched from data.foli.fi, which sees your IP address and what was asked for. During a ride, so are your exit stop and the one before it."
               )}
             </dd>
-            <dt>{t("What there is not")}</dt>
+            <dd>
+              {t(
+                "Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved."
+              )}
+            </dd>
+            <dd>
+              {t(
+                "Google Maps opens only when you tap a route link. It gets the stop you chose and may then use your location to plan the route."
+              )}
+            </dd>
+            <dt>{t("What it doesn’t have")}</dt>
             <dd>{t("No account, no ads, no analytics.")}</dd>
           </dl>
           </details>

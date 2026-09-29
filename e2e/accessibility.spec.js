@@ -199,7 +199,7 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     dialog.getByRole("heading", { name: "Check the next bus" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Use Get-off Alert" })
+    dialog.getByRole("heading", { name: "Use the get-off alert" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Watch for disruptions" })
