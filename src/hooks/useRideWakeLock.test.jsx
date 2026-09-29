@@ -121,3 +121,25 @@ test("does not issue a second wake-lock request while the first one is still pen
 
   visibility.mockRestore();
 });
+
+
+test("releases a wake lock that resolves after the ride has already ended", async () => {
+  let resolveRequest;
+  const request = vi.fn(
+    () =>
+      new Promise((resolve) => {
+        resolveRequest = resolve;
+      })
+  );
+  stubWakeLock(request);
+
+  const sentinel = fakeSentinel();
+  const { unmount } = renderHook(() => useRideWakeLock("ride-1"));
+
+  await waitFor(() => expect(request).toHaveBeenCalledTimes(1));
+  unmount();
+
+  resolveRequest(sentinel);
+
+  await waitFor(() => expect(sentinel.release).toHaveBeenCalledTimes(1));
+});
