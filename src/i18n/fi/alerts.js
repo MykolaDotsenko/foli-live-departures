@@ -42,20 +42,19 @@ export default {
   "{title} illustration": "Kuva: {title}",
   "Open full image": "Avaa koko kuva",
   "Before you go": "Ennen lähtöä",
-  "Service update check unavailable":
-    "Liikennetiedotteita ei voi tarkistaa",
-  "Föli disruption data could not be confirmed":
-    "Fölin häiriötietoja ei voitu vahvistaa",
+  "Couldn’t check service updates":
+    "Liikennetiedotteita ei saatu tarkistettua",
+  "Some disruptions may not show": "Kaikki häiriöt eivät ehkä näy",
   "last checked {age}": "viimeksi tarkistettu {age}",
-  "Live departure data may still work separately.":
-    "Reaaliaikaiset lähtötiedot voivat silti toimia erikseen.",
+  "Departure times are checked separately.":
+    "Lähtöajat tarkistetaan erikseen.",
   "Important now": "Tärkeää nyt",
   "Emergency notice": "Hätätiedote",
   "Service updates": "Liikennetiedotteet",
   "1 service update": "1 liikennetiedote",
   "{count} service updates": ({ count }) => `${count} liikennetiedotetta`,
-  "Update check failed": "Tarkistus epäonnistui",
-  "Service update check is getting old": "Liikennetiedotteet voivat olla vanhentuneita",
+  "Update failed": "Päivitys epäonnistui",
+  "Service updates may be out of date": "Liikennetiedotteet voivat olla vanhentuneita",
   "Show fewer updates": "Näytä vähemmän",
   "Hide service updates": "Piilota liikennetiedotteet",
   "Show 1 more update": "Näytä 1 tiedote lisää",

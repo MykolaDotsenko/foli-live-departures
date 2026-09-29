@@ -719,7 +719,7 @@ test("gives a location problem in Finnish, and the destination as its sign says 
       gps={{
         status: "error",
         offRouteSuspected: true,
-        error: "Location backup was not allowed.",
+        error: "Location wasn’t allowed.",
       }}
       wakeLockState="active"
       onTestAlert={() => {}}

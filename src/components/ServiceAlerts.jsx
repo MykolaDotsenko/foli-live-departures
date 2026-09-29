@@ -186,19 +186,19 @@ function ServiceAlerts({ alerts, error = false, receivedAtMs = null }) {
           <div>
             <p className={styles.kicker}>{t("Before you go")}</p>
             <h2 id="service-alerts-title" className={styles.heading}>
-              {t("Service update check unavailable")}
+              {t("Couldn’t check service updates")}
             </h2>
           </div>
         </div>
         <p className={styles.feedStatus} role="status">
-          {t("Föli disruption data could not be confirmed")}
+          {t("Some disruptions may not show")}
           {receiptAgeSeconds !== null
             ? ` · ${t("last checked {age}", {
                 age: formatElapsedAge(receiptAgeSeconds),
               })}`
             : ""}
           {". "}
-          {t("Live departure data may still work separately.")}
+          {t("Departure times are checked separately.")}
         </p>
       </section>
     );
@@ -266,7 +266,7 @@ function ServiceAlerts({ alerts, error = false, receivedAtMs = null }) {
 
       {(error || stale) && (
         <p className={styles.feedStatus} role="status">
-          {error ? t("Update check failed") : t("Service update check is getting old")}
+          {error ? t("Update failed") : t("Service updates may be out of date")}
           {receiptAgeSeconds !== null
             ? ` · ${t("last checked {age}", {
                 age: formatElapsedAge(receiptAgeSeconds),

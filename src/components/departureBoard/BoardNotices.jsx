@@ -40,7 +40,7 @@ export function FreshnessNotice({ offlineSince, error, receiptAgeSeconds }) {
         t("Offline · last updated {time}", { time: formatClock(offlineSince) })
       ) : (
         <>
-          {error ? t("Live update failed") : t("Live data is getting old")}
+          {error ? t("Live update failed") : t("Live times may be out of date")}
           {receiptAgeSeconds !== null
             ? ` · ${t("last successful update {age}", {
                 age: formatElapsedAge(receiptAgeSeconds),

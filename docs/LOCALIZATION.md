@@ -55,6 +55,10 @@ English left on the Finnish screens.
 7. **A control's accessible name starts with its visible words** (WCAG
    2.5.3): "Kävele sinne: Kauppatori, pysäkki 164, Google Mapsissa" for a
    button reading "Kävele sinne".
+8. **A long compound on a narrow button gets a soft hyphen** (`­`) at
+   its seam, so large text breaks it where a Finn would: "Pysäkki­hälytys".
+   Screen readers ignore it; a test matching the name allows it
+   (`/^Pysäkki­?hälytys$/`).
 
 ## Glossary
 
@@ -70,7 +74,7 @@ English left on the Finnish screens.
 | late, early | myöhässä, etuajassa |
 | service updates | liikennetiedotteet |
 | reduced service | supistettu liikenne |
-| disruption notice | häiriötiedote |
+| service update | liikennetiedote |
 | detour | poikkeusreitti |
 | cancelled | peruttu |
 | due (column) | lähtee |
@@ -87,7 +91,7 @@ English left on the Finnish screens.
 | press STOP | paina STOP-nappia |
 | My Places | Omat paikat |
 | Home, School, Work | Koti, Koulu, Työ |
-| primary stop | pääpysäkki |
+| main stop | pääpysäkki |
 | backup stop | varapysäkki |
 | backup card (printed) | varakortti |
 | driver | kuljettaja |

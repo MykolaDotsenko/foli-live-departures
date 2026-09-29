@@ -19,7 +19,7 @@ test("bare URL keeps one-tap location beside search and only fills the field", a
   await page.goto("/");
 
   const input = page.getByRole("combobox", { name: "Find your stop" });
-  const locate = page.getByRole("button", { name: "Use current location" });
+  const locate = page.getByRole("button", { name: "Use my location", exact: true });
   await expect(input).toHaveValue("");
   await expect(locate).toBeVisible();
   await expect(page.getByRole("button", { name: "Find nearest stop" })).toBeVisible();
@@ -199,7 +199,7 @@ test("a late location fix does not overwrite the search being typed", async ({
 
   await page.goto("/");
   const input = page.getByRole("combobox", { name: "Find your stop" });
-  const locate = page.getByRole("button", { name: "Use current location" });
+  const locate = page.getByRole("button", { name: "Use my location", exact: true });
   await locate.click();
   await expect(locate).toHaveAttribute("aria-busy", "true");
   await input.fill("Puistokatu");

@@ -30,7 +30,7 @@ test("starts with three essential actions before revealing the full guide", () =
     screen.getByRole("heading", { name: "Use the get-off alert" })
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("heading", { name: "Watch for disruptions" })
+    screen.queryByRole("heading", { name: "Check service updates" })
   ).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "See full guide" }));
@@ -39,13 +39,13 @@ test("starts with three essential actions before revealing the full guide", () =
     screen.getByRole("dialog", { name: "How to use Turku Departures" })
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("heading", { name: "Watch for disruptions" })
+    screen.getByRole("heading", { name: "Check service updates" })
   ).toBeInTheDocument();
   expect(
     screen.getByRole("heading", { name: "Save familiar places" })
   ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Quick start" }));
+  fireEvent.click(screen.getByRole("button", { name: "Back to start" }));
   expect(
     screen.getByRole("dialog", { name: "Three things to know" })
   ).toBeInTheDocument();
@@ -102,6 +102,6 @@ test("the quick start and full guide follow the selected interface language", ()
     screen.getByRole("heading", { name: "Käytä pysäkkihälytystä" })
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sulje ohje" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Pika-aloitus" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Takaisin alkuun" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Selvä" })).toBeInTheDocument();
 });

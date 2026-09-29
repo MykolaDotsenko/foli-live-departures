@@ -69,18 +69,18 @@ export default {
   "The full guide also covers disruptions, offline behaviour and saved places.":
     "Koko ohje kertoo myös häiriöistä, offline-toiminnasta ja tallennetuista paikoista.",
   "See full guide": "Näytä koko ohje",
-  "Quick start": "Pika-aloitus",
+  "Back to start": "Takaisin alkuun",
   "How to use Turku Departures": "Näin käytät Turku Departures -sovellusta",
   "Close guide": "Sulje ohje",
-  "Search by stop name or number, use a favourite, or find nearby stops.":
-    "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai etsi lähellä olevia pysäkkejä.",
+  "Search by stop name or number, use a favourite, or tap Find nearest stop.":
+    "Hae pysäkkiä nimellä tai numerolla, käytä suosikkia tai napauta Etsi lähin pysäkki.",
   "Check what leaves next": "Katso, mikä lähtee seuraavaksi",
   "Each time says Live or Scheduled. Old live data is marked, never shown as fresh.":
     "Jokaisesta ajasta näkee, onko se Reaaliaika vai Aikataulu. Vanha tieto merkitään, eikä sitä näytetä tuoreena.",
   "Use the get-off alert": "Käytä pysäkkihälytystä",
   "Tap Get-off alert on your bus, choose where you want to get off, then keep the ride screen open. It tells you when to get ready, press STOP and get off.":
-    "Napauta bussisi kohdalla Pysäkkihälytys, valitse poistumispysäkki ja pidä matkanäkymä auki. Sovellus kertoo, milloin valmistautua, painaa STOP-nappia ja jäädä pois.",
-  "Watch for disruptions": "Seuraa liikennetiedotteita",
+    "Napauta bussisi kohdalla Pysäkkihälytys, valitse poistumispysäkki ja pidä hälytysnäkymä auki. Sovellus kertoo, milloin valmistautua, painaa STOP-nappia ja jäädä pois.",
+  "Check service updates": "Tarkista liikennetiedotteet",
   "Relevant service updates appear with the stop and routes you are using.":
     "Sinua koskevat liikennetiedotteet näkyvät käyttämäsi pysäkin ja linjojen yhteydessä.",
   "Save familiar places": "Tallenna tutut paikat",
@@ -88,7 +88,7 @@ export default {
     "Tallenna kodin, koulun tai työpaikan lähin pysäkki. ”Vie minut kotiin”, varapysäkit ja ”Näytä kuljettajalle” auttavat, jos tavallinen matka ei onnistu.",
   "Good to know": "Hyvä tietää",
   "The app works without an account. Some saved information remains available offline, but live departures and directions still need a connection.":
-    "Sovellus toimii ilman käyttäjätiliä. Osa tallennetuista tiedoista toimii myös ilman verkkoyhteyttä, mutta reaaliaikaiset lähdöt ja reittiohjeet tarvitsevat yhteyden.",
+    "Sovellus toimii ilman käyttäjätiliä. Osa tallennetuista tiedoista on käytettävissä myös ilman verkkoyhteyttä, mutta reaaliaikaiset lähdöt ja reittiohjeet tarvitsevat yhteyden.",
   "Got it": "Selvä",
 
   // Connection and error screens

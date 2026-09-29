@@ -226,7 +226,7 @@ export default function HelpGuide() {
                       <h3>{t("Find your stop")}</h3>
                       <p>
                         {t(
-                          "Search by stop name or number, use a favourite, or find nearby stops."
+                          "Search by stop name or number, use a favourite, or tap Find nearest stop."
                         )}
                       </p>
                     </div>
@@ -259,7 +259,7 @@ export default function HelpGuide() {
                   <li className={styles.step}>
                     <span className={styles.number} aria-hidden="true">{4}</span>
                     <div>
-                      <h3>{t("Watch for disruptions")}</h3>
+                      <h3>{t("Check service updates")}</h3>
                       <p>
                         {t(
                           "Relevant service updates appear with the stop and routes you are using."
@@ -296,7 +296,7 @@ export default function HelpGuide() {
                     className={styles.secondary}
                     onClick={() => setView("quick")}
                   >
-                    {t("Quick start")}
+                    {t("Back to start")}
                   </button>
                   <button
                     type="button"

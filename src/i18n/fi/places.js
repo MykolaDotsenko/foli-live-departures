@@ -18,7 +18,7 @@ export default {
   "Route links send Google Maps only the stop you’re going to. Google Maps may then use your location to plan the route.":
     "Reittilinkit kertovat Google Mapsille vain määränpääpysäkin. Google Maps voi sitten käyttää sijaintiasi reitin laskemiseen.",
   "Stop locations are temporarily unavailable.":
-    "Pysäkkien sijainnit eivät ole tilapäisesti saatavilla.",
+    "Pysäkkien sijainnit eivät ole juuri nyt saatavilla.",
   "This location appears outside Föli’s published service area. Choose a public stop manually instead.":
     "Sijainti näyttää olevan Fölin julkaiseman palvelualueen ulkopuolella. Valitse sen sijaan julkinen pysäkki itse.",
   "The nearest Föli stop is {distance} away. Move closer to the place before saving it.":
@@ -116,9 +116,9 @@ export default {
   "Make main stop": "Tee pääpysäkiksi",
 
   "Replace using where I am now": "Korvaa nykyisen sijaintini perusteella",
-  "Share {label}": "Jaa {label}",
-  "Remove {label} from My Places?": "Poistetaanko {label} Omista paikoista?",
-  "Remove {label}": "Poista {label}",
+  "Share this place": "Jaa tämä paikka",
+  "Remove {label} from My Places?": "Poistetaanko paikka {label} Omista paikoista?",
+  "Remove this place": "Poista tämä paikka",
   "Share link for {label}": "Jakolinkki: {label}",
   "{label} · My Places": "{label} · Omat paikat",
   "Link shared.": "Linkki jaettu.",

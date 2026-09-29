@@ -388,8 +388,8 @@ function BusStopForm({
             // focus to the page while the location is looked up.
             aria-disabled={locating ? "true" : undefined}
             aria-busy={locating}
-            aria-label={t("Use current location")}
-            title={t("Use current location")}
+            aria-label={t("Use my location")}
+            title={t("Use my location")}
           >
             <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
           </button>

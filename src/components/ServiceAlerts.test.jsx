@@ -46,10 +46,10 @@ test("does not imply there are no disruptions when the alert feed cannot be conf
   render(<ServiceAlerts alerts={[]} error />);
 
   expect(
-    screen.getByRole("heading", { name: "Service update check unavailable" })
+    screen.getByRole("heading", { name: "Couldn’t check service updates" })
   ).toBeInTheDocument();
   expect(
-    screen.getByText(/Föli disruption data could not be confirmed/i)
+    screen.getByText(/Some disruptions may not show/i)
   ).toBeInTheDocument();
 });
 
@@ -62,7 +62,7 @@ test("marks retained disruption data when the last successful check is old", () 
   );
 
   expect(
-    screen.getByText(/Service update check is getting old.*11 min ago/i)
+    screen.getByText(/Service updates may be out of date.*11 min ago/i)
   ).toBeInTheDocument();
   expect(screen.getByText("Update 1")).toBeInTheDocument();
 });

@@ -11,6 +11,7 @@ import { offerPlaceLink } from "./sharePlace";
 export default function PlaceManage({
   place,
   label,
+  titleId,
   onReplace,
   onRemove,
   locating = false,
@@ -57,19 +58,22 @@ export default function PlaceManage({
           type="button"
           className={styles.textButton}
           onClick={sharePlace}
+          // The name is what it says; the place it is for is read after.
+          aria-describedby={titleId}
         >
-          {t("Share {label}", { label })}
+          {t("Share this place")}
         </button>
         <button
           type="button"
           className={styles.dangerButton}
+          aria-describedby={titleId}
           onClick={() => {
             if (window.confirm(t("Remove {label} from My Places?", { label }))) {
               onRemove(place.id);
             }
           }}
         >
-          {t("Remove {label}", { label })}
+          {t("Remove this place")}
         </button>
       </div>
       {shareFeedback && (

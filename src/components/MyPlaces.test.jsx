@@ -352,7 +352,7 @@ test("shares a configured place through the native share sheet when available", 
   );
 
   fireEvent.click(screen.getByText("Manage Home"));
-  fireEvent.click(screen.getByRole("button", { name: "Share Home" }));
+  fireEvent.click(screen.getByRole("button", { name: "Share this place" }));
 
   await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
 
@@ -705,13 +705,13 @@ test("shares and removes in Finnish, with the same link as in English", async ()
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
 
   const english = renderSavedHome();
-  fireEvent.click(screen.getByRole("button", { name: "Share Home" }));
+  fireEvent.click(screen.getByRole("button", { name: "Share this place" }));
   await screen.findByText("Link shared.");
   english.unmount();
 
   resetLanguageForTests("fi");
   renderSavedHome();
-  fireEvent.click(screen.getByRole("button", { name: "Jaa Koti" }));
+  fireEvent.click(screen.getByRole("button", { name: "Jaa tämä paikka" }));
   expect(await screen.findByText("Linkki jaettu.")).toBeInTheDocument();
 
   const [englishShare, finnishShare] = share.mock.calls.map(([data]) => data);
@@ -719,8 +719,16 @@ test("shares and removes in Finnish, with the same link as in English", async ()
   expect(finnishShare.text).toBe("Lisää koti Omiin paikkoihin");
   expect(finnishShare.url).toBe(englishShare.url);
 
-  fireEvent.click(screen.getByRole("button", { name: "Poista Koti" }));
-  expect(confirm).toHaveBeenCalledWith("Poistetaanko Koti Omista paikoista?");
+  // The button says "this place"; which place is read after it.
+  expect(
+    screen.getByRole("button", { name: "Jaa tämä paikka" })
+  ).toHaveAccessibleDescription("Koti");
+  expect(
+    screen.getByRole("button", { name: "Poista tämä paikka" })
+  ).toHaveAccessibleDescription("Koti");
+
+  fireEvent.click(screen.getByRole("button", { name: "Poista tämä paikka" }));
+  expect(confirm).toHaveBeenCalledWith("Poistetaanko paikka Koti Omista paikoista?");
 });
 
 test("rewords a message already on screen when the language changes", () => {

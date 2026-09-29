@@ -52,7 +52,7 @@ test("location button fills the nearest stop but waits for explicit submit", asy
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Use current location",
+        name: "Use my location",
       })
     );
 
@@ -101,7 +101,7 @@ test("a late location fix does not overwrite what was typed meanwhile", async ()
       />
     );
 
-    const locate = screen.getByRole("button", { name: "Use current location" });
+    const locate = screen.getByRole("button", { name: "Use my location" });
     fireEvent.click(locate);
     const input = screen.getByRole("combobox", { name: "Find your stop" });
     fireEvent.change(input, { target: { value: "Puistokatu" } });
@@ -351,7 +351,7 @@ async function locateWith(coords, extraProps = {}) {
         {...extraProps}
       />
     );
-    fireEvent.click(screen.getByRole("button", { name: "Use current location" }));
+    fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toBeInTheDocument()
     );
@@ -420,7 +420,7 @@ test("offers one-tap location before a stop is open", () => {
   render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
 
   expect(
-    screen.getByRole("button", { name: "Use current location" })
+    screen.getByRole("button", { name: "Use my location" })
   ).toBeInTheDocument();
 });
 
@@ -476,7 +476,7 @@ test("the location button keeps focus while it looks and ignores a second press"
       />
     );
 
-    const locate = screen.getByRole("button", { name: "Use current location" });
+    const locate = screen.getByRole("button", { name: "Use my location" });
     locate.focus();
     fireEvent.click(locate);
     fireEvent.click(locate);

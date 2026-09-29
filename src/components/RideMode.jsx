@@ -99,7 +99,7 @@ function liveEvidence(runtime, session) {
   if (runtime.targetLive === true) {
     return {
       title: t("Your bus is confirmed"),
-      detail: t("in Föli’s live arrival data"),
+      detail: t("seen in Föli’s live times"),
     };
   }
   if (runtime.trackingHealth === "live" && runtime.previousSeen === true) {
@@ -109,7 +109,7 @@ function liveEvidence(runtime, session) {
         ? t("on its way to {name}", {
             name: realStopName(session.previousStop.name),
           })
-        : t("in Föli’s live arrival data"),
+        : t("seen in Föli’s live times"),
     };
   }
   if (runtime.trackingHealth === "delayed") {
@@ -120,7 +120,7 @@ function liveEvidence(runtime, session) {
   }
   return {
     title: t("Looking for your bus"),
-    detail: t("in Föli’s live arrival data"),
+    detail: t("in Föli’s live times"),
   };
 }
 
@@ -143,7 +143,7 @@ function staleLabel(ageSec) {
 }
 
 function gpsDetail(gps, enabled, ageSec) {
-  if (!enabled) return t("using arrival data only");
+  if (!enabled) return t("going by bus times only");
   if (gpsIsStale(ageSec)) return staleLabel(ageSec);
 
   if (
@@ -597,9 +597,7 @@ export default function RideMode({
                 ? t("Cannot keep your screen on")
                 : t("Your screen may switch off")}
           </strong>
-          <small>
-            {t("Most reliable while this page stays open and visible")}
-          </small>
+          <small>{t("Keep this screen open")}</small>
         </span>
       </div>
       )}

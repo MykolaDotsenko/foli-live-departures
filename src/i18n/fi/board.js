@@ -77,7 +77,7 @@ export default {
   "Live update failed": "Reaaliaikapäivitys epäonnistui",
   "Offline · last updated {time}": "Ei yhteyttä · päivitetty viimeksi klo {time}",
   "Last live estimate": "Viimeisin reaaliaika-arvio",
-  "Live data is getting old": "Reaaliaikatiedot eivät ole tuoreita",
+  "Live times may be out of date": "Reaaliaikatiedot voivat olla vanhentuneita",
   "last successful update {age}": "viimeisin onnistunut päivitys {age}",
   "Live times aren’t available · showing the timetable.":
     "Reaaliaikatiedot eivät ole saatavilla · näytetään aikataulu.",
@@ -108,7 +108,7 @@ export default {
   // U8: "Sulje asetukset" did not say which settings.
   // The ride setup is already "Aseta pysäkkihälytys": the button uses the
   // same word, at every width.
-  "Get-off alert": "Pysäkkihälytys",
+  "Get-off alert": "Pysäkki\u00ADhälytys",
   Cancelled: "Peruttu",
   "About live estimates": "Tietoa reaaliaika-arvioista",
   "Live times are Föli’s estimates from the buses themselves. A bus’s distance is a straight line from its last reported position. Scheduled means Föli has no live data for that trip right now.":
@@ -122,7 +122,7 @@ export default {
   "Next stops · timetable times": "Seuraavat pysäkit · aikataulun ajat",
   "Loading planned stops…": "Ladataan pysäkkejä…",
   "Next stops are temporarily unavailable.":
-    "Seuraavat pysäkit eivät ole tilapäisesti saatavilla.",
+    "Seuraavat pysäkit eivät ole juuri nyt saatavilla.",
   "No later stops are listed.": "Myöhempiä pysäkkejä ei ole listattu.",
   "around {time}": "noin klo {time}",
   planned: "suunniteltu",

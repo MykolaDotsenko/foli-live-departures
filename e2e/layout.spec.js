@@ -348,7 +348,7 @@ test("first-visit search row keeps location and Show inside the card", async ({
     await page.goto("/");
 
     const input = page.getByRole("combobox", { name: "Find your stop" });
-    const locate = page.getByRole("button", { name: "Use current location" });
+    const locate = page.getByRole("button", { name: "Use my location", exact: true });
     const show = page.getByRole("button", { name: "Show departures" });
 
     await expect(input).toBeVisible();

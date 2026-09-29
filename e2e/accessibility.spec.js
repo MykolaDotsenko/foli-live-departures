@@ -228,7 +228,7 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     dialog.getByRole("heading", { name: "Use the get-off alert" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Watch for disruptions" })
+    dialog.getByRole("heading", { name: "Check service updates" })
   ).toHaveCount(0);
 
   const quickHeader = dialog.locator("header");
@@ -250,7 +250,7 @@ test("the footer guide starts simple and reveals the full guide on demand", asyn
     page.getByRole("dialog", { name: "How to use Turku Departures" })
   ).toBeVisible();
   await expect(
-    dialog.getByRole("heading", { name: "Watch for disruptions" })
+    dialog.getByRole("heading", { name: "Check service updates" })
   ).toBeVisible();
   await expect(
     dialog.getByRole("heading", { name: "Save familiar places" })

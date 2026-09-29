@@ -66,7 +66,8 @@ export default {
   "Live tracking is catching up": "Reaaliaikatieto viivästyy",
   "Going by the timetable": "Aikataulun mukaan",
   "Your bus is confirmed": "Bussi löytyi",
-  "in Föli’s live arrival data": "Fölin reaaliaikatiedoista",
+  "seen in Föli’s live times": "näkyy Fölin reaaliaikatiedoissa",
+  "in Föli’s live times": "Fölin reaaliaikatiedoista",
   "on its way to {name}": "matkalla pysäkille {name}",
   "Waiting for a live update": "Odotetaan reaaliaikapäivitystä",
   "last seen in Föli’s live data about a minute ago":
@@ -76,7 +77,7 @@ export default {
   // Where the phone is
   "last seen {minutes} min ago": "viimeisin sijainti {minutes} min sitten",
   "last seen over a minute ago": "viimeisin sijainti yli minuutti sitten",
-  "using arrival data only": "käytetään vain saapumistietoja",
+  "going by bus times only": "vain bussin aikatietojen perusteella",
   "about {meters} m past your stop": "noin {meters} m pysäkkisi jälkeen",
   "about {meters} m to go": "noin {meters} m jäljellä",
   "≈{meters} m from your stop": "≈{meters} m pysäkiltäsi",
@@ -91,11 +92,11 @@ export default {
   "Cannot use your location": "Sijaintiasi ei voi käyttää",
   "This phone cannot share location": "Tämä puhelin ei voi jakaa sijaintia",
   "Waiting for your location": "Odotetaan sijaintiasi",
-  "Location backup is unavailable on this device.":
+  "Location isn’t available on this device.":
     "Sijainnin seuranta ei ole käytettävissä tällä laitteella.",
-  "Location backup was not allowed.": "Sijainnin käyttöä ei sallittu.",
-  "Location backup is temporarily unavailable.":
-    "Sijainnin seuranta ei ole tilapäisesti käytettävissä.",
+  "Location wasn’t allowed.": "Sijainnin käyttöä ei sallittu.",
+  "Location isn’t available right now.":
+    "Sijainnin seuranta ei ole juuri nyt käytettävissä.",
   "The alert keeps going without your location.":
     "Hälytys toimii ilman sijaintiasi.",
 
@@ -131,8 +132,7 @@ export default {
   "Keeping your screen on": "Näyttö pidetään päällä",
   "Cannot keep your screen on": "Näyttöä ei voi pitää päällä",
   "Your screen may switch off": "Näyttö voi sammua",
-  "Most reliable while this page stays open and visible":
-    "Toimii varmimmin, kun sivu on auki ja näkyvissä",
+  "Keep this screen open": "Pidä tämä näkymä auki",
   "We cannot see your bus in the live data right now, so we are going by the timetable. You will still get the early warnings, but we will not say “get off now” on the timetable alone.":
     "Emme näe bussiasi reaaliaikatiedoissa juuri nyt, joten seuraamme aikataulua. Saat silti ennakkovaroitukset, mutta pelkän aikataulun perusteella emme sano ”jää pois nyt”.",
   "Check your bus": "Tarkista bussisi",
