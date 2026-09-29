@@ -44,7 +44,10 @@ export function buildContentSecurityPolicy({ html, connectSources }) {
     `script-src 'self' ${scripts.join(" ")}`.trim(),
     // React writes style through the CSSOM, which a policy does not govern;
     // no style attribute or <style> element is ever parsed from markup.
-    "style-src 'self'",
+    // 'report-sample' puts the first characters of refused inline code in
+    // the violation. Nothing is reported anywhere; the browser tests read it
+    // to tell the page's own code from their tooling's.
+    "style-src 'self' 'report-sample'",
     // Föli's service alerts link illustrations from wherever Föli hosts them.
     "img-src 'self' data: https:",
     `connect-src 'self' ${connect.join(" ")}`.trim(),
