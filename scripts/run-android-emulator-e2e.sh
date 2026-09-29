@@ -19,7 +19,15 @@ adb shell am force-stop "$PACKAGE"
 adb shell am start -W -n "$PACKAGE/.MainActivity" \
   | tee artifacts/android-e2e/am-start.txt
 
-sleep 6
+# Re-inject the deterministic Turku fix after the cold start. Android Emulator
+# can accept a geo fix before the activity starts but still leave the newly
+# created WebView waiting for its first provider update.
+sleep 2
+for _ in 1 2 3; do
+  adb emu geo fix 22.2666 60.4518
+  sleep 1
+done
+sleep 1
 
 adb shell dumpsys activity activities \
   > artifacts/android-e2e/activity-dump.txt
