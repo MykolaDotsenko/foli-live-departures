@@ -43,8 +43,16 @@ test("production PWA reopens offline with My Places and driver help", async ({
   await page.reload({ waitUntil: "domcontentloaded" });
 
   await expect(page.getByText("Offline", { exact: true })).toBeVisible();
-  // Announced, once, and shown once, by the banner.
+  // Announced once, by the header's status line, and shown once, by the
+  // banner, which is not a live region of its own.
   await expect(page.getByText("Offline mode", { exact: true })).toHaveCount(1);
+  expect(
+    await page
+      .getByText(/saved places and show to driver still work/i)
+      .evaluate((node) =>
+        Boolean(node.closest('[aria-live], [role="status"], [role="alert"]'))
+      )
+  ).toBe(false);
   await expect(
     page.getByText(/saved places and show to driver still work/i)
   ).toBeVisible();

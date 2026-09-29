@@ -17,6 +17,10 @@ export default {
   "Use light theme": "Käytä vaaleaa teemaa",
   "Choose a bus stop": "Valitse bussipysäkki",
   "Stop {id}": "Pysäkki {id}",
+  // Said to a screen reader when the stop changes. Undeclined, as a label,
+  // so the stop's name stays as the pole spells it.
+  "Departures for {name}, stop {id}": "Lähdöt: {name}, pysäkki {id}",
+  "Departures for stop {id}": "Lähdöt: pysäkki {id}",
   "Independent app · Data: Föli open data":
     "Itsenäinen sovellus · Tiedot: Fölin avoin data",
   "Built by": "Tekijä:",

@@ -3,6 +3,12 @@ import { afterEach, expect, test, vi } from "vitest";
 import RideMode from "./RideMode";
 import { resetLanguageForTests } from "../i18n";
 
+// The instruction's urgent region is always in the panel, so an alert of
+// another kind (the off-route question) is found by what it says.
+function alertSaying(text) {
+  return screen.getAllByRole("alert").find((node) => node.textContent.includes(text));
+}
+
 afterEach(() => {
   resetLanguageForTests("en");
 });
@@ -409,7 +415,7 @@ test("turns the wrong-bus warning into the two answers it is asking for", () => 
     />
   );
 
-  const warning = screen.getByRole("alert");
+  const warning = alertSaying("Check your bus");
   expect(warning).toHaveTextContent("Check your bus");
   expect(warning).toHaveTextContent("line 1");
   expect(warning).toHaveTextContent("Satama");
@@ -727,7 +733,7 @@ test("gives a location problem in Finnish, and the destination as its sign says 
       "Sijainnin käyttöä ei sallittu. Hälytys toimii ilman sijaintiasi."
     )
   ).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent(
+  expect(alertSaying("Oletko yhä tässä bussissa?")).toHaveTextContent(
     "Et ole kahteen minuuttiin liikkunut linjan 1 reittiä suuntaan Satama. Oletko yhä tässä bussissa?"
   );
   expect(
@@ -937,9 +943,38 @@ test("the off-route question also asks for a second tap to turn off the alert", 
     />
   );
 
-  const question = screen.getByRole("alert");
+  const question = alertSaying("Are you still on this bus?");
   fireEvent.click(within(question).getByRole("button", { name: "Turn off alert" }));
   expect(onEndRide).not.toHaveBeenCalled();
   fireEvent.click(within(question).getByRole("button", { name: "Tap again to turn it off" }));
   expect(onEndRide).toHaveBeenCalledTimes(1);
+});
+
+// One node that turned from status into alert as the stop came up was, to
+// some screen readers, a new region with nothing new in it. Both regions
+// are there from the start; the words move from the polite one to the
+// urgent one.
+test("the instruction moves between two lasting live regions as the stop nears", () => {
+  const panel = (stage) => (
+    <RideMode
+      session={{ ...session(stage), previousLeft: true }}
+      runtime={{ trackingHealth: "live", etaSec: 200, remainingStops: 3 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+  const { rerender } = render(panel("boarded"));
+  const polite = screen.getByRole("status");
+  const urgent = alertSaying("");
+  expect(polite).toHaveTextContent("We will warn you as your stop gets closer.");
+  expect(urgent).toBeEmptyDOMElement();
+
+  rerender(panel("now"));
+
+  expect(screen.getAllByRole("status")).toContain(polite);
+  expect(polite).toBeEmptyDOMElement();
+  expect(alertSaying("Move to the doors and step off here.")).toBe(urgent);
 });

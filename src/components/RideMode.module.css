@@ -163,6 +163,21 @@
   line-height: 1.45;
 }
 
+/* The instruction has two live regions, polite and urgent, and only one
+   speaks at a time. The quiet one is taken out of sight and out of the
+   layout, but not out of the page: a region hidden with display: none is
+   not there to announce what arrives in it next. */
+.panel .instruction:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .metrics {
   margin-top: 14px;
   display: grid;

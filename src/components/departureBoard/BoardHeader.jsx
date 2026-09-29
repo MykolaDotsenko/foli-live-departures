@@ -4,9 +4,12 @@ import { formatClock, formatElapsedAge } from "../../utils/time";
 import { LineFilterButton } from "./LineFilter";
 
 // The top of the board: which stop this is, whether it is saved, how old
-// its times are, and the controls that change what the board shows. The
-// meta line is a live region, so a screen reader hears the stop change and
-// the board refresh without leaving the departures.
+// its times are, and the controls that change what the board shows.
+//
+// A screen reader hears a change of stop from App, in a line of its own
+// that changes only with the stop. This meta line used to be that live
+// region, and every 30-second refresh read it out twice: "Refreshing…",
+// then "Updated 08:11". Refreshing is said by the button alone.
 function BoardHeader({
   stopId,
   stopName,
@@ -61,7 +64,7 @@ function BoardHeader({
             </button>
           )}
         </div>
-        <p className={styles.stopMeta} aria-live="polite">
+        <p className={styles.stopMeta}>
           {[
             // Without Föli's name the heading already says "Stop {id}".
             stopName || loading ? t("Stop {id}", { id: stopId }) : "",
@@ -69,7 +72,6 @@ function BoardHeader({
             receiptAgeSeconds !== null && receiptAgeSeconds >= 60
               ? formatElapsedAge(receiptAgeSeconds)
               : "",
-            refreshing ? t("Refreshing…") : "",
           ]
             .filter(Boolean)
             .join(" · ")}

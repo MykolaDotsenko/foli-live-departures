@@ -443,12 +443,17 @@ export default function RideMode({
         </div>
       )}
 
-      <p
-        className={styles.instruction}
-        role={urgent ? "alert" : "status"}
-        aria-live={urgent ? "assertive" : "polite"}
-      >
-        {t(copy.instruction, copy.params)}
+      {/* Two regions that are always there, and the instruction goes to
+          the one that fits: calm news politely, "Press STOP" and "Get off
+          now" at once. One node that changed its role from status to alert
+          as the stop came up was, to some screen readers, a new region
+          with nothing new in it, and the most urgent words went unsaid.
+          The empty one is out of sight but stays in the page (CSS). */}
+      <p className={styles.instruction} role="status">
+        {urgent ? "" : t(copy.instruction, copy.params)}
+      </p>
+      <p className={styles.instruction} role="alert">
+        {urgent ? t(copy.instruction, copy.params) : ""}
       </p>
 
       {!gettingOffNow && (

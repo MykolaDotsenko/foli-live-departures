@@ -44,6 +44,13 @@ function rideHeading() {
   return document.getElementById("ride-mode-title");
 }
 
+function announceStop(stopId, name, loading) {
+  if (name) return t("Departures for {name}, stop {id}", { name, id: stopId });
+  // Still loading, the name may be a moment away: one announcement, with
+  // it, rather than the number and then the name.
+  return loading ? "" : t("Departures for stop {id}", { id: stopId });
+}
+
 
 function stopFromLocation() {
   const stopFromUrl = new URLSearchParams(window.location.search).get("stop");
@@ -269,6 +276,16 @@ function App() {
       : t("Turku Departures · Live bus times & get-off alerts");
   }, [displayStopName, language, stopId]);
 
+  // A change of stop is said, once, by a line that changes with nothing
+  // else. The board's meta line did it before, and as it also carried the
+  // update time, every 30-second refresh was read out twice. The stop the
+  // page opened on is not announced: it is the page's own heading.
+  const [openedStopId] = useState(stopId);
+  const [stopChanged, setStopChanged] = useState(false);
+  if (!stopChanged && stopId !== openedStopId) setStopChanged(true);
+  const stopAnnouncement =
+    stopChanged && stopId ? announceStop(stopId, displayStopName, loading) : "";
+
   const selectStop = (nextStopId) => {
     if (!/^\d+$/.test(nextStopId || "")) return;
 
@@ -455,6 +472,12 @@ function App() {
           />
         )}
       </div>
+
+      {/* Always in the page, so a change is announced: a live region
+          added at that moment often is not. */}
+      <p className="visually-hidden" role="status">
+        {stopAnnouncement}
+      </p>
 
       {stopId && (
         <>

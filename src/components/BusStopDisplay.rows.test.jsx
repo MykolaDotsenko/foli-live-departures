@@ -225,9 +225,8 @@ test("an expanded next-stops list does not carry over to another stop", async ()
 });
 
 // Back and Forward change the stop under the same board. Remounting the whole
-// board for it dropped keyboard focus to the page and replaced the polite
-// live region that announces the stop, so the new stop was not read out.
-test("the board header keeps focus and its live region across a stop change", () => {
+// board for it dropped keyboard focus to the page and redrew the header.
+test("the board header keeps focus and its meta line across a stop change", () => {
   const { rerender } = render(board([departure()]));
   const refresh = screen.getByRole("button", { name: "Refresh" });
   refresh.focus();
@@ -237,6 +236,23 @@ test("the board header keeps focus and its live region across a stop change", ()
 
   expect(document.activeElement).toBe(refresh);
   expect(screen.getByText(/^Stop 4/)).toBe(stopLine);
+});
+
+// The meta line carries the update time, so as a live region it was read
+// out twice on every 30-second refresh: "Refreshing…", then "Updated". A
+// change of stop is announced by App instead, and Refreshing is said by the
+// button alone.
+test("a routine refresh is not announced by the meta line", () => {
+  const props = (refreshing) => ({ ...board([departure()]).props, refreshing });
+  const { rerender } = render(<BusStopDisplay {...props(false)} />);
+  const stopLine = screen.getByText(/^Stop 164/);
+
+  rerender(<BusStopDisplay {...props(true)} />);
+
+  expect(stopLine).not.toHaveAttribute("aria-live");
+  expect(stopLine.closest("[aria-live], [role='status']")).toBeNull();
+  expect(stopLine).not.toHaveTextContent("Refreshing");
+  expect(screen.getByRole("button", { name: "Refreshing…" })).toBeInTheDocument();
 });
 
 // Cancel goes away with the setup it closes. Focus used to fall to the top

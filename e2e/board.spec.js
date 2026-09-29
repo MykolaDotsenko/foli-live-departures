@@ -27,6 +27,30 @@ test("Back keeps keyboard focus on the departure board", async ({ page }) => {
   ).toBeFocused();
 });
 
+// A change of stop is said once, by a line that changes with nothing else.
+// The board's meta line used to be the live region, and with the update
+// time in it every 30-second refresh was read out twice.
+test("a change of stop is announced, and a refresh is not", async ({ page }) => {
+  await page.goto("/?stop=164");
+  const announcer = page.locator("p.visually-hidden[role='status']");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+  // The stop the page opened on is its heading, not news.
+  await expect(announcer).toHaveText("");
+
+  await page.getByLabel("Find your stop").fill("4");
+  await page.getByRole("button", { name: "Show departures" }).click();
+  await expect(announcer).toHaveText("Departures for Turun linna, stop 4");
+
+  await page.getByRole("button", { name: "Refresh" }).click();
+  await expect(page.getByRole("button", { name: "Refresh" })).toBeVisible();
+  await expect(announcer).toHaveText("Departures for Turun linna, stop 4");
+  await expect(
+    page.locator('[aria-labelledby="departures-title"] [aria-live]')
+  ).toHaveCount(0);
+});
+
 // A saved stop's chip leaves the list once its stop is open, so the button
 // pressed went away and focus fell to the top of the page. It lands on the
 // board it opened instead, where a screen reader reads the stop's name.

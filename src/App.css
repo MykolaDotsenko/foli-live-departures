@@ -217,8 +217,10 @@ input:focus-visible,
 }
 
 /* Heard, not seen: the Offline banner shows the same news, and the pill
-   beside it made three notices of one and pushed the header about. */
-.live-pill {
+   beside it made three notices of one and pushed the header about. The
+   same for anything else only a screen reader needs to hear. */
+.live-pill,
+.visually-hidden {
   position: absolute;
   width: 1px;
   min-height: 0;
