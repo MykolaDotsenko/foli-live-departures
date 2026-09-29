@@ -34,6 +34,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Type-check the data layer
+        run: npm run typecheck
+
       - name: Verify branding consistency
         run: npm run verify:brand
 

@@ -7,6 +7,37 @@ import {
   serviceRunsOnDate,
 } from "../utils/gtfsSchedule";
 
+/**
+ * @import {
+ *   Arrival,
+ *   Calendar,
+ *   CalendarDates,
+ *   ClockCandidate,
+ *   EpochSeconds,
+ *   LatLon,
+ *   Route,
+ *   RouteTrip,
+ *   ScheduledArrival,
+ *   ScheduledDepartures,
+ *   ServiceBoundary,
+ *   ShapePoint,
+ *   StopMonitorOptions,
+ *   StopMonitorResult,
+ *   StopSummary,
+ *   StopTimetableRow,
+ *   TripDetails,
+ *   TripHeader,
+ *   TripStopTime,
+ * } from "../types/foli"
+ * @import { BoundedCache } from "../utils/boundedCache"
+ */
+
+/**
+ * Föli's JSON before normalization. Nothing about it is trusted, so a field
+ * is read as `unknown` and coerced by the helpers below.
+ * @typedef {Record<string, any>} RawRecord
+ */
+
 const API_BASE_URL =
   import.meta.env.VITE_FOLI_API_URL || "https://data.foli.fi/siri/sm";
 const ALERTS_URL =
@@ -35,16 +66,26 @@ const LINE_TIMETABLE_ROWS = 3;
 
 // Dataset-scoped responses. Bounded so a display left running for days cannot
 // grow its memory without limit.
+/** @type {BoundedCache<string, TripDetails>} */
 const tripDetailsCache = createBoundedCache(200);
+/** @type {BoundedCache<string, TripStopTime[]>} */
 const tripStopTimesCache = createBoundedCache(60);
+/** @type {BoundedCache<string, string[]>} */
 const stopBoardingTripsCache = createBoundedCache(20);
+/** @type {BoundedCache<string, RouteTrip[]>} */
 const routeTripsCache = createBoundedCache(60);
+/** @type {BoundedCache<string, ShapePoint[]>} */
 const tripShapeCache = createBoundedCache(40);
+/** @type {BoundedCache<string, StopTimetableRow[]>} */
 const stopTimetableCache = createBoundedCache(30);
+/** @type {BoundedCache<string, Calendar>} */
 const calendarCache = createBoundedCache(1);
+/** @type {BoundedCache<string, CalendarDates>} */
 const calendarDatesCache = createBoundedCache(1);
+/** @type {BoundedCache<string, Route[]>} */
 const routeCatalogCache = createBoundedCache(1);
 
+/** @type {Promise<string> | null} */
 let gtfsDatasetBasePromise = null;
 let gtfsDatasetBaseUrl = "";
 let gtfsDatasetResolvedAtMs = 0;
@@ -79,6 +120,7 @@ function invalidateExpiredGtfsDataset() {
   clearGtfsResourceCaches();
 }
 
+/** @returns {Promise<string>} */
 function gtfsDatasetBase() {
   invalidateExpiredGtfsDataset();
 
@@ -118,6 +160,11 @@ function gtfsDatasetBase() {
   return gtfsDatasetBasePromise;
 }
 
+/**
+ * @param {string} resource
+ * @param {string} [overrideUrl]
+ * @returns {Promise<string>}
+ */
 async function gtfsResourceUrl(resource, overrideUrl) {
   if (overrideUrl) return overrideUrl;
   return `${await gtfsDatasetBase()}/${resource}`;
@@ -130,11 +177,19 @@ export function resetGtfsDatasetForTests() {
   clearGtfsResourceCaches();
 }
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function positiveNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function optionalNumber(value) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -142,6 +197,12 @@ function optionalNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+/**
+ * @param {unknown} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number | null}
+ */
 function coordinateNumber(value, min, max) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -151,10 +212,18 @@ function coordinateNumber(value, min, max) {
     : null;
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function optionalString(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string | null}
+ */
 function gtfsColor(value) {
   const normalized = optionalString(value).replace(/^#/, "");
   return /^[0-9a-f]{6}$/i.test(normalized)
@@ -162,7 +231,13 @@ function gtfsColor(value) {
     : null;
 }
 
-function normalizeArrival(arrival) {
+/**
+ * @param {unknown} value
+ * @returns {Arrival | null}
+ */
+function normalizeArrival(value) {
+  /** @type {RawRecord} */
+  const arrival = /** @type {RawRecord} */ (value);
   if (!arrival || Array.isArray(arrival) || typeof arrival !== "object") {
     return null;
   }
@@ -227,6 +302,12 @@ function normalizeArrival(arrival) {
 // `scheduleFallback: false` returns the realtime feed alone. The timetable rows
 // that fill a quiet board carry real trip ids, so anything reading this answer
 // as evidence of where a vehicle is (Ride Mode) must not be handed them.
+/**
+ * @param {string} stopId
+ * @param {AbortSignal} [signal]
+ * @param {StopMonitorOptions} [options]
+ * @returns {Promise<StopMonitorResult>}
+ */
 export async function fetchStopMonitor(
   stopId,
   signal,
@@ -257,9 +338,10 @@ export async function fetchStopMonitor(
     throw new Error("Föli real-time data is unavailable.");
   }
 
+  /** @type {Arrival[]} */
   const realtimeRows =
     status === "OK"
-      ? payload.result.map(normalizeArrival).filter(Boolean)
+      ? payload.result.map(normalizeArrival).filter(isPresent)
       : [];
   const hasFutureRealtime = realtimeRows.some((arrival) => {
     const departure =
@@ -270,6 +352,7 @@ export async function fetchStopMonitor(
     return departure !== null && departure >= serverTime - 30;
   });
 
+  /** @type {Arrival[]} */
   let scheduledRows = [];
   let scheduleAvailable = false;
   // The timetable was needed and could not be read. Only then can an empty
@@ -297,10 +380,9 @@ export async function fetchStopMonitor(
         throw new Error("Föli departure data is unavailable.");
       }
     } catch (error) {
-      if (
-        error?.name === "CanceledError" ||
-        error?.name === "AbortError"
-      ) {
+      const name = /** @type {{ name?: unknown } | null | undefined} */ (error)
+        ?.name;
+      if (name === "CanceledError" || name === "AbortError") {
         throw error;
       }
 
@@ -347,6 +429,10 @@ export async function fetchStopMonitor(
   };
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<StopSummary[]>}
+ */
 export async function fetchStopCatalog(signal) {
   const response = await client.get(API_BASE_URL, { signal });
   const payload = response.data;
@@ -355,7 +441,7 @@ export async function fetchStopCatalog(signal) {
     throw new Error("Invalid Föli stop list.");
   }
 
-  const stops = Object.entries(payload)
+  const stops = Object.entries(/** @type {Record<string, RawRecord>} */ (payload))
     .map(([id, stop]) => ({
       id: String(id),
       name:
@@ -373,6 +459,10 @@ export async function fetchStopCatalog(signal) {
   return stops;
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Map<string, LatLon>>}
+ */
 export async function fetchStopCoordinates(signal) {
   const response = await client.get(
     await gtfsResourceUrl("stops", STOPS_URL_OVERRIDE),
@@ -384,9 +474,10 @@ export async function fetchStopCoordinates(signal) {
     throw new Error("Invalid Föli GTFS stop list.");
   }
 
+  /** @type {Map<string, LatLon>} */
   const coordinates = new Map();
 
-  Object.entries(payload).forEach(([id, stop]) => {
+  Object.entries(/** @type {Record<string, RawRecord>} */ (payload)).forEach(([id, stop]) => {
     const lat = coordinateNumber(stop?.stop_lat, -90, 90);
     const lon = coordinateNumber(stop?.stop_lon, -180, 180);
 
@@ -402,12 +493,15 @@ export async function fetchStopCoordinates(signal) {
   return coordinates;
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Route[]>}
+ */
 export async function fetchRouteCatalog(signal) {
   invalidateExpiredGtfsDataset();
   const cacheKey = ROUTES_URL_OVERRIDE || "routes";
-  if (routeCatalogCache.has(cacheKey)) {
-    return routeCatalogCache.get(cacheKey);
-  }
+  const cached = routeCatalogCache.get(cacheKey);
+  if (cached) return cached;
 
   const response = await client.get(
     await gtfsResourceUrl("routes", ROUTES_URL_OVERRIDE),
@@ -419,8 +513,9 @@ export async function fetchRouteCatalog(signal) {
     throw new Error("Invalid Föli GTFS route list.");
   }
 
+  /** @type {Route[]} */
   const normalized = payload
-    .map((route) => {
+    .map((/** @type {RawRecord} */ route) => {
       const id =
         route?.route_id === null || route?.route_id === undefined
           ? ""
@@ -448,6 +543,12 @@ export async function fetchRouteCatalog(signal) {
   return normalized;
 }
 
+/**
+ * Föli's alert document, passed on as it came: utils/alerts.js reads it
+ * defensively, field by field.
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<RawRecord>}
+ */
 export async function fetchAlerts(signal) {
   const response = await client.get(ALERTS_URL, { signal });
   const payload = response.data;
@@ -459,8 +560,20 @@ export async function fetchAlerts(signal) {
   return payload;
 }
 
+/**
+ * @template T
+ * @param {T | null | undefined} value
+ * @returns {value is T}
+ */
+function isPresent(value) {
+  return value !== null && value !== undefined;
+}
 
-
+/**
+ * @param {unknown} value
+ * @param {string} label
+ * @returns {string}
+ */
 function requiredId(value, label) {
   const id =
     value === null || value === undefined ? "" : String(value).trim();
@@ -470,6 +583,10 @@ function requiredId(value, label) {
   return id;
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function gtfsTime(value) {
   if (typeof value === "string" && /^\d{1,3}:\d{2}:\d{2}$/.test(value.trim())) {
     return value.trim();
@@ -477,10 +594,16 @@ function gtfsTime(value) {
   return "";
 }
 
+/**
+ * @param {string} stopId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<StopTimetableRow[]>}
+ */
 async function fetchStopTimetable(stopId, signal) {
   const id = requiredId(stopId, "stop ID");
   invalidateExpiredGtfsDataset();
-  if (stopTimetableCache.has(id)) return stopTimetableCache.get(id);
+  const cached = stopTimetableCache.get(id);
+  if (cached) return cached;
 
   const response = await client.get(
     await gtfsResourceUrl(`stop_times/stop/${encodeURIComponent(id)}`),
@@ -493,7 +616,7 @@ async function fetchStopTimetable(stopId, signal) {
   }
 
   const normalized = payload
-    .map((item) => ({
+    .map((/** @type {RawRecord} */ item) => ({
       tripId:
         item?.trip_id === null || item?.trip_id === undefined
           ? ""
@@ -511,12 +634,15 @@ async function fetchStopTimetable(stopId, signal) {
   return normalized;
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Calendar>}
+ */
 async function fetchCalendar(signal) {
   invalidateExpiredGtfsDataset();
   const cacheKey = "calendar";
-  if (calendarCache.has(cacheKey)) {
-    return calendarCache.get(cacheKey);
-  }
+  const cached = calendarCache.get(cacheKey);
+  if (cached) return cached;
 
   const response = await client.get(
     await gtfsResourceUrl("calendar"),
@@ -528,8 +654,9 @@ async function fetchCalendar(signal) {
     throw new Error("Invalid Föli GTFS calendar.");
   }
 
+  /** @type {Calendar} */
   const normalized = Object.fromEntries(
-    Object.entries(payload).map(([serviceId, entry]) => [
+    Object.entries(/** @type {Record<string, RawRecord>} */ (payload)).map(([serviceId, entry]) => [
       String(serviceId),
       {
         monday: optionalNumber(entry?.monday),
@@ -555,12 +682,15 @@ async function fetchCalendar(signal) {
   return normalized;
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<CalendarDates>}
+ */
 async function fetchCalendarDates(signal) {
   invalidateExpiredGtfsDataset();
   const cacheKey = "calendar_dates";
-  if (calendarDatesCache.has(cacheKey)) {
-    return calendarDatesCache.get(cacheKey);
-  }
+  const cached = calendarDatesCache.get(cacheKey);
+  if (cached) return cached;
 
   const response = await client.get(
     await gtfsResourceUrl("calendar_dates"),
@@ -572,11 +702,12 @@ async function fetchCalendarDates(signal) {
     throw new Error("Invalid Föli GTFS calendar dates.");
   }
 
+  /** @type {CalendarDates} */
   const normalized = Object.fromEntries(
-    Object.entries(payload).map(([serviceId, entries]) => [
+    Object.entries(/** @type {Record<string, unknown>} */ (payload)).map(([serviceId, entries]) => [
       String(serviceId),
       (Array.isArray(entries) ? entries : [])
-        .map((entry) => ({
+        .map((/** @type {RawRecord} */ entry) => ({
           date:
             entry?.date === null || entry?.date === undefined
               ? ""
@@ -595,6 +726,7 @@ async function fetchCalendarDates(signal) {
 // trip that could not be looked up cuts the timetable short. A cancelled
 // request must end the whole answer instead: reported as a failed check, it
 // said "Live update failed" on the stop the passenger had just switched to.
+/** @param {AbortSignal} [signal] */
 function throwIfAborted(signal) {
   if (!signal?.aborted) return;
   const error = new Error("The request was cancelled.");
@@ -602,8 +734,14 @@ function throwIfAborted(signal) {
   throw error;
 }
 
+/**
+ * @param {string[]} tripIds
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Map<string, TripDetails>>}
+ */
 async function fetchTripDetailsInBatches(tripIds, signal) {
   const ids = [...new Set(tripIds.filter(Boolean))];
+  /** @type {Map<string, TripDetails>} */
   const byId = new Map();
 
   for (let index = 0; index < ids.length; index += 8) {
@@ -624,6 +762,12 @@ async function fetchTripDetailsInBatches(tripIds, signal) {
 }
 
 // A timetable departure in the shape of a live row, marked as not tracked.
+/**
+ * @param {ClockCandidate<StopTimetableRow>} candidate
+ * @param {TripHeader} details
+ * @param {Route | undefined} route
+ * @returns {ScheduledArrival}
+ */
 function scheduledArrival(candidate, details, route) {
   return {
     lineref: route?.shortName || details.routeId || "",
@@ -656,6 +800,12 @@ function scheduledArrival(candidate, details, route) {
   };
 }
 
+/**
+ * @param {string} stopId
+ * @param {EpochSeconds | null | undefined} referenceTimeSec
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ScheduledDepartures>}
+ */
 export async function fetchScheduledStopDepartures(
   stopId,
   referenceTimeSec,
@@ -683,10 +833,12 @@ export async function fetchScheduledStopDepartures(
   if (clockCandidates.length === 0) return { departures: [], complete: true };
 
   const routesById = new Map(routes.map((route) => [route.id, route]));
+  /** @type {ScheduledArrival[]} */
   const scheduled = [];
   // A trip whose metadata could not be fetched may or may not run. Skipping
   // it like a trip that does not run dropped a departure without a word, so
   // the list stops at the first one that could not be checked instead.
+  /** @type {EpochSeconds | null} */
   let uncheckedFrom = null;
 
   // Resolve trip metadata chronologically and stop as soon as we have enough
@@ -705,16 +857,16 @@ export async function fetchScheduledStopDepartures(
       signal
     );
 
-    batch.forEach((candidate) => {
-      if (uncheckedFrom !== null) return;
-      if (!tripDetailsById.has(candidate.tripId)) {
+    for (const candidate of batch) {
+      if (uncheckedFrom !== null) break;
+      const details = tripDetailsById.get(candidate.tripId);
+      if (!details) {
         uncheckedFrom = candidate.aimedDepartureTime;
-        return;
+        break;
       }
 
-      const details = tripDetailsById.get(candidate.tripId);
       if (
-        !details?.serviceId ||
+        !details.serviceId ||
         !serviceRunsOnDate(
           calendar,
           calendarDates,
@@ -722,31 +874,35 @@ export async function fetchScheduledStopDepartures(
           candidate.serviceDate
         )
       ) {
-        return;
+        continue;
       }
 
       scheduled.push(
         scheduledArrival(candidate, details, routesById.get(details.routeId))
       );
-    });
+    }
   }
 
+  const cutoff = uncheckedFrom;
   return {
     departures: scheduled
-      .filter(
-        (row) =>
-          uncheckedFrom === null || row.aimeddeparturetime < uncheckedFrom
-      )
+      .filter((row) => cutoff === null || row.aimeddeparturetime < cutoff)
       .sort((a, b) => a.aimeddeparturetime - b.aimeddeparturetime)
       .slice(0, 24),
-    complete: uncheckedFrom === null,
+    complete: cutoff === null,
   };
 }
 
+/**
+ * @param {string} tripId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<TripDetails>}
+ */
 export async function fetchTripDetails(tripId, signal) {
   const id = requiredId(tripId, "trip ID");
   invalidateExpiredGtfsDataset();
-  if (tripDetailsCache.has(id)) return tripDetailsCache.get(id);
+  const cached = tripDetailsCache.get(id);
+  if (cached) return cached;
   const response = await client.get(
     await gtfsResourceUrl(`trips/trip/${encodeURIComponent(id)}`),
     { signal }
@@ -757,8 +913,10 @@ export async function fetchTripDetails(tripId, signal) {
     throw new Error("Föli GTFS trip metadata is unavailable.");
   }
 
+  /** @type {RawRecord} */
   const trip = payload[0];
 
+  /** @type {TripDetails} */
   const normalized = {
     tripId: id,
     routeId:
@@ -787,10 +945,16 @@ export async function fetchTripDetails(tripId, signal) {
   return normalized;
 }
 
+/**
+ * @param {string} tripId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<TripStopTime[]>}
+ */
 export async function fetchTripStopTimes(tripId, signal) {
   const id = requiredId(tripId, "trip ID");
   invalidateExpiredGtfsDataset();
-  if (tripStopTimesCache.has(id)) return tripStopTimesCache.get(id);
+  const cached = tripStopTimesCache.get(id);
+  if (cached) return cached;
   const response = await client.get(
     await gtfsResourceUrl(`stop_times/trip/${encodeURIComponent(id)}`),
     { signal }
@@ -802,7 +966,7 @@ export async function fetchTripStopTimes(tripId, signal) {
   }
 
   const normalized = payload
-    .map((item) => ({
+    .map((/** @type {RawRecord} */ item) => ({
       stopId:
         item?.stop_id === null || item?.stop_id === undefined
           ? ""
@@ -815,17 +979,26 @@ export async function fetchTripStopTimes(tripId, signal) {
       timepoint: optionalNumber(item?.timepoint),
       shapeDistTraveled: optionalNumber(item?.shape_dist_traveled),
     }))
-    .filter((item) => item.stopId && item.stopSequence !== null)
+    .filter(
+      /** @returns {item is TripStopTime} */
+      (item) => Boolean(item.stopId) && item.stopSequence !== null
+    )
     .sort((a, b) => a.stopSequence - b.stopSequence);
 
   tripStopTimesCache.set(id, normalized);
   return normalized;
 }
 
+/**
+ * @param {string} shapeId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ShapePoint[]>}
+ */
 export async function fetchTripShape(shapeId, signal) {
   const id = requiredId(shapeId, "shape ID");
   invalidateExpiredGtfsDataset();
-  if (tripShapeCache.has(id)) return tripShapeCache.get(id);
+  const cached = tripShapeCache.get(id);
+  if (cached) return cached;
 
   const response = await client.get(
     await gtfsResourceUrl(`shapes/${encodeURIComponent(id)}`),
@@ -838,12 +1011,15 @@ export async function fetchTripShape(shapeId, signal) {
   }
 
   const normalized = payload
-    .map((point) => ({
+    .map((/** @type {RawRecord} */ point) => ({
       lat: coordinateNumber(point?.lat, -90, 90),
       lon: coordinateNumber(point?.lon, -180, 180),
       traveled: optionalNumber(point?.traveled),
     }))
-    .filter((point) => point.lat !== null && point.lon !== null);
+    .filter(
+      /** @returns {point is ShapePoint} */
+      (point) => point.lat !== null && point.lon !== null
+    );
 
   if (normalized.length < 2) {
     throw new Error("Föli GTFS trip shape is unavailable.");
@@ -853,12 +1029,16 @@ export async function fetchTripShape(shapeId, signal) {
   return normalized;
 }
 
+/**
+ * @param {string} stopId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Set<string>>}
+ */
 export async function fetchStopBoardingTripIds(stopId, signal) {
   const id = requiredId(stopId, "stop ID");
   invalidateExpiredGtfsDataset();
-  if (stopBoardingTripsCache.has(id)) {
-    return new Set(stopBoardingTripsCache.get(id));
-  }
+  const cached = stopBoardingTripsCache.get(id);
+  if (cached) return new Set(cached);
 
   const rows = await fetchStopTimetable(id, signal);
   const tripIds = rows.map((item) => item.tripId).filter(Boolean);
@@ -870,10 +1050,16 @@ export async function fetchStopBoardingTripIds(stopId, signal) {
 // One route's trips, with the service each runs on and its sign. One
 // request serves both uses: which trips a route alert covers, and when a
 // followed line next leaves a stop.
+/**
+ * @param {string} routeId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<RouteTrip[]>}
+ */
 async function fetchRouteTrips(routeId, signal) {
   const id = requiredId(routeId, "route ID");
   invalidateExpiredGtfsDataset();
-  if (routeTripsCache.has(id)) return routeTripsCache.get(id);
+  const cached = routeTripsCache.get(id);
+  if (cached) return cached;
   const response = await client.get(
     await gtfsResourceUrl(`trips/route/${encodeURIComponent(id)}`),
     { signal }
@@ -884,10 +1070,10 @@ async function fetchRouteTrips(routeId, signal) {
     throw new Error("Invalid Föli GTFS route trips.");
   }
 
-  const text = (value) =>
+  const text = (/** @type {unknown} */ value) =>
     value === null || value === undefined ? "" : String(value);
   const trips = payload
-    .map((trip) => ({
+    .map((/** @type {RawRecord} */ trip) => ({
       tripId: text(trip?.trip_id),
       routeId: id,
       serviceId: text(trip?.service_id),
@@ -900,6 +1086,11 @@ async function fetchRouteTrips(routeId, signal) {
   return trips;
 }
 
+/**
+ * @param {string} routeId
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Set<string>>}
+ */
 export async function fetchRouteTripIds(routeId, signal) {
   const trips = await fetchRouteTrips(routeId, signal);
   return new Set(trips.map((trip) => trip.tripId));
@@ -910,6 +1101,13 @@ export async function fetchRouteTripIds(routeId, signal) {
 // stop's own timetable fallback stops at its first 24 departures, so an
 // hourly line at a busy stop fell outside both and the board said it had
 // none. Its route's trips pick its departures out of the stop's timetable.
+/**
+ * @param {string} stopId
+ * @param {readonly (string | number)[]} lineRefs
+ * @param {EpochSeconds | null | undefined} referenceTimeSec
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ScheduledArrival[]>}
+ */
 export async function fetchScheduledLineDepartures(
   stopId,
   lineRefs,
@@ -936,6 +1134,7 @@ export async function fetchScheduledLineDepartures(
   const routeTrips = await Promise.all(
     lineRoutes.map((route) => fetchRouteTrips(route.id, signal))
   );
+  /** @type {Map<string, { trip: RouteTrip, route: Route }>} */
   const trips = new Map();
   lineRoutes.forEach((route, index) => {
     for (const trip of routeTrips[index]) trips.set(trip.tripId, { trip, route });
@@ -947,10 +1146,14 @@ export async function fetchScheduledLineDepartures(
     { lookaheadSeconds: 36 * 60 * 60, graceSeconds: 30, maxRows: 256 }
   );
 
+  /** @type {Map<string, number>} */
   const perLine = new Map();
+  /** @type {ScheduledArrival[]} */
   const departures = [];
   for (const candidate of candidates) {
-    const { trip, route } = trips.get(candidate.tripId);
+    const match = trips.get(candidate.tripId);
+    if (!match) continue;
+    const { trip, route } = match;
     if (
       !trip.serviceId ||
       !serviceRunsOnDate(calendar, calendarDates, trip.serviceId, candidate.serviceDate)
@@ -966,6 +1169,12 @@ export async function fetchScheduledLineDepartures(
   return departures.sort((a, b) => a.aimeddeparturetime - b.aimeddeparturetime);
 }
 
+/**
+ * @param {string} stopId
+ * @param {readonly unknown[]} routeIds
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<Set<string>>}
+ */
 export async function fetchStopServedRouteIds(stopId, routeIds, signal) {
   const uniqueRouteIds = [
     ...new Set(
@@ -980,6 +1189,7 @@ export async function fetchStopServedRouteIds(stopId, routeIds, signal) {
   const boardingTripIds = await fetchStopBoardingTripIds(stopId, signal);
   if (boardingTripIds.size === 0) return new Set();
 
+  /** @type {{ routeId: string, tripIds: Set<string> }[]} */
   const routeTripSets = [];
 
   for (let index = 0; index < uniqueRouteIds.length; index += 6) {
@@ -1002,6 +1212,10 @@ export async function fetchStopServedRouteIds(stopId, routeIds, signal) {
   );
 }
 
+/**
+ * @param {AbortSignal} [signal]
+ * @returns {Promise<ServiceBoundary>}
+ */
 export async function fetchServiceBoundary(signal) {
   const response = await client.get(SERVICE_BOUNDARY_URL, { signal });
   const payload = response.data;
@@ -1015,7 +1229,7 @@ export async function fetchServiceBoundary(signal) {
   }
 
   const feature = payload.features.find(
-    (candidate) =>
+    (/** @type {RawRecord} */ candidate) =>
       candidate?.geometry?.type === "MultiPolygon" &&
       Array.isArray(candidate.geometry.coordinates)
   );

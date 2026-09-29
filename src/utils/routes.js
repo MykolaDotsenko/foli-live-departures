@@ -1,3 +1,9 @@
+/** @import { Route } from "../types/foli" */
+
+/**
+ * @param {unknown} color
+ * @returns {{ r: number, g: number, b: number } | null}
+ */
 function hexToRgb(color) {
   if (typeof color !== "string" || !/^#[0-9a-f]{6}$/i.test(color)) return null;
 
@@ -8,6 +14,10 @@ function hexToRgb(color) {
   };
 }
 
+/**
+ * @param {number} channel 0–255
+ * @returns {number}
+ */
 function linearChannel(channel) {
   const value = channel / 255;
   return value <= 0.04045
@@ -15,6 +25,10 @@ function linearChannel(channel) {
     : ((value + 0.055) / 1.055) ** 2.4;
 }
 
+/**
+ * @param {string | null | undefined} color
+ * @returns {number | null}
+ */
 function luminance(color) {
   const rgb = hexToRgb(color);
   if (!rgb) return null;
@@ -26,6 +40,11 @@ function luminance(color) {
   );
 }
 
+/**
+ * @param {string | null | undefined} foreground "#rrggbb"
+ * @param {string | null | undefined} background "#rrggbb"
+ * @returns {number | null} Null unless both are valid colours.
+ */
 export function contrastRatio(foreground, background) {
   const foregroundLuminance = luminance(foreground);
   const backgroundLuminance = luminance(background);
@@ -37,6 +56,11 @@ export function contrastRatio(foreground, background) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/**
+ * @param {string | null | undefined} background
+ * @param {string} [preferred]
+ * @returns {string}
+ */
 export function accessibleRouteTextColor(background, preferred = "#ffffff") {
   if (!hexToRgb(background)) return "#ffffff";
 
@@ -55,9 +79,17 @@ export function accessibleRouteTextColor(background, preferred = "#ffffff") {
     : white;
 }
 
+/**
+ * @template {Pick<Route, "id" | "shortName">} R
+ * @param {readonly R[]} routes
+ * @returns {{ byId: Map<string, R>, byShortName: Map<string, R> }}
+ */
 export function buildRouteIndexes(routes) {
+  /** @type {Map<string, R>} */
   const byId = new Map();
+  /** @type {Map<string, R>} */
   const byShortName = new Map();
+
 
   routes.forEach((route) => {
     byId.set(route.id, route);

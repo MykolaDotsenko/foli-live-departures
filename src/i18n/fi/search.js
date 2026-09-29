@@ -1,4 +1,7 @@
 // Finding a stop: search, saved and recent stops, and Near you.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   // Location (utils/location.js)
   "Location access is blocked. Allow location for this site in your browser settings and try again.":

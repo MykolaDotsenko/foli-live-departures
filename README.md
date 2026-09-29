@@ -99,6 +99,7 @@ These are the parts of the project I would discuss in a technical interview.
 | --- | --- |
 | UI | React 18, CSS Modules |
 | Build | Vite 8 |
+| Types | TypeScript strict `checkJs` over JSDoc for the data layer (`src/api`, `src/utils`, `src/types`) |
 | Transit data | Föli SIRI, GTFS, service alerts |
 | HTTP | Axios |
 | Local state | React hooks, Web Storage |
@@ -111,7 +112,7 @@ Föli SIRI + GTFS + Alerts
         │
         ▼
 Provider boundary
-normalization · validation · cache safety
+normalization · validation · cache safety · typed contracts
         │
         ▼
 React hooks
@@ -139,7 +140,7 @@ The verification suite covers:
 CI follows the same path:
 
 ```text
-lint → brand/reference checks → tests + coverage
+lint → typecheck → brand/reference checks → tests + coverage
 → production build → PWA + bundle verification
 → cross-browser E2E → accessibility
 ```
@@ -183,6 +184,7 @@ Full verification:
 
 ```bash
 npm run lint
+npm run typecheck
 npm run verify:brand
 npm run test:coverage
 npm run verify:api-reference

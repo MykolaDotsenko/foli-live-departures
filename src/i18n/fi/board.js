@@ -1,4 +1,7 @@
 // The departure board, its next stops, and the times and distances it shows.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   // Times (utils/time.js)
   Due: "Nyt",

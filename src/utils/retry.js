@@ -1,6 +1,10 @@
 const BASE_RETRY_MS = 5_000;
 const MAX_RETRY_MS = 5 * 60_000;
 
+/**
+ * @param {unknown} consecutiveFailures Coerced; anything unusable counts as one.
+ * @returns {number}
+ */
 export function retryDelayMs(consecutiveFailures) {
   const failures = Math.max(1, Math.floor(Number(consecutiveFailures) || 0));
 
@@ -14,6 +18,11 @@ export function retryDelayMs(consecutiveFailures) {
 const RIDE_POLL_MS = 20_000;
 const RIDE_POLL_MAX_MS = 80_000;
 
+/**
+ * @param {unknown} consecutiveFailures Coerced; anything unusable counts as none.
+ * @param {() => number} [random] Returns a value in [0, 1), like Math.random.
+ * @returns {number}
+ */
 export function ridePollDelayMs(consecutiveFailures, random = Math.random) {
   const failures = Math.max(0, Math.floor(Number(consecutiveFailures) || 0));
   if (failures === 0) return RIDE_POLL_MS;

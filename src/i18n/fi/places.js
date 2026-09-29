@@ -1,6 +1,9 @@
 // My Places, Get me Home, the printed Home card and the driver card's
 // buttons. What the driver reads is Finnish already and never goes through
 // here.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   // The places, named by id (hooks/useSavedPlaces.js)
   Home: "Koti",

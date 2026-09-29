@@ -1,5 +1,28 @@
 import { realStopName } from "./stopNames";
 
+/**
+ * @import { Arrival, EpochSeconds, TripStopTime } from "../types/foli"
+ * @import {
+ *   RideArrivalIdentity,
+ *   RideArrivalMatch,
+ *   RideArrivalResolution,
+ *   RideCatalogStop,
+ *   RidePlan,
+ *   RidePlannedProgress,
+ *   RideSignals,
+ *   RideStage,
+ *   RideStageDecision,
+ *   RideStopDetails,
+ * } from "../types/ride"
+ */
+
+/**
+ * One visit's worth of rows, before the caller says how it matched.
+ * @typedef {{ status: "absent" }
+ *   | { status: "ambiguous" }
+ *   | { status: "matched", arrival: Arrival }} VisitChoice
+ */
+
 export const RIDE_STAGE = Object.freeze({
   BOARDED: "boarded",
   SOON: "soon",
@@ -8,6 +31,7 @@ export const RIDE_STAGE = Object.freeze({
   MISSED: "missed",
 });
 
+/** @type {Readonly<Record<RideStage, number>>} */
 const STAGE_RANK = {
   [RIDE_STAGE.BOARDED]: 0,
   [RIDE_STAGE.SOON]: 1,
@@ -16,6 +40,10 @@ const STAGE_RANK = {
   [RIDE_STAGE.MISSED]: 4,
 };
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function finiteNumber(value) {
   // `Number(null)` is 0, so without this guard every "no data yet" signal
   // reads as zero metres and zero seconds away: a ride with no provider match
@@ -26,10 +54,19 @@ function finiteNumber(value) {
   return Number.isFinite(number) ? number : null;
 }
 
+/**
+ * @param {RideStage | null | undefined} stage Unknown or missing ranks as
+ *   BOARDED.
+ * @returns {number}
+ */
 export function rideStageRank(stage) {
-  return STAGE_RANK[stage] ?? 0;
+  return (stage == null ? undefined : STAGE_RANK[stage]) ?? 0;
 }
 
+/**
+ * @param {unknown} value A GTFS clock, "HH:MM:SS".
+ * @returns {number | null} Seconds after the service day's midnight.
+ */
 export function gtfsTimeToSeconds(value) {
   if (typeof value !== "string") return null;
   const match = value.trim().match(/^(\d{1,3}):(\d{2}):(\d{2})$/);
@@ -60,6 +97,11 @@ export function gtfsTimeToSeconds(value) {
 // still makes no sense rather than inventing a number.
 const MAX_TRIP_SECONDS = 6 * 3600;
 
+/**
+ * @param {number | null} scheduleSec
+ * @param {number | null} boardingScheduleSec
+ * @returns {number | null}
+ */
 function tripOffsetSeconds(scheduleSec, boardingScheduleSec) {
   if (scheduleSec === null || boardingScheduleSec === null) return null;
 
@@ -70,6 +112,10 @@ function tripOffsetSeconds(scheduleSec, boardingScheduleSec) {
   return rolled > 0 && rolled <= MAX_TRIP_SECONDS ? rolled : null;
 }
 
+/**
+ * @param {TripStopTime | null | undefined} item
+ * @returns {number | null}
+ */
 function boardingStopTimeSeconds(item) {
   return (
     gtfsTimeToSeconds(item?.departureTime) ??
@@ -77,6 +123,10 @@ function boardingStopTimeSeconds(item) {
   );
 }
 
+/**
+ * @param {TripStopTime | null | undefined} item
+ * @returns {number | null}
+ */
 function alightingStopTimeSeconds(item) {
   return (
     gtfsTimeToSeconds(item?.arrivalTime) ??
@@ -84,6 +134,11 @@ function alightingStopTimeSeconds(item) {
   );
 }
 
+/**
+ * @param {string} stopId
+ * @param {ReadonlyMap<string, RideCatalogStop> | null | undefined} stopsById
+ * @returns {RideStopDetails}
+ */
 function stopDetails(stopId, stopsById) {
   const stop = stopsById?.get?.(String(stopId));
   const lat = finiteNumber(stop?.lat);
@@ -100,6 +155,10 @@ function stopDetails(stopId, stopsById) {
   };
 }
 
+/**
+ * @param {unknown} epochSec
+ * @returns {number | null} Seconds after midnight on Föli's wall clock.
+ */
 function helsinkiClockSeconds(epochSec) {
   const epoch = finiteNumber(epochSec);
   if (epoch === null || epoch <= 0) return null;
@@ -127,6 +186,11 @@ function helsinkiClockSeconds(epochSec) {
   }
 }
 
+/**
+ * @param {number | null} a
+ * @param {number | null} b
+ * @returns {number} Infinity when either clock is unknown.
+ */
 function circularClockDeltaSeconds(a, b) {
   const left = finiteNumber(a);
   const right = finiteNumber(b);
@@ -137,6 +201,12 @@ function circularClockDeltaSeconds(a, b) {
   return Math.min(diff, day - diff);
 }
 
+/**
+ * @param {TripStopTime[]} stopTimes
+ * @param {string} currentStopId
+ * @param {EpochSeconds | null | undefined} aimedDepartureEpochSec
+ * @returns {number} The boarding row's index, or -1 when it cannot be told.
+ */
 export function resolveRideBoardingIndex(
   stopTimes,
   currentStopId,
@@ -171,6 +241,18 @@ export function resolveRideBoardingIndex(
   return ranked[0].index;
 }
 
+/**
+ * @param {object} options
+ * @param {TripStopTime[]} options.stopTimes
+ * @param {string} options.currentStopId
+ * @param {EpochSeconds | null | undefined} options.currentStopAimedEpochSec
+ * @param {string} options.targetStopId
+ * @param {number | null} [options.targetStopSequence] Preferred over the id,
+ *   which a loop can serve twice.
+ * @param {ReadonlyMap<string, RideCatalogStop> | null} [options.stopsById]
+ * @param {EpochSeconds} options.departureEpochSec
+ * @returns {RidePlan | null}
+ */
 export function buildRidePlan({
   stopTimes,
   currentStopId,
@@ -254,10 +336,18 @@ export function buildRidePlan({
   };
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function normalizedString(value) {
   return value === null || value === undefined ? "" : String(value).trim();
 }
 
+/**
+ * @param {Arrival | null | undefined} row
+ * @returns {EpochSeconds | null}
+ */
 function rowEpochSec(row) {
   return (
     finiteNumber(row?.expectedarrivaltime) ??
@@ -274,6 +364,11 @@ function rowEpochSec(row) {
 // time are one visit listed twice. Visits the planned time cannot clearly
 // tell apart are not guessed at: no match leaves the timetable in charge,
 // which can warn but never says "get off now".
+/**
+ * @param {Arrival[]} candidates
+ * @param {EpochSeconds | null | undefined} plannedEpochSec
+ * @returns {VisitChoice}
+ */
 function chooseVisit(candidates, plannedEpochSec) {
   if (candidates.length === 0) return { status: "absent" };
   if (candidates.length === 1) {
@@ -311,6 +406,11 @@ function chooseVisit(candidates, plannedEpochSec) {
 // "the bus is absent" from "the feed lists our journey more than once and we
 // cannot safely tell which visit is ours". Ambiguity is neutral evidence; it
 // must never increment a "bus has left" counter.
+/**
+ * @param {Arrival[] | null | undefined} arrivals One stop's live rows.
+ * @param {RideArrivalIdentity | null | undefined} identity
+ * @returns {RideArrivalResolution}
+ */
 export function resolveRideArrivalMatch(arrivals, identity) {
   const rows = Array.isArray(arrivals) ? arrivals : [];
   if (rows.length === 0 || !identity) return { status: "absent" };
@@ -434,6 +534,11 @@ export function resolveRideArrivalMatch(arrivals, identity) {
   return { status: "absent" };
 }
 
+/**
+ * @param {Arrival[] | null | undefined} arrivals
+ * @param {RideArrivalIdentity | null | undefined} identity
+ * @returns {RideArrivalMatch | null}
+ */
 export function matchRideArrival(arrivals, identity) {
   const result = resolveRideArrivalMatch(arrivals, identity);
   return result.status === "matched"
@@ -441,6 +546,12 @@ export function matchRideArrival(arrivals, identity) {
     : null;
 }
 
+/**
+ * @param {Arrival | null | undefined} arrival
+ * @param {EpochSeconds | null | undefined} referenceTimeSec The server's
+ *   clock, so the phone's own clock cannot skew the estimate.
+ * @returns {number | null}
+ */
 export function arrivalEtaSeconds(arrival, referenceTimeSec) {
   const reference = finiteNumber(referenceTimeSec);
   if (!arrival || reference === null) return null;
@@ -460,6 +571,11 @@ export function arrivalEtaSeconds(arrival, referenceTimeSec) {
 // waiting at that stop the next morning.
 const RIDE_OVER_AFTER_SEC = 45 * 60;
 
+/**
+ * @param {RidePlan | null | undefined} plan
+ * @param {EpochSeconds} nowSec
+ * @returns {boolean}
+ */
 export function rideLongOver(plan, nowSec) {
   const targetEpoch = finiteNumber(plan?.targetPredictedEpochSec);
   const now = finiteNumber(nowSec);
@@ -468,6 +584,11 @@ export function rideLongOver(plan, nowSec) {
   );
 }
 
+/**
+ * @param {RidePlan | null | undefined} plan
+ * @param {EpochSeconds} nowSec
+ * @returns {RidePlannedProgress}
+ */
 export function plannedRideProgress(plan, nowSec) {
   const now = finiteNumber(nowSec);
   if (!plan || now === null) {
@@ -499,6 +620,10 @@ export function plannedRideProgress(plan, nowSec) {
 
 // A fresh, accurate fix matched onto the trip's own shape: the only
 // location evidence precise enough to place the passenger between stops.
+/**
+ * @param {RideSignals} signals
+ * @returns {boolean}
+ */
 function shapeFixReliable(signals) {
   const gpsAccuracy = finiteNumber(signals.gpsAccuracyM);
   const gpsAge = finiteNumber(signals.gpsAgeSec);
@@ -530,6 +655,12 @@ const RIDING_AWAY_MPS = 2;
 // seen leaving it live, or fixes on the route are past it. A near exit alone
 // is not that: in the city centre, stops are closer than the 600 m and 90 s
 // that raise the stage.
+/**
+ * @param {RideSignals} [signals]
+ * @param {number | null} [stopRouteDistanceM] Metres along the
+ *   route from the stop to the exit.
+ * @returns {boolean}
+ */
 export function fixLeftStop(signals = {}, stopRouteDistanceM) {
   const gpsRouteDistance = finiteNumber(signals.gpsRouteDistanceM);
   const stopRouteDistance = finiteNumber(stopRouteDistanceM);
@@ -537,6 +668,8 @@ export function fixLeftStop(signals = {}, stopRouteDistanceM) {
   const speed = finiteNumber(signals.gpsSpeedMps);
   return (
     shapeFixReliable(signals) &&
+    // Always true once the fix is reliable; says so to the type checker.
+    gpsRouteDistance !== null &&
     stopRouteDistance !== null &&
     stopRouteDistance > 0 &&
     (speed === null || speed >= RIDING_AWAY_MPS) &&
@@ -545,6 +678,10 @@ export function fixLeftStop(signals = {}, stopRouteDistanceM) {
   );
 }
 
+/**
+ * @param {RideSignals & { currentAtLeastNext: boolean }} signals
+ * @returns {RideStageDecision}
+ */
 function candidateStage(signals) {
   const liveEta = finiteNumber(signals.liveEtaSec);
   const scheduleEta = finiteNumber(signals.scheduleEtaSec);
@@ -571,7 +708,10 @@ function candidateStage(signals) {
     gpsAccuracy !== null &&
     gpsAccuracy <= 120 &&
     gpsFresh;
-  const reliableShapeGps = shapeFixReliable(signals);
+  // The distance check always holds once the fix is reliable; it lets the
+  // type checker see that the distance is a number wherever this is true.
+  const reliableShapeGps =
+    shapeFixReliable(signals) && gpsRouteDistance !== null;
 
   // The timetable is anchored at boarding, so it drifts by every minute the
   // bus loses in traffic. A fresh on-route fix is direct evidence about where
@@ -726,6 +866,11 @@ function candidateStage(signals) {
   };
 }
 
+/**
+ * @param {RideStage} currentStage
+ * @param {RideSignals} [signals]
+ * @returns {RideStageDecision} Never a lower stage than `currentStage`.
+ */
 export function evaluateRideStage(currentStage, signals = {}) {
   if (currentStage === RIDE_STAGE.MISSED) {
     return {

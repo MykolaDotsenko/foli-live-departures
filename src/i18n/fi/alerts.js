@@ -1,6 +1,9 @@
 // Service updates: Föli's notices, their labels and the panel around them.
 // The notices' own text comes from Föli in the chosen language where Föli
 // has it.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   // What Föli's effect codes mean
   "No service": "Ei liikennettä",

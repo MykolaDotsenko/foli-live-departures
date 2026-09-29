@@ -1,21 +1,55 @@
 import { distanceInMeters, hasCoordinates } from "./geo";
 
+/**
+ * @import { LatLon, ShapePoint } from "../types/foli"
+ * @import {
+ *   RideGpsAnalysis,
+ *   RideGpsInput,
+ *   RideShape,
+ *   RideShapePoint,
+ *   RideShapeProjection,
+ *   RideShapeProjectionOptions,
+ * } from "../types/ride"
+ */
+
+/**
+ * @typedef {object} ProjectionCandidate
+ * @property {number} score Lower is better.
+ * @property {number} segmentIndex
+ * @property {number} alongM
+ * @property {number} lateralDistanceM
+ */
+
 const EARTH_RADIUS_METERS = 6_371_008.8;
 const MAX_GPS_ACCURACY_METERS = 120;
 const OFF_ROUTE_CONFIRM_MS = 120_000;
 const MAX_ROUTE_SPEED_MPS = 40;
 const FORWARD_JUMP_TOLERANCE_M = 200;
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function finiteNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
+/**
+ * @param {number} value
+ * @returns {number}
+ */
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+/**
+ * Metres east (x) and north (y) of `origin`, on a local flat approximation.
+ * @param {LatLon} point
+ * @param {LatLon} origin
+ * @returns {{ x: number, y: number } | null}
+ */
 function localXY(point, origin) {
   const latitude = finiteNumber(point?.lat);
   const longitude = finiteNumber(point?.lon);
@@ -42,16 +76,24 @@ function localXY(point, origin) {
   };
 }
 
+/**
+ * @param {ShapePoint[] | null | undefined} points
+ * @returns {RideShape | null} Null for fewer than two usable points.
+ */
 export function prepareRideShape(points) {
   const valid = (Array.isArray(points) ? points : []).filter(hasCoordinates);
   if (valid.length < 2) return null;
 
   const gtfsDistances = valid.map((point) => finiteNumber(point?.traveled));
   const hasMonotonicGtfsDistances = gtfsDistances.every(
+    /** @returns {value is number} */
     (value, index) =>
       value !== null &&
       value >= 0 &&
-      (index === 0 || value >= gtfsDistances[index - 1])
+      // every() stops at the first failure, so the previous value already
+      // passed the null check.
+      (index === 0 ||
+        value >= /** @type {number} */ (gtfsDistances[index - 1]))
   );
 
   let cumulative = 0;
@@ -75,8 +117,9 @@ export function prepareRideShape(points) {
   // would place a passenger at their stop as the ride began. The provider's
   // length has to agree with the drawn path to within a factor of two
   // before it is trusted; otherwise the shape is not used at all.
+  // Never empty: `valid` has at least two points.
   const gtfsLength = hasMonotonicGtfsDistances
-    ? gtfsDistances.at(-1) - gtfsDistances[0]
+    ? /** @type {number} */ (gtfsDistances.at(-1)) - gtfsDistances[0]
     : 0;
   const metreScale =
     hasMonotonicGtfsDistances &&
@@ -87,10 +130,19 @@ export function prepareRideShape(points) {
   return {
     points: normalized,
     usesGtfsDistance: metreScale,
-    lengthM: normalized.at(-1).alongM,
+    // Never empty, as above.
+    lengthM: /** @type {RideShapePoint} */ (normalized.at(-1)).alongM,
   };
 }
 
+/**
+ * Where on the segment from `start` to `end` lies closest to `position`.
+ * @param {LatLon} position
+ * @param {LatLon} start
+ * @param {LatLon} end
+ * @returns {{ t: number, lateralDistanceM: number } | null} `t` runs from 0
+ *   at `start` to 1 at `end`.
+ */
 function segmentProjection(position, start, end) {
   const startXY = localXY(start, position);
   const endXY = localXY(end, position);
@@ -119,6 +171,12 @@ function segmentProjection(position, start, end) {
   };
 }
 
+/**
+ * @param {LatLon} position
+ * @param {RideShape | null | undefined} shape
+ * @param {RideShapeProjectionOptions} [options]
+ * @returns {RideShapeProjection | null}
+ */
 export function projectPositionToRideShape(
   position,
   shape,
@@ -133,6 +191,7 @@ export function projectPositionToRideShape(
   if (!hasCoordinates(position) || !shape?.points?.length) return null;
 
   const previous = finiteNumber(previousAlongM);
+  /** @type {ProjectionCandidate[]} */
   const candidates = [];
 
   for (let index = 0; index < shape.points.length - 1; index += 1) {
@@ -231,6 +290,10 @@ export function projectPositionToRideShape(
   };
 }
 
+/**
+ * @param {RideGpsInput} input
+ * @returns {RideGpsAnalysis}
+ */
 export function analyzeRideGps({
   position,
   accuracyM,
@@ -322,6 +385,7 @@ export function analyzeRideGps({
       ? routeDistanceM / speed
       : null;
 
+  /** @type {number | null} */
   let nextOffRouteSinceMs = null;
   if (accurateEnough && !onRoute) {
     nextOffRouteSinceMs =

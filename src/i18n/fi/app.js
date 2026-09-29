@@ -1,4 +1,7 @@
 // The app's frame: header, title, footer and About.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   "Turku Departures · Live bus times & get-off alerts":
     "Turku Departures · Reaaliaikaiset bussiajat ja pysäkkihälytys",

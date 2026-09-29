@@ -1,11 +1,31 @@
 import { intlLocale } from "../i18n";
 
+/** @import { MultiPolygonCoordinates, ServiceBoundary } from "../types/foli" */
+
+/**
+ * Anything that may carry a position. The fields are coerced and range
+ * checked, so a stop without coordinates or a string "60.45" is fine.
+ * @typedef {{ lat?: unknown, lon?: unknown }} MaybeLatLon
+ */
+
+/** A GeoJSON position, [lon, lat]. @typedef {number[]} Position */
+
 const EARTH_RADIUS_METERS = 6_371_008.8;
 
+/**
+ * @param {number} value
+ * @returns {number}
+ */
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
 
+/**
+ * @param {unknown} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number | null}
+ */
 function coordinate(value, min, max) {
   if (value === null || value === undefined || value === "") return null;
 
@@ -15,6 +35,10 @@ function coordinate(value, min, max) {
     : null;
 }
 
+/**
+ * @param {MaybeLatLon | null | undefined} value
+ * @returns {boolean}
+ */
 export function hasCoordinates(value) {
   return (
     coordinate(value?.lat, -90, 90) !== null &&
@@ -22,6 +46,11 @@ export function hasCoordinates(value) {
   );
 }
 
+/**
+ * @param {MaybeLatLon | null | undefined} from
+ * @param {MaybeLatLon | null | undefined} to
+ * @returns {number | null}
+ */
 export function distanceInMeters(from, to) {
   const fromLat = coordinate(from?.lat, -90, 90);
   const fromLon = coordinate(from?.lon, -180, 180);
@@ -52,6 +81,13 @@ export function distanceInMeters(from, to) {
   return EARTH_RADIUS_METERS * centralAngle;
 }
 
+/**
+ * @template {MaybeLatLon & { id?: unknown }} Stop
+ * @param {readonly Stop[]} stops
+ * @param {MaybeLatLon | null | undefined} position
+ * @param {number} [limit]
+ * @returns {(Stop & { distanceMeters: number })[]}
+ */
 export function findNearestStops(stops, position, limit = 3) {
   if (!hasCoordinates(position) || limit <= 0) return [];
 
@@ -64,7 +100,10 @@ export function findNearestStops(stops, position, limit = 3) {
         lon: stop.lon,
       }),
     }))
-    .filter((stop) => Number.isFinite(stop.distanceMeters))
+    .filter(
+      /** @returns {stop is Stop & { distanceMeters: number }} */
+      (stop) => Number.isFinite(stop.distanceMeters)
+    )
     .sort(
       (a, b) =>
         a.distanceMeters - b.distanceMeters ||
@@ -73,8 +112,18 @@ export function findNearestStops(stops, position, limit = 3) {
     .slice(0, limit);
 }
 
+/**
+ * @param {number | null | undefined} distanceMeters
+ * @returns {string} "" when there is no distance to show.
+ */
 export function formatDistance(distanceMeters) {
-  if (!Number.isFinite(distanceMeters) || distanceMeters < 0) return "";
+  if (
+    typeof distanceMeters !== "number" ||
+    !Number.isFinite(distanceMeters) ||
+    distanceMeters < 0
+  ) {
+    return "";
+  }
 
   if (distanceMeters < 10) return "<10 m";
 
@@ -91,12 +140,29 @@ export function formatDistance(distanceMeters) {
   return `${intlLocale() === "fi-FI" ? shown.replace(".", ",") : shown} km`;
 }
 
+/**
+ * @param {number | null | undefined} accuracyMeters
+ * @returns {string} "" when there is no accuracy to show.
+ */
 export function formatAccuracy(accuracyMeters) {
-  if (!Number.isFinite(accuracyMeters) || accuracyMeters < 0) return "";
+  if (
+    typeof accuracyMeters !== "number" ||
+    !Number.isFinite(accuracyMeters) ||
+    accuracyMeters < 0
+  ) {
+    return "";
+  }
   return formatDistance(accuracyMeters);
 }
 
 
+/**
+ * @param {Position} point
+ * @param {Position} start
+ * @param {Position} end
+ * @param {number} [epsilon]
+ * @returns {boolean}
+ */
 function pointOnSegment(point, start, end, epsilon = 1e-10) {
   const [x, y] = point;
   const [x1, y1] = start;
@@ -113,6 +179,11 @@ function pointOnSegment(point, start, end, epsilon = 1e-10) {
   );
 }
 
+/**
+ * @param {Position} point
+ * @param {MultiPolygonCoordinates[number][number] | undefined} ring
+ * @returns {boolean}
+ */
 function pointInRing(point, ring) {
   if (!Array.isArray(ring) || ring.length < 4) return false;
 
@@ -146,7 +217,15 @@ function pointInRing(point, ring) {
   return inside;
 }
 
+/**
+ * Null when either side is unusable, so a caller can tell "outside" from
+ * "unknown".
+ * @param {MaybeLatLon | null | undefined} position
+ * @param {ServiceBoundary | null | undefined} geometry
+ * @returns {boolean | null}
+ */
 export function isInsideMultiPolygon(position, geometry) {
+
   const lat = coordinate(position?.lat, -90, 90);
   const lon = coordinate(position?.lon, -180, 180);
 

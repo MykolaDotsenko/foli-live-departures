@@ -1,14 +1,42 @@
 import { SERVICE_TIME_ZONE } from "./time";
 
+/**
+ * @import {
+ *   Arrival,
+ *   Calendar,
+ *   CalendarDates,
+ *   CalendarEntry,
+ *   ClockCandidate,
+ *   EpochSeconds,
+ *   GtfsClock,
+ *   ServiceDateKey,
+ *   StopTimetableRow,
+ * } from "../types/foli"
+ */
+
+/** @typedef {{ hour: number, minute: number, second: number }} GtfsClockParts */
+
+/** @typedef {{ year: number, month: number, day: number }} DateParts */
+
+/** @typedef {Exclude<keyof CalendarEntry, "startDate" | "endDate">} Weekday */
+
 const DEFAULT_LOOKAHEAD_SECONDS = 36 * 60 * 60;
 const DEFAULT_GRACE_SECONDS = 30;
 
+/**
+ * @param {unknown} value
+ * @returns {number | null}
+ */
 function finiteNumber(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
+/**
+ * @param {unknown} value
+ * @returns {GtfsClockParts | null}
+ */
 export function parseGtfsClock(value) {
   if (typeof value !== "string") return null;
   const match = value.trim().match(/^(\d{1,3}):(\d{2}):(\d{2})$/);
@@ -31,6 +59,10 @@ export function parseGtfsClock(value) {
   return { hour, minute, second };
 }
 
+/**
+ * @param {EpochSeconds | null | undefined} epochSec
+ * @returns {DateParts | null}
+ */
 function serviceDateParts(epochSec) {
   const epoch = finiteNumber(epochSec);
   if (epoch === null || epoch <= 0) return null;
@@ -54,6 +86,10 @@ function serviceDateParts(epochSec) {
   }
 }
 
+/**
+ * @param {DateParts} parts
+ * @returns {ServiceDateKey}
+ */
 function dateKeyFromParts({ year, month, day }) {
   return `${String(year).padStart(4, "0")}${String(month).padStart(
     2,
@@ -61,6 +97,11 @@ function dateKeyFromParts({ year, month, day }) {
   )}${String(day).padStart(2, "0")}`;
 }
 
+/**
+ * @param {EpochSeconds | null | undefined} epochSec
+ * @param {number} [offsetDays]
+ * @returns {ServiceDateKey} "" when the time cannot be placed on a day.
+ */
 export function serviceDateKey(epochSec, offsetDays = 0) {
   const parts = serviceDateParts(epochSec);
   if (!parts) return "";
@@ -76,6 +117,10 @@ export function serviceDateKey(epochSec, offsetDays = 0) {
   });
 }
 
+/**
+ * @param {number} epochMs
+ * @returns {number}
+ */
 function zoneOffsetMs(epochMs) {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: SERVICE_TIME_ZONE,
@@ -101,6 +146,11 @@ function zoneOffsetMs(epochMs) {
   return asUtc - Math.floor(epochMs / 1000) * 1000;
 }
 
+/**
+ * @param {ServiceDateKey | null | undefined} serviceDate
+ * @param {GtfsClock | null | undefined} gtfsTime
+ * @returns {EpochSeconds | null}
+ */
 export function gtfsServiceEpoch(serviceDate, gtfsTime) {
   const dateMatch = String(serviceDate || "").match(/^(\d{4})(\d{2})(\d{2})$/);
   const clock = parseGtfsClock(gtfsTime);
@@ -134,6 +184,7 @@ export function gtfsServiceEpoch(serviceDate, gtfsTime) {
   return Math.round((serviceDayStartMs + elapsedMs) / 1000);
 }
 
+/** @type {readonly Weekday[]} */
 const WEEKDAY_FIELDS = [
   "sunday",
   "monday",
@@ -144,6 +195,12 @@ const WEEKDAY_FIELDS = [
   "saturday",
 ];
 
+/**
+ * @param {Calendar | null | undefined} calendar
+ * @param {string} serviceId
+ * @param {ServiceDateKey} dateKey
+ * @returns {boolean}
+ */
 function baseCalendarRunsOnDate(calendar, serviceId, dateKey) {
   const service = calendar?.[String(serviceId)];
   const key = String(dateKey || "");
@@ -166,6 +223,13 @@ function baseCalendarRunsOnDate(calendar, serviceId, dateKey) {
   return Number(service[weekday]) === 1;
 }
 
+/**
+ * @param {Calendar | null | undefined} calendar
+ * @param {CalendarDates | null | undefined} calendarDates
+ * @param {string} serviceId
+ * @param {ServiceDateKey} dateKey
+ * @returns {boolean}
+ */
 export function serviceRunsOnDate(
   calendar,
   calendarDates,
@@ -198,6 +262,13 @@ export function serviceRunsOnDate(
   return baseCalendarRunsOnDate(calendar, serviceId, dateKey);
 }
 
+/**
+ * @template {Partial<Pick<StopTimetableRow, "tripId" | "arrivalTime" | "departureTime" | "pickupType">>} [Row=StopTimetableRow]
+ * @param {readonly Row[] | null | undefined} rows
+ * @param {EpochSeconds | null | undefined} referenceTimeSec
+ * @param {{ lookaheadSeconds?: number, graceSeconds?: number, maxRows?: number }} [options]
+ * @returns {ClockCandidate<Row>[]}
+ */
 export function scheduledClockCandidates(
   rows,
   referenceTimeSec,
@@ -221,6 +292,7 @@ export function scheduledClockCandidates(
   const earliest = reference - Math.max(0, Number(graceSeconds) || 0);
   const latest = reference + lookahead;
 
+  /** @type {ClockCandidate<Row>[]} */
   const candidates = [];
 
   for (const row of Array.isArray(rows) ? rows : []) {
@@ -260,6 +332,12 @@ export function scheduledClockCandidates(
     .slice(0, Math.max(1, Number(maxRows) || 64));
 }
 
+/**
+ * @param {readonly Arrival[] | null | undefined} realtimeRows
+ * @param {readonly Arrival[] | null | undefined} scheduledRows
+ * @param {{ timeToleranceSeconds?: number }} [options]
+ * @returns {Arrival[]}
+ */
 export function mergeRealtimeAndScheduled(
   realtimeRows,
   scheduledRows,
@@ -273,7 +351,9 @@ export function mergeRealtimeAndScheduled(
   // trip reference, line+time is only a fuzzy fallback identity: it must not
   // suppress every static departure inside the tolerance window. Match rows
   // one-to-one, with exact trip identity taking precedence over proximity.
+  /** @type {Set<number>} */
   const matchedRealtime = new Set();
+  /** @type {Set<number>} */
   const matchedScheduled = new Set();
 
   scheduled.forEach((scheduledRow, scheduledIndex) => {
@@ -292,7 +372,9 @@ export function mergeRealtimeAndScheduled(
     }
   });
 
+  /** @type {{ scheduledIndex: number, realtimeIndex: number, delta: number }[]} */
   const fuzzyCandidates = [];
+
 
   scheduled.forEach((scheduledRow, scheduledIndex) => {
     if (matchedScheduled.has(scheduledIndex)) return;

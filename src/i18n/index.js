@@ -10,11 +10,44 @@
 import { useSyncExternalStore } from "react";
 import fi from "./fi";
 
+/**
+ * A language the interface speaks.
+ * @typedef {"en" | "fi"} Language
+ */
+
+/**
+ * The values a phrase's placeholders are filled from, by placeholder name.
+ * @typedef {Record<string, string | number>} TranslationParams
+ */
+
+/**
+ * One dictionary entry: a template with `{name}` placeholders, or a function
+ * of the same parameters where word forms follow a number.
+ * @typedef {string | ((params: TranslationParams) => string)} Translation
+ */
+
+/**
+ * Translations keyed by the English phrase (or "context|phrase", see tc()).
+ * @typedef {Record<string, Translation>} Dictionary
+ */
+
+/** @type {readonly Language[]} */
 export const LANGUAGES = Object.freeze(["en", "fi"]);
 
+/** @type {Record<Language, Dictionary>} */
 const DICTIONARIES = { en: {}, fi };
 const STORAGE_KEY = "foli-language-v1";
 
+/**
+ * @param {unknown} value
+ * @returns {value is Language}
+ */
+function isLanguage(value) {
+  // Widened only for the lookup: any value may be asked about.
+  return /** @type {readonly unknown[]} */ (LANGUAGES).includes(value);
+}
+
+/** @returns {readonly string[]} */
 function browserLanguages() {
   const nav = globalThis.navigator;
   if (!nav) return [];
@@ -24,24 +57,30 @@ function browserLanguages() {
 }
 
 // The first language the phone lists that the app speaks.
+/**
+ * @param {readonly (string | null | undefined)[]} [languages]
+ * @returns {Language}
+ */
 export function preferredLanguage(languages = browserLanguages()) {
   for (const tag of languages) {
     const primary = String(tag || "").toLowerCase().split("-")[0];
-    if (LANGUAGES.includes(primary)) return primary;
+    if (isLanguage(primary)) return primary;
   }
   return "en";
 }
 
+/** @returns {Language | null} */
 function storedLanguage() {
   try {
     const stored = globalThis.localStorage?.getItem(STORAGE_KEY);
-    return LANGUAGES.includes(stored) ? stored : null;
+    return isLanguage(stored) ? stored : null;
   } catch {
     // Blocked storage: the phone's own language still applies.
     return null;
   }
 }
 
+/** @param {Language} language */
 function applyToDocument(language) {
   // Screen readers pick their voice from this, and the browser its
   // hyphenation and quotes.
@@ -50,22 +89,30 @@ function applyToDocument(language) {
   }
 }
 
+/** @type {Language} */
 let current = storedLanguage() || preferredLanguage();
+/** @type {Set<() => void>} */
 const listeners = new Set();
 applyToDocument(current);
 
+/** @returns {Language} */
 export function getLanguage() {
   return current;
 }
 
+/** @param {Language} language */
 function switchTo(language) {
   current = language;
   applyToDocument(language);
   listeners.forEach((listener) => listener());
 }
 
+/**
+ * Accepts any code: one the app does not speak is ignored.
+ * @param {string} language
+ */
 export function setLanguage(language) {
-  if (!LANGUAGES.includes(language) || language === current) return;
+  if (!isLanguage(language) || language === current) return;
   try {
     globalThis.localStorage?.setItem(STORAGE_KEY, language);
   } catch {
@@ -75,34 +122,55 @@ export function setLanguage(language) {
 }
 
 // Tests start every case from the same place, without touching storage.
+/** @param {string} [language] */
 export function resetLanguageForTests(language = "en") {
-  switchTo(LANGUAGES.includes(language) ? language : "en");
+  switchTo(isLanguage(language) ? language : "en");
 }
 
+/**
+ * @param {() => void} listener
+ * @returns {() => void}
+ */
 function subscribe(listener) {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
 // Re-renders the calling component when the language changes.
+/** @returns {Language} */
 export function useLanguage() {
   return useSyncExternalStore(subscribe, getLanguage, getLanguage);
 }
 
 // Marks a phrase for translation where it is defined, in a table built
 // before any language is known; t() translates it where it is shown.
+/**
+ * @template {string} Key
+ * @param {Key} key
+ * @returns {Key}
+ */
 export function msg(key) {
   return key;
 }
 
+/**
+ * @param {Translation} template
+ * @param {TranslationParams} [params]
+ * @returns {string}
+ */
 function render(template, params) {
   if (typeof template === "function") return template(params ?? {});
   if (!params) return template;
-  return template.replace(/\{(\w+)\}/g, (match, name) =>
+  return template.replace(/\{(\w+)\}/g, (match, /** @type {string} */ name) =>
     Object.hasOwn(params, name) ? String(params[name]) : match
   );
 }
 
+/**
+ * @param {string} key The English phrase.
+ * @param {TranslationParams} [params]
+ * @returns {string}
+ */
 export function t(key, params) {
   return render(DICTIONARIES[current]?.[key] ?? key, params);
 }
@@ -111,12 +179,22 @@ export function t(key, params) {
 // and is also what a bus due now says), a context keeps the translations
 // apart. The dictionary holds it as "context|phrase"; English shows the
 // phrase alone.
+/**
+ * @param {string} context
+ * @param {string} key The English phrase.
+ * @param {TranslationParams} [params]
+ * @returns {string}
+ */
 export function tc(context, key, params) {
   return render(DICTIONARIES[current]?.[`${context}|${key}`] ?? key, params);
 }
 
 // Dates and numbers follow the language; the transit clock does not (see
 // TRANSIT_CLOCK_LOCALE in utils/time.js).
+/**
+ * @param {Language} [language]
+ * @returns {"fi-FI" | "en-GB"}
+ */
 export function intlLocale(language = current) {
   return language === "fi" ? "fi-FI" : "en-GB";
 }
@@ -127,6 +205,10 @@ export function intlLocale(language = current) {
 // happens to list next. In English the phone's own languages come first (a
 // Swedish phone keeps Föli's Swedish), then English, but never Finnish,
 // which the passenger has just chosen not to read.
+/**
+ * @param {Language} [language]
+ * @returns {string[]}
+ */
 export function providerLanguages(language = current) {
   if (language === "fi") return ["fi"];
   return [

@@ -1,6 +1,9 @@
 // Ride Mode: the get-off alert, its setup, and what it says, shows and sends
 // during the ride. Shared phrases ("Stop {id}", "{minutes} min", "Line",
 // "around {time}", "Ride Mode active") are translated in board.js and app.js.
+/** @import { Dictionary } from "../index" */
+
+/** @type {Dictionary} */
 export default {
   // The stage, from boarding to the stop
   "No need to watch for your stop": "Pysäkkiäsi ei tarvitse vahtia",
