@@ -69,7 +69,10 @@
 .stopList {
   max-height: 19rem;
   overflow-y: auto;
-  margin: 1rem 0 0;
+  /* The padding keeps focus rings inside the scroll box; the negative
+     margin keeps the cards flush with the options below. */
+  min-inline-size: 0;
+  margin: 1rem -0.25rem 0;
   padding: 0.25rem;
   border: 0;
   display: grid;
@@ -201,8 +204,12 @@
   cursor: pointer;
 }
 
+/* Not yet possible (no exit stop chosen): an outline that reads as
+   waiting, where a faded fill read as broken, and in dark nearly vanished. */
 .start:disabled {
-  opacity: 0.45;
+  border: 1px solid #bfd0d4;
+  background: #f4f7f8;
+  color: #52666f;
   cursor: not-allowed;
 }
 
@@ -340,6 +347,12 @@
 
 /* Dark theme: tokens in App.css. */
 @media screen {
+  :root[data-theme="dark"] .start:disabled {
+    border-color: var(--dm-line-strong);
+    background: transparent;
+    color: var(--dm-muted);
+  }
+
   :root[data-theme="dark"] .panel {
     border-color: var(--dm-line-strong);
     background: linear-gradient(145deg, #15343a, var(--dm-surface));

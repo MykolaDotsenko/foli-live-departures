@@ -289,7 +289,7 @@ input:focus-visible,
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 4px 14px;
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 .guide-button {
@@ -475,6 +475,21 @@ input:focus-visible,
 
   .source-note {
     font-size: 0.8125rem;
+  }
+}
+
+/* 320px in Finnish: "Tumma" and "In English" missed the eyebrow's row by
+   a few pixels, so the lockup came apart over three rows. The controls
+   keep their 44px hit area (the ::after inset). */
+@media (max-width: 380px) {
+  .eyebrow-row,
+  .header-controls {
+    gap: 6px;
+  }
+
+  .language-switch,
+  .theme-switch {
+    padding: 0 7px;
   }
 }
 

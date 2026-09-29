@@ -115,7 +115,7 @@
   min-height: 40px;
   padding: 0 14px;
   border: 1px solid #bfd0d4;
-  border-radius: 999px;
+  border-radius: 10px;
   background: #ffffff;
   color: #00656f;
   font: inherit;
@@ -214,7 +214,15 @@
 
 .state strong {
   color: #263a42;
-  font-size: 1rem;
+  font-size: 1.05rem;
+}
+
+/* The explanation under a state's heading, smaller than the heading: at
+   the inherited size it outweighed "Couldn’t load departures." */
+.state > span:not(.stateKicker) {
+  max-width: 34ch;
+  font-size: 0.875rem;
+  line-height: 1.45;
 }
 
 .stateKicker {
@@ -395,6 +403,10 @@
 
 .table tr[data-cancelled="true"] .tripMeta {
   color: #8d2d24;
+}
+
+.table[data-times-old="true"] .due {
+  color: #52666f;
 }
 
 .dueDay,
@@ -694,9 +706,14 @@
   background: #e2f4f5;
 }
 
+/* The ride already running on this bus: shown as on, not faded out,
+   which read as broken at the moment it mattered. */
 .rideButton:disabled {
+  border-color: #007985;
+  background: #e2f4f5;
+  color: #005e67;
   cursor: default;
-  opacity: 0.7;
+  opacity: 1;
 }
 
 .rideSetupRow > td {
@@ -736,11 +753,27 @@
     table-layout: fixed;
   }
 
-  .table td:first-child {
+  /* The name and its update time each get the width, and the two
+     controls share a row below them: beside the filter, a 320px phone
+     broke "Kauppatori" mid-word. */
+  .header[data-filterable="true"] {
+    grid-template-areas:
+      "title title"
+      "meta meta"
+      "filter refresh";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .header[data-filterable="true"] .filterButton,
+  .header[data-filterable="true"] .refreshButton {
+    padding-inline: 8px;
+  }
+
+  .colLine {
     width: 54px;
   }
 
-  .table td:last-child {
+  .colDue {
     width: 92px;
   }
 
@@ -902,6 +935,10 @@
     color: var(--dm-accent);
   }
 
+  :root[data-theme="dark"] .table[data-times-old="true"] .due {
+    color: var(--dm-muted);
+  }
+
   :root[data-theme="dark"] .table tr[data-cancelled="true"] .due,
   :root[data-theme="dark"] .table tr[data-cancelled="true"] .tripMeta {
     color: var(--dm-danger-text);
@@ -909,6 +946,12 @@
 
   :root[data-theme="dark"] .rideButton {
     border-color: #3f7f86;
+    background: var(--dm-accent-surface);
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .rideButton:disabled {
+    border-color: var(--dm-accent);
     background: var(--dm-accent-surface);
     color: var(--dm-accent);
   }

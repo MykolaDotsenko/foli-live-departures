@@ -57,7 +57,8 @@ function BoardHeader({
         </div>
         <p className={styles.stopMeta} aria-live="polite">
           {[
-            t("Stop {id}", { id: stopId }),
+            // Without Föli's name the heading already says "Stop {id}".
+            stopName || loading ? t("Stop {id}", { id: stopId }) : "",
             serverTime ? t("Updated {time}", { time: formatClock(serverTime) }) : "",
             receiptAgeSeconds !== null && receiptAgeSeconds >= 60
               ? formatElapsedAge(receiptAgeSeconds)

@@ -257,6 +257,7 @@ function BusStopDisplay({
         onShowAllLines={showAllLines}
       >
         <DepartureTable
+          timesAreOld={offlineSince !== null || (dataIsStale && hasData)}
           arrivals={visibleArrivals}
           rowKeys={rowKeys}
           referenceTime={referenceTime}
