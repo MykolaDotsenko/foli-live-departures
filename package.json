@@ -18,7 +18,8 @@
     "verify:bundle": "node scripts/verify-bundle.mjs",
     "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
     "verify:brand": "node scripts/verify-branding.mjs",
-    "verify:deployment": "node scripts/verify-deploy-workflow.mjs"
+    "verify:deployment": "node scripts/verify-deploy-workflow.mjs",
+    "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
