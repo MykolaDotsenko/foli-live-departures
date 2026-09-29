@@ -199,7 +199,11 @@ self.addEventListener("notificationclick", (event) => {
       });
 
       for (const client of windows) {
-        if (new URL(client.url).origin === self.location.origin) {
+        const clientUrl = new URL(client.url);
+        if (
+          clientUrl.origin === self.location.origin &&
+          clientUrl.pathname.startsWith(BASE_PATH)
+        ) {
           await client.focus();
           return;
         }
