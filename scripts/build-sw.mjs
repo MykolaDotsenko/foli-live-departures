@@ -198,6 +198,36 @@ self.addEventListener("notificationclick", (event) => {
         includeUncontrolled: true,
       });
 
+      let requestedUrl = null;
+      try {
+        const candidate = new URL(
+          event.notification.data?.url || BASE_PATH,
+          self.location.origin
+        );
+        if (
+          candidate.origin === self.location.origin &&
+          candidate.pathname.startsWith(BASE_PATH)
+        ) {
+          requestedUrl = candidate;
+        }
+      } catch {
+        // Notification data is optional and untrusted. Fall back to app scope.
+      }
+
+      if (requestedUrl) {
+        for (const client of windows) {
+          const clientUrl = new URL(client.url);
+          if (
+            clientUrl.origin === requestedUrl.origin &&
+            clientUrl.pathname === requestedUrl.pathname &&
+            clientUrl.search === requestedUrl.search
+          ) {
+            await client.focus();
+            return;
+          }
+        }
+      }
+
       for (const client of windows) {
         const clientUrl = new URL(client.url);
         if (
@@ -209,7 +239,7 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
 
-      await self.clients.openWindow(BASE_PATH);
+      await self.clients.openWindow(requestedUrl?.href || BASE_PATH);
     })()
   );
 });
