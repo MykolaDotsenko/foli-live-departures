@@ -2,6 +2,9 @@ import React from "react";
 import { t } from "../i18n";
 import styles from "./AppErrorBoundary.module.css";
 
+// The product name, as the header shows it; never translated.
+const PRODUCT_NAME = "Turku Departures";
+
 export default class AppErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -13,7 +16,7 @@ export default class AppErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    console.error("Föli app render failure", error, info);
+    console.error("Turku Departures render failure", error, info);
   }
 
   reload = () => {
@@ -27,12 +30,12 @@ export default class AppErrorBoundary extends React.Component {
       <main className={styles.shell}>
         <section className={styles.card} role="alert" aria-live="assertive">
           <p className={styles.kicker} lang="en">
-            Föli departures
+            {PRODUCT_NAME}
           </p>
           <h1>{t("Something went wrong.")}</h1>
           <p>
             {t(
-              "The app hit an unexpected display error. Your saved public stop preferences remain in this browser."
+              "Something broke on this screen. Your saved stops are still on this phone."
             )}
           </p>
           <button type="button" onClick={this.reload}>
@@ -40,7 +43,7 @@ export default class AppErrorBoundary extends React.Component {
           </button>
           <p className={styles.fallback}>
             {t(
-              "If reloading does not help, use the official Föli service while this independent companion is unavailable."
+              "If that doesn’t help, use Föli’s own services at foli.fi."
             )}
           </p>
         </section>

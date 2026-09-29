@@ -88,9 +88,9 @@ export default {
   "Your saved places and the driver card still work. Live times and directions need a connection.":
     "Tallennetut paikat ja kuljettajakortti toimivat yhä. Reaaliaikaiset ajat ja reittiohjeet tarvitsevat verkkoyhteyden.",
   "Something went wrong.": "Jokin meni vikaan.",
-  "The app hit an unexpected display error. Your saved public stop preferences remain in this browser.":
-    "Sovelluksessa tapahtui odottamaton näyttövirhe. Tallentamasi pysäkit ja asetukset säilyvät tässä selaimessa.",
+  "Something broke on this screen. Your saved stops are still on this phone.":
+    "Näkymässä tapahtui virhe. Tallentamasi pysäkit ovat yhä tallessa.",
   "Reload app": "Lataa sovellus uudelleen",
-  "If reloading does not help, use the official Föli service while this independent companion is unavailable.":
-    "Jos uudelleenlataus ei auta, käytä Fölin virallista palvelua sillä aikaa, kun tämä itsenäinen apusovellus ei toimi.",
+  "If that doesn’t help, use Föli’s own services at foli.fi.":
+    "Jos se ei auta, käytä Fölin omia palveluja: foli.fi.",
 };
