@@ -24,6 +24,8 @@ export default function HelpGuide() {
   useEffect(() => {
     if (!open) return undefined;
 
+    // The button that opened the guide gets focus back when it closes.
+    const trigger = triggerRef.current;
     const previousOverflow = globalThis.document?.body?.style.overflow || "";
     if (globalThis.document?.body) {
       globalThis.document.body.style.overflow = "hidden";
@@ -77,7 +79,7 @@ export default function HelpGuide() {
       if (globalThis.document?.body) {
         globalThis.document.body.style.overflow = previousOverflow;
       }
-      triggerRef.current?.focus();
+      trigger?.focus();
     };
   }, [open]);
 

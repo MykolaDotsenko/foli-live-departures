@@ -1,21 +1,63 @@
 import { t } from "../i18n";
 
+/**
+ * @import { RawRecord } from "../api/foliApi"
+ * @import { Route } from "../types/foli"
+ * @import {
+ *   AlertImage,
+ *   AlertValidity,
+ *   CancellationAlert,
+ *   StopAlert,
+ *   StopAlertContext,
+ *   StopNotice,
+ *   StopNoticeType,
+ *   TextStopNotice,
+ * } from "../types/alerts"
+ */
+
+/** @typedef {ReadonlyMap<string, Pick<Route, "shortName">>} RoutesById */
+
+/**
+ * Föli's arrays hold records or bare ids; either way an item is read
+ * defensively, like the rest of its JSON.
+ * @param {unknown} value
+ * @returns {RawRecord[]}
+ */
 function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {number} index
+ * @param {string} prefix
+ * @returns {string}
+ */
 function messageId(message, index, prefix) {
   return `${prefix}-${message?.message_id ?? message?.id ?? index}`;
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function normalizeLanguage(value) {
   return String(value || "").trim().toLowerCase().replaceAll("_", "-");
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {readonly string[]} [preferredLanguages]
+ * @returns {RawRecord | null}
+ */
 function translationFor(message, preferredLanguages = []) {
   const translations =
     message?.translations && typeof message.translations === "object"
@@ -52,6 +94,11 @@ function translationFor(message, preferredLanguages = []) {
   return null;
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {readonly string[]} [preferredLanguages]
+ * @returns {{ header: string, message: string, information: string }}
+ */
 function localizedFields(message, preferredLanguages) {
   const translation = translationFor(message, preferredLanguages);
 
@@ -63,12 +110,25 @@ function localizedFields(message, preferredLanguages) {
   };
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {RoutesById} routesById
+ * @returns {string[]}
+ */
 function routeNamesFor(message, routesById) {
   return asArray(message?.affected_routes)
     .map((routeId) => routesById.get(String(routeId))?.shortName)
-    .filter(Boolean);
+    .filter(/** @returns {name is string} */ (name) => Boolean(name));
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {string | undefined} stopId
+ * @param {ReadonlySet<string>} activeLines
+ * @param {RoutesById} routesById
+ * @param {ReadonlySet<string>} servedRouteIds
+ * @returns {boolean}
+ */
 function messageMatchesContext(
   message,
   stopId,
@@ -91,6 +151,10 @@ function messageMatchesContext(
 
 // The app's own words for what Föli's codes mean, in the current language.
 // Alerts are extracted again whenever the language changes (useStopAlerts).
+/**
+ * @param {string} effect
+ * @returns {string}
+ */
 function effectLabel(effect) {
   switch (effect) {
     case "NO_SERVICE":
@@ -113,6 +177,10 @@ function effectLabel(effect) {
 }
 
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
 function safeImageUrl(value) {
   const raw = text(value);
   if (!raw) return "";
@@ -123,6 +191,10 @@ function safeImageUrl(value) {
   return "";
 }
 
+/**
+ * @param {unknown} value
+ * @returns {AlertImage[]}
+ */
 function normalizeImages(value) {
   return asArray(value)
     .map((image) => ({
@@ -134,6 +206,11 @@ function normalizeImages(value) {
     .slice(0, 4);
 }
 
+/**
+ * @param {unknown} repeat
+ * @param {number | null} [referenceTime]
+ * @returns {AlertValidity | null}
+ */
 function normalizeValidity(repeat, referenceTime) {
   const periods = asArray(repeat)
     .map((period) => {
@@ -145,13 +222,19 @@ function normalizeValidity(repeat, referenceTime) {
         end: Number.isFinite(end) && end > 0 ? end : null,
       };
     })
-    .filter(Boolean);
+    .filter(
+      /** @returns {period is AlertValidity} */ (period) => Boolean(period)
+    );
 
   if (periods.length === 0) return null;
 
-  const now = Number.isFinite(Number(referenceTime))
-    ? Number(referenceTime)
-    : Math.floor(Date.now() / 1000);
+  // Number(null) is 0: a document without servertime must fall back to the
+  // clock, not to 1970, or every period looks like it has yet to begin.
+  const reference = Number(referenceTime);
+  const now =
+    Number.isFinite(reference) && reference > 0
+      ? reference
+      : Math.floor(Date.now() / 1000);
 
   return (
     periods.find(
@@ -163,6 +246,15 @@ function normalizeValidity(repeat, referenceTime) {
   );
 }
 
+/**
+ * @param {RawRecord} message
+ * @param {number} index
+ * @param {StopNoticeType} type
+ * @param {RoutesById} routesById
+ * @param {readonly string[]} [preferredLanguages]
+ * @param {number | null} [referenceTime]
+ * @returns {StopNotice}
+ */
 function normalizeMessage(
   message,
   index,
@@ -199,6 +291,15 @@ function normalizeMessage(
   };
 }
 
+/**
+ * @param {RawRecord | string | null | undefined} value Föli's text, or a
+ *   message record.
+ * @param {"emergency" | "global"} type
+ * @param {string} fallbackTitle
+ * @param {readonly string[]} [preferredLanguages]
+ * @param {number | null} [referenceTime]
+ * @returns {StopNotice | TextStopNotice | null}
+ */
 function normalizeSpecial(
   value,
   type,
@@ -257,6 +358,11 @@ function normalizeSpecial(
   };
 }
 
+/**
+ * @param {RawRecord | null | undefined} payload Föli's ALERTS document.
+ * @param {StopAlertContext} [context]
+ * @returns {StopAlert[]}
+ */
 export function extractStopAlerts(
   payload,
   {
@@ -275,6 +381,7 @@ export function extractStopAlerts(
   const routeMembership =
     servedRouteIds instanceof Set ? servedRouteIds : new Set(servedRouteIds);
 
+  /** @type {CancellationAlert[]} */
   const cancellations = asArray(payload.cancellations).flatMap(
     (cancellation, cancellationIndex) => {
       const matchingStops = asArray(cancellation?.stops).filter(
@@ -362,6 +469,6 @@ export function extractStopAlerts(
     );
 
   return [globalMessage, ...cancellations, ...messages]
-    .filter(Boolean)
+    .filter(/** @returns {alert is StopAlert} */ (alert) => Boolean(alert))
     .sort((a, b) => a.priority - b.priority);
 }

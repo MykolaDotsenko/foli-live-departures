@@ -1,5 +1,14 @@
 import { intlLocale, t } from "../i18n";
 
+/** @import { Arrival, EpochSeconds } from "../types/foli" */
+
+/**
+ * @typedef {"expecteddeparturetime" | "expectedarrivaltime" | "aimeddeparturetime" | "aimedarrivaltime"} DepartureTimeField
+ */
+
+/** @typedef {{ day: string, time: string }} DueParts */
+
+/** @type {readonly DepartureTimeField[]} */
 const DEPARTURE_TIME_FIELDS = [
   "expecteddeparturetime",
   "expectedarrivaltime",
@@ -11,6 +20,11 @@ const DEPARTURE_TIME_FIELDS = [
 // than this is more likely stale than early.
 const PLAUSIBLY_EARLY_SECONDS = 180;
 
+/**
+ * @param {Partial<Pick<Arrival, DepartureTimeField | "monitored" | "vehicleatstop">>} [arrival]
+ * @param {EpochSeconds | null} [referenceTimeSec]
+ * @returns {EpochSeconds | null}
+ */
 export function getDepartureTime(arrival = {}, referenceTimeSec = null) {
   const values = Object.fromEntries(
     DEPARTURE_TIME_FIELDS.map((field) => {
@@ -59,6 +73,11 @@ export function getDepartureTime(arrival = {}, referenceTimeSec = null) {
 // at the wrong wall-clock time.
 export const SERVICE_TIME_ZONE = "Europe/Helsinki";
 
+/**
+ * @param {Intl.DateTimeFormatOptions} options
+ * @param {string} [locale]
+ * @returns {Intl.DateTimeFormat}
+ */
 export function serviceDateTimeFormat(options, locale) {
   try {
     return new Intl.DateTimeFormat(locale, {
@@ -76,6 +95,11 @@ export function serviceDateTimeFormat(options, locale) {
 // transit time does too, whatever language the phone is set to.
 export const TRANSIT_CLOCK_LOCALE = "en-GB";
 
+/**
+ * @param {EpochSeconds | null | undefined} unixSeconds
+ * @param {string} [locale]
+ * @returns {string}
+ */
 export function formatClock(unixSeconds, locale = TRANSIT_CLOCK_LOCALE) {
   const seconds = Number(unixSeconds);
   if (!Number.isFinite(seconds) || seconds <= 0) return "—";
@@ -90,6 +114,11 @@ export function formatClock(unixSeconds, locale = TRANSIT_CLOCK_LOCALE) {
   ).format(new Date(seconds * 1000));
 }
 
+/**
+ * @param {EpochSeconds | null | undefined} unixSeconds
+ * @param {number} [nowMs]
+ * @returns {number | null}
+ */
 export function minutesUntil(unixSeconds, nowMs = Date.now()) {
   const seconds = Number(unixSeconds);
   if (!Number.isFinite(seconds) || seconds <= 0) return null;
@@ -97,6 +126,10 @@ export function minutesUntil(unixSeconds, nowMs = Date.now()) {
   return Math.max(0, Math.ceil((seconds * 1000 - nowMs) / 60_000));
 }
 
+/**
+ * @param {number} valueMs
+ * @returns {string} "YYYY-MM-DD" in the service zone, or "" when unknown.
+ */
 function serviceDayKey(valueMs) {
   try {
     const parts = serviceDateTimeFormat(
@@ -114,6 +147,11 @@ function serviceDayKey(valueMs) {
   }
 }
 
+/**
+ * @param {string} leftKey
+ * @param {string} rightKey
+ * @returns {number | null}
+ */
 function dayDistance(leftKey, rightKey) {
   const left = String(leftKey || "").split("-").map(Number);
   const right = String(rightKey || "").split("-").map(Number);
@@ -130,6 +168,11 @@ function dayDistance(leftKey, rightKey) {
 
 // "4 min", or a day and a clock time ("Tomorrow", "06:30"). The day is kept
 // apart so the board can set it smaller than the time, in any language.
+/**
+ * @param {EpochSeconds | null | undefined} unixSeconds
+ * @param {number} [nowMs]
+ * @returns {DueParts}
+ */
 export function formatDueParts(unixSeconds, nowMs = Date.now()) {
   const minutes = minutesUntil(unixSeconds, nowMs);
   if (minutes === null) return { day: "", time: "—" };
@@ -154,11 +197,20 @@ export function formatDueParts(unixSeconds, nowMs = Date.now()) {
   };
 }
 
+/**
+ * @param {EpochSeconds | null | undefined} unixSeconds
+ * @param {number} [nowMs]
+ * @returns {string}
+ */
 export function formatDue(unixSeconds, nowMs = Date.now()) {
   const { day, time } = formatDueParts(unixSeconds, nowMs);
   return day ? `${day} ${time}` : time;
 }
 
+/**
+ * @param {number | null | undefined} delaySeconds
+ * @returns {string | null}
+ */
 export function formatDelay(delaySeconds) {
   const seconds = Number(delaySeconds);
   if (!Number.isFinite(seconds)) return null;
@@ -174,6 +226,11 @@ export function formatDelay(delaySeconds) {
   return phrase.replaceAll(" ", "\u00a0");
 }
 
+/**
+ * @param {EpochSeconds | null | undefined} recordedAt
+ * @param {EpochSeconds | null | undefined} serverTime
+ * @returns {number | null}
+ */
 export function dataAgeSeconds(recordedAt, serverTime) {
   const recorded = Number(recordedAt);
   const server = Number(serverTime);
@@ -190,6 +247,14 @@ export function dataAgeSeconds(recordedAt, serverTime) {
   return Math.max(0, server - recorded);
 }
 
+/**
+ * @param {boolean} monitored
+ * @param {number | null | undefined} delaySeconds
+ * @param {EpochSeconds | null | undefined} recordedAt
+ * @param {EpochSeconds | null | undefined} serverTime
+ * @param {{ offline?: boolean }} [options]
+ * @returns {string}
+ */
 export function formatServiceStatus(
   monitored,
   delaySeconds,
@@ -218,6 +283,12 @@ export function formatServiceStatus(
 }
 
 
+/**
+ * @param {EpochSeconds | null | undefined} serverTime
+ * @param {number | null | undefined} receivedAtMs
+ * @param {number} [nowMs]
+ * @returns {EpochSeconds | null}
+ */
 export function advanceServerTime(
   serverTime,
   receivedAtMs,
@@ -240,6 +311,11 @@ export function advanceServerTime(
   return server + (now - received) / 1000;
 }
 
+/**
+ * @param {number | null | undefined} receivedAtMs
+ * @param {number} [nowMs]
+ * @returns {number | null}
+ */
 export function elapsedSince(receivedAtMs, nowMs = Date.now()) {
   const received = Number(receivedAtMs);
   const now = Number(nowMs);
@@ -256,7 +332,12 @@ export function elapsedSince(receivedAtMs, nowMs = Date.now()) {
   return Math.max(0, (now - received) / 1000);
 }
 
+/**
+ * @param {unknown} seconds
+ * @returns {string}
+ */
 export function formatElapsedAge(seconds) {
+
   if (seconds === null || seconds === undefined || seconds === "") return "";
 
   const value = Number(seconds);

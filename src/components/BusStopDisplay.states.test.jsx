@@ -228,3 +228,21 @@ test("an offline board says its times are from the last update, not live", () =>
   expect(screen.queryByText(/^Live · /)).not.toBeInTheDocument();
   expect(screen.queryByText(/Bus at stop/)).not.toBeInTheDocument();
 });
+
+// A screen reader announces a change inside a live region it already knows,
+// and may say nothing about a new one. Going offline after a failed update
+// has to reword the same status, not swap it for another.
+test("going offline rewords the board's status in place", () => {
+  const failed = {
+    arrivals: [departure],
+    serverTime: NOW,
+    receivedAtMs: Date.now() - 90_000,
+    error: true,
+  };
+  const { rerender } = render(board(failed));
+  const status = screen.getByText(/Live update failed/);
+
+  rerender(board({ ...failed, online: false }));
+
+  expect(screen.getByText(/^Offline · last updated/)).toBe(status);
+});

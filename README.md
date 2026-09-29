@@ -99,6 +99,7 @@ These are the parts of the project I would discuss in a technical interview.
 | --- | --- |
 | UI | React 18, CSS Modules |
 | Build | Vite 8 |
+| Types | TypeScript strict `checkJs` over JSDoc for the data layer (`src/api`, `src/utils`, `src/types`) |
 | Transit data | Föli SIRI, GTFS, service alerts |
 | HTTP | Axios |
 | Local state | React hooks, Web Storage |
@@ -111,7 +112,7 @@ Föli SIRI + GTFS + Alerts
         │
         ▼
 Provider boundary
-normalization · validation · cache safety
+normalization · validation · cache safety · typed contracts
         │
         ▼
 React hooks
@@ -139,7 +140,7 @@ The verification suite covers:
 CI follows the same path:
 
 ```text
-lint → brand/reference checks → tests + coverage
+lint → typecheck → brand/reference checks → tests + coverage
 → production build → PWA + bundle verification
 → cross-browser E2E → accessibility
 ```
@@ -153,6 +154,7 @@ The production GitHub Pages deployment is triggered only after that CI workflow 
 - device coordinates are not persisted;
 - ride GPS is processed on the device;
 - GitHub Pages and data.foli.fi receive the network requests needed to serve the application and transit data.
+- a Content-Security-Policy lets the page run only its own bundle, and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
 
 A browser can suspend a page in the background or on a locked phone, so Get-off Alert does **not** promise guaranteed lock-screen tracking. Reliable background alerts would require a backend/Web Push phase.
 
@@ -183,12 +185,14 @@ Full verification:
 
 ```bash
 npm run lint
+npm run typecheck
 npm run verify:brand
 npm run test:coverage
 npm run verify:api-reference
 npm run build
 npm run verify:pwa
 npm run verify:bundle
+npm run verify:csp
 npm run test:e2e
 ```
 

@@ -53,6 +53,9 @@ jobs:
       - name: Build production site
         run: npm run build
 
+      - name: Verify the shipped Content-Security-Policy
+        run: npm run verify:csp
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
 

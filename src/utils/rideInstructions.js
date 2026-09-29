@@ -1,11 +1,18 @@
 import { msg } from "../i18n";
 
+/** @import { RideExitInstruction } from "../types/ride" */
+
 // Phrases, not text: each is translated where it is shown, spoken or sent,
 // so it is in the passenger's language at that moment.
 // Nearly every Föli trip is a bus, where a missed "Press STOP" can cost the
 // passenger their stop and an extra one costs nothing. So a type that could
 // not be loaded (trip details failed on a weak connection) counts as a bus;
 // only a type known not to be one gets the generic wording.
+/**
+ * @param {unknown} routeType A GTFS route_type, as a number or text, or
+ *   nothing when it could not be loaded.
+ * @returns {boolean}
+ */
 function busLike(routeType) {
   if (routeType === null || routeType === undefined || routeType === "") return true;
   const type = Number(routeType);
@@ -18,6 +25,10 @@ function busLike(routeType) {
   );
 }
 
+/**
+ * @param {unknown} routeType As for busLike().
+ * @returns {RideExitInstruction}
+ */
 export function rideExitInstruction(routeType) {
   if (busLike(routeType)) {
     return {

@@ -1,5 +1,10 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import {
+  FOLI_CONNECT_SOURCES,
+  contentSecurityPolicyPlugin,
+  originOf,
+} from "./scripts/content-security-policy.mjs";
 
 // Link previews need absolute URLs. This is where production lives; a
 // deployment elsewhere sets VITE_SITE_URL, and index.html reads it as
@@ -13,9 +18,32 @@ function normalizedBasePath() {
   return withLeadingSlash.endsWith("/") ? withLeadingSlash : `${withLeadingSlash}/`;
 }
 
-export default defineConfig({
+// src/api/foliApi.js can be pointed elsewhere at build time; the policy must
+// let the app reach wherever it was pointed.
+const FOLI_ENDPOINT_VARIABLES = [
+  "VITE_FOLI_API_URL",
+  "VITE_FOLI_ALERTS_URL",
+  "VITE_FOLI_GTFS_URL",
+  "VITE_FOLI_STOPS_URL",
+  "VITE_FOLI_ROUTES_URL",
+  "VITE_FOLI_BOUNDARY_URL",
+];
+
+function connectSources(env) {
+  return [
+    ...FOLI_CONNECT_SOURCES,
+    ...FOLI_ENDPOINT_VARIABLES.map((name) => originOf(env[name] || "")),
+  ];
+}
+
+export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
-  plugins: [react()],
+  plugins: [
+    react(),
+    contentSecurityPolicyPlugin({
+      connectSources: connectSources(loadEnv(mode, process.cwd(), "VITE_")),
+    }),
+  ],
   test: {
     environment: "jsdom",
     setupFiles: "./src/setupTests.js",
@@ -29,11 +57,11 @@ export default defineConfig({
       // Set just under what the suite currently reaches, so the numbers can
       // only be argued upwards. They are a ratchet, not a target.
       thresholds: {
-        statements: 82,
-        branches: 75,
-        functions: 85,
-        lines: 86,
+        statements: 88,
+        branches: 81,
+        functions: 90,
+        lines: 91,
       },
     },
   },
-});
+}));

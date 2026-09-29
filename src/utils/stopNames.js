@@ -9,12 +9,22 @@ const STAND_IN = /^(?:Stop|Pysäkki) \d+$/;
 
 // A name worth keeping: Föli's own, never a stand-in, including one an
 // earlier version stored.
+/**
+ * @param {unknown} name
+ * @returns {string}
+ */
 export function realStopName(name) {
   const text = String(name ?? "").trim();
   return STAND_IN.test(text) ? "" : text;
 }
 
 // What to call a stop on screen.
+/**
+ * @param {{ id?: string | number | null, name?: unknown } | null | undefined} stop
+ * @param {string | number | null} [id] The stop's own id unless given.
+ * @returns {string}
+ */
 export function stopLabel(stop, id = stop?.id) {
+
   return realStopName(stop?.name) || t("Stop {id}", { id: id ?? "" });
 }

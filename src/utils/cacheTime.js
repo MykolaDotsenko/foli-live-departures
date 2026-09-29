@@ -1,3 +1,10 @@
+/**
+ * A stored epoch-milliseconds timestamp, or 0 when it is unusable or in the
+ * future.
+ * @param {unknown} value Read back from storage, so not trusted.
+ * @param {number} [nowMs]
+ * @returns {number}
+ */
 export function normalizedPastTimestamp(value, nowMs = Date.now()) {
   const timestamp = Number(value);
   const now = Number(nowMs);
@@ -15,6 +22,12 @@ export function normalizedPastTimestamp(value, nowMs = Date.now()) {
   return timestamp;
 }
 
+/**
+ * @param {unknown} value Read back from storage, so not trusted.
+ * @param {number} ttlMs
+ * @param {number} [nowMs]
+ * @returns {boolean}
+ */
 export function timestampIsFresh(
   value,
   ttlMs,

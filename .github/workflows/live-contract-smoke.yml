@@ -91,6 +91,15 @@ jobs:
             throw new Error("GTFS dataset metadata is invalid.");
           }
 
+          // The app's Content-Security-Policy lets it connect only to Föli
+          // hosts (scripts/content-security-policy.mjs). A dataset moved
+          // anywhere else would be refused in every browser: say so here.
+          if (!/^([a-z0-9-]+\.)+foli\.fi$/i.test(gtfs.host)) {
+            throw new Error(
+              `GTFS host ${gtfs.host} is outside *.foli.fi, which the CSP connect-src blocks.`
+            );
+          }
+
           const gtfsPath = gtfs.gtfspath.startsWith("/")
             ? gtfs.gtfspath
             : `/${gtfs.gtfspath}`;
