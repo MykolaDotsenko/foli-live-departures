@@ -296,6 +296,15 @@ export function extractStopAlerts(
         scheduledTime: Number.isFinite(Number(stop.arrival))
           ? Number(stop.arrival)
           : null,
+        // ALERTS identifies the cancelled run by its departure from the trip
+        // origin. SIRI exposes the same planned identity as
+        // originaimeddeparturetime. Keeping it prevents two close departures
+        // of the same public line from both inheriting one cancellation.
+        originDepartureTime:
+          Number.isFinite(Number(cancellation?.departure)) &&
+          Number(cancellation.departure) > 0
+            ? Number(cancellation.departure)
+            : null,
         routeNames: cancellation?.line ? [String(cancellation.line)] : [],
         message: "",
         information: "",

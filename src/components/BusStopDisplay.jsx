@@ -119,6 +119,7 @@ function departureKeys(arrivals, referenceTime, stopId) {
 // line and the stop's planned arrival, active from about ten minutes
 // before it). A row matches when its line and planned time agree.
 const CANCELLATION_MATCH_SECONDS = 90;
+const CANCELLATION_ORIGIN_MATCH_SECONDS = 30;
 
 function isCancelledHere(arrival, cancellations) {
   if (!Array.isArray(cancellations) || cancellations.length === 0) return false;
@@ -127,13 +128,36 @@ function isCancelledHere(arrival, cancellations) {
     Number(arrival.aimedarrivaltime) || Number(arrival.aimeddeparturetime);
   if (!Number.isFinite(planned) || planned <= 0) return false;
 
-  return cancellations.some(
-    (cancellation) =>
-      String(cancellation?.line || "") === String(arrival.lineref || "") &&
-      Number.isFinite(Number(cancellation?.scheduledTime)) &&
-      Math.abs(Number(cancellation.scheduledTime) - planned) <=
+  return cancellations.some((cancellation) => {
+    if (
+      String(cancellation?.line || "") !== String(arrival.lineref || "") ||
+      !Number.isFinite(Number(cancellation?.scheduledTime)) ||
+      Math.abs(Number(cancellation.scheduledTime) - planned) >
         CANCELLATION_MATCH_SECONDS
-  );
+    ) {
+      return false;
+    }
+
+    const cancellationOrigin = Number(cancellation?.originDepartureTime);
+    const arrivalOrigin = Number(arrival?.originaimeddeparturetime);
+    const hasCancellationOrigin =
+      Number.isFinite(cancellationOrigin) && cancellationOrigin > 0;
+    const hasArrivalOrigin = Number.isFinite(arrivalOrigin) && arrivalOrigin > 0;
+
+    // The provider exposes the planned trip-origin departure in both ALERTS
+    // and SIRI. When both sides have it, use that stronger run identity so a
+    // neighbouring same-line departure inside the 90-second stop-time window
+    // cannot inherit the cancellation. Keep the stop-time fallback for
+    // schedule-only rows and older/partial provider payloads.
+    if (hasCancellationOrigin && hasArrivalOrigin) {
+      return (
+        Math.abs(cancellationOrigin - arrivalOrigin) <=
+        CANCELLATION_ORIGIN_MATCH_SECONDS
+      );
+    }
+
+    return true;
+  });
 }
 
 function routeBadgeStyle(route) {
