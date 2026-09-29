@@ -299,6 +299,7 @@ export function mergeRealtimeAndScheduled(
 
     const scheduledLine = String(scheduledRow?.lineref || "").trim();
     const scheduledTime = finiteNumber(scheduledRow?.aimeddeparturetime);
+    const scheduledTripref = String(scheduledRow?.tripref || "").trim();
     if (!scheduledLine || scheduledTime === null) return;
 
     realtime.forEach((liveRow, realtimeIndex) => {
@@ -306,6 +307,14 @@ export function mergeRealtimeAndScheduled(
 
       const liveLine = String(liveRow?.lineref || "").trim();
       if (!liveLine || liveLine !== scheduledLine) return;
+
+      const liveTripref = String(liveRow?.tripref || "").trim();
+
+      // Exact trip identity was already resolved above. If both sides still
+      // have known identities, they are different departures and proximity
+      // must never merge them. Fuzzy matching exists only for the side where
+      // the provider omitted trip identity.
+      if (scheduledTripref && liveTripref) return;
 
       const liveAimed =
         finiteNumber(liveRow?.aimeddeparturetime) ??
