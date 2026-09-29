@@ -866,3 +866,30 @@ describe("whether a fix has left a stop", () => {
     expect(left({ gpsRouteDistanceM: 100, gpsOnRoute: false })).toBe(false);
   });
 });
+
+
+describe("provider position freshness", () => {
+  it("never treats a provider coordinate with unknown sample age as NOW evidence", () => {
+    const evaluated = evaluateRideStage(RIDE_STAGE.BOARDED, {
+      remainingStops: 1,
+      scheduleEtaSec: 60,
+      providerDistanceM: 25,
+      providerPositionAgeSec: null,
+    });
+
+    expect(evaluated.stage).toBe(RIDE_STAGE.NEXT);
+    expect(evaluated.reason).not.toBe("provider-near-target");
+  });
+
+  it("still accepts a genuinely fresh provider coordinate near the target", () => {
+    const evaluated = evaluateRideStage(RIDE_STAGE.BOARDED, {
+      remainingStops: 1,
+      scheduleEtaSec: 60,
+      providerDistanceM: 25,
+      providerPositionAgeSec: 8,
+    });
+
+    expect(evaluated.stage).toBe(RIDE_STAGE.NOW);
+    expect(evaluated.reason).toBe("provider-near-target");
+  });
+});
