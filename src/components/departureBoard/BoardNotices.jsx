@@ -27,23 +27,25 @@ export function DepartureSummary({ visibleCount, realtimeCount }) {
   );
 }
 
-export function OfflineNotice({ serverTime }) {
+// How fresh the times below are, when that needs saying. Offline and a
+// failed or ageing update are one status, reworded in place: a screen
+// reader announces a change inside a live region it already knows, and may
+// say nothing about a new one.
+export function FreshnessNotice({ offlineSince, error, receiptAgeSeconds }) {
   return (
     <p className={styles.staleNotice} role="status">
-      {t("Offline · last updated {time}", { time: formatClock(serverTime) })}
-    </p>
-  );
-}
-
-export function StaleNotice({ error, receiptAgeSeconds }) {
-  return (
-    <p className={styles.staleNotice} role="status">
-      {error ? t("Live update failed") : t("Live data is getting old")}
-      {receiptAgeSeconds !== null
-        ? ` · ${t("last successful update {age}", {
-            age: formatElapsedAge(receiptAgeSeconds),
-          })}`
-        : ""}
+      {offlineSince !== null ? (
+        t("Offline · last updated {time}", { time: formatClock(offlineSince) })
+      ) : (
+        <>
+          {error ? t("Live update failed") : t("Live data is getting old")}
+          {receiptAgeSeconds !== null
+            ? ` · ${t("last successful update {age}", {
+                age: formatElapsedAge(receiptAgeSeconds),
+              })}`
+            : ""}
+        </>
+      )}
     </p>
   );
 }

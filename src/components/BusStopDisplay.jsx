@@ -3,10 +3,9 @@ import styles from "./BusStopDisplay.module.css";
 import BoardHeader from "./departureBoard/BoardHeader";
 import {
   DepartureSummary,
+  FreshnessNotice,
   LiveEstimatesLegend,
-  OfflineNotice,
   ScheduleNotice,
-  StaleNotice,
 } from "./departureBoard/BoardNotices";
 import DepartureStates from "./departureBoard/DepartureStates";
 import DepartureTable from "./departureBoard/DepartureTable";
@@ -95,6 +94,9 @@ function BusStopDisplay({
   // first loads, and counting it said "No upcoming departures" while loading,
   // and again when the load failed.
   const hasData = arrivals.length > 0 || Number(receivedAtMs) > 0;
+  // Offline, every time below is from the last answer, and says so at once
+  // instead of after two minutes.
+  const offlineSince = !online && hasData && serverTime ? serverTime : null;
   // A followed line with no row here may still run: the live feed looks an
   // hour or so ahead, so an hourly line at a busy stop was missing while it
   // ran and the board said it had none. Its next buses come from the
@@ -221,12 +223,12 @@ function BusStopDisplay({
         />
       )}
 
-      {!online && hasData && serverTime ? (
-        // Offline, every time below is from the last answer, and says so at
-        // once instead of after two minutes.
-        <OfflineNotice serverTime={serverTime} />
-      ) : (error || dataIsStale) && hasData && (
-        <StaleNotice error={error} receiptAgeSeconds={receiptAgeSeconds} />
+      {(offlineSince !== null || ((error || dataIsStale) && hasData)) && (
+        <FreshnessNotice
+          offlineSince={offlineSince}
+          error={error}
+          receiptAgeSeconds={receiptAgeSeconds}
+        />
       )}
 
       {scheduleAvailable &&
