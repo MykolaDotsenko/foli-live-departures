@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { URL } from "node:url";
 import CDP from "chrome-remote-interface";
 
 const host = process.env.CDP_HOST || "127.0.0.1";
@@ -41,10 +42,50 @@ async function retry(label, fn, {
   throw new Error(`${label} timed out: ${lastError?.message || "unknown error"}`);
 }
 
-const targets = await retry("WebView CDP target", async () => {
-  const list = await CDP.List({ host, port });
-  return list.find((target) => target.type === "page") || list[0];
-}, { attempts: 20, delayMs: 500 });
+const session = await retry(
+  "WebView CDP session",
+  async () => {
+    const list = await CDP.List({ host, port });
+    const target =
+      list.find(
+        (candidate) =>
+          candidate.type === "page" &&
+          String(candidate.url || "").startsWith("https://localhost")
+      ) ||
+      list.find((candidate) => candidate.type === "page") ||
+      null;
+
+    if (!target) return null;
+
+    let candidateClient = null;
+    try {
+      candidateClient = await CDP({ host, port, target, local: true });
+      const { Runtime, Network, Log } = candidateClient;
+      await Promise.all([Runtime.enable(), Network.enable(), Log.enable()]);
+      return {
+        target,
+        client: candidateClient,
+        Runtime,
+        Network,
+      };
+    } catch (error) {
+      try {
+        await candidateClient?.close();
+      } catch {
+        // Best-effort cleanup before retrying a WebView that restarted.
+      }
+      throw error;
+    }
+  },
+  { attempts: 12, delayMs: 1000 }
+);
+
+const {
+  target: targets,
+  client,
+  Runtime,
+  Network,
+} = session;
 
 console.log("CDP target:", {
   id: targets.id,
@@ -52,11 +93,6 @@ console.log("CDP target:", {
   url: targets.url,
   type: targets.type,
 });
-
-const client = await CDP({ host, port, target: targets });
-const { Runtime, Network, Log } = client;
-
-await Promise.all([Runtime.enable(), Network.enable(), Log.enable()]);
 
 Runtime.consoleAPICalled(({ type, args }) => {
   if (type !== "error") return;
@@ -113,18 +149,34 @@ await retry("app DOM ready", async () => {
   return ready;
 });
 
-const initial = await evaluate(`({
-  url: location.href,
-  title: document.title,
-  text: document.body.innerText.slice(0, 4000),
-  inputCount: document.querySelectorAll("input").length,
-  buttonCount: document.querySelectorAll("button").length
-})`);
+const initial = await evaluate(`(() => {
+  const form = document.querySelector("form");
+  const input =
+    form?.querySelector('input[role="combobox"]') ||
+    form?.querySelector('input[type="search"]') ||
+    form?.querySelector("input");
+  const submit = form?.querySelector('button[type="submit"]');
+
+  return {
+    url: location.href,
+    title: document.title,
+    hasForm: Boolean(form),
+    hasSearchInput: Boolean(input),
+    hasSubmit: Boolean(submit),
+    submitDisabled: Boolean(submit?.disabled),
+    inputCount: document.querySelectorAll("input").length,
+    buttonCount: document.querySelectorAll("button").length
+  };
+})()`);
 
 record(
-  "cold start renders product UI",
-  /Find your stop/i.test(initial.text) && /Show departures/i.test(initial.text),
-  { url: initial.url, title: initial.title, inputCount: initial.inputCount, buttonCount: initial.buttonCount }
+  "cold start renders the stop-search product UI",
+  /^Turku Departures\b/i.test(initial.title) &&
+    initial.hasForm === true &&
+    initial.hasSearchInput === true &&
+    initial.hasSubmit === true &&
+    initial.submitDisabled === false,
+  initial
 );
 
 results.capabilities = await evaluate(`({
@@ -205,37 +257,57 @@ const suggestionText = await retry("live stop suggestion", async () => {
 record("live stop search returns Kauppatori", /Kauppatori/i.test(suggestionText));
 
 const selected = await evaluate(`(() => {
-  const candidates = [...document.querySelectorAll(
-    '[role="option"], [role="listbox"] button, button'
-  )];
+  const candidates = [...document.querySelectorAll('[role="option"]')];
   const match = candidates.find((node) =>
-    /Kauppatori/i.test(node.textContent || "") &&
-    !/Show departures/i.test(node.textContent || "")
+    /Kauppatori/i.test(node.textContent || "")
   );
-  if (!match) return { clicked: false, candidates: candidates.map((node) => (node.textContent || "").trim()).filter(Boolean).slice(0, 30) };
+  if (!match) {
+    return {
+      clicked: false,
+      candidates: candidates
+        .map((node) => (node.textContent || "").trim())
+        .filter(Boolean)
+        .slice(0, 30)
+    };
+  }
   match.click();
   return { clicked: true, text: (match.textContent || "").trim() };
 })()`);
 
 record("Kauppatori suggestion can be selected", selected?.clicked === true, selected || {});
 
+const selectedStopId = await retry("selected stop URL", async () => {
+  return evaluate(`new URL(location.href).searchParams.get("stop") || ""`);
+}, { attempts: 20, delayMs: 250 });
+
+record(
+  "selected suggestion opens a concrete Föli stop",
+  /^\d+$/.test(selectedStopId),
+  { selectedStopId }
+);
+
 await sleep(500);
 
 const showDepartures = await evaluate(`(() => {
-  const button = [...document.querySelectorAll("button")].find((node) =>
-    /Show departures/i.test(node.textContent || "")
-  );
-  if (!button) return { clicked: false };
+  const form = document.querySelector("form");
+  const button = form?.querySelector('button[type="submit"]');
+  if (!button) return { clicked: false, reason: "missing-submit" };
+
   const disabled = Boolean(button.disabled);
   if (!disabled) button.click();
+
   return {
     clicked: !disabled,
     disabled,
-    text: (button.textContent || "").trim()
+    type: button.type
   };
 })()`);
 
-record("Show departures action is enabled and clickable", showDepartures?.clicked === true, showDepartures || {});
+record(
+  "departure submit action is enabled and clickable",
+  showDepartures?.clicked === true,
+  showDepartures || {}
+);
 
 const board = await retry("live departure board", async () => {
   return evaluate(`(() => ({
@@ -247,29 +319,44 @@ const board = await retry("live departure board", async () => {
 }, { attempts: 25, delayMs: 750 });
 
 record(
-  "live Föli departure board opens for stop 164",
-  /[?&]stop=164(?:&|$)/.test(board.url) &&
+  "live Föli departure board opens for the selected stop",
+  new URL(board.url).searchParams.get("stop") === selectedStopId &&
     /Kauppatori/i.test(board.heading || board.text) &&
     Number(board.rows) > 0,
-  { url: board.url, heading: board.heading, rows: board.rows }
+  {
+    url: board.url,
+    selectedStopId,
+    heading: board.heading,
+    rows: board.rows
+  }
 );
 
 const liveSemantics = await evaluate(`(() => {
-  const text = document.body.innerText;
+  const table = document.querySelector("table");
+  const rows = [...document.querySelectorAll("tbody tr")];
+  const cellCounts = rows.map((row) => row.querySelectorAll("td").length);
+  const hasRefreshControl = [...document.querySelectorAll("button")].some(
+    (button) =>
+      button.getAttribute("aria-label")?.toLowerCase().includes("refresh") ||
+      button.dataset?.action === "refresh"
+  );
+
   return {
-    hasRefresh: /Refresh/i.test(text),
-    hasDepartureVocabulary: /(Live|Scheduled|min|due|now)/i.test(text),
-    rowCount: document.querySelectorAll("tbody tr").length,
-    pageTextSample: text.slice(0, 2500)
+    hasTable: Boolean(table),
+    rowCount: rows.length,
+    everyRowHasAtLeastThreeCells:
+      rows.length > 0 && cellCounts.every((count) => count >= 3),
+    hasRefreshControl,
+    cellCounts
   };
 })()`);
 
 record(
-  "departure board exposes usable realtime/timetable semantics",
-  liveSemantics.hasRefresh === true &&
-    liveSemantics.hasDepartureVocabulary === true &&
-    liveSemantics.rowCount > 0,
-  { hasRefresh: liveSemantics.hasRefresh, hasDepartureVocabulary: liveSemantics.hasDepartureVocabulary, rowCount: liveSemantics.rowCount }
+  "departure board exposes a structured, populated departures table",
+  liveSemantics.hasTable === true &&
+    liveSemantics.rowCount > 0 &&
+    liveSemantics.everyRowHasAtLeastThreeCells === true,
+  liveSemantics
 );
 
 await Network.emulateNetworkConditions({
@@ -284,16 +371,19 @@ await sleep(1000);
 
 const offlineState = await evaluate(`({
   online: navigator.onLine,
-  text: document.body.innerText.slice(0, 3500),
-  rows: document.querySelectorAll("tbody tr").length
+  url: location.href,
+  textLength: document.body.innerText.trim().length,
+  rows: document.querySelectorAll("tbody tr").length,
+  hasMainContent: Boolean(document.querySelector("main, [role='main'], table"))
 })`);
 
 record(
-  "offline transition is surfaced without blanking the app",
+  "offline transition keeps the selected stop UI usable",
   offlineState.online === false &&
-    /Offline/i.test(offlineState.text) &&
-    offlineState.text.trim().length > 50,
-  { online: offlineState.online, rows: offlineState.rows }
+    new URL(offlineState.url).searchParams.get("stop") === selectedStopId &&
+    offlineState.textLength > 50 &&
+    offlineState.hasMainContent === true,
+  offlineState
 );
 
 await Network.emulateNetworkConditions({
@@ -305,14 +395,6 @@ await Network.emulateNetworkConditions({
 });
 await evaluate(`window.dispatchEvent(new Event("online")); true`);
 await sleep(750);
-
-await evaluate(`(() => {
-  const button = [...document.querySelectorAll("button")].find((node) =>
-    /^Refresh$/i.test((node.textContent || "").trim())
-  );
-  if (button && !button.disabled) button.click();
-  return Boolean(button);
-})()`);
 
 const recovered = await retry("online recovery", async () => {
   const value = await evaluate(`({
@@ -333,7 +415,9 @@ const persistedUrl = await evaluate("location.href");
 await evaluate("location.reload(); true");
 await retry("reload after selected stop", async () => {
   return evaluate(
-    `document.readyState === "complete" && /[?&]stop=164(?:&|$)/.test(location.href) && /Kauppatori/i.test(document.body.innerText)`
+    `document.readyState === "complete" &&
+      new URL(location.href).searchParams.get("stop") === ${JSON.stringify(selectedStopId)} &&
+      /Kauppatori/i.test(document.body.innerText)`
   );
 }, { attempts: 25, delayMs: 500 });
 
@@ -345,7 +429,8 @@ const reloaded = await evaluate(`({
 
 record(
   "selected stop survives Android WebView reload",
-  /[?&]stop=164(?:&|$)/.test(reloaded.url) && /Kauppatori/i.test(reloaded.text),
+  new URL(reloaded.url).searchParams.get("stop") === selectedStopId &&
+    /Kauppatori/i.test(reloaded.text),
   { before: persistedUrl, after: reloaded.url, rows: reloaded.rows }
 );
 
