@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { fetchStopMonitor } from "../api/foliApi";
+import { liveArrivalSnapshotSignature } from "../utils/rideFeedEvidence";
 import { RIDE_STAGE, resolveRideArrivalMatch } from "../utils/rideProgress";
 import { ridePollDelayMs } from "../utils/retry";
 
@@ -102,40 +103,52 @@ export default function useRideProviderPoll({
 
           if (target.kind === "live") {
             const targetMatch = target.match;
+            const signature = liveArrivalSnapshotSignature(targetMatch.arrival);
+            const snapshotAdvanced =
+              !before.targetSnapshotSignature ||
+              signature !== before.targetSnapshotSignature;
+
             next.targetListed = true;
             next.targetMatchBy = targetMatch.matchedBy;
-            next.lastLiveMatchAt = Date.now();
-            // Everything read from this row ages from now on: its estimate
-            // counts down and its position grows old, whether or not the
-            // next poll gets through.
-            next.targetSeenAt = Date.now();
             next.targetMissingCount = 0;
 
-            const arrivalSignals = readArrivalSignals(
-              targetMatch.arrival,
-              targetResult.value.serverTime,
-              current.targetStop
-            );
-            Object.assign(next, arrivalSignals);
+            // Receiving another HTTP response is not the same as receiving
+            // newer transit evidence. Föli may repeat one SIRI snapshot for
+            // several polls. Re-anchoring the ETA on every identical copy
+            // freezes the displayed minutes and makes stale data look live.
+            // Keep the original anchor until the provider observation itself
+            // changes; agedLiveEtaSec() will keep counting it down meanwhile.
+            if (snapshotAdvanced) {
+              next.targetSnapshotSignature = signature;
+              next.lastLiveMatchAt = Date.now();
+              next.targetSeenAt = Date.now();
 
-            const observationAgeSec = Number(
-              arrivalSignals?.providerPositionAgeSec
-            );
-            const freshObservation =
-              arrivalSignals?.providerPositionAgeSec !== null &&
-              arrivalSignals?.providerPositionAgeSec !== undefined &&
-              Number.isFinite(observationAgeSec) &&
-              observationAgeSec <= FRESH_PROVIDER_OBSERVATION_SEC;
+              const arrivalSignals = readArrivalSignals(
+                targetMatch.arrival,
+                targetResult.value.serverTime,
+                current.targetStop
+              );
+              Object.assign(next, arrivalSignals);
 
-            // vehicleatstop is a physical-state claim. Once a fresh one is
-            // seen we keep it as historical evidence that the bus really
-            // reached the target. A stale/undated row must never arm that
-            // latch: otherwise one old observation can later turn "bus gone"
-            // into a false passed-target confirmation.
-            next.targetWasAtStop =
-              next.targetWasAtStop ||
-              (freshObservation &&
-                targetMatch.arrival.vehicleatstop === true);
+              const observationAgeSec = Number(
+                arrivalSignals?.providerPositionAgeSec
+              );
+              const freshObservation =
+                arrivalSignals?.providerPositionAgeSec !== null &&
+                arrivalSignals?.providerPositionAgeSec !== undefined &&
+                Number.isFinite(observationAgeSec) &&
+                observationAgeSec <= FRESH_PROVIDER_OBSERVATION_SEC;
+
+              // vehicleatstop is a physical-state claim. Once a fresh one is
+              // seen we keep it as historical evidence that the bus really
+              // reached the target. A stale/undated row must never arm that
+              // latch: otherwise one old observation can later turn "bus gone"
+              // into a false passed-target confirmation.
+              next.targetWasAtStop =
+                next.targetWasAtStop ||
+                (freshObservation &&
+                  targetMatch.arrival.vehicleatstop === true);
+            }
           } else if (target.kind === "ambiguous") {
             // The journey is present, but more than one visit fits and the
             // planned time cannot safely choose between them. This is not
@@ -158,6 +171,9 @@ export default function useRideProviderPoll({
             // still due, just when location was the only evidence left.
             next.targetListed = false;
             next.targetMatchBy = "";
+            // A later reappearance is new evidence even when Föli reuses the
+            // same timestamps and prediction after a transient gap.
+            next.targetSnapshotSignature = "";
             next.targetMissingCount =
               target.kind === "untracked" && current.stage === RIDE_STAGE.NOW
                 ? before.targetMissingCount
@@ -184,7 +200,14 @@ export default function useRideProviderPoll({
           });
 
           if (previous.kind === "live") {
-            next.lastLiveMatchAt = Date.now();
+            const signature = liveArrivalSnapshotSignature(previous.match.arrival);
+            const snapshotAdvanced =
+              !before.previousSnapshotSignature ||
+              signature !== before.previousSnapshotSignature;
+            if (snapshotAdvanced) {
+              next.previousSnapshotSignature = signature;
+              next.lastLiveMatchAt = Date.now();
+            }
             next.previousSeen = true;
             next.previousMissingCount = 0;
           } else if (previous.kind === "ambiguous") {
@@ -196,12 +219,16 @@ export default function useRideProviderPoll({
             // left. Only a fresh live sighting re-arms that check.
             next.previousSeen = false;
             next.previousMissingCount = 0;
+            next.previousSnapshotSignature = "";
           } else if (previous.kind === "absent" && before.previousSeen) {
+            next.previousSnapshotSignature = "";
             // This count becomes "Press STOP now", so only an answer that
             // carries realtime data may say the bus has left. Counting a
             // no-data answer (an outage, or a recovery that reached the exit
             // stop first) raised it before the bus had reached this stop.
             next.previousMissingCount = before.previousMissingCount + 1;
+          } else if (previous.kind === "no-data") {
+            next.previousSnapshotSignature = "";
           }
         } else if (previousResult.status === "rejected") {
           next.lastError =
