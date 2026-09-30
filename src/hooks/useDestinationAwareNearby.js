@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStopMonitor, fetchTripStopTimes } from "../api/foliApi";
-import { classifyCatchability } from "../utils/catchability";
+import {
+  classifyCatchability,
+  conservativeAccessSeconds,
+} from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
 import { getDepartureTime } from "../utils/time";
 
@@ -187,6 +190,7 @@ export async function loadDestinationAwareNearby({
         stopId: String(stop.id),
         status: "unavailable",
         best: null,
+        options: [],
         additionalCount: 0,
         checkedAt: Date.now(),
       };
@@ -247,6 +251,14 @@ export async function loadDestinationAwareNearby({
         departureAtSec: Number(departureAt),
         nowSec,
       });
+      const accessSeconds = conservativeAccessSeconds(
+        Number(stop.distanceMeters),
+        positionAccuracy
+      );
+      const catchMarginSec =
+        accessSeconds === null
+          ? null
+          : Number(departureAt) - nowSec - accessSeconds;
 
       compatible.push({
         tripRef,
@@ -260,6 +272,8 @@ export async function loadDestinationAwareNearby({
         catchability,
         liveState: liveState(arrival, nowSec),
         rideDurationSec: fit.rideDurationSec,
+        accessSeconds,
+        catchMarginSec,
       });
     }
 
@@ -308,6 +322,18 @@ export async function loadDestinationAwareNearby({
       stopId: String(stop.id),
       status,
       best,
+      options: compatible
+        .filter((candidate) => candidate.catchability !== "too-late")
+        .sort((left, right) => {
+          const leftArrival = Number.isFinite(left.destinationArrivalAt)
+            ? Number(left.destinationArrivalAt)
+            : Number.POSITIVE_INFINITY;
+          const rightArrival = Number.isFinite(right.destinationArrivalAt)
+            ? Number(right.destinationArrivalAt)
+            : Number.POSITIVE_INFINITY;
+          return leftArrival - rightArrival || left.departureAt - right.departureAt;
+        })
+        .slice(0, 6),
       additionalCount: Math.max(
         0,
         compatible.filter((candidate) => candidate !== best).length
