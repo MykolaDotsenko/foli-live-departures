@@ -1,0 +1,189 @@
+.wrapper {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #c9dde0;
+  border-radius: 15px;
+  background: #f8fbfb;
+}
+
+.heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kicker {
+  margin: 0 0 2px;
+  color: #00717c;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heading h3 {
+  margin: 0;
+  color: #20343b;
+  font-size: 0.98rem;
+}
+
+.summary {
+  max-width: 250px;
+  margin: 0;
+  color: #60747c;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.card {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d4e2e4;
+  border-radius: 13px;
+  background: #fff;
+}
+
+.card[data-primary="true"] {
+  border-color: #2a8b72;
+  box-shadow: 0 6px 18px rgba(30, 111, 90, 0.09);
+}
+
+.cardButton {
+  display: grid;
+  width: 100%;
+  min-height: 44px;
+  gap: 7px;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: #20343b;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.cardButton:hover {
+  background: #f2f8f8;
+}
+
+.cardButton:focus-visible {
+  outline: 3px solid rgba(0, 121, 133, 0.2);
+  outline-offset: -3px;
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.title {
+  color: #155f4d;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.arrival {
+  color: #20343b;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.routeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: #435960;
+  font-size: 0.75rem;
+}
+
+.walkRow {
+  color: #435960;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.comparison {
+  color: #17614f;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.action {
+  width: fit-content;
+  margin-top: 1px;
+  color: #006d77;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+@media (max-width: 760px) {
+  .heading {
+    align-items: start;
+  }
+
+  .summary {
+    display: none;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cardButton {
+    padding: 11px 12px;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .wrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-sunken);
+  }
+
+  :root[data-theme="dark"] .heading h3,
+  :root[data-theme="dark"] .arrival,
+  :root[data-theme="dark"] .cardButton {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .title,
+  :root[data-theme="dark"] .comparison,
+  :root[data-theme="dark"] .action {
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .summary,
+  :root[data-theme="dark"] .routeRow,
+  :root[data-theme="dark"] .walkRow {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .card {
+    border-color: var(--dm-line);
+    background: var(--dm-raised);
+  }
+
+  :root[data-theme="dark"] .card[data-primary="true"] {
+    border-color: var(--dm-accent);
+    box-shadow: none;
+  }
+
+  :root[data-theme="dark"] .cardButton:hover {
+    background: var(--dm-accent-surface);
+  }
+}
