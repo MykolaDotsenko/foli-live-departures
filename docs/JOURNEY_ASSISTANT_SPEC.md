@@ -217,7 +217,21 @@ Never silently substitute a backup without explanation.
 
 Föli data is used for transit topology and realtime, not general address/POI lookup.
 
-Arbitrary destination search must use a provider adapter:
+### Hard architecture constraint: no backend
+
+Turku Departures remains a **static, browser-only PWA**.
+
+The product must not require:
+- an application backend;
+- a proxy owned by this project;
+- server-side sessions;
+- a database;
+- server-side storage of journey/location history;
+- a secret API key embedded in the public frontend.
+
+GitHub Pages compatibility remains a release requirement.
+
+Arbitrary destination search must therefore use a **client-side provider adapter** whose production use is permitted directly from a browser, or degrade to stop/saved-place search when no acceptable provider is configured:
 
 ```ts
 type DestinationSearchProvider = {
@@ -232,12 +246,18 @@ Provider choice must consider:
 - POI coverage;
 - Finnish/Swedish/English support;
 - privacy;
-- licensing;
+- licensing and provider usage policy;
 - cost/quota;
 - browser/CORS constraints;
-- attribution.
+- whether a secret credential would be exposed;
+- attribution;
+- graceful provider replacement.
 
 Do not couple UI components directly to one provider schema.
+
+A provider that requires a confidential server-side credential is **not compatible** with this product architecture.
+
+Public geocoding services with restrictive fair-use policies must be treated as optional capabilities, not as an unlimited autocomplete backend. If provider policy forbids autocomplete, external queries occur only after an explicit passenger action and are locally cached/throttled.
 
 ---
 
@@ -959,24 +979,30 @@ Business logic remains testable outside React.
 
 ## 34. Route-generation strategy
 
-Two supported architecture paths:
+The product remains **backendless**. Two client-side-compatible paths are allowed:
 
-### A. Product-owned GTFS routing
+### A. Product-owned browser-side GTFS routing
 
-Good control, but transfer routing is complex.
+Good control and no external routing dependency, but transfer routing is complex.
 
 Requires correct:
 - service calendars;
 - footpaths;
 - transfer margins;
 - realtime propagation;
-- dataset performance.
+- bounded client-side dataset size;
+- low-end-phone performance.
 
-### B. External journey-planning engine + Turku Departures decision layer
+### B. Direct browser call to a permitted external journey-planning API + Turku Departures decision layer
 
-External engine generates valid journey candidates.
+The external service may generate valid journey candidates only when:
+- direct browser use is permitted;
+- CORS supports the PWA;
+- no confidential credential is exposed;
+- privacy/licensing/attribution requirements are satisfied;
+- failure leaves stop search, Nearby and Ride Mode usable.
 
-Turku Departures adds:
+Turku Departures then adds:
 - truth/freshness semantics;
 - passenger-friendly ranking;
 - route diversity;
@@ -984,9 +1010,9 @@ Turku Departures adds:
 - Ride Mode leg handoff;
 - disruption/recovery behaviour.
 
-The UI contract must support either backend strategy.
+No product-owned proxy/backend is introduced for routing.
 
-Do not ship unreliable partial transfer logic.
+Do not ship unreliable partial transfer logic merely to avoid using a permitted client-side journey-planning service.
 
 ---
 
@@ -1395,6 +1421,10 @@ The current lightweight utility feel must be preserved.
 54. First-screen mobile information density is not higher than the current design without a demonstrated user benefit.
 55. New routing requests do not delay the existing stop-board critical path.
 56. Existing accessibility, PWA, offline and localization gates remain release blockers.
+57. No feature introduces an application backend, proxy, server-side session or private database.
+58. No confidential API credential is shipped in the browser bundle.
+59. Address/POI provider failure leaves saved-place and public-stop destination flows operational.
+60. The production build remains deployable as static files on GitHub Pages.
 
 ---
 
