@@ -81,3 +81,19 @@ test("never hides stops while stabilizing the recommendation", () => {
     new Set(["near", "far", "other"])
   );
 });
+
+
+test("ranks uncertain evidence above a known uncatchable departure", () => {
+  const ranked = rankDestinationStops(
+    [
+      { id: "late", distanceMeters: 50 },
+      { id: "unknown", distanceMeters: 200 },
+    ],
+    {
+      late: { status: "too-late", best: null },
+      unknown: { status: "uncertain", best: null },
+    }
+  );
+
+  expect(ranked.map((stop) => stop.id)).toEqual(["unknown", "late"]);
+});
