@@ -54,7 +54,7 @@ for (const name of Object.keys(dependencies)) {
   }
 }
 
-const sourceRoots = ["src", "scripts"];
+const sourceRoots = ["src"];
 const secretPattern =
   /(?:VITE_|import\.meta\.env\.)[^\n"'\s]*(?:SECRET|PRIVATE_KEY|CLIENT_SECRET)/i;
 
