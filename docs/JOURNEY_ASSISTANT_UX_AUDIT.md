@@ -145,6 +145,27 @@ These improve completeness, convenience and edge-case quality after the core dec
 
 ---
 
+## Architecture guardrail — no backend
+
+Journey Assistant must preserve the current deployment model:
+
+- static GitHub Pages application;
+- installable PWA;
+- all product state and ranking logic in the browser;
+- direct Föli/open-data access;
+- no application server;
+- no serverless proxy;
+- no database;
+- no account/auth infrastructure.
+
+Address/POI and routing providers must be browser-safe. Public frontend keys are acceptable only when the provider explicitly supports frontend use and the key can be restricted to the production origin.
+
+If a future capability requires a confidential secret, that provider/capability is rejected rather than adding a backend.
+
+This rule is part of the product non-regression contract, not an implementation preference.
+
+---
+
 # 4. P0 priorities
 
 ## P0.1 — Destination intent
@@ -489,14 +510,16 @@ One search field accepts:
 - stop;
 - saved place.
 
-Provider adapter must isolate external geocoder schema.
+Provider adapter must isolate the external geocoder schema and call it directly from the browser. No proxy/backend is allowed.
 
 ### Key risks
 
 - duplicate branches;
 - incorrect business centroid;
 - stale POI data;
-- privacy expansion.
+- privacy expansion;
+- public-client key/origin restrictions;
+- browser CORS availability.
 
 ### UX
 
@@ -512,6 +535,8 @@ Search result disambiguation:
 
 - duplicate branches are not silently resolved;
 - address search failure does not break stop search;
+- provider credentials are browser-safe/public-client credentials only;
+- no confidential secret is bundled or proxied;
 - addresses are not silently persisted;
 - provider/privacy disclosure exists.
 
