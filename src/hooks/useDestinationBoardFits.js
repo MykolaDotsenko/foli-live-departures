@@ -141,6 +141,8 @@ export default function useDestinationBoardFits({
       destination
         ? [
             destination.id,
+            destination.primaryStopId,
+            ...destination.acceptableStopIds,
             stopId,
             ...arrivals.map(
               (arrival, index) =>
