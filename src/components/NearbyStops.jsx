@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
 import {
@@ -18,6 +18,7 @@ import {
   nearestChoiceIsAmbiguous,
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
+import { rankDestinationStops } from "../utils/journeyRanking";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
@@ -29,40 +30,6 @@ function shownDestinationLabel(destination) {
   return destination.kind === "saved-place"
     ? t(destination.label)
     : destination.label;
-}
-
-function fitRank(fit) {
-  if (!fit) return 6;
-  if (fit.status === "good") return 0;
-  if (fit.status === "tight") return 1;
-  if (fit.status === "too-late") return 2;
-  if (fit.status === "uncertain") return 3;
-  if (fit.status === "other-direction") return 4;
-  if (fit.status === "no-direct") return 5;
-  return 6;
-}
-
-function sortForDestination(stops, fitsByStop) {
-  return [...stops].sort((left, right) => {
-    const leftFit = fitsByStop[left.id];
-    const rightFit = fitsByStop[right.id];
-    const rankDifference = fitRank(leftFit) - fitRank(rightFit);
-    if (rankDifference !== 0) return rankDifference;
-
-    const leftArrival = Number(leftFit?.best?.destinationArrivalAt);
-    const rightArrival = Number(rightFit?.best?.destinationArrivalAt);
-    const leftHasArrival = Number.isFinite(leftArrival) && leftArrival > 0;
-    const rightHasArrival = Number.isFinite(rightArrival) && rightArrival > 0;
-
-    if (leftHasArrival !== rightHasArrival) {
-      return leftHasArrival ? -1 : 1;
-    }
-    if (leftHasArrival && leftArrival !== rightArrival) {
-      return leftArrival - rightArrival;
-    }
-
-    return left.distanceMeters - right.distanceMeters;
-  });
 }
 
 function fitStatusText(fit, destinationLabel, isBest) {
@@ -200,6 +167,7 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
+  const rankingRef = useRef({ destinationId: "", order: [] });
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -220,10 +188,20 @@ function NearbyStops({
   });
 
   const destinationLabel = shownDestinationLabel(destination);
-  const destinationSortedStops = useMemo(
-    () => sortForDestination(nearbyStops, fitsByStop),
-    [fitsByStop, nearbyStops]
-  );
+  const destinationSortedStops = useMemo(() => {
+    const previousOrder =
+      rankingRef.current.destinationId === destination?.id
+        ? rankingRef.current.order
+        : [];
+    return rankDestinationStops(nearbyStops, fitsByStop, previousOrder);
+  }, [destination?.id, fitsByStop, nearbyStops]);
+
+  useEffect(() => {
+    rankingRef.current = {
+      destinationId: destination?.id || "",
+      order: destinationSortedStops.map((stop) => stop.id),
+    };
+  }, [destination?.id, destinationSortedStops]);
 
   const visibleStops =
     destination && sortMode === "best"
