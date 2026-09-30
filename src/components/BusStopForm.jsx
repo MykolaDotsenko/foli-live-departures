@@ -8,54 +8,9 @@ import {
 import { judgeNearestStop } from "../utils/nearestStop";
 import styles from "./BusStopForm.module.css";
 import StopName from "./StopName";
+import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 
 const MAX_SUGGESTIONS = 6;
-
-function normalize(value) {
-  return String(value || "")
-    .trim()
-    .toLocaleLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function scoreStop(stop, query) {
-  const id = normalize(stop.id);
-  const name = normalize(stop.name);
-
-  if (id === query || name === query) return 0;
-  if (id.startsWith(query)) return 1;
-  if (name.startsWith(query)) return 2;
-  if (name.includes(query)) return 3;
-  if (id.includes(query)) return 4;
-  return Infinity;
-}
-
-function findMatches(stops, query) {
-  const normalizedQuery = normalize(query);
-  if (!normalizedQuery) return [];
-
-  const ranked = stops
-    .map((stop) => ({ stop, score: scoreStop(stop, normalizedQuery) }))
-    .filter(({ score }) => Number.isFinite(score))
-    .sort(
-      (a, b) =>
-        a.score - b.score ||
-        a.stop.name.localeCompare(b.stop.name, undefined, {
-          sensitivity: "base",
-        })
-    );
-  // Stops sharing the exact name typed are all listed, however many: the
-  // form asks the passenger to tell them apart by number, and a hub with
-  // eight "Kauppatori" stops showed only six to choose from.
-  const exactNameCount = ranked.filter(
-    ({ stop }) => normalize(stop.name) === normalizedQuery
-  ).length;
-
-  return ranked
-    .slice(0, Math.max(MAX_SUGGESTIONS, exactNameCount))
-    .map(({ stop }) => stop);
-}
 
 // A message is kept as its phrase and values, and put into words when shown,
 // so one already on screen follows a change of language. A value written
@@ -174,7 +129,10 @@ function BusStopForm({
     });
   }, [activeStopId, stops]);
 
-  const matches = useMemo(() => findMatches(stops, value), [stops, value]);
+  const matches = useMemo(
+    () => findStopMatches(stops, value, MAX_SUGGESTIONS),
+    [stops, value]
+  );
   const showSuggestions = focused && value.trim() && matches.length > 0;
 
   const chooseStop = (stop) => {
@@ -195,7 +153,7 @@ function BusStopForm({
     // The field is showing a stop we already resolved and nobody has edited
     // it, so submitting again means that same stop — no need to re-run the
     // name lookup, which would stumble on two stops sharing a name.
-    if (resolved && normalize(query) === normalize(resolved.name)) {
+    if (resolved && normalizeStopQuery(query) === normalizeStopQuery(resolved.name)) {
       setValidationError(null);
       onSubmit(resolved.id);
       return;
@@ -208,7 +166,7 @@ function BusStopForm({
     }
 
     const exactNames = stops.filter(
-      (stop) => normalize(stop.name) === normalize(query)
+      (stop) => normalizeStopQuery(stop.name) === normalizeStopQuery(query)
     );
 
     if (exactNames.length === 1) {

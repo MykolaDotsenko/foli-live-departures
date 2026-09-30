@@ -108,6 +108,8 @@ export default function RideSetup({
   placesById,
   routesById,
   routesByShortName,
+  preferredTargetStopId = "",
+  preferredTargetStopSequence = null,
   onStart,
   onCancel,
 }) {
@@ -222,11 +224,26 @@ export default function RideSetup({
       }));
   }, [boardingIndex, placesById, stopTimes, stopsById]);
 
-  // The main Home stop is the one to preselect. A backup stop the bus happens
-  // to reach first used to win, and with the button one tap away the ride
-  // started for a stop the passenger never meant.
+  // A journey the passenger explicitly selected is the strongest prefill.
+  // Without one, keep the existing Home-primary behaviour. Neither path
+  // starts the alert by itself: the passenger still reviews and presses Start.
   useEffect(() => {
     if (targetStopSequence || downstream.length === 0) return;
+
+    const preferredSequence = Number(preferredTargetStopSequence);
+    const preferred = downstream.find(
+      (item) =>
+        (Number.isFinite(preferredSequence) &&
+          Number(item.stopSequence) === preferredSequence) ||
+        (!Number.isFinite(preferredSequence) &&
+          preferredTargetStopId &&
+          String(item.stopId) === String(preferredTargetStopId))
+    );
+
+    if (preferred) {
+      setTargetStopSequence(String(preferred.stopSequence));
+      return;
+    }
 
     const homeStops = downstream.filter((item) =>
       item.places.includes("Home")
@@ -241,7 +258,13 @@ export default function RideSetup({
       homeStops.find((item) => String(item.stopId) === primaryStopId) ||
       homeStops[0];
     setTargetStopSequence(String(home.stopSequence));
-  }, [downstream, placesById, targetStopSequence]);
+  }, [
+    downstream,
+    placesById,
+    preferredTargetStopId,
+    preferredTargetStopSequence,
+    targetStopSequence,
+  ]);
 
   const chosenStop = downstream.find(
     (item) => String(item.stopSequence) === String(targetStopSequence)

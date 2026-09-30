@@ -8,7 +8,14 @@ import DepartureRow from "./DepartureRow";
 // With the times old (offline, or no update for two minutes) the countdowns
 // lose the live colour: the notice above says why, and a bright "4 min"
 // should not argue with it.
-function DepartureTable({ arrivals, rowKeys, timesAreOld = false, ...rowProps }) {
+function DepartureTable({
+  arrivals,
+  rowKeys,
+  timesAreOld = false,
+  destination = null,
+  destinationFitsByKey = {},
+  ...rowProps
+}) {
   return (
     <div className={styles.tableWrap}>
       <table
@@ -36,6 +43,8 @@ function DepartureTable({ arrivals, rowKeys, timesAreOld = false, ...rowProps })
               key={rowKeys[index]}
               arrival={arrival}
               rowKey={rowKeys[index]}
+              journeyDestination={destination}
+              destinationFit={destinationFitsByKey[rowKeys[index]] || null}
               {...rowProps}
             />
           ))}

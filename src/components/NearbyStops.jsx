@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
+import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
 import {
   distanceInMeters,
   findNearestStops,
@@ -16,19 +17,100 @@ import {
   OUTSIDE_NETWORK_WARNING_METERS,
   nearestChoiceIsAmbiguous,
 } from "../utils/nearestStop";
+import { formatClock, formatDue } from "../utils/time";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 
 const NEARBY_STOP_LIMIT = 6;
 
-function NearbyStopCard({ stop, isActive, isNearest, online, onSelect }) {
+function shownDestinationLabel(destination) {
+  if (!destination) return "";
+  return destination.kind === "saved-place"
+    ? t(destination.label)
+    : destination.label;
+}
+
+function fitRank(fit) {
+  if (!fit) return 6;
+  if (fit.status === "good") return 0;
+  if (fit.status === "tight") return 1;
+  if (fit.status === "too-late") return 2;
+  if (fit.status === "uncertain") return 3;
+  if (fit.status === "other-direction") return 4;
+  if (fit.status === "no-direct") return 5;
+  return 6;
+}
+
+function sortForDestination(stops, fitsByStop) {
+  return [...stops].sort((left, right) => {
+    const leftFit = fitsByStop[left.id];
+    const rightFit = fitsByStop[right.id];
+    const rankDifference = fitRank(leftFit) - fitRank(rightFit);
+    if (rankDifference !== 0) return rankDifference;
+
+    const leftArrival = Number(leftFit?.best?.destinationArrivalAt);
+    const rightArrival = Number(rightFit?.best?.destinationArrivalAt);
+    const leftHasArrival = Number.isFinite(leftArrival) && leftArrival > 0;
+    const rightHasArrival = Number.isFinite(rightArrival) && rightArrival > 0;
+
+    if (leftHasArrival !== rightHasArrival) {
+      return leftHasArrival ? -1 : 1;
+    }
+    if (leftHasArrival && leftArrival !== rightArrival) {
+      return leftArrival - rightArrival;
+    }
+
+    return left.distanceMeters - right.distanceMeters;
+  });
+}
+
+function fitStatusText(fit, destinationLabel, isBest) {
+  if (!fit) {
+    return t("Checking which buses go to {destination}…", {
+      destination: destinationLabel,
+    });
+  }
+
+  if (fit.status === "good") {
+    return isBest
+      ? t("Best for {destination}", { destination: destinationLabel })
+      : t("Goes to {destination}", { destination: destinationLabel });
+  }
+  if (fit.status === "tight") return t("Timing may be tight");
+  if (fit.status === "too-late") return t("Probably too late to catch");
+  if (fit.status === "other-direction") {
+    return t("Current buses go the other direction");
+  }
+  if (fit.status === "no-direct") {
+    return t("No direct option to {destination} is shown soon", {
+      destination: destinationLabel,
+    });
+  }
+  if (fit.status === "unavailable") return t("Departure check unavailable");
+  return t("Route suitability is uncertain");
+}
+
+function NearbyStopCard({
+  stop,
+  isActive,
+  isNearest,
+  isBest,
+  online,
+  onSelect,
+  destinationLabel,
+  fit,
+}) {
   const directionsUrl = online ? buildWalkingDirectionsUrl(stop) : "";
+  const fitText = destinationLabel
+    ? fitStatusText(fit, destinationLabel, isBest)
+    : "";
 
   return (
     <article
       className={styles.stopCard}
       data-active={isActive ? "true" : "false"}
+      data-best={isBest ? "true" : undefined}
     >
       <button
         type="button"
@@ -46,8 +128,42 @@ function NearbyStopCard({ stop, isActive, isNearest, online, onSelect }) {
             {t("Stop {id}", { id: stop.id })} ·{" "}
             {formatDistance(stop.distanceMeters)}
           </span>
+
+          {destinationLabel && (
+            <span
+              className={styles.fitStatus}
+              data-good={
+                isBest || fit?.status === "good" ? "true" : undefined
+              }
+            >
+              {fitText}
+            </span>
+          )}
+
+          {fit?.best && (
+            <span className={styles.fitJourney}>
+              <strong>
+                {t("Line {line}", { line: fit.best.lineRef || "—" })} ·{" "}
+                {formatDue(fit.best.departureAt)}
+              </strong>
+              {Number.isFinite(fit.best.destinationArrivalAt) && (
+                <>
+                  {" · "}
+                  {t("arrive about {time}", {
+                    time: formatClock(fit.best.destinationArrivalAt),
+                  })}
+                </>
+              )}
+            </span>
+          )}
         </span>
-        {isNearest && <span className={styles.nearestBadge}>{t("Nearest")}</span>}
+
+        <span className={styles.badges}>
+          {isBest && <span className={styles.bestBadge}>{t("Best")}</span>}
+          {isNearest && (
+            <span className={styles.nearestBadge}>{t("Nearest")}</span>
+          )}
+        </span>
       </button>
 
       {directionsUrl && (
@@ -76,20 +192,15 @@ function NearbyStops({
   serviceBoundary = null,
   online = true,
   searchEdits = () => 0,
+  destination = null,
   onSelect,
 }) {
   useLanguage();
   const [status, setStatus] = useState("idle");
   const [position, setPosition] = useState(null);
-  // A phrase, put into words when shown, so it follows a language change.
+  const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
-  // A location fix can take seconds. By the time it lands the passenger may
-  // already have searched for another stop, and jumping the board to the
-  // nearest one then would take away the stop they chose themselves. The
-  // lookup compares against the stop showing now, not the one at the tap.
-  // Typing in the stop search counts too, before any stop is chosen: the
-  // jump made the search put the nearest stop's name over the half-typed
-  // one. searchEdits reads how many edits the search field has had.
+
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
 
@@ -101,6 +212,28 @@ function NearbyStops({
     () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
     [position, stops]
   );
+
+  const { fitsByStop, state: fitState } = useDestinationAwareNearby({
+    stops: nearbyStops,
+    destination,
+    positionAccuracy: position?.accuracy ?? null,
+  });
+
+  const destinationLabel = shownDestinationLabel(destination);
+  const destinationSortedStops = useMemo(
+    () => sortForDestination(nearbyStops, fitsByStop),
+    [fitsByStop, nearbyStops]
+  );
+
+  const visibleStops =
+    destination && sortMode === "best"
+      ? destinationSortedStops
+      : nearbyStops;
+
+  const bestStopId =
+    destinationSortedStops.find((stop) =>
+      ["good", "tight"].includes(fitsByStop[stop.id]?.status)
+    )?.id || "";
 
   const selectedStopDistance = useMemo(() => {
     if (!position) return null;
@@ -163,14 +296,16 @@ function NearbyStops({
         Number.isFinite(nextPosition.accuracy) &&
         nextPosition.accuracy <= AUTO_SELECT_MAX_ACCURACY_METERS;
 
+      // Without a destination, preserve the old fast path. Once a passenger
+      // has said where they want to go, proximity alone is not enough evidence
+      // to choose a platform for them.
       if (
+        !destination &&
         closest &&
         accurateEnough &&
         insideServiceArea !== false &&
         !ambiguousChoice &&
         closest.distanceMeters <= AUTO_SELECT_MAX_DISTANCE_METERS &&
-        // Chose a stop, or started searching for one, while we waited: keep
-        // it, the list below still offers the nearest one a tap away.
         activeStopIdRef.current === stopIdAtTap &&
         searchEdits() === searchEditsAtTap &&
         closest.id !== activeStopIdRef.current
@@ -223,7 +358,7 @@ function NearbyStops({
       "The nearest Föli stop is {distance} away, so it was not selected automatically. Choose the stop that fits your journey.",
       { distance: formatDistance(nearbyStops[0].distanceMeters) }
     );
-  } else if (ambiguousChoice) {
+  } else if (ambiguousChoice && !destination) {
     locationNotice = t(
       "Two stops are almost equally close. Choose the stop that serves your travel direction."
     );
@@ -234,19 +369,22 @@ function NearbyStops({
       <div className={styles.header}>
         <div>
           <h2 id="nearby-stops-title" className={styles.heading}>
-            {t("Near you")}
+            {destination
+              ? t("Nearby stops for {destination}", {
+                  destination: destinationLabel,
+                })
+              : t("Near you")}
           </h2>
           <p className={styles.description}>
-            {t("Uses your location once. It isn’t saved.")}
+            {destination
+              ? t("Choose the best fit or switch back to pure distance.")
+              : t("Uses your location once. It isn’t saved.")}
           </p>
         </div>
 
         <button
           type="button"
           className={styles.locateButton}
-          // Busy rather than disabled: a disabled button drops keyboard
-          // focus to the page while the location is looked up. The note
-          // below says why it waits while stop locations load.
           onClick={() => {
             if (status !== "locating" && hasStopCoordinates) locate();
           }}
@@ -263,6 +401,29 @@ function NearbyStops({
               : t("Find nearest stop")}
         </button>
       </div>
+
+      {destination && position && (
+        <div
+          className={styles.sortToggle}
+          role="group"
+          aria-label={t("Nearby stop sorting")}
+        >
+          <button
+            type="button"
+            aria-pressed={sortMode === "best"}
+            onClick={() => setSortMode("best")}
+          >
+            {t("Best for {destination}", { destination: destinationLabel })}
+          </button>
+          <button
+            type="button"
+            aria-pressed={sortMode === "nearest"}
+            onClick={() => setSortMode("nearest")}
+          >
+            {t("Nearest")}
+          </button>
+        </div>
+      )}
 
       {!hasStopCoordinates && (
         <p className={styles.meta} role="status">
@@ -298,6 +459,9 @@ function NearbyStops({
                 })}
               </span>
             )}
+            {destination && fitState === "loading" && (
+              <span>{t("Checking routes…")}</span>
+            )}
           </div>
 
           {locationNotice && (
@@ -308,16 +472,29 @@ function NearbyStops({
             <div
               className={styles.stopGrid}
               role="group"
-              aria-label={t("Nearest Föli stops")}
+              aria-label={
+                destination
+                  ? t("Nearby Föli stops for {destination}", {
+                      destination: destinationLabel,
+                    })
+                  : t("Nearest Föli stops")
+              }
             >
-              {nearbyStops.map((stop, index) => (
+              {visibleStops.map((stop) => (
                 <NearbyStopCard
                   key={stop.id}
                   stop={stop}
-                  isNearest={index === 0}
+                  isNearest={stop.id === nearbyStops[0]?.id}
+                  isBest={
+                    Boolean(destination) &&
+                    sortMode === "best" &&
+                    stop.id === bestStopId
+                  }
                   isActive={stop.id === activeStopId}
                   online={online}
                   onSelect={onSelect}
+                  destinationLabel={destinationLabel}
+                  fit={fitsByStop[stop.id]}
                 />
               ))}
             </div>
