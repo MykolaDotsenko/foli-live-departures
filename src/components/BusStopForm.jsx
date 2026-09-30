@@ -294,6 +294,7 @@ function BusStopForm({
     <form
       onSubmit={handleSubmit}
       className={styles.form}
+      data-stop-search-form="true"
       data-compact={compact ? "true" : undefined}
       noValidate
     >
