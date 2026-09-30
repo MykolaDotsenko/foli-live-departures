@@ -20,6 +20,35 @@ const TARGET_LIVE_FOR_SEC = 120;
 export const TARGET_CONFIRMED_FOR_SEC = 45;
 
 /**
+ * A stable identity for one provider observation of a tracked journey.
+ *
+ * HTTP responses are not evidence that the provider data advanced. Föli can
+ * legitimately return the same SIRI snapshot more than once. If each copy
+ * resets targetSeenAt, an ETA such as "23 min" can stay frozen forever and a
+ * stale bus can keep the UI labelled live. Only fields that describe the
+ * provider observation belong in this signature; the browser receive time
+ * deliberately does not.
+ *
+ * @param {Arrival | null | undefined} arrival
+ * @returns {string}
+ */
+export function liveArrivalSnapshotSignature(arrival) {
+  if (!arrival || typeof arrival !== "object") return "";
+
+  return JSON.stringify([
+    arrival.recordedattime ?? null,
+    arrival.expectedarrivaltime ?? null,
+    arrival.expecteddeparturetime ?? null,
+    arrival.aimedarrivaltime ?? null,
+    arrival.aimeddeparturetime ?? null,
+    arrival.latitude ?? null,
+    arrival.longitude ?? null,
+    arrival.vehicleatstop === true,
+    arrival.monitored === true,
+  ]);
+}
+
+/**
  * @param {RideRuntime} runtime
  * @param {boolean} [online]
  * @returns {RideTrackingHealth}
