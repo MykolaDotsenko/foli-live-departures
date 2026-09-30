@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   LEFT_STOP_FIXES,
+  locationRideProgress,
   progressRuntime,
   recentGpsSpeedMps,
   rideConfirmations,
@@ -180,6 +181,71 @@ describe("rideStageSignals", () => {
   });
 });
 
+describe("locationRideProgress", () => {
+  const plan = {
+    boardingStop: { id: "10", shapeDistTraveled: 0, offsetSec: 0 },
+    targetStop: { id: "40", shapeDistTraveled: 1500, offsetSec: 900 },
+    stopsToTarget: [
+      { id: "20", shapeDistTraveled: 500, offsetSec: 300 },
+      { id: "30", shapeDistTraveled: 1000, offsetSec: 600 },
+      { id: "40", shapeDistTraveled: 1500, offsetSec: 900 },
+    ],
+  };
+
+  const routeGps = (alongRouteM, overrides = {}) =>
+    gps({
+      shapeUsable: true,
+      onRoute: true,
+      accuracyM: 10,
+      alongRouteM,
+      ...overrides,
+    });
+
+  it("counts stops from physical route progress instead of timetable time", () => {
+    expect(locationRideProgress(plan, routeGps(450), 5, true).remainingStops).toBe(3);
+    // More than the safety margin past stop 20: only stops 30 and 40 remain.
+    expect(locationRideProgress(plan, routeGps(650), 5, true).remainingStops).toBe(2);
+    expect(locationRideProgress(plan, routeGps(1100), 5, true).remainingStops).toBe(1);
+  });
+
+  it("interpolates a stable remaining duration from position along the trip", () => {
+    expect(locationRideProgress(plan, routeGps(650), 5, true).etaSec).toBe(510);
+    expect(locationRideProgress(plan, routeGps(1100), 5, true).etaSec).toBe(240);
+  });
+
+  it("refuses stale, vague, off-route or pre-departure location evidence", () => {
+    expect(locationRideProgress(plan, routeGps(650), 61, true)).toEqual({
+      etaSec: null,
+      remainingStops: null,
+    });
+    expect(
+      locationRideProgress(plan, routeGps(650, { accuracyM: 121 }), 5, true)
+    ).toEqual({ etaSec: null, remainingStops: null });
+    expect(
+      locationRideProgress(plan, routeGps(650, { onRoute: false }), 5, true)
+    ).toEqual({ etaSec: null, remainingStops: null });
+    expect(locationRideProgress(plan, routeGps(650), 5, false)).toEqual({
+      etaSec: null,
+      remainingStops: null,
+    });
+  });
+
+  it("fails closed on non-monotonic stop geometry", () => {
+    const corrupt = {
+      ...plan,
+      stopsToTarget: [
+        { id: "20", shapeDistTraveled: 700, offsetSec: 300 },
+        { id: "30", shapeDistTraveled: 600, offsetSec: 600 },
+        { id: "40", shapeDistTraveled: 1500, offsetSec: 900 },
+      ],
+    };
+    expect(locationRideProgress(corrupt, routeGps(800), 5, true)).toEqual({
+      etaSec: null,
+      remainingStops: null,
+    });
+  });
+});
+
 describe("progressRuntime", () => {
   const evidence = {
     session: session(),
@@ -193,15 +259,45 @@ describe("progressRuntime", () => {
     sinceTargetSec: null,
   };
 
-  it("shows the location estimate, then the live one, then the timetable", () => {
-    const onRoute = gps({ routeEtaSec: 42 });
+  it("prefers fresh live ETA, then route progress, then the timetable", () => {
+    const progressPlan = {
+      boardingStop: { id: "10", shapeDistTraveled: 0, offsetSec: 0 },
+      targetStop: { id: "32", shapeDistTraveled: 1000, offsetSec: 600 },
+      stopsToTarget: [
+        { id: "31", shapeDistTraveled: 500, offsetSec: 300 },
+        { id: "32", shapeDistTraveled: 1000, offsetSec: 600 },
+      ],
+    };
+    const current = session({ plan: progressPlan });
+    const onRoute = gps({
+      shapeUsable: true,
+      onRoute: true,
+      accuracyM: 10,
+      alongRouteM: 500,
+    });
+
     expect(
-      progressRuntime({ ...evidence, gps: onRoute, underway: true, gpsAgeSec: 5 })
-    ).toMatchObject({ etaSource: "location", etaSec: 42 });
+      progressRuntime({
+        ...evidence,
+        session: current,
+        gps: onRoute,
+        underway: true,
+        gpsAgeSec: 5,
+        liveEtaSec: 80,
+      })
+    ).toMatchObject({ etaSource: "live", etaSec: 80, remainingStops: 2 });
+
     expect(
-      progressRuntime({ ...evidence, gps: onRoute, underway: true, gpsAgeSec: 61, liveEtaSec: 80 })
-    ).toMatchObject({ etaSource: "live", etaSec: 80 });
-    expect(progressRuntime({ ...evidence, gps: onRoute })).toMatchObject({
+      progressRuntime({
+        ...evidence,
+        session: current,
+        gps: onRoute,
+        underway: true,
+        gpsAgeSec: 5,
+      })
+    ).toMatchObject({ etaSource: "location", etaSec: 300, remainingStops: 2 });
+
+    expect(progressRuntime({ ...evidence, session: current, gps: onRoute })).toMatchObject({
       etaSource: "schedule",
       etaSec: 300,
     });
