@@ -1846,3 +1846,1107 @@ Do explain why a recommendation fits.
 The intended passenger experience is:
 
 > **I tell the app where I want to go. It shows every nearby stop, makes the useful ones obvious, ranks the realistic choices, explains the best one, helps me reach it, and then carries the same destination into the ride.**
+
+
+---
+
+# Part II — arbitrary destinations and multi-option journey guidance
+
+## 53. New product goal
+
+The passenger should be able to start with only a destination concept:
+
+- a saved place such as Home, Work or School;
+- a public transport stop name or number;
+- a street address;
+- a shop, restaurant, clinic, office, school, venue or other place name;
+- a previously used destination;
+- a shared destination point.
+
+The product should translate that intent into the same internal question:
+
+> **From where I am now, which realistic route gets me to this destination best?**
+
+The passenger should not need to know:
+
+- which boarding stop to use;
+- which side of the road is correct;
+- which platform of a hub is relevant;
+- whether a farther stop produces an earlier arrival;
+- which destination-side stop is closest to the final point;
+- which route number is travelling in the correct direction;
+- whether a transfer is worthwhile.
+
+The interface must keep this intelligence behind a simple destination-first flow.
+
+---
+
+## 54. One destination field
+
+The primary pre-trip control should be a single field:
+
+> **Where do you want to go?**
+
+Quick actions can sit above or below it:
+
+- Home
+- Work
+- School
+- Recent destinations
+
+The search field accepts all supported destination types without asking the passenger to choose a mode first.
+
+Examples:
+
+- `Yliopistonkatu 20`
+- `Prisma`
+- `Turun linna`
+- `Kauppatori`
+- `164`
+
+Avoid a first step such as:
+
+> Address / Shop / Stop — choose one
+
+The system should infer and disambiguate instead.
+
+---
+
+## 55. Destination search results
+
+Search results should be grouped semantically when useful:
+
+### Saved places
+
+> Home  
+> Work
+
+### Places
+
+> Prisma — Itäharju  
+> Hypermarket · Kalevantie …
+
+### Addresses
+
+> Yliopistonkatu 20, Turku
+
+### Stops
+
+> Kauppatori D2 · Stop 1234  
+> Kauppatori A1 · Stop 1235
+
+The user sees human-recognisable context, not provider IDs.
+
+A stop result remains a concrete transit stop. A place/address result becomes a geographic destination point and may map to several viable alighting stops.
+
+---
+
+## 56. Ambiguous place names
+
+A POI name such as “Prisma”, “Lidl”, “K-Citymarket” or “McDonald's” may match several branches.
+
+Never silently select a branch solely because it is geographically nearest.
+
+Show enough context to distinguish results:
+
+- branch/neighbourhood;
+- street address;
+- municipality when necessary;
+- approximate distance from current location when location is available.
+
+Example:
+
+> **Prisma Itäharju**  
+> Kalevantie … · ~3.2 km
+>
+> **Prisma Länsikeskus**  
+> Viilarinkatu … · ~5.1 km
+
+If one result is overwhelmingly likely from an exact address/name match, it may be placed first but still remains a user selection.
+
+---
+
+## 57. Search tolerance
+
+Destination search should tolerate normal passenger input:
+
+- missing accents;
+- case differences;
+- partial names;
+- minor typos;
+- Finnish/Swedish/English naming variants where provider data supports them;
+- stop number input;
+- copied addresses.
+
+Do not aggressively autocorrect to a different place without confirmation.
+
+---
+
+## 58. Destination provider boundary
+
+Föli's currently documented API gives transit stops, trips, stop times, routes, shapes, realtime and alerts; it is not the product's general-purpose address/POI geocoder.
+
+Arbitrary destination support therefore needs a **geocoding / place-search adapter** behind a product-owned interface.
+
+Conceptually:
+
+```ts
+type DestinationSearchProvider = {
+  search(query, context, signal): Promise<DestinationCandidate[]>;
+  resolve(candidate, signal): Promise<ResolvedDestination>;
+};
+```
+
+The UI must not depend directly on one external provider's schema.
+
+Provider choice is an implementation decision and should be evaluated separately for:
+
+- Finland/Turku coverage;
+- POI quality;
+- address quality;
+- language support;
+- privacy;
+- licensing/attribution;
+- quotas/cost;
+- browser/CORS constraints;
+- result freshness.
+
+---
+
+## 59. Privacy for address and POI search
+
+Arbitrary place search changes the privacy model because the query may be sent to a third-party search provider.
+
+Requirements:
+
+- send only what is needed for the search;
+- do not silently persist private addresses unless the passenger explicitly saves one;
+- do not add destination-history analytics;
+- clearly document which external service receives place/address searches;
+- keep current GPS local where possible;
+- if GPS context must be sent to improve search results, disclose that clearly before release;
+- saved Home/Work may continue to use public stop identities if the user prefers the existing privacy-first model.
+
+A privacy-preserving saved-place mode should remain possible even after arbitrary address search is added.
+
+---
+
+## 60. Resolved destination model
+
+All search result types should resolve into one internal structure.
+
+Illustrative model:
+
+```ts
+type ResolvedDestination = {
+  id: string;
+  kind: "saved-place" | "stop" | "address" | "poi" | "coordinate";
+  label: string;
+  subtitle?: string;
+  lat: number | null;
+  lon: number | null;
+  exactStopId?: string;
+  acceptableStopIds?: string[];
+  source: string;
+};
+```
+
+A stop destination may already have a stop ID.
+
+An address/POI destination primarily has coordinates and requires destination-side stop discovery.
+
+---
+
+## 61. Two-sided stop discovery
+
+For arbitrary destinations, routing must search **both ends** of the journey.
+
+### Origin side
+
+Find plausible boarding stops around the passenger's current location.
+
+### Destination side
+
+Find plausible alighting stops around the destination point.
+
+This is essential.
+
+The physically closest destination stop is not automatically the best destination stop, just as the physically closest boarding stop is not automatically the best origin stop.
+
+Example:
+
+- Destination stop X: 80 m from the shop, but only slow service reaches it.
+- Destination stop Y: 230 m from the shop, but a direct frequent bus reaches it much earlier.
+
+Y may produce the earliest real arrival to the shop.
+
+---
+
+## 62. Final-walk / egress cost
+
+For an address or POI, arrival at a transit stop is not the final destination.
+
+The route model becomes:
+
+```text
+current location
+→ access to boarding stop
+→ transit leg(s)
+→ alighting stop
+→ final walk to destination point
+```
+
+The final walk must influence route ranking.
+
+A bus that reaches a stop 10 minutes earlier but leaves a 1.5 km final walk may be worse than a slightly later bus that stops beside the destination.
+
+If only straight-line distance is known, label it truthfully and apply conservative uncertainty.
+
+Do not claim exact door-to-door arrival without a credible pedestrian-route estimate.
+
+---
+
+## 63. True destination ETA
+
+For an address/POI, the ideal metric is:
+
+> **Estimated arrival at the destination point**
+
+Conceptually:
+
+```text
+routeArrival =
+  selected transit arrival
+  + final access/egress time
+```
+
+For a stop destination, final-walk time is zero.
+
+For a saved privacy-first Home represented only by stops, use the truthful wording already defined:
+
+> **Home stop in ~27 min**
+
+For an exact address/POI with reliable walking data:
+
+> **Arrive at Prisma about 22:08**
+
+---
+
+## 64. Full route candidates
+
+A candidate journey should be a sequence of legs.
+
+```ts
+type JourneyLeg =
+  | { type: "walk"; from; to; durationSec; distanceM; confidence }
+  | { type: "transit"; tripRef; lineRef; boardStop; exitStop; depart; arrive; confidence };
+
+type JourneyOption = {
+  legs: JourneyLeg[];
+  arrivalAtDestination: number | null;
+  totalDurationSec: number | null;
+  walkingDistanceM: number | null;
+  transfers: number;
+  reliability: "high" | "medium" | "low";
+  risks: JourneyRisk[];
+};
+```
+
+This model allows direct trips now and transfers later without changing the UI contract.
+
+---
+
+## 65. Direct routes and transfers
+
+### Direct route
+
+Preferred when it is near-optimal because it is simpler and less failure-prone.
+
+### One or more transfers
+
+May win when it materially improves arrival time or is the only viable option.
+
+Transfers introduce additional requirements:
+
+- transfer-stop occurrence resolution;
+- platform-to-platform access time;
+- minimum safe transfer buffer;
+- realtime delay propagation from the incoming leg;
+- risk that an incoming delay causes a missed connection;
+- recovery if connection is missed.
+
+A journey planner that cannot model transfer feasibility should not present a tight connection as confidently valid.
+
+---
+
+## 66. Routing provider strategy
+
+There are two viable architectural paths.
+
+### A. Product-owned GTFS routing
+
+Pros:
+
+- complete control over ranking semantics;
+- strong integration with existing GTFS / Ride Mode logic;
+- privacy can remain local/client-heavy.
+
+Costs:
+
+- transfer routing is substantially more complex;
+- service calendars, footpaths, transfer buffers and realtime propagation must all be correct;
+- browser performance and dataset size become important.
+
+### B. External journey-planning engine + product ranking layer
+
+The external engine supplies valid journey candidates; Turku Departures then:
+
+- validates/reconciles them with its live semantics;
+- explains alternatives;
+- chooses passenger-friendly options;
+- hands transit legs into Ride Mode.
+
+This may be the safer way to obtain full transfer journeys while keeping the product's differentiated decision/reassurance layer.
+
+The UI specification should support either architecture.
+
+---
+
+## 67. Multiple route options — do not show duplicates
+
+The passenger asked for several optimal alternatives, not a dump of every timetable combination.
+
+Return a small set of **meaningfully different Pareto-optimal options**.
+
+Default target: 3 options, occasionally 4 when there is genuine value.
+
+Examples:
+
+1. **Fastest**
+2. **Less walking**
+3. **Simplest / no transfer**
+4. **More time to catch / more reliable**
+
+Do not show three options that are effectively the same route with buses two minutes apart unless frequency itself is the useful distinction.
+
+---
+
+## 68. Dominance pruning
+
+A route should normally be hidden from the primary alternatives if another option is:
+
+- no slower;
+- no more walking;
+- no more transfers;
+- equally or more reliable;
+
+and is strictly better in at least one dimension.
+
+This removes noise before any subjective ranking.
+
+The passenger can still access **More options** if needed.
+
+---
+
+## 69. Suggested route cards
+
+### Fastest
+
+> **★ FASTEST**  
+> Arrive **22:08 · ~31 min**  
+> Walk 280 m → D2  
+> **18** → destination stop  
+> Walk 120 m
+>
+> Live · no transfer
+
+### Less walking
+
+> **LESS WALKING**  
+> Arrive **22:13 · ~36 min**  
+> Walk 70 m  
+> **2** → destination stop  
+> Walk 60 m
+>
+> ~5 min slower · 270 m less walking
+
+### Simpler
+
+> **NO TRANSFER**  
+> Arrive **22:16 · ~39 min**  
+> One bus · easier journey
+
+### More time to catch
+
+> **EASIER TO CATCH**  
+> Arrive **22:12**  
+> Bus leaves in 12 min  
+> ~4 min slower than fastest
+
+The labels explain the trade-off without exposing an internal score.
+
+---
+
+## 70. Route-card information hierarchy
+
+The passenger should be able to compare routes in 2–3 seconds.
+
+Primary row:
+
+- arrival clock time;
+- total duration;
+- line(s);
+- transfer count.
+
+Secondary row:
+
+- walk distance;
+- time until boarding;
+- reliability/live status.
+
+Expanded details:
+
+- exact boarding stop/platform;
+- intermediate transfer stop;
+- destination-side stop;
+- final walk;
+- why this option was recommended;
+- disruptions.
+
+Do not show every stop of the journey by default.
+
+---
+
+## 71. Simple home screen
+
+Despite the richer engine, the default interface can become simpler:
+
+```text
+Where do you want to go?
+[ Search address, place or stop ]
+
+[ Home ] [ Work ] [ School ]
+
+Recent
+Prisma Itäharju
+Turun linna
+...
+```
+
+After destination selection:
+
+```text
+To: Prisma Itäharju   ×
+From: My location
+
+Best routes
+★ Fastest       Arrive 22:08
+  18 · no transfer · 420 m walking
+
+  Less walking  Arrive 22:13
+  2 · no transfer · 130 m walking
+
+  Simpler       Arrive 22:16
+  1 transfer? [only if simpler meaningfully applies]
+
+Nearby boarding stops
+[ Best for this trip | Nearest ]
+...
+```
+
+The advanced intelligence stays behind clear outcomes.
+
+---
+
+## 72. “Nearby stops” remains a first-class surface
+
+Journey options do not replace Nearby.
+
+Below route options, or behind a nearby-stops section, keep the existing full list with destination-aware ranking.
+
+This serves passengers who:
+
+- know the local network;
+- want to inspect another stop;
+- changed their mind;
+- are meeting someone;
+- prefer manual control.
+
+The route planner and nearby-stop explorer must share the same destination intent.
+
+---
+
+## 73. Board view after route selection
+
+When a journey option is selected and its boarding stop opened:
+
+- selected departure is pinned/highlighted;
+- other departures to the same destination remain visible;
+- unrelated departures remain available below;
+- the destination context remains visible;
+- walking-to-stop / at-stop status remains visible when location is enabled.
+
+Do not make the passenger re-identify the selected bus from a generic board.
+
+---
+
+## 74. Journey Mode wraps Ride Mode; it does not replace it
+
+The existing Ride Mode's core safety logic remains authoritative for each bus leg.
+
+For a direct journey:
+
+```text
+Pre-boarding
+→ selected concrete trip
+→ Start get-off alert
+→ existing Ride Mode
+→ exit at destination stop
+```
+
+The existing functionality must continue to provide:
+
+- reliable remaining-stop count;
+- ETA source/fallback semantics;
+- Get Ready;
+- Press STOP;
+- Get Off Now;
+- stale-live protection;
+- GPS route matching;
+- offline/degraded fallbacks already supported.
+
+Do not reimplement these inside the journey planner.
+
+---
+
+## 75. Multi-leg Journey Mode
+
+For a transfer journey, orchestrate several existing-style leg states.
+
+Example:
+
+```text
+Walk to A
+→ Board bus 18
+→ Ride Mode targets transfer stop X
+→ GET OFF / transfer
+→ Walk to platform B if needed
+→ wait for bus 7
+→ Ride Mode targets destination stop Y
+→ GET OFF
+→ final walk to POI
+```
+
+Each transit leg has its own:
+
+- trip identity;
+- boarding stop;
+- exit stop;
+- remaining stops;
+- ETA;
+- get-off alert state.
+
+The journey wrapper tracks which leg is active.
+
+---
+
+## 76. Transfer UX
+
+The passenger should not need to understand the entire journey while riding the first leg.
+
+During leg 1, show only the next critical action:
+
+> **Get off at Kauppatori**  
+> Then walk to D2 for bus 7
+
+After exiting:
+
+> **Next: bus 7**  
+> D2 · 120 m  
+> Leaves in ~8 min
+
+This follows the product principle of reducing interpretation under stress.
+
+---
+
+## 77. Missed transfer prevention
+
+A transfer becomes unsafe when incoming realtime delay consumes the transfer buffer.
+
+The system should continuously reassess:
+
+```text
+predicted arrival of incoming leg
++ platform-change / walking allowance
++ safety buffer
+<= predicted departure of outgoing leg
+```
+
+If the connection becomes risky:
+
+> **Your connection is becoming tight**
+
+If it is no longer credible:
+
+> **This connection is unlikely now**  
+> Finding the best alternative…
+
+Do not wait until the passenger reaches the transfer stop to reveal a known missed connection.
+
+---
+
+## 78. Recovery after a missed connection
+
+After a missed or cancelled connection:
+
+- keep the passenger's final destination unchanged;
+- recompute from current/transfer location;
+- offer the best new alternatives;
+- do not restart the whole search experience.
+
+Example:
+
+> **Bus 7 has departed**  
+> Next fastest option: 32 in ~6 min  
+> Arrive Prisma ~22:24
+
+This is a core Journey Mode recovery path.
+
+---
+
+## 79. Destination-side multiple stops
+
+For a POI/address, several alighting stops may be plausible.
+
+Evaluate:
+
+- transit arrival time;
+- final walking burden;
+- stop accessibility/closure;
+- route reliability;
+- whether a slightly farther stop produces a much earlier arrival.
+
+Do not automatically choose the physically closest destination-side stop.
+
+This mirrors origin-side ranking.
+
+---
+
+## 80. Large POIs and ambiguous entrances
+
+Shopping centres, campuses, hospitals, arenas and large stores can have multiple entrances.
+
+A geocoder point may represent the centre of the building, not the useful entrance.
+
+When the final walking difference could be material:
+
+- keep the claim approximate;
+- allow **Open final walk in Maps**;
+- do not invent an entrance;
+- consider entrance-aware provider data later if available.
+
+---
+
+## 81. Destination already nearby
+
+If the passenger is already close to the destination point, transit may be unnecessary.
+
+Show:
+
+> **You’re already near Prisma**  
+> About 350 m away
+
+Offer walking directions.
+
+Do not recommend a bus that adds waiting and riding unless it is materially useful and pedestrian routing supports the comparison.
+
+---
+
+## 82. Destination outside service area
+
+If the destination is outside Föli coverage:
+
+> **This destination appears outside the Föli area**
+
+Preserve the destination and offer an external full-route planner.
+
+Do not fabricate partial transit guidance as a complete journey.
+
+If a partial Föli leg is useful, show it only when the routing engine can truthfully model the remaining journey.
+
+---
+
+## 83. No GPS / manual origin
+
+The destination-first model must still work without location permission.
+
+Fallback:
+
+> **From where?**
+
+Allow:
+
+- current stop search;
+- address/place origin search if geocoding supports it;
+- saved place origin.
+
+Once origin is resolved, the same routing engine runs.
+
+---
+
+## 84. Reverse trip
+
+Saved places should naturally support reverse use:
+
+- From Home to Work
+- From Work to Home
+
+If the passenger is not currently at either, current location remains the default origin.
+
+Avoid hard-wiring Home only as a destination.
+
+---
+
+## 85. Time preferences — advanced, not default clutter
+
+The default is:
+
+> **Leave now**
+
+Optional advanced controls may later support:
+
+- Leave at…
+- Arrive by…
+
+These should not clutter the main screen.
+
+They are useful for planned journeys but unnecessary for the core “I am here now” scenario.
+
+---
+
+## 86. Preferences — gradual expansion
+
+Do not put a large preference form in front of every search.
+
+Potential optional preferences:
+
+- fewer transfers;
+- less walking;
+- wheelchair/stroller needs when trustworthy data supports it;
+- avoid a specific mode;
+- maximum walking distance.
+
+The default ranking should already produce sensible choices without configuration.
+
+---
+
+## 87. Route diversity algorithm
+
+After generating valid journey candidates:
+
+1. remove invalid / uncatchable candidates;
+2. remove dominated candidates;
+3. cluster near-duplicate journeys;
+4. choose the fastest robust candidate;
+5. choose at most one meaningfully less-walking candidate;
+6. choose at most one meaningfully simpler / more reliable candidate;
+7. optionally add one leave-later/easier-to-catch candidate when useful.
+
+This produces a compact set of alternatives instead of timetable noise.
+
+---
+
+## 88. Reliability-aware route comparison
+
+A route arriving two minutes earlier is not automatically better if it contains:
+
+- a 90-second transfer;
+- stale realtime;
+- a long platform change;
+- the last bus of a low-frequency connection.
+
+Each route needs a reliability assessment informed by:
+
+- live freshness per leg;
+- transfer margin;
+- cancellation/disruption state;
+- service frequency after each fragile connection;
+- GPS/access uncertainty;
+- whether a backup journey exists.
+
+Passenger language can remain simple:
+
+- **Reliable option**
+- **Tight transfer**
+- **Schedule only**
+- **More backup buses**
+
+---
+
+## 89. Route updates without UI chaos
+
+Before the passenger selects a route, alternatives may reorder when arrival differences become meaningful.
+
+After selection:
+
+- pin the selected journey;
+- show material changes inside it;
+- offer a switch only when a materially better/recovery route emerges;
+- never silently replace the trip the passenger is walking toward or riding.
+
+The same hysteresis principles as Nearby apply to full journeys.
+
+---
+
+## 90. Search-to-ride state model
+
+```text
+NO_DESTINATION
+→ SEARCHING_DESTINATION
+→ DESTINATION_RESOLVED
+→ ROUTES_LOADING
+→ ROUTES_READY
+→ JOURNEY_SELECTED
+→ WALKING_TO_BOARDING_STOP
+→ AT_BOARDING_STOP
+→ TRANSIT_LEG_ACTIVE
+→ TRANSFER
+→ TRANSIT_LEG_ACTIVE
+→ FINAL_WALK
+→ ARRIVED
+```
+
+Recovery states can interrupt any stage:
+
+- location unavailable;
+- trip departed;
+- trip cancelled;
+- stop closed;
+- transfer missed;
+- provider stale;
+- offline;
+- route no longer viable.
+
+The final destination remains stable through recovery.
+
+---
+
+## 91. Minimal screen count
+
+Do not create a wizard with many pages.
+
+A simple architecture can use three primary surfaces:
+
+### Search / home
+
+> Where do you want to go?
+
+### Results
+
+> Best routes + nearby stops
+
+### Active journey
+
+> Only the next action and current leg
+
+Ride Mode lives inside Active journey rather than becoming a disconnected product flow.
+
+---
+
+## 92. Active journey UI principle
+
+At every moment, one question dominates:
+
+> **What should I do next?**
+
+Examples:
+
+- Walk to D2
+- Wait for bus 18
+- Board 18 toward Runosmäki
+- Get ready to exit
+- Press STOP
+- Get off now
+- Walk 120 m to D4
+- Board 7
+- Get off at destination
+- Walk to Prisma
+
+Secondary information remains available but does not compete with the next action.
+
+---
+
+## 93. Route overview without overload
+
+An active route can expose a collapsed overview:
+
+> Walk → **18** → Walk
+
+or:
+
+> Walk → **18** → **7** → Walk
+
+Tapping expands the details.
+
+The user should not need a dense timeline visible at all times.
+
+---
+
+## 94. Existing stop-count and alert correctness are release gates
+
+Adding route planning must not regress the recently hardened Ride Mode.
+
+For every selected transit leg:
+
+- remaining stops must track actual route progress when reliable GPS/shape evidence exists;
+- ETA must not freeze on repeated stale provider snapshots;
+- live estimates must age correctly;
+- route-progress fallbacks must remain conservative;
+- Get Ready / Press STOP / Get Off Now thresholds remain governed by the existing Ride Mode evidence model;
+- loop/repeated-stop correctness remains sequence-based;
+- background/browser limitations remain disclosed.
+
+A new journey-planning feature is not releasable if it weakens these behaviours.
+
+---
+
+## 95. Journey-level test matrix
+
+### Destination search
+
+- exact address;
+- partial address;
+- typo;
+- POI exact match;
+- multiple POI branches;
+- duplicate stop names;
+- stop number;
+- no results;
+- result outside service area;
+- language variants.
+
+### Origin/destination stop discovery
+
+- nearest origin stop is wrong direction;
+- farther origin stop wins on arrival time;
+- nearest destination stop is slower overall;
+- farther destination stop wins after final-walk trade-off;
+- low GPS accuracy;
+- no GPS;
+- dense hub progressive expansion.
+
+### Route alternatives
+
+- fastest direct;
+- slower but less walking;
+- direct vs faster one-transfer;
+- tight transfer rejected/downgraded;
+- near-duplicate routes collapsed;
+- dominated route hidden;
+- sparse service / last-available trip;
+- schedule-only route;
+- stale live route;
+- cancellation;
+- closure;
+- disruption.
+
+### Active journey
+
+- walk to boarding stop;
+- selected bus departs early;
+- selected bus delayed;
+- selected trip cancelled;
+- Ride Mode direct journey;
+- remaining stops update;
+- ETA updates;
+- correct get-off alert;
+- transfer-stop get-off alert;
+- missed transfer recovery;
+- second-leg Ride Mode;
+- final walk;
+- destination reached.
+
+---
+
+## 96. Phased delivery for the broader Journey Assistant
+
+### Phase A — destination search foundation
+
+- one search field;
+- stop/saved-place/address/POI result model;
+- geocoder adapter;
+- destination disambiguation;
+- privacy copy.
+
+### Phase B — arbitrary-point direct journeys
+
+- destination-side candidate stops;
+- origin-side candidate stops;
+- direct-trip routing between candidate stop sets;
+- earliest destination arrival;
+- final-walk penalty;
+- 2–3 diverse route alternatives.
+
+### Phase C — full transfer routing
+
+Either:
+
+- integrate a robust journey-planning backend/provider;
+- or implement/test a product-owned routing engine.
+
+Do not ship partial transfer logic that is less trustworthy than external planners.
+
+### Phase D — Journey Mode orchestration
+
+- selected journey;
+- walking-to-stop state;
+- Ride Mode leg integration;
+- transfer transitions;
+- missed-connection recovery;
+- final-walk state.
+
+### Phase E — field validation
+
+- city centre;
+- shopping centres;
+- duplicate store branches;
+- direct vs transfer journeys;
+- night/sparse service;
+- poor GPS;
+- delays/cancellations;
+- Android and iPhone browser behaviour;
+- Finnish language review;
+- accessibility review.
+
+---
+
+## 97. Final UX contract
+
+The passenger should be able to type only:
+
+> **Prisma**
+
+or:
+
+> **Yliopistonkatu 20**
+
+or:
+
+> **Kauppatori**
+
+and receive a small, understandable set of answers such as:
+
+> **Fastest — arrive 22:08**  
+> Walk 280 m → D2 · 18 · final walk 120 m
+>
+> **Less walking — arrive 22:13**  
+> Walk 70 m → A1 · 2 · final walk 60 m
+>
+> **Easier to catch — arrive 22:12**  
+> Bus leaves later, with more time to reach the stop
+
+Then, after choosing one, the interface should guide only the next action and reuse the existing hardened Ride Mode for every bus leg.
+
+The ideal experience is:
+
+> **I tell the app where I want to go. It figures out which stop, which direction, which bus, which destination-side stop and which route make the most sense; gives me a few meaningful alternatives; guides me through the chosen one; and reliably tells me when to get off.**
