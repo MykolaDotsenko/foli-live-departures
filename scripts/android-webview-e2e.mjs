@@ -150,7 +150,7 @@ await retry("app DOM ready", async () => {
 });
 
 const initial = await evaluate(`(() => {
-  const form = document.querySelector("form");
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const input =
     form?.querySelector('input[role="combobox"]') ||
     form?.querySelector('input[type="search"]') ||
@@ -392,7 +392,7 @@ record(
 await sleep(500);
 
 const showDepartures = await evaluate(`(() => {
-  const form = document.querySelector("form");
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const button = form?.querySelector('button[type="submit"]');
   if (!button) return { clicked: false, reason: "missing-submit" };
 
