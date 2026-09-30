@@ -205,3 +205,103 @@ test("keeps unknown catchability uncertain instead of calling it good", async ()
   expect(fits["100"].status).toBe("uncertain");
   expect(fits["100"].best?.catchability).toBe("unknown");
 });
+
+
+test("prefers fresh destination-stop live arrival over propagated schedule timing", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => {
+    if (stopId === "100") {
+      return {
+        stopName: "",
+        arrivals: [arrival("t-good", 1_600)],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+    if (stopId === "900") {
+      return {
+        stopName: "",
+        arrivals: [
+          arrival("t-good", 2_500, {
+            expectedarrivaltime: 2_500,
+            expecteddeparturetime: 2_520,
+            recordedattime: 980,
+          }),
+        ],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+    return {
+      stopName: "",
+      arrivals: [],
+      serverTime: 1_000,
+      realtimeAvailable: true,
+      scheduleAvailable: false,
+      scheduleFailed: false,
+      scheduleIncomplete: false,
+    };
+  });
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination,
+    positionAccuracy: 20,
+  });
+
+  // Schedule propagation would be 1600 + 1200 = 2800. The fresh destination
+  // prediction is stronger evidence and should win.
+  expect(fits["100"].best?.destinationArrivalAt).toBe(2_500);
+  expect(fits["100"].best?.liveState).toBe("live");
+});
+
+test("ignores stale destination-stop live prediction", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => {
+    if (stopId === "100") {
+      return {
+        stopName: "",
+        arrivals: [arrival("t-good", 1_600)],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+    return {
+      stopName: "",
+      arrivals: [
+        arrival("t-good", 2_500, {
+          expectedarrivaltime: 2_500,
+          recordedattime: 700,
+        }),
+      ],
+      serverTime: 1_000,
+      realtimeAvailable: true,
+      scheduleAvailable: false,
+      scheduleFailed: false,
+      scheduleIncomplete: false,
+    };
+  });
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best?.destinationArrivalAt).toBe(2_800);
+});
