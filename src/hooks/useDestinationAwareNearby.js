@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchStopMonitor, fetchTripStopTimes } from "../api/foliApi";
 import { classifyCatchability } from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
@@ -334,19 +334,26 @@ export default function useDestinationAwareNearby({
   /** @type {[NearbyFitMap, import("react").Dispatch<import("react").SetStateAction<NearbyFitMap>>]} */
   const [fitsByStop, setFitsByStop] = useState({});
   const [state, setState] = useState("idle");
+  const requestRef = useRef({ stops, destination, positionAccuracy });
+  requestRef.current = { stops, destination, positionAccuracy };
 
   const signature = useMemo(
     () =>
       destination
-        ? `${destination.id}|${stops
-            .map((stop) => stop.id)
-            .join(",")}|${Math.round(Number(positionAccuracy) || 0)}`
+        ? [
+            destination.id,
+            destination.primaryStopId,
+            ...destination.acceptableStopIds,
+            stops.map((stop) => stop.id).join(","),
+            Math.round(Number(positionAccuracy) || 0),
+          ].join("|")
         : "",
     [destination, positionAccuracy, stops]
   );
 
   useEffect(() => {
-    if (!destination || stops.length === 0) {
+    const request = requestRef.current;
+    if (!request.destination || request.stops.length === 0) {
       setFitsByStop({});
       setState("idle");
       return undefined;
@@ -364,9 +371,7 @@ export default function useDestinationAwareNearby({
 
       try {
         const next = await loadDestinationAwareNearby({
-          stops,
-          destination,
-          positionAccuracy,
+          ...request,
           signal: controller.signal,
         });
         if (!active || controller.signal.aborted) return;
@@ -394,7 +399,7 @@ export default function useDestinationAwareNearby({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [destination, positionAccuracy, signature, stops]);
+  }, [signature]);
 
   return { fitsByStop, state };
 }
