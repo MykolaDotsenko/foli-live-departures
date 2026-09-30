@@ -33,6 +33,24 @@ The implementation should therefore be additive and staged.
 
 ---
 
+## Architecture guardrail — backendless by design
+
+Journey Assistant must preserve the current deployment and privacy model:
+
+- static browser-only PWA;
+- GitHub Pages-compatible production build;
+- no application backend;
+- no project-owned proxy;
+- no server-side session/database;
+- no secret API key embedded in frontend code;
+- no silent server-side journey/location history.
+
+Address/POI and transfer capabilities may use only client-side providers whose terms, CORS model and credential requirements are compatible with a public PWA. If a provider is unavailable or unsuitable, the product must degrade to saved-place/public-stop workflows rather than adding infrastructure that changes the product concept.
+
+This is a **release gate**, not an implementation preference.
+
+---
+
 ## 2. Baseline UX assessment
 
 ### Current overall UX
@@ -801,6 +819,9 @@ These are design targets, not measured usability-study scores.
 
 Every milestone must preserve:
 
+- static GitHub Pages deployment;
+- no backend/proxy/server-side storage;
+- no confidential credential in the browser bundle;
 - direct stop search;
 - pure nearest-stop mode;
 - complete nearby-stop access;
