@@ -256,3 +256,89 @@
     background: var(--dm-accent-surface);
   }
 }
+
+
+.compactWrapper {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 5px 8px 5px 12px;
+  border: 1px solid #c9dde0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.compactDestination {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  color: #425961;
+  font-size: 0.78rem;
+}
+
+.compactDestination strong {
+  overflow: hidden;
+  color: #20343b;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compactActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.compactActions button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.compactActions button:hover {
+  background: #edf8f8;
+}
+
+.wrapper[data-compact="true"] {
+  margin-top: 0;
+}
+
+@media screen {
+  :root[data-theme="dark"] .quick button {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .clear {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .compactWrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+  }
+
+  :root[data-theme="dark"] .compactDestination {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .compactDestination strong,
+  :root[data-theme="dark"] .compactActions button {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .compactActions button:hover {
+    background: var(--dm-accent-surface);
+  }
+}
