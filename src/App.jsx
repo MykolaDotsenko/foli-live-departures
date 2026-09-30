@@ -463,8 +463,9 @@ function App() {
           />
         )}
 
-        {!ride.session && (
+        {!ride.session && (!stopId || journey.destination) && (
           <JourneySearch
+            compact={Boolean(stopId)}
             stops={stops}
             places={places}
             destination={journey.destination}
