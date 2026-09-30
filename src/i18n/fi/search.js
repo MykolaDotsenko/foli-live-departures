@@ -127,4 +127,26 @@ export default {
   "Nearby Föli stops for {destination}":
     "Fölin lähipysäkit määränpäähän {destination}",
 
+  "Best routes": "Parhaat reitit",
+  "Best ways to {destination}": "Parhaat vaihtoehdot määränpäähän {destination}",
+  "Compared by realistic arrival, walking and catchability.":
+    "Vertailussa huomioidaan realistinen saapumisaika, kävely ja ehtiminen.",
+  Fastest: "Nopein",
+  "Less walking": "Vähemmän kävelyä",
+  "Easier to catch": "Helpompi ehtiä",
+  "Live data is aging": "Reaaliaikatieto vanhenee",
+  Schedule: "Aikataulu",
+  Estimate: "Arvio",
+  "{distance} less walking · about {minutes} min slower":
+    "{distance} vähemmän kävelyä · noin {minutes} min hitaampi",
+  "{distance} less walking": "{distance} vähemmän kävelyä",
+  "More time to catch · about {minutes} min slower":
+    "Enemmän aikaa ehtiä · noin {minutes} min hitaampi",
+  "More time to catch": "Enemmän aikaa ehtiä",
+  "{label}: line {line}, stop {stop}, arrive about {time}":
+    "{label}: linja {line}, pysäkki {stop}, perillä noin {time}",
+  "Arrive {time}": "Perillä {time}",
+  "Walk {distance} to {stop}": "Kävele {distance} pysäkille {stop}",
+  "Use this option": "Käytä tätä vaihtoehtoa",
+
 };
