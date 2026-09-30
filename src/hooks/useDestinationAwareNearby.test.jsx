@@ -305,3 +305,62 @@ test("ignores stale destination-stop live prediction", async () => {
 
   expect(fits["100"].best?.destinationArrivalAt).toBe(2_800);
 });
+
+
+test("does not restart polling for identity-only rerenders with the same semantic request", async () => {
+  const firstStops = [{ id: "100", distanceMeters: 100 }];
+  const { result, rerender } = renderHook(
+    ({ currentStops, target }) =>
+      useDestinationAwareNearby({
+        stops: currentStops,
+        destination: target,
+        positionAccuracy: 20,
+      }),
+    {
+      initialProps: {
+        currentStops: firstStops,
+        target: destination,
+      },
+    }
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  const callsAfterReady = api.fetchStopMonitor.mock.calls.length;
+
+  rerender({
+    currentStops: [{ id: "100", distanceMeters: 100 }],
+    target: { ...destination, acceptableStopIds: [...destination.acceptableStopIds] },
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterReady);
+});
+
+test("re-evaluates when the approved destination stop set changes", async () => {
+  const { result, rerender } = renderHook(
+    ({ target }) =>
+      useDestinationAwareNearby({
+        stops: [{ id: "100", distanceMeters: 100 }],
+        destination: target,
+        positionAccuracy: 20,
+      }),
+    { initialProps: { target: destination } }
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  const callsAfterFirst = api.fetchStopMonitor.mock.calls.length;
+
+  rerender({
+    target: {
+      ...destination,
+      primaryStopId: "901",
+      acceptableStopIds: ["901"],
+    },
+  });
+
+  await waitFor(() =>
+    expect(api.fetchStopMonitor.mock.calls.length).toBeGreaterThan(
+      callsAfterFirst
+    )
+  );
+});
