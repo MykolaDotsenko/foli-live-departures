@@ -332,10 +332,11 @@ await retry("fixture-backed app reload", async () => {
 }, { attempts: 20, delayMs: 500 });
 
 await evaluate(`(() => {
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const input =
-    document.querySelector('input[role="combobox"]') ||
-    document.querySelector('input[type="search"]') ||
-    document.querySelector("input");
+    form?.querySelector('input[role="combobox"]') ||
+    form?.querySelector('input[type="search"]') ||
+    form?.querySelector("input");
   if (!input) return false;
   const setter = Object.getOwnPropertyDescriptor(
     HTMLInputElement.prototype,
