@@ -83,8 +83,9 @@ test("shows and clears the active destination", () => {
     },
   });
 
-  expect(screen.getByText("Going to")).toBeInTheDocument();
-  expect(screen.getByText("Home")).toBeInTheDocument();
+  const activeDestination = screen.getByRole("status");
+  expect(within(activeDestination).getByText("Going to")).toBeInTheDocument();
+  expect(within(activeDestination).getByText("Home")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
   expect(props.onClear).toHaveBeenCalledTimes(1);
