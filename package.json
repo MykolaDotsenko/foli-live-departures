@@ -21,7 +21,8 @@
     "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
     "verify:brand": "node scripts/verify-branding.mjs",
     "verify:deployment": "node scripts/verify-deploy-workflow.mjs",
-    "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs"
+    "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs",
+    "verify:architecture": "node scripts/verify-backendless.mjs"
   },
   "dependencies": {
     "axios": "^1.6.8",
