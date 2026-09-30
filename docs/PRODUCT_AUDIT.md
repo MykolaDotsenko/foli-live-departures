@@ -101,6 +101,7 @@ These came out of the verification round and are not yet re-scored.
 ## Still open
 
 **Found by the reviews, not done**
+- **Nearby stops are proximity-aware, not destination-aware.** In a dense hub a passenger can see several nearby platforms without knowing which concrete trip continues toward Home or another chosen destination. The planned fix keeps every nearby stop, ranks them by practical suitability when a destination is selected, marks other-direction/no-direct-service options, and carries that context into the departure board. See [Destination-aware Nearby design](DESTINATION_AWARE_NEARBY_SPEC.md).
 - Place setup still asks for a checkbox and a "Main stop" choice per stop, and a confirmation (UX, 70).
 - The board header on a phone stacks Filter lines and Refresh, and error screens offer both Refresh and Try again.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
