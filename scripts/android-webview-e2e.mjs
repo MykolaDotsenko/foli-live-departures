@@ -245,7 +245,7 @@ if (!geo?.ok && geo?.code === 3) {
       }
       return null;
     },
-    { attempts: 3, delayMs: 1000 }
+    { attempts: 6, delayMs: 1000 }
   );
 }
 
