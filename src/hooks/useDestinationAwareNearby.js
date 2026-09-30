@@ -190,7 +190,7 @@ export async function loadDestinationAwareNearby({
         additionalCount: 0,
         checkedAt: Date.now(),
       };
-      return;
+      continue;
     }
 
     const monitor = monitorResult.value;
