@@ -332,7 +332,7 @@ test("does not restart polling for identity-only rerenders with the same semanti
     target: { ...destination, acceptableStopIds: [...destination.acceptableStopIds] },
   });
 
-  await new Promise((resolve) => setTimeout(resolve, 30));
+  await new Promise((resolve) => window.setTimeout(resolve, 30));
   expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterReady);
 });
 
