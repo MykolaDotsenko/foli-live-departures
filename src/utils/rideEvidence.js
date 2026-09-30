@@ -267,18 +267,21 @@ export function locationRideProgress(plan, gps, gpsAgeSec, underway) {
     return { etaSec: 0, remainingStops };
   }
 
-  const candidates = [plan?.boardingStop, ...stops]
-    .map((stop) => ({
-      distanceM: finiteNumber(stop?.shapeDistTraveled),
-      offsetSec: finiteNumber(stop?.offsetSec),
-    }))
-    .filter(
-      (point) =>
-        point.distanceM !== null &&
-        point.offsetSec !== null &&
-        point.distanceM <= targetDistanceM + 1 &&
-        point.offsetSec <= targetOffsetSec
-    );
+  /** @type {{ distanceM: number, offsetSec: number }[]} */
+  const candidates = [];
+  for (const stop of [plan?.boardingStop, ...stops]) {
+    const distanceM = finiteNumber(stop?.shapeDistTraveled);
+    const offsetSec = finiteNumber(stop?.offsetSec);
+    if (
+      distanceM === null ||
+      offsetSec === null ||
+      distanceM > targetDistanceM + 1 ||
+      offsetSec > targetOffsetSec
+    ) {
+      continue;
+    }
+    candidates.push({ distanceM, offsetSec });
+  }
 
   if (candidates.length < 2) {
     return { etaSec: null, remainingStops };
