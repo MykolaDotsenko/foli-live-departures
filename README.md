@@ -221,7 +221,8 @@ npm run test:e2e
 ### Documentation
 
 - [Product audit](docs/PRODUCT_AUDIT.md)
-- [Destination-aware Nearby design](docs/DESTINATION_AWARE_NEARBY_SPEC.md)
+- [Journey Assistant specification](docs/JOURNEY_ASSISTANT_SPEC.md)
+- [Destination-aware Nearby design appendix](docs/DESTINATION_AWARE_NEARBY_SPEC.md)
 - [Ride Mode design](docs/RIDE_MODE_SPEC.md)
 - [Föli API reference](docs/FOLI_API_REFERENCE.md)
 - [Localization notes](docs/LOCALIZATION.md)
