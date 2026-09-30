@@ -15,6 +15,7 @@ function destinationLabel(destination) {
 }
 
 export default function JourneySearch({
+  compact = false,
   stops,
   places,
   destination,
@@ -26,6 +27,7 @@ export default function JourneySearch({
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
+  const [expanded, setExpanded] = useState(!compact);
 
   const matches = useMemo(
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
@@ -38,6 +40,13 @@ export default function JourneySearch({
     setValue(stop.name || String(stop.id));
     setFocused(false);
     setError("");
+    if (compact) setExpanded(false);
+  };
+
+  const choosePlace = (place) => {
+    onChoosePlace(place);
+    setError("");
+    if (compact) setExpanded(false);
   };
 
   const submit = (event) => {
@@ -74,8 +83,34 @@ export default function JourneySearch({
     );
   };
 
+  if (compact && destination && !expanded) {
+    return (
+      <section
+        className={styles.compactWrapper}
+        aria-label={t("Journey destination")}
+      >
+        <span className={styles.compactDestination}>
+          <span>{t("Going to")}</span>
+          <strong>{destinationLabel(destination)}</strong>
+        </span>
+        <span className={styles.compactActions}>
+          <button type="button" onClick={() => setExpanded(true)}>
+            {t("Change")}
+          </button>
+          <button type="button" onClick={onClear}>
+            {t("Clear")}
+          </button>
+        </span>
+      </section>
+    );
+  }
+
   return (
-    <section className={styles.wrapper} aria-labelledby="journey-search-title">
+    <section
+      className={styles.wrapper}
+      data-compact={compact ? "true" : undefined}
+      aria-labelledby="journey-search-title"
+    >
       <div className={styles.headingRow}>
         <div>
           <p className={styles.kicker}>{t("Journey")}</p>
@@ -106,7 +141,7 @@ export default function JourneySearch({
               type="button"
               key={place.id}
               aria-pressed={destination?.id === `place:${place.id}`}
-              onClick={() => onChoosePlace(place)}
+              onClick={() => choosePlace(place)}
             >
               {placeLabel(place)}
             </button>
