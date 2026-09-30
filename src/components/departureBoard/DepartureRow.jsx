@@ -67,6 +67,8 @@ function DepartureRow({
   lineNotices,
   rideCandidateKey,
   activeRideTripRef,
+  journeyDestination = null,
+  destinationFit = null,
   onToggleRideSetup,
   onCloseRideSetup,
   onStartRide,
@@ -104,6 +106,14 @@ function DepartureRow({
   const sameRideActive =
     Boolean(activeRideTripRef) && activeRideTripRef === arrival.tripref;
 
+  const journeyDestinationLabel = journeyDestination
+    ? journeyDestination.kind === "saved-place"
+      ? t(journeyDestination.label)
+      : journeyDestination.label
+    : "";
+  const servesJourneyDestination =
+    destinationFit?.status === "compatible" && Boolean(journeyDestinationLabel);
+
   return (
     <>
       <tr data-cancelled={cancelled ? "true" : undefined}>
@@ -137,6 +147,21 @@ function DepartureRow({
               an accessible bus is a symbol here rather than a chip wrapping
               onto two more lines. The symbol is held to the status before
               it: on its own it was left alone on a line at 360px. */}
+          {servesJourneyDestination && (
+            <span className={styles.destinationFitBadge}>
+              {t("Goes to {destination}", {
+                destination: journeyDestinationLabel,
+              })}
+            </span>
+          )}
+          {destinationFit?.status === "other-direction" &&
+            journeyDestinationLabel && (
+              <span className={styles.destinationDirectionNote}>
+                {t("Other direction for {destination}", {
+                  destination: journeyDestinationLabel,
+                })}
+              </span>
+            )}
           <span className={styles.tripMeta}>
             <span>
               {cancelled
@@ -253,6 +278,16 @@ function DepartureRow({
                   }
                 });
               }}
+              preferredTargetStopId={
+                servesJourneyDestination
+                  ? destinationFit.destinationStopId
+                  : ""
+              }
+              preferredTargetStopSequence={
+                servesJourneyDestination
+                  ? destinationFit.destinationStopSequence
+                  : null
+              }
               onStart={(config) => {
                 const replacingAnotherRide =
                   Boolean(activeRideTripRef) &&

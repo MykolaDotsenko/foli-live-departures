@@ -1,0 +1,344 @@
+.wrapper {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid #c9dde0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(24, 64, 72, 0.07);
+}
+
+.headingRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kicker {
+  margin: 0 0 3px;
+  color: #00717c;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.headingRow h2 {
+  margin: 0;
+  color: #20343b;
+  font-size: clamp(1rem, 4vw, 1.22rem);
+}
+
+.clear {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #c6d8db;
+  border-radius: 12px;
+  background: #fff;
+  color: #425961;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.destination {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #eaf7f7;
+  color: #174149;
+}
+
+.destination span {
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.destination strong {
+  font-size: 0.95rem;
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quick button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #a9c9cd;
+  border-radius: 999px;
+  background: #f9fcfc;
+  color: #23464e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+}
+
+.quick button[aria-pressed="true"] {
+  border-color: #007985;
+  background: #dff4f2;
+  color: #005e67;
+}
+
+.label {
+  display: block;
+  margin-bottom: 6px;
+  color: #334750;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.searchRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.inputWrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  box-sizing: border-box;
+  padding: 0 13px;
+  border: 1px solid #9ebec3;
+  border-radius: 12px;
+  background: #fff;
+  color: #20343b;
+  font: inherit;
+}
+
+.input:focus {
+  border-color: #007985;
+  outline: 3px solid rgba(0, 121, 133, 0.16);
+}
+
+.submit {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid #007985;
+  border-radius: 12px;
+  background: #007985;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.suggestions {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 5px);
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  border: 1px solid #b8cfd3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(20, 48, 54, 0.16);
+}
+
+.suggestion {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 0;
+  border-bottom: 1px solid #e3edef;
+  background: #fff;
+  color: #20343b;
+  cursor: pointer;
+  text-align: left;
+}
+
+.suggestion:last-child {
+  border-bottom: 0;
+}
+
+.suggestion:hover,
+.suggestion:focus-visible {
+  background: #edf8f8;
+}
+
+.suggestion span {
+  flex: 0 0 auto;
+  color: #60747c;
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.help,
+.error {
+  margin: 7px 0 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.help {
+  color: #52666f;
+}
+
+.error {
+  color: #b42318;
+  font-weight: 750;
+}
+
+@media (max-width: 520px) {
+  .wrapper {
+    padding: 12px;
+    border-radius: 15px;
+  }
+
+  .searchRow {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .submit {
+    width: 100%;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .wrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+    box-shadow: none;
+  }
+
+  :root[data-theme="dark"] .headingRow h2,
+  :root[data-theme="dark"] .input,
+  :root[data-theme="dark"] .suggestion {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .destination {
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .destination,
+  :root[data-theme="dark"] .quick button[aria-pressed="true"] {
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .clear,
+  :root[data-theme="dark"] .quick button,
+  :root[data-theme="dark"] .input,
+  :root[data-theme="dark"] .suggestions,
+  :root[data-theme="dark"] .suggestion {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+  }
+
+  :root[data-theme="dark"] .label,
+  :root[data-theme="dark"] .help,
+  :root[data-theme="dark"] .suggestion span {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .suggestion:hover,
+  :root[data-theme="dark"] .suggestion:focus-visible {
+    background: var(--dm-accent-surface);
+  }
+}
+
+
+.compactWrapper {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 5px 8px 5px 12px;
+  border: 1px solid #c9dde0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.compactDestination {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  color: #425961;
+  font-size: 0.78rem;
+}
+
+.compactDestination strong {
+  overflow: hidden;
+  color: #20343b;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compactActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.compactActions button {
+  min-height: 36px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.compactActions button:hover {
+  background: #edf8f8;
+}
+
+.wrapper[data-compact="true"] {
+  margin-top: 0;
+}
+
+@media screen {
+  :root[data-theme="dark"] .quick button {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .clear {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .compactWrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+  }
+
+  :root[data-theme="dark"] .compactDestination {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .compactDestination strong,
+  :root[data-theme="dark"] .compactActions button {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .compactActions button:hover {
+    background: var(--dm-accent-surface);
+  }
+}

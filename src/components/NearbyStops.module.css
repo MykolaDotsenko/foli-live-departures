@@ -432,3 +432,130 @@
     outline-color: var(--dm-focus);
   }
 }
+
+
+/* Destination-aware ranking is additive: the same nearby cards remain
+   inspectable, while the strongest option gets a restrained highlight. */
+.stopCard[data-best="true"] {
+  border-color: #2a8b72;
+  box-shadow: 0 8px 22px rgba(30, 111, 90, 0.12);
+}
+
+.badges {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.bestBadge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #dff4e9;
+  color: #155f4d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.fitStatus {
+  color: #566970 !important;
+  font-size: 0.76rem !important;
+  font-weight: 780 !important;
+  line-height: 1.35;
+}
+
+.fitStatus[data-good="true"] {
+  color: #17614f !important;
+}
+
+.fitJourney {
+  color: #334c54 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35;
+}
+
+.fitJourney strong {
+  display: inline;
+  font-size: inherit;
+  white-space: normal;
+}
+
+.sortToggle {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid #c7dadd;
+  border-radius: 12px;
+  background: #eef5f6;
+}
+
+.sortToggle button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #455c64;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.sortToggle button[aria-pressed="true"] {
+  background: #fff;
+  color: #00656f;
+  box-shadow: 0 1px 4px rgba(25, 68, 77, 0.14);
+}
+
+@media (max-width: 620px) {
+  .sortToggle {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sortToggle button {
+    min-width: 0;
+    white-space: normal;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .stopCard[data-best="true"] {
+    border-color: var(--dm-accent);
+    box-shadow: none;
+  }
+
+  :root[data-theme="dark"] .bestBadge {
+    background: var(--dm-accent-surface);
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .fitStatus,
+  :root[data-theme="dark"] .fitJourney {
+    color: var(--dm-muted) !important;
+  }
+
+  :root[data-theme="dark"] .fitStatus[data-good="true"] {
+    color: var(--dm-accent) !important;
+  }
+
+  :root[data-theme="dark"] .sortToggle {
+    border-color: var(--dm-line);
+    background: var(--dm-sunken);
+  }
+
+  :root[data-theme="dark"] .sortToggle button {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .sortToggle button[aria-pressed="true"] {
+    background: var(--dm-raised);
+    color: var(--dm-accent);
+    box-shadow: none;
+  }
+}

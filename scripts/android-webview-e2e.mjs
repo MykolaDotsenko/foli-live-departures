@@ -150,7 +150,7 @@ await retry("app DOM ready", async () => {
 });
 
 const initial = await evaluate(`(() => {
-  const form = document.querySelector("form");
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const input =
     form?.querySelector('input[role="combobox"]') ||
     form?.querySelector('input[type="search"]') ||
@@ -245,7 +245,7 @@ if (!geo?.ok && geo?.code === 3) {
       }
       return null;
     },
-    { attempts: 3, delayMs: 1000 }
+    { attempts: 6, delayMs: 1000 }
   );
 }
 
@@ -332,10 +332,11 @@ await retry("fixture-backed app reload", async () => {
 }, { attempts: 20, delayMs: 500 });
 
 await evaluate(`(() => {
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const input =
-    document.querySelector('input[role="combobox"]') ||
-    document.querySelector('input[type="search"]') ||
-    document.querySelector("input");
+    form?.querySelector('input[role="combobox"]') ||
+    form?.querySelector('input[type="search"]') ||
+    form?.querySelector("input");
   if (!input) return false;
   const setter = Object.getOwnPropertyDescriptor(
     HTMLInputElement.prototype,
@@ -352,15 +353,28 @@ await evaluate(`(() => {
   return true;
 })()`);
 
-const suggestionText = await retry("cached stop suggestion", async () => {
-  const text = await evaluate("document.body.innerText");
-  return /Kauppatori/i.test(text) ? text : "";
-}, { attempts: 20, delayMs: 750 });
+const suggestion = await retry("cached manual stop suggestion", async () => {
+  return evaluate(`(() => {
+    const form = document.querySelector('form[data-stop-search-form="true"]');
+    const candidates = [...(form?.querySelectorAll('[role="option"]') || [])];
+    const match = candidates.find((node) =>
+      /Kauppatori/i.test(node.textContent || "")
+    );
+    return match
+      ? { found: true, text: (match.textContent || "").trim() }
+      : null;
+  })()`);
+}, { attempts: 20, delayMs: 500 });
 
-record("stop search returns cached Kauppatori during provider outage", /Kauppatori/i.test(suggestionText));
+record(
+  "stop search returns cached Kauppatori during provider outage",
+  suggestion?.found === true && /Kauppatori/i.test(suggestion.text || ""),
+  suggestion || {}
+);
 
 const selected = await evaluate(`(() => {
-  const candidates = [...document.querySelectorAll('[role="option"]')];
+  const form = document.querySelector('form[data-stop-search-form="true"]');
+  const candidates = [...(form?.querySelectorAll('[role="option"]') || [])];
   const match = candidates.find((node) =>
     /Kauppatori/i.test(node.textContent || "")
   );
@@ -392,7 +406,7 @@ record(
 await sleep(500);
 
 const showDepartures = await evaluate(`(() => {
-  const form = document.querySelector("form");
+  const form = document.querySelector('form[data-stop-search-form="true"]');
   const button = form?.querySelector('button[type="submit"]');
   if (!button) return { clicked: false, reason: "missing-submit" };
 

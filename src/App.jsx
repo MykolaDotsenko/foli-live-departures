@@ -6,6 +6,7 @@ import ConnectivityStatus from "./components/ConnectivityStatus";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import LanguageSwitch from "./components/LanguageSwitch";
+import JourneySearch from "./components/JourneySearch";
 import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
@@ -13,6 +14,7 @@ import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
+import useDestinationIntent from "./hooks/useDestinationIntent";
 import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
@@ -121,6 +123,7 @@ function App() {
   );
   const online = useOnlineStatus();
   const ride = useRideMode();
+  const journey = useDestinationIntent();
   const requestFocus = usePendingFocus();
   // The passenger's own edits to the stop search, counted, so a late "Near
   // you" fix can tell that they started typing while it was on its way. A
@@ -460,6 +463,18 @@ function App() {
           />
         )}
 
+        {!ride.session && (!stopId || journey.destination) && (
+          <JourneySearch
+            compact={Boolean(stopId)}
+            stops={stops}
+            places={places}
+            destination={journey.destination}
+            onChoosePlace={journey.choosePlace}
+            onChooseStop={journey.chooseStop}
+            onClear={journey.clearDestination}
+          />
+        )}
+
         {/* One column on a phone. On a wide screen, Get me Home takes the
             left and search, saved stops and service updates the right, so
             the board starts on the first screen (App.css). */}
@@ -535,6 +550,7 @@ function App() {
                 currentStop && toggleFavorite(currentStop)
               }
               placesById={placesById}
+              destination={journey.destination}
               onStartRide={startRide}
               activeRideTripRef={ride.session?.tripRef || ""}
               cancellations={stopCancellations}
@@ -557,6 +573,7 @@ function App() {
           serviceBoundary={serviceBoundary}
           online={online}
           searchEdits={readSearchEdits}
+          destination={journey.destination}
           onSelect={selectStop}
         />
 

@@ -1073,3 +1073,57 @@
     outline-color: var(--dm-focus);
   }
 }
+
+
+/* Journey context is additive to the normal departure board. */
+.destinationBoardNote {
+  margin: 8px 0 10px;
+  padding: 8px 10px;
+  border: 1px solid #c9e2de;
+  border-radius: 10px;
+  background: #edf8f5;
+  color: #28554a;
+  font-size: 0.78rem;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.destinationFitBadge,
+.destinationDirectionNote {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.destinationFitBadge {
+  background: #dff4e9;
+  color: #155f4d;
+}
+
+.destinationDirectionNote {
+  background: #f2f3f4;
+  color: #596b72;
+}
+
+@media screen {
+  :root[data-theme="dark"] .destinationBoardNote {
+    border-color: var(--dm-line);
+    background: var(--dm-accent-surface);
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .destinationFitBadge {
+    background: var(--dm-accent-surface);
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .destinationDirectionNote {
+    background: var(--dm-sunken);
+    color: var(--dm-muted);
+  }
+}

@@ -19,11 +19,12 @@ import {
   upcomingDepartures,
 } from "./departureBoard/departures";
 import useClockTick from "../hooks/useClockTick";
+import useDestinationBoardFits from "../hooks/useDestinationBoardFits";
 import useLineFilter from "../hooks/useLineFilter";
 import useLineTimetable from "../hooks/useLineTimetable";
 import useTripEnrichment from "../hooks/useTripEnrichment";
 import { mergeRealtimeAndScheduled } from "../utils/gtfsSchedule";
-import { providerLanguages, useLanguage } from "../i18n";
+import { providerLanguages, t, useLanguage } from "../i18n";
 import {
   advanceServerTime,
   elapsedSince,
@@ -61,6 +62,7 @@ function BusStopDisplay({
   isFavorite,
   onToggleFavorite,
   placesById,
+  destination = null,
   onStartRide,
   activeRideTripRef = "",
   cancellations = [],
@@ -246,6 +248,36 @@ function BusStopDisplay({
     [language]
   );
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
+  const { fitsByRowKey: destinationFitsByKey, state: destinationFitState } =
+    useDestinationBoardFits({
+      stopId,
+      arrivals: visibleArrivals,
+      rowKeys,
+      destination,
+    });
+
+  const destinationRows = visibleArrivals.map((arrival, index) => ({
+    arrival,
+    rowKey: rowKeys[index],
+    fit: destinationFitsByKey[rowKeys[index]] || null,
+    originalIndex: index,
+  }));
+
+  if (destination && destinationFitState === "ready") {
+    destinationRows.sort((left, right) => {
+      const leftRank = left.fit?.status === "compatible" ? 0 : 1;
+      const rightRank = right.fit?.status === "compatible" ? 0 : 1;
+      return leftRank - rightRank || left.originalIndex - right.originalIndex;
+    });
+  }
+
+  const displayedArrivals = destinationRows.map((item) => item.arrival);
+  const displayedRowKeys = destinationRows.map((item) => item.rowKey);
+  const destinationLabel = destination
+    ? destination.kind === "saved-place"
+      ? t(destination.label)
+      : destination.label
+    : "";
 
   const filterable = linesOnOffer.length > 1 && upcomingArrivals.length > 0;
   const showAllLines = () => setFollowedLines([]);
@@ -325,10 +357,20 @@ function BusStopDisplay({
         onRefresh={onRefresh}
         onShowAllLines={showAllLines}
       >
+        {destination && destinationFitState === "ready" && (
+          <p className={styles.destinationBoardNote}>
+            {t("Trips to {destination} are shown first. Other departures stay below.", {
+              destination: destinationLabel,
+            })}
+          </p>
+        )}
+
         <DepartureTable
           timesAreOld={offlineSince !== null || (dataIsStale && hasData)}
-          arrivals={visibleArrivals}
-          rowKeys={rowKeys}
+          arrivals={displayedArrivals}
+          rowKeys={displayedRowKeys}
+          destination={destination}
+          destinationFitsByKey={destinationFitsByKey}
           referenceTime={referenceTime}
           effectiveServerTime={effectiveServerTime}
           tripDetailsById={tripDetailsById}

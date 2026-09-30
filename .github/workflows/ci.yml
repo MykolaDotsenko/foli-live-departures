@@ -43,6 +43,9 @@ jobs:
       - name: Verify deployment trust boundary
         run: npm run verify:deployment
 
+      - name: Verify backendless PWA architecture
+        run: npm run verify:architecture
+
       - name: Verify immutable workflow action pins
         run: npm run verify:workflow-pins
 

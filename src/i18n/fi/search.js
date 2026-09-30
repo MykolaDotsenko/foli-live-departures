@@ -85,4 +85,49 @@ export default {
     "Etäisyydet ovat likimääräisiä linnuntie-etäisyyksiä. ”Kävele sinne” avaa kävelyreitin Google Mapsissa.",
   "Distances are approximate straight-line distances. Walking route links return when you’re online.":
     "Etäisyydet ovat likimääräisiä linnuntie-etäisyyksiä. Kävelyreitit ovat taas käytettävissä, kun yhteys toimii.",
+
+  // Journey destination
+  Journey: "Matka",
+  "Where do you want to go?": "Minne haluat mennä?",
+  "Clear destination": "Tyhjennä määränpää",
+  "Going to": "Määränpää",
+  "Journey destination": "Matkan määränpää",
+  Change: "Vaihda",
+  Clear: "Tyhjennä",
+  "Saved destinations": "Tallennetut määränpäät",
+  "Choose destination stop": "Valitse määränpääpysäkki",
+  "e.g. Turun linna": "esim. Turun linna",
+  "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
+  "Use destination": "Käytä määränpäätä",
+  "Choose Home, Work, School or a Föli stop.":
+    "Valitse Koti, Työ, Koulu tai Fölin pysäkki.",
+  "Enter a stop name or number.": "Kirjoita pysäkin nimi tai numero.",
+  "More than one stop has this name. Choose one from the suggestions.":
+    "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
+  "Choose a destination stop from the suggestions.":
+    "Valitse määränpääpysäkki ehdotuksista.",
+  "Nearby stops for {destination}":
+    "Lähipysäkit määränpäähän {destination}",
+  "Choose the best fit or switch back to pure distance.":
+    "Valitse sopivin vaihtoehto tai vaihda takaisin etäisyysjärjestykseen.",
+  "Nearby stop sorting": "Lähipysäkkien järjestys",
+  "Best for {destination}": "Paras määränpäähän {destination}",
+  "Checking routes…": "Tarkistetaan reittejä…",
+  "Checking which buses go to {destination}…":
+    "Tarkistetaan, mitkä bussit menevät määränpäähän {destination}…",
+  "Goes to {destination}": "Menee määränpäähän {destination}",
+  "Timing may be tight": "Aikaa voi olla niukasti",
+  "Probably too late to catch": "Et todennäköisesti ehdi tähän lähtöön",
+  "Current buses go the other direction":
+    "Nykyiset bussit menevät toiseen suuntaan",
+  "No direct option to {destination} is shown soon":
+    "Lähiaikoina ei näy suoraa vaihtoehtoa määränpäähän {destination}",
+  "Departure check unavailable": "Lähtöjen tarkistus ei ole käytettävissä",
+  "Route suitability is uncertain": "Reitin sopivuus on epävarma",
+  "Line {line}": "Linja {line}",
+  "arrive about {time}": "perillä noin {time}",
+  Best: "Paras",
+  "Nearby Föli stops for {destination}":
+    "Fölin lähipysäkit määränpäähän {destination}",
+
 };

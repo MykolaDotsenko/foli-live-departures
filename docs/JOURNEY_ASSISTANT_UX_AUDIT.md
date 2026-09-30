@@ -33,6 +33,24 @@ The implementation should therefore be additive and staged.
 
 ---
 
+## Architecture guardrail — backendless by design
+
+Journey Assistant must preserve the current deployment and privacy model:
+
+- static browser-only PWA;
+- GitHub Pages-compatible production build;
+- no application backend;
+- no project-owned proxy;
+- no server-side session/database;
+- no secret API key embedded in frontend code;
+- no silent server-side journey/location history.
+
+Address/POI and transfer capabilities may use only client-side providers whose terms, CORS model and credential requirements are compatible with a public PWA. If a provider is unavailable or unsuitable, the product must degrade to saved-place/public-stop workflows rather than adding infrastructure that changes the product concept.
+
+This is a **release gate**, not an implementation preference.
+
+---
+
 ## 2. Baseline UX assessment
 
 ### Current overall UX
@@ -124,6 +142,27 @@ These make the core direct-journey experience substantially better and more resi
 ## P2 — expansion / polish
 
 These improve completeness, convenience and edge-case quality after the core decision flow is trustworthy.
+
+---
+
+## Architecture guardrail — no backend
+
+Journey Assistant must preserve the current deployment model:
+
+- static GitHub Pages application;
+- installable PWA;
+- all product state and ranking logic in the browser;
+- direct Föli/open-data access;
+- no application server;
+- no serverless proxy;
+- no database;
+- no account/auth infrastructure.
+
+Address/POI and routing providers must be browser-safe. Public frontend keys are acceptable only when the provider explicitly supports frontend use and the key can be restricted to the production origin.
+
+If a future capability requires a confidential secret, that provider/capability is rejected rather than adding a backend.
+
+This rule is part of the product non-regression contract, not an implementation preference.
 
 ---
 
@@ -471,14 +510,16 @@ One search field accepts:
 - stop;
 - saved place.
 
-Provider adapter must isolate external geocoder schema.
+Provider adapter must isolate the external geocoder schema and call it directly from the browser. No proxy/backend is allowed.
 
 ### Key risks
 
 - duplicate branches;
 - incorrect business centroid;
 - stale POI data;
-- privacy expansion.
+- privacy expansion;
+- public-client key/origin restrictions;
+- browser CORS availability.
 
 ### UX
 
@@ -494,6 +535,8 @@ Search result disambiguation:
 
 - duplicate branches are not silently resolved;
 - address search failure does not break stop search;
+- provider credentials are browser-safe/public-client credentials only;
+- no confidential secret is bundled or proxied;
 - addresses are not silently persisted;
 - provider/privacy disclosure exists.
 
@@ -801,6 +844,9 @@ These are design targets, not measured usability-study scores.
 
 Every milestone must preserve:
 
+- static GitHub Pages deployment;
+- no backend/proxy/server-side storage;
+- no confidential credential in the browser bundle;
 - direct stop search;
 - pure nearest-stop mode;
 - complete nearby-stop access;

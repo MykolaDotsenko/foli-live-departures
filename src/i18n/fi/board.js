@@ -129,4 +129,11 @@ export default {
   // Finnish timetables' own term for a stop where no one may get off.
   "no drop-off": "vain nousu",
   "+{count} more · final stop": "+{count} lisää · päätepysäkki",
+
+  // Destination-aware board
+  "Trips to {destination} are shown first. Other departures stay below.":
+    "Määränpäähän {destination} menevät lähdöt näytetään ensin. Muut lähdöt jäävät niiden alle.",
+  "Other direction for {destination}":
+    "Toinen suunta määränpäähän {destination}",
+
 };
