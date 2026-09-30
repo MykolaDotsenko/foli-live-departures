@@ -19,9 +19,11 @@ import {
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
 import { rankDestinationStops } from "../utils/journeyRanking";
+import { buildDirectJourneyOptions } from "../utils/directJourneyOptions";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
+import DirectJourneyOptions from "./DirectJourneyOptions";
 
 const NEARBY_STOP_LIMIT = 6;
 
@@ -207,6 +209,11 @@ function NearbyStops({
     destination && sortMode === "best"
       ? destinationSortedStops
       : nearbyStops;
+
+  const directJourneyOptions = useMemo(
+    () => buildDirectJourneyOptions(nearbyStops, fitsByStop),
+    [fitsByStop, nearbyStops]
+  );
 
   const bestStopId =
     destinationSortedStops.find((stop) =>
@@ -445,6 +452,16 @@ function NearbyStops({
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
           )}
+
+          {destination &&
+            fitState === "ready" &&
+            directJourneyOptions.length > 0 && (
+              <DirectJourneyOptions
+                destinationLabel={destinationLabel}
+                options={directJourneyOptions}
+                onChoose={(option) => onSelect(option.stopId)}
+              />
+            )}
 
           {nearbyStops.length > 0 && (
             <div
