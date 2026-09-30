@@ -10,6 +10,7 @@ import { TARGET_CONFIRMED_FOR_SEC, trackingHealth } from "./rideFeedEvidence";
 /**
  * @import {
  *   RideGpsState,
+ *   RidePlan,
  *   RidePlannedProgress,
  *   RideRuntime,
  *   RideSession,
@@ -206,7 +207,7 @@ function finiteNumber(value) {
  * clock it automatically follows a late bus, and unlike distance/current
  * speed it does not swing wildly at every traffic light.
  *
- * @param {RideSession["plan"] | null | undefined} plan
+ * @param {RidePlan | null | undefined} plan
  * @param {RideGpsState} gps
  * @param {number | null} gpsAgeSec
  * @param {boolean} underway
