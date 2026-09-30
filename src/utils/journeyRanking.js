@@ -8,8 +8,8 @@ export function destinationFitRank(fit) {
   if (!fit) return 7;
   if (fit.status === "good") return 0;
   if (fit.status === "tight") return 1;
-  if (fit.status === "too-late") return 2;
-  if (fit.status === "uncertain") return 3;
+  if (fit.status === "uncertain") return 2;
+  if (fit.status === "too-late") return 3;
   if (fit.status === "other-direction") return 4;
   if (fit.status === "no-direct") return 5;
   return 6;
