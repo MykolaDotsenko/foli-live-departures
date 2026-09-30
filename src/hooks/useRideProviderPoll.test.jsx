@@ -201,6 +201,48 @@ test("a tracked row is still a live sighting at both stops", async () => {
   );
 });
 
+test("repeated identical SIRI snapshots do not freeze the ETA anchor", async () => {
+  const startMs = 1_700_000_000_000;
+  vi.setSystemTime(startMs);
+  const targetRow = {
+    ...trackedRow,
+    recordedattime: 990,
+    expectedarrivaltime: 1_060,
+    latitude: 60.45,
+    longitude: 22.25,
+  };
+  const answers = {
+    32: answer([targetRow]),
+    164: answer([{ ...trackedRow, recordedattime: 990 }]),
+  };
+
+  const first = await pollOnce(answers);
+  expect(first.next.targetSeenAt).toBe(startMs);
+  expect(first.next.targetSnapshotSignature).toBeTruthy();
+  expect(first.readArrivalSignals).toHaveBeenCalledTimes(1);
+
+  vi.setSystemTime(startMs + 20_000);
+  const repeated = await pollOnce(answers, first.next);
+  expect(repeated.next.targetSeenAt).toBe(startMs);
+  expect(repeated.next.lastLiveMatchAt).toBe(first.next.lastLiveMatchAt);
+  expect(repeated.next.liveEtaSec).toBe(42);
+  expect(repeated.readArrivalSignals).not.toHaveBeenCalled();
+
+  // A provider observation that actually advanced gets a new anchor.
+  vi.setSystemTime(startMs + 40_000);
+  const freshRow = { ...targetRow, recordedattime: 1_030 };
+  const fresh = await pollOnce(
+    {
+      32: answer([freshRow]),
+      164: answer([{ ...trackedRow, recordedattime: 1_030 }]),
+    },
+    repeated.next
+  );
+  expect(fresh.next.targetSeenAt).toBe(startMs + 40_000);
+  expect(fresh.next.lastLiveMatchAt).toBe(startMs + 40_000);
+  expect(fresh.readArrivalSignals).toHaveBeenCalledTimes(1);
+});
+
 test("an ambiguous repeated visit never counts as the bus disappearing", async () => {
   const ambiguousRows = [
     { ...trackedRow, expectedarrivaltime: 1_000 },

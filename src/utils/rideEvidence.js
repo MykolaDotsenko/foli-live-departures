@@ -10,6 +10,7 @@ import { TARGET_CONFIRMED_FOR_SEC, trackingHealth } from "./rideFeedEvidence";
 /**
  * @import {
  *   RideGpsState,
+ *   RidePlan,
  *   RidePlannedProgress,
  *   RideRuntime,
  *   RideSession,
@@ -182,6 +183,151 @@ export function rideStageSignals({
   };
 }
 
+const LOCATION_PROGRESS_MAX_AGE_SEC = 60;
+const PASSED_STOP_MARGIN_M = 40;
+
+/** @param {unknown} value @returns {number | null} */
+function finiteNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+/**
+ * What a fresh, map-matched phone position says about the two passenger-facing
+ * progress metrics. This does not change the safety-critical alert stage: it
+ * only keeps the numbers on the panel tied to where the ride actually is.
+ *
+ * Remaining stops are counted by trip order, not stop id, so loop routes and
+ * repeated stops stay correct. A stop is removed only after the fix is beyond
+ * it by both a fixed clearance and the fix's own accuracy radius.
+ *
+ * ETA is the remaining *travel duration* from the GTFS plan, interpolated at
+ * the current position along the trip shape. Unlike an absolute timetable
+ * clock it automatically follows a late bus, and unlike distance/current
+ * speed it does not swing wildly at every traffic light.
+ *
+ * @param {RidePlan | null | undefined} plan
+ * @param {RideGpsState} gps
+ * @param {number | null} gpsAgeSec
+ * @param {boolean} underway
+ * @returns {{ etaSec: number | null, remainingStops: number | null }}
+ */
+export function locationRideProgress(plan, gps, gpsAgeSec, underway) {
+  const unavailable = { etaSec: null, remainingStops: null };
+  const alongM = finiteNumber(gps?.alongRouteM);
+  const accuracyM = finiteNumber(gps?.accuracyM);
+
+  if (
+    !underway ||
+    gpsAgeSec === null ||
+    gpsAgeSec > LOCATION_PROGRESS_MAX_AGE_SEC ||
+    gps?.shapeUsable !== true ||
+    gps?.onRoute !== true ||
+    alongM === null ||
+    accuracyM === null ||
+    accuracyM < 0 ||
+    accuracyM > 120 ||
+    !Array.isArray(plan?.stopsToTarget)
+  ) {
+    return unavailable;
+  }
+
+  const stops = plan.stopsToTarget;
+  const passMarginM = Math.max(PASSED_STOP_MARGIN_M, accuracyM);
+  let previousKnownDistance = Number.NEGATIVE_INFINITY;
+  let lastPassedIndex = -1;
+  let hasKnownStopDistance = false;
+
+  for (let index = 0; index < stops.length; index += 1) {
+    const distanceM = finiteNumber(stops[index]?.shapeDistTraveled);
+    if (distanceM === null) continue;
+
+    // A corrupt/non-monotonic shape distance must never make the count jump.
+    if (distanceM + 1 < previousKnownDistance) return unavailable;
+    previousKnownDistance = distanceM;
+    hasKnownStopDistance = true;
+
+    if (alongM > distanceM + passMarginM) {
+      lastPassedIndex = index;
+    }
+  }
+
+  const remainingStops = hasKnownStopDistance
+    ? Math.max(0, stops.length - lastPassedIndex - 1)
+    : null;
+
+  const targetDistanceM = finiteNumber(plan?.targetStop?.shapeDistTraveled);
+  const targetOffsetSec = finiteNumber(plan?.targetStop?.offsetSec);
+  if (targetDistanceM === null || targetOffsetSec === null) {
+    return { etaSec: null, remainingStops };
+  }
+
+  if (alongM >= targetDistanceM) {
+    return { etaSec: 0, remainingStops };
+  }
+
+  /** @type {{ distanceM: number, offsetSec: number }[]} */
+  const candidates = [];
+  for (const stop of [plan?.boardingStop, ...stops]) {
+    const distanceM = finiteNumber(stop?.shapeDistTraveled);
+    const offsetSec = finiteNumber(stop?.offsetSec);
+    if (
+      distanceM === null ||
+      offsetSec === null ||
+      distanceM > targetDistanceM + 1 ||
+      offsetSec > targetOffsetSec
+    ) {
+      continue;
+    }
+    candidates.push({ distanceM, offsetSec });
+  }
+
+  if (candidates.length < 2) {
+    return { etaSec: null, remainingStops };
+  }
+
+  for (let index = 1; index < candidates.length; index += 1) {
+    const previous = candidates[index - 1];
+    const current = candidates[index];
+    if (
+      current.distanceM + 1 < previous.distanceM ||
+      current.offsetSec < previous.offsetSec
+    ) {
+      return { etaSec: null, remainingStops };
+    }
+  }
+
+  let left = candidates[0];
+  let right = candidates[candidates.length - 1];
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const point = candidates[index];
+    if (point.distanceM <= alongM) left = point;
+    if (point.distanceM >= alongM) {
+      right = point;
+      break;
+    }
+  }
+
+  let currentOffsetSec = left.offsetSec;
+  const spanM = right.distanceM - left.distanceM;
+  if (spanM > 1) {
+    const fraction = Math.min(1, Math.max(0, (alongM - left.distanceM) / spanM));
+    currentOffsetSec =
+      left.offsetSec + fraction * (right.offsetSec - left.offsetSec);
+  } else {
+    // Same-position anchors can represent dwell/duplicate geometry. Use the
+    // later time so ETA is not optimistically shortened while still there.
+    currentOffsetSec = Math.max(left.offsetSec, right.offsetSec);
+  }
+
+  return {
+    etaSec: Math.max(0, Math.round(targetOffsetSec - currentOffsetSec)),
+    remainingStops,
+  };
+}
+
 /**
  * @typedef {object} RidePanelEvidence
  * @property {RideSession} session
@@ -212,20 +358,22 @@ export function progressRuntime({
   sinceTargetSec,
 }) {
   const health = trackingHealth(nextRuntime);
-  // The panel must not read a different source than the stage logic. A
-  // frozen prediction from a failed poll, or a fix from before a tunnel,
-  // would otherwise keep showing a confident "~2 min" next to a badge
-  // that already says tracking is degraded.
-  const gpsEtaUsable =
-    underway &&
-    nextGps.routeEtaSec !== null &&
-    Number.isFinite(Number(nextGps.routeEtaSec)) &&
-    (gpsAgeSec === null || gpsAgeSec <= 60);
-  const etaSource = gpsEtaUsable
-    ? "location"
-    : liveEtaSec !== null
+  const locationProgress = locationRideProgress(
+    current.plan,
+    nextGps,
+    gpsAgeSec,
+    underway
+  );
+  // A genuinely fresh provider prediction is the best ETA because it can
+  // account for delay/traffic ahead. If it ages out, the phone's actual
+  // position supplies a delay-corrected remaining duration; the absolute
+  // timetable clock is only the final fallback.
+  const etaSource =
+    liveEtaSec !== null
       ? "live"
-      : "schedule";
+      : locationProgress.etaSec !== null
+        ? "location"
+        : "schedule";
   // Answers without the bus only count towards ending the alarm once it
   // is sounding, so the count starts again as it begins.
   const enteringNow =
@@ -238,6 +386,7 @@ export function progressRuntime({
     // plan is still ahead: the stage logic may not count them yet, but
     // the passenger may, and "Remaining: tracking" answered nothing.
     remainingStops:
+      locationProgress.remainingStops ??
       planned.remainingStops ??
       (planned.beforeDeparture && Array.isArray(current.plan?.stopsToTarget)
         ? current.plan.stopsToTarget.length
@@ -247,10 +396,10 @@ export function progressRuntime({
     // as where the passenger is now.
     gpsAgeSec,
     etaSec:
-      etaSource === "location"
-        ? Number(nextGps.routeEtaSec)
-        : etaSource === "live"
-          ? liveEtaSec
+      etaSource === "live"
+        ? liveEtaSec
+        : etaSource === "location"
+          ? locationProgress.etaSec
           : planned.etaSec,
     etaSource,
     // The panel's "confirmed" is about the exit stop, on the same clock

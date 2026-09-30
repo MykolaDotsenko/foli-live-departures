@@ -336,6 +336,10 @@ export interface RideRuntime {
   lastProviderSuccessAt: number | null;
   lastLiveMatchAt: number | null;
   targetSeenAt: number | null;
+  /** Provider fields from the latest distinct target-stop SIRI observation. */
+  targetSnapshotSignature: string;
+  /** Provider fields from the latest distinct previous-stop SIRI observation. */
+  previousSnapshotSignature: string;
   previousSeen: boolean;
   previousMissingCount: number;
   targetMissingCount: number;

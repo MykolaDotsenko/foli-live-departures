@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   agedLiveEtaSec,
   agedProviderPositionAgeSec,
+  liveArrivalSnapshotSignature,
   providerDistanceToTarget,
   readArrivalSignals,
   targetAnswerAgeSec,
@@ -43,6 +44,30 @@ describe("trackingHealth", () => {
       "schedule"
     );
     expect(trackingHealth(runtime(), true)).toBe("schedule");
+  });
+});
+
+describe("provider snapshot identity", () => {
+  it("changes only when provider evidence changes, not when the browser polls again", () => {
+    const row = {
+      monitored: true,
+      recordedattime: 1_000,
+      expectedarrivaltime: 1_300,
+      latitude: 60.45,
+      longitude: 22.25,
+      vehicleatstop: false,
+    };
+    const first = liveArrivalSnapshotSignature(row);
+    expect(liveArrivalSnapshotSignature({ ...row })).toBe(first);
+    expect(
+      liveArrivalSnapshotSignature({ ...row, recordedattime: 1_020 })
+    ).not.toBe(first);
+    expect(
+      liveArrivalSnapshotSignature({ ...row, expectedarrivaltime: 1_320 })
+    ).not.toBe(first);
+    expect(
+      liveArrivalSnapshotSignature({ ...row, latitude: 60.451 })
+    ).not.toBe(first);
   });
 });
 

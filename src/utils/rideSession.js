@@ -25,6 +25,8 @@ export function emptyRuntime() {
     lastProviderSuccessAt: null,
     lastLiveMatchAt: null,
     targetSeenAt: null,
+    targetSnapshotSignature: "",
+    previousSnapshotSignature: "",
     previousSeen: false,
     previousMissingCount: 0,
     targetMissingCount: 0,
