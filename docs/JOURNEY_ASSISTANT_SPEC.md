@@ -1215,3 +1215,259 @@ then:
 The passenger should never have to manually combine stop geography, route direction, timetable, realtime, transfers and destination walking in their head.
 
 **The app should do the reasoning; the UI should show the decision.**
+
+
+---
+
+## 42. Non-regression contract — preserve what already works
+
+Journey Assistant is an extension of the current product, not permission to replace proven flows with a heavier planner UI.
+
+The following current strengths are release gates. A phase must not ship if it materially regresses them.
+
+### 42.1 Fast manual stop lookup remains first-class
+
+The passenger can still:
+- type a stop name or number directly;
+- open that stop without creating a journey;
+- inspect its normal departure board;
+- use the app when they already know the network.
+
+Destination search may share the visual surface, but it must not force journey planning on a user who only wants a stop.
+
+### 42.2 Pure Nearby remains available
+
+Without destination intent:
+
+> **Stops near me**
+
+continues to be a simple geographical tool.
+
+With destination intent:
+- all nearby candidates remain visible;
+- **Nearest** remains one tap away;
+- unsuitable stops are explained rather than hidden.
+
+The new recommendation layer must add context without removing manual exploration.
+
+### 42.3 Departure board remains useful by itself
+
+A stop board continues to:
+- show normal upcoming departures;
+- preserve line filtering;
+- distinguish live/scheduled/degraded data truthfully;
+- expose disruptions;
+- remain usable with no destination selected.
+
+Destination-aware grouping is additive:
+- **For destination**
+- **Other departures**
+
+It must not delete or obscure unrelated departures.
+
+### 42.4 Favourites and recents remain fast paths
+
+Existing favourites and recent stops remain available for passengers who use the same stops repeatedly.
+
+Do not replace one-tap stop reopening with a mandatory destination workflow.
+
+Recent destinations may be added separately; stop recents remain valid.
+
+### 42.5 Saved-place recovery remains independent
+
+Home/Work/School journey planning must not remove:
+- public-stop-only saved places;
+- approved backup stops;
+- Show to driver;
+- printable/saveable backup information;
+- external route handoff.
+
+Recovery tools must remain usable even when routing/geocoding is unavailable.
+
+### 42.6 Privacy-first behaviour remains a product strength
+
+The new feature must preserve:
+- no account requirement;
+- no ads;
+- no analytics by default;
+- no silent location history;
+- public-stop-only saved places as an option;
+- explicit external-provider boundaries.
+
+A convenience feature must not silently convert the product into a persistent location-history service.
+
+### 42.7 Ride Mode safety is protected
+
+Journey Assistant may prefill Ride Mode but may not weaken or duplicate its evidence rules.
+
+Existing:
+- Remaining;
+- ETA freshness/fallback;
+- stale-snapshot protection;
+- route matching;
+- Get Ready;
+- Press STOP;
+- Get Off Now;
+- missed-stop recovery;
+- sound test;
+- conservative GPS degradation
+
+remain authoritative.
+
+### 42.8 Progressive degradation remains intact
+
+If one dependency fails, preserve the smallest useful capability:
+
+- geocoder fails → stop search still works;
+- journey router fails → Nearby and stop boards still work;
+- realtime fails → schedule fallback remains;
+- GPS denied → manual origin/stop selection remains;
+- offline → saved/recovery information remains;
+- Ride Mode GPS fails → existing non-GPS alert fallback remains.
+
+Do not build a single all-or-nothing loading/failure state around the new planner.
+
+### 42.9 Passenger control remains stronger than automation
+
+The current product generally lets the passenger choose rather than silently redirects them. Keep that property.
+
+Rules:
+- recommendation is not automatic selection;
+- selected journey is not silently replaced;
+- manual search edits beat late async results;
+- focused cards are not moved under the user;
+- destination can be cleared in one action;
+- direct stop exploration remains possible.
+
+### 42.10 Mobile simplicity remains a release gate
+
+The new intelligence must not turn the first phone viewport into a dashboard.
+
+Default first screen should still expose only:
+- destination search;
+- saved quick actions where useful;
+- current essential context.
+
+Advanced details, alternative routes, Nearby diagnostics and explanations use progressive disclosure.
+
+### 42.11 Accessibility remains release quality
+
+Existing accessibility discipline stays mandatory:
+- keyboard support;
+- focus preservation;
+- live-region restraint;
+- text + icon status;
+- touch target size;
+- 200% text scaling;
+- mobile overflow checks;
+- automated axe gates.
+
+New async ranking must not regress these behaviours.
+
+### 42.12 Performance remains perceptually fast
+
+A destination planner may perform substantially more work internally, but:
+- stop search must not wait for route planning;
+- Nearby geography should render before full enrichment;
+- already-open departure boards must not block on destination computations;
+- route results should render progressively;
+- expensive work must be cancellable.
+
+The current lightweight utility feel must be preserved.
+
+---
+
+## 43. Non-regression acceptance criteria
+
+42. A passenger can still use Turku Departures entirely as a stop/departure app without selecting a destination.
+43. Manual stop search remains no more than one submit/selection away from the board.
+44. Pure nearest-stop mode remains available without route calculation.
+45. Every nearby stop that the bounded nearby discovery found remains inspectable in destination mode.
+46. Favourites and recent stops remain accessible as fast paths.
+47. The normal departure board remains complete when destination filtering/grouping is active.
+48. Existing line filtering continues to work.
+49. Saved Home recovery/driver-card/backup flows remain available if geocoding or journey search fails.
+50. Ride Mode's existing safety-state tests continue to pass unchanged or with strictly equivalent semantics.
+51. Journey planning failure cannot prevent direct stop search, Nearby or an already-open board from working.
+52. No new feature requires an account or persistent private address.
+53. Explicit user choices beat late ranking/GPS/provider updates.
+54. First-screen mobile information density is not higher than the current design without a demonstrated user benefit.
+55. New routing requests do not delay the existing stop-board critical path.
+56. Existing accessibility, PWA, offline and localization gates remain release blockers.
+
+---
+
+## 44. Known residual risks after implementation
+
+Even a fully implemented Journey Assistant will retain real limitations.
+
+### External search quality
+A geocoder/POI provider can return:
+- the wrong branch;
+- stale business information;
+- an imprecise building centroid;
+- incomplete multilingual names.
+
+Mitigation: disambiguation, provider abstraction, visible context, no silent branch choice.
+
+### Walking uncertainty
+Without a dedicated pedestrian-routing source, straight-line distance cannot model crossings, entrances, barriers or indoor paths.
+
+Mitigation: conservative catchability, truthful distance copy, external walking directions.
+
+### Realtime uncertainty
+A transit prediction may change after the recommendation.
+
+Mitigation: freshness semantics, hysteresis, selected-journey recovery, no false guarantees.
+
+### Transfer fragility
+Transfers amplify delay uncertainty and platform-change complexity.
+
+Mitigation: conservative buffers, downgrade tight transfers, continuous reassessment, recovery.
+
+### Provider disagreement
+Journey planner, GTFS and live provider may disagree temporarily.
+
+Mitigation: explicit source hierarchy, static topology as route truth where appropriate, freshness checks, withhold claims when evidence conflicts.
+
+### Search/ranking complexity
+More internal states create more race-condition and stale-result risks.
+
+Mitigation: request generations, cancellation, pure ranking functions, exhaustive state tests.
+
+### Performance
+Dense hubs and many candidates can increase network/CPU cost.
+
+Mitigation: progressive bounded expansion, caching, deduplication, concurrency limits.
+
+### Privacy expansion
+Address/POI search introduces an external query provider.
+
+Mitigation: minimised requests, disclosure, no automatic address persistence, public-stop-only saved-place mode.
+
+### Browser limitations
+Background execution and notification behaviour remain browser/OS dependent.
+
+Mitigation: keep current Ride Mode disclosure and future Web Push phase separate.
+
+### Recommendation trust
+A mathematically good route can feel wrong if the explanation is opaque.
+
+Mitigation: short reason labels such as **18 min faster**, **less walking**, **no transfer**, and **more time to catch**.
+
+---
+
+## 45. Design quality target
+
+The target is not maximum feature count.
+
+The target is:
+
+- **simple first action;**
+- **strong decision support when requested;**
+- **complete manual control underneath;**
+- **truthful uncertainty;**
+- **safe ride guidance;**
+- **graceful failure.**
+
+The final experience should feel simpler to the passenger than the current product even though the implementation is substantially more capable.
