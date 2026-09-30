@@ -93,7 +93,8 @@ export function collectDirectJourneyCandidates(stops, fitsByStop) {
       const destinationArrivalAt = arrival(option);
       if (
         destinationArrivalAt === null ||
-        option.catchability === "too-late"
+        option.catchability === "too-late" ||
+        option.catchability === "unknown"
       ) {
         continue;
       }
