@@ -3,7 +3,8 @@
 **Status:** canonical implementation spec  
 **Product:** Turku Departures  
 **Scope:** destination search → route choice → boarding → ride guidance → transfers → final arrival  
-**Detailed appendix:** [Destination-aware Nearby design](DESTINATION_AWARE_NEARBY_SPEC.md)
+**Detailed appendix:** [Destination-aware Nearby design](DESTINATION_AWARE_NEARBY_SPEC.md)  
+**Implementation priorities:** [Journey Assistant UX audit](JOURNEY_ASSISTANT_UX_AUDIT.md)
 
 ---
 
