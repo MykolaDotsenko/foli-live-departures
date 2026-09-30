@@ -25,6 +25,8 @@ export interface NearbyDepartureFit {
   catchability: Catchability;
   liveState: LiveState;
   rideDurationSec: number | null;
+  accessSeconds: number | null;
+  catchMarginSec: number | null;
 }
 
 export type NearbyFitStatus =
@@ -40,8 +42,31 @@ export interface NearbyStopFit {
   stopId: string;
   status: NearbyFitStatus;
   best: NearbyDepartureFit | null;
+  options: NearbyDepartureFit[];
   additionalCount: number;
   checkedAt: number;
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;
+
+
+export type DirectJourneyOptionKind =
+  | "fastest"
+  | "less-walking"
+  | "easier-to-catch";
+
+export interface DirectJourneyOption {
+  id: string;
+  kind: DirectJourneyOptionKind;
+  stopId: string;
+  stopName: string;
+  distanceMeters: number;
+  tripRef: string;
+  lineRef: string;
+  destinationStopId: string;
+  departureAt: number;
+  destinationArrivalAt: number;
+  catchability: Catchability;
+  liveState: LiveState;
+  catchMarginSec: number | null;
+}
