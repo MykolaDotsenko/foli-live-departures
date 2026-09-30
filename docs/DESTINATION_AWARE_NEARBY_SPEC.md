@@ -1,5 +1,7 @@
 # Destination-aware Nearby — product and implementation specification
 
+> **Canonical implementation contract:** [Journey Assistant specification](JOURNEY_ASSISTANT_SPEC.md). This document is the detailed UX/edge-case appendix.
+
 **Status:** proposed implementation specification  
 **Scope:** pre-boarding decision support from “I am here” to “I am waiting at the right stop for the right bus”  
 **Primary design principle:** show every useful nearby stop, rank by actual usefulness for the passenger’s destination, explain why, and never hide uncertainty.
