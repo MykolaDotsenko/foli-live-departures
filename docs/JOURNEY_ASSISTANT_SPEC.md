@@ -261,6 +261,70 @@ Public geocoding services with restrictive fair-use policies must be treated as 
 
 ---
 
+## 6A. Client-only architecture invariant
+
+Turku Departures remains a static, privacy-first PWA.
+
+**Hard constraint: this product does not gain its own backend.**
+
+Do not introduce:
+- application servers;
+- serverless proxy functions;
+- private API gateways;
+- databases;
+- authentication/account infrastructure;
+- server-side session state;
+- hidden backend persistence.
+
+All core product logic remains in the browser.
+
+External providers may be called directly only when their usage model is safe for a public web frontend.
+
+### Provider eligibility
+
+A third-party provider is eligible only when:
+
+- browser/CORS access is officially supported;
+- any browser key/token is explicitly intended for public frontend use;
+- the key can be restricted by HTTP origin/referrer or equivalent;
+- the key grants only the minimum read-only capability required;
+- quotas/costs are bounded and observable;
+- the app continues to work in a reduced mode when the provider is unavailable.
+
+A provider that requires a confidential secret is **not eligible** for this product.
+
+### Build-time keys
+
+Browser-safe provider keys may be supplied through build-time environment variables.
+
+Important:
+- treat them as public identifiers, not secrets;
+- restrict production keys to the production origin;
+- use a separate development key;
+- never rely on obscurity of the bundled JavaScript.
+
+### No-backend fallback rule
+
+If a feature cannot be implemented reliably and safely under this client-only model:
+
+1. preserve the existing local/Föli capability;
+2. explain the limitation truthfully;
+3. provide an external handoff when useful;
+4. do **not** add a backend merely to make the feature possible.
+
+### Routing implication
+
+Journey planning architecture must therefore support:
+
+- product-owned client-side direct-route logic using Föli/GTFS/realtime data;
+- bounded client-side transfer logic where practical;
+- browser-safe external journey APIs only when their public-client authentication model is appropriate;
+- external route handoff as the final fallback.
+
+The static PWA architecture is a product strength and a non-regression requirement.
+
+---
+
 ## 7. Privacy contract
 
 Adding address/POI search must not silently weaken the existing privacy model.
