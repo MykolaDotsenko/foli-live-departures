@@ -360,7 +360,8 @@ const suggestionText = await retry("cached stop suggestion", async () => {
 record("stop search returns cached Kauppatori during provider outage", /Kauppatori/i.test(suggestionText));
 
 const selected = await evaluate(`(() => {
-  const candidates = [...document.querySelectorAll('[role="option"]')];
+  const form = document.querySelector('form[data-stop-search-form="true"]');
+  const candidates = [...(form?.querySelectorAll('[role="option"]') || [])];
   const match = candidates.find((node) =>
     /Kauppatori/i.test(node.textContent || "")
   );
