@@ -98,3 +98,32 @@ test("requires a destination value", () => {
     "Enter a stop name or number."
   );
 });
+
+
+test("keeps an opened stop board compact until the passenger asks to change destination", () => {
+  const props = renderSearch({
+    compact: true,
+    destination: {
+      id: "place:home",
+      kind: "saved-place",
+      label: "Home",
+      primaryStopId: "900",
+      acceptableStopIds: ["900"],
+    },
+  });
+
+  expect(
+    screen.getByRole("region", { name: "Journey destination" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("combobox", { name: "Choose destination stop" })
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  expect(
+    screen.getByRole("combobox", { name: "Choose destination stop" })
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
+  expect(props.onClear).toHaveBeenCalledTimes(1);
+});
