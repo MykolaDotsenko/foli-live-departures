@@ -488,54 +488,285 @@ or:
 
 ---
 
-## 12. Total journey utility
+## 12. Earliest-arrival engine and total journey utility
 
-Among valid, catchable direct options, optimise the practical journey, not merely the next departure countdown.
+The primary practical question is not “which stop is closest?” or even “which bus leaves first?”. It is:
 
-A useful internal cost model considers:
+> **Which realistic option gets me to my destination earliest from where I am now?**
+
+This is the central ranking signal.
+
+### 12.1 Absolute arrival time is the key quantity
+
+For every catchable suitable departure derive an estimated destination-arrival timestamp.
+
+Conceptually:
 
 ```text
-access burden
-+ expected wait
-+ ride duration
-+ destination-stop penalty
-+ uncertainty penalty
-+ disruption penalty
-+ fragility penalty
+now
+→ reach boarding stop
+→ catch concrete departure
+→ ride
+→ arrive at selected destination stop
 ```
 
-### Access burden
+For a fixed departure, walking time and waiting time overlap: if a bus leaves in 10 minutes and the stop takes about 5 minutes to reach, the passenger walks for about 5 minutes and then waits about 5 minutes. Therefore the fastest-arrival calculation must not double-count access time.
 
-Prefer less walking when travel times are otherwise close.
+For a catchable direct trip:
 
-### Wait
+```text
+timeToDestination ≈ expectedDestinationArrival - now
+```
 
-Use fresh live expected time when genuinely fresh. Otherwise use schedule with lower confidence.
+Access time is primarily used to decide whether that departure is realistically catchable and how burdensome the option is.
 
-### Ride duration
+### 12.2 Destination-arrival evidence hierarchy
 
-Use trip stop times / offsets for the selected downstream destination occurrence.
+Prefer the strongest available evidence for the concrete trip:
 
-### Destination penalty
+1. **Fresh destination-stop live prediction for the same trip**, when the destination stop's realtime data can be matched safely.
+2. **Fresh boarding live prediction + GTFS downstream timing**, propagating the currently observed delay to the destination as an estimate.
+3. **GTFS scheduled downstream arrival**, explicitly lower confidence.
+4. If none of these can be established safely, do not invent a destination ETA.
 
-Primary saved-place stop receives preference.
+A repeated identical realtime snapshot does not become fresh merely because another HTTP response arrived.
 
-Approved backup stops are allowed, but a backup should not replace primary for negligible gains.
+### 12.3 Delay propagation
 
-### Reliability penalty
+If the boarding stop has a trustworthy live expected departure but the destination stop does not have a fresh matched prediction, derive a provisional downstream arrival using the trip's scheduled timing relationship.
 
-Examples:
+Conceptually:
 
-- fresh live: lowest penalty;
-- schedule only: modest penalty;
-- delayed live: greater uncertainty;
-- poor GPS: access/catchability uncertainty;
-- disruption: substantial penalty;
-- cancellation: disqualify.
+```text
+observedBoardingDelay =
+  liveBoardingDeparture - scheduledBoardingDeparture
 
-### Fragility / frequency
+estimatedDestinationArrival =
+  scheduledDestinationArrival + observedBoardingDelay
+```
 
-A stop with several useful departures soon is more resilient than one with a single narrow opportunity.
+This is an estimate, not a guarantee: a bus may recover or lose more time later. The UI should present it as approximate.
+
+If a fresh destination-stop prediction becomes available, it replaces the propagated estimate.
+
+### 12.4 Example: farther stop wins decisively
+
+Current position:
+
+- Stop A: 80 m away.
+- Suitable bus from A: departs in 30 min.
+- Stop B: 280 m away.
+- Suitable bus from B: departs in 10 min.
+- B takes roughly 5 min more effort to reach than A.
+- Both trips have similar ride duration.
+
+Stop B should rank first because the passenger reaches Home substantially earlier.
+
+The UI should explain the trade-off:
+
+> **★ FASTEST TO HOME**  
+> Kauppatori D2 · 280 m away  
+> 18 · leaves in ~10 min  
+> **Home stop in ~27 min**  
+> About **18 min faster** than the closest-stop option
+
+The geographically nearest stop remains in the list:
+
+> **CLOSER, BUT SLOWER**  
+> Kauppatori A1 · 80 m away  
+> Next suitable bus in ~30 min  
+> Home stop in ~45 min
+
+This directly answers why a farther stop ranks higher.
+
+### 12.5 Example: farther stop should *not* win for a trivial gain
+
+- Stop A: 80 m away, destination arrival in ~24 min.
+- Stop B: 450 m away, destination arrival in ~23 min.
+
+The one-minute theoretical gain is not worth a much longer walk for most passengers.
+
+Both belong to the same near-optimal band. Prefer A because it has lower access burden and is less fragile.
+
+### 12.6 Example: earlier departure can still be slower
+
+- Stop A: bus leaves in 4 min, ride to destination ~31 min.
+- Stop B: bus leaves in 8 min, ride ~15 min.
+
+If B is catchable, B should rank first because its destination arrival is much earlier.
+
+Never rank solely by departure countdown.
+
+### 12.7 Example: fast bus that cannot be caught
+
+- Stop A: bus leaves in 3 min, stop is far enough away that timing is unsafe/tight.
+- Stop B: bus leaves in 9 min and is comfortably catchable.
+
+A must not rank first merely because its theoretical destination arrival is earlier.
+
+Use the first realistically catchable suitable departure for each stop.
+
+### 12.8 Arrival time shown to the passenger
+
+When confidence is sufficient, the top card should show both relative and clock-time information:
+
+> **Home stop in ~27 min**  
+> Arrive about **22:04**
+
+This is more actionable than showing only:
+
+> Bus in 10 min
+
+because it lets the passenger compare complete outcomes.
+
+For saved places represented only by public stops, the truthful wording is **Home stop**, **Work stop**, etc. The app does not know the private door-to-door endpoint.
+
+For a manually chosen public stop:
+
+> **Turun linna in ~24 min**
+
+Do not claim exact door-to-door arrival without a real final-walk route.
+
+### 12.9 Journey breakdown
+
+The expanded best card may explain:
+
+> 280 m to D2  
+> Bus 18 in ~10 min  
+> ~17 min on the bus  
+> Arrive Home stop ~22:04
+
+If access time is only inferred from straight-line distance, prefer distance over a falsely precise walking duration.
+
+A real external walking route may provide a better walking estimate once the passenger opens it.
+
+### 12.10 Comparison copy
+
+For meaningful differences, show why the recommendation wins:
+
+- **Fastest to Home**
+- **About 18 min faster**
+- **Closer, but longer wait**
+- **Shorter walk**
+- **More frequent buses**
+- **Leaves later, arrives sooner**
+- **Same arrival time, less walking**
+
+Do not expose the internal numerical score.
+
+### 12.11 Saved primary vs backup destination
+
+Compare absolute arrival at each approved destination stop, but do not silently treat every backup as equivalent to the primary.
+
+If an approved backup produces a materially earlier arrival:
+
+> **Faster Home option**  
+> Arrives at your backup Home stop about 9 min earlier
+
+If the difference is trivial, prefer the primary stop.
+
+Because the app stores public stop identities rather than a private address, it cannot precisely calculate the walk from a backup stop to the user's door. Do not hide this limitation.
+
+### 12.12 Frequency and missed-bus resilience
+
+Fastest arrival is not the only signal.
+
+Example:
+
+- Stop A: arrival Home ~22:00 if one bus is caught; next suitable bus is 35 min later.
+- Stop B: arrival Home ~22:02; suitable buses also leave in 9 and 16 min.
+
+These are practically near-equivalent. B may rank first because it is much less fragile.
+
+The card can show:
+
+> **Frequent Home service**  
+> More suitable buses follow
+
+### 12.13 Live delay can change the winner
+
+Ranking must update when trustworthy live data materially changes destination arrival.
+
+Example:
+
+- A was fastest by schedule.
+- A becomes +12 min delayed.
+- B is running normally.
+
+B may become the new top recommendation.
+
+Apply hysteresis: only move the recommendation when the benefit is meaningful, not for small prediction noise.
+
+### 12.14 Destination live prediction can improve accuracy
+
+Because there are usually only one to a few acceptable destination stops, fetching/matching destination-stop realtime may be much cheaper than multiplying live requests across every route candidate.
+
+Where architecture permits:
+
+- fetch the acceptable destination stop(s) once;
+- match candidate trip identities there;
+- use a fresh matched expected arrival as the strongest destination ETA.
+
+This should be bounded, cached and deduplicated.
+
+### 12.15 Dynamic search expansion
+
+A fixed “nearest 8” or “nearest 12” cap can still miss the best option in a hub.
+
+Example:
+
+- twelve very close platforms do not serve Home;
+- a direct Home stop is 450 m away.
+
+Destination-aware discovery should support bounded progressive expansion:
+
+1. evaluate the normal nearby set;
+2. if no good/catchable option exists, expand radius/candidate count;
+3. stop at a conservative hard limit;
+4. surface the farther useful option without removing the original nearby stops.
+
+UI example:
+
+> **Better option a little farther away**  
+> D2 · 450 m  
+> Direct bus in 8 min
+
+The pure **Nearest** view should still preserve geographical ordering.
+
+### 12.16 Internal utility after arrival time
+
+Among options whose destination-arrival times are meaningfully different, earlier arrival dominates.
+
+Among options inside the near-optimal band, use secondary utility:
+
+```text
+lower access burden
++ stronger realtime confidence
++ primary destination preference
++ more backup departures
++ fewer disruptions
++ current recommendation stability
+```
+
+This preserves human-friendly choices instead of over-optimising seconds.
+
+### 12.17 Confidence-aware destination ETA
+
+Every destination ETA needs a source/confidence state:
+
+- **live destination prediction**
+- **live delay propagated**
+- **schedule**
+- **unknown**
+
+The UI may simplify these to passenger language:
+
+- **Live**
+- **Estimated from live progress**
+- **Schedule**
+- **Arrival time unavailable**
+
+Do not collapse these into a single equally confident-looking number.
 
 ---
 
@@ -1420,6 +1651,13 @@ The implementation is not complete until all are true:
 18. GPS denial leaves a manual path.
 19. Offline mode does not present stale “Best” claims as current.
 20. Screen-reader and keyboard interaction survive async enrichment and reorder.
+21. Ranking compares realistic destination-arrival time, not merely stop distance or departure countdown.
+22. A farther catchable stop can outrank a nearer stop when it gets the passenger to the destination materially earlier.
+23. A farther stop does not outrank a nearer one for a trivial arrival-time gain inside the near-optimal band.
+24. An uncatchable departure cannot win the fastest-arrival ranking.
+25. Destination ETA exposes whether it comes from fresh live destination data, propagated live delay or schedule.
+26. Saved-place UI says “Home stop” / equivalent when the app cannot know the private final walk to the door.
+27. If the initial nearby candidate set has no useful option, bounded search expansion can surface a slightly farther useful stop without hiding the original nearby list.
 
 ---
 
