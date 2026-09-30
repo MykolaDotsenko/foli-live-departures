@@ -31,6 +31,45 @@ function liveState(arrival, serverTime) {
 }
 
 /**
+ * Prefer a destination-stop prediction only while the provider observation
+ * itself is fresh. Repeated stale HTTP responses therefore age out naturally.
+ *
+ * @param {any} monitor
+ * @param {string} tripRef
+ * @returns {number | null}
+ */
+function freshTargetArrival(monitor, tripRef) {
+  const serverTime = Number(monitor?.serverTime);
+  if (!Number.isFinite(serverTime) || serverTime <= 0) return null;
+
+  const row = (Array.isArray(monitor?.arrivals) ? monitor.arrivals : []).find(
+    (arrival) =>
+      String(arrival?.tripref || "") === String(tripRef) &&
+      arrival?.monitored === true
+  );
+  if (!row) return null;
+
+  const recordedAt = Number(row.recordedattime);
+  if (
+    !Number.isFinite(recordedAt) ||
+    recordedAt <= 0 ||
+    serverTime - recordedAt > 120
+  ) {
+    return null;
+  }
+
+  const expectedArrival = Number(row.expectedarrivaltime);
+  if (Number.isFinite(expectedArrival) && expectedArrival > 0) {
+    return expectedArrival;
+  }
+
+  const expectedDeparture = Number(row.expecteddeparturetime);
+  return Number.isFinite(expectedDeparture) && expectedDeparture > 0
+    ? expectedDeparture
+    : null;
+}
+
+/**
  * @param {NearbyDepartureFit[]} candidates
  * @returns {NearbyDepartureFit | null}
  */
@@ -124,8 +163,24 @@ export async function loadDestinationAwareNearby({
 
   /** @type {NearbyFitMap} */
   const fits = {};
+  /** @type {Map<string, Promise<any | null>>} */
+  const targetMonitorPromises = new Map();
 
-  candidates.forEach((stop, stopIndex) => {
+  const targetMonitor = (stopId) => {
+    const id = String(stopId || "");
+    if (!id) return Promise.resolve(null);
+
+    if (!targetMonitorPromises.has(id)) {
+      targetMonitorPromises.set(
+        id,
+        fetchStopMonitor(id, signal).catch(() => null)
+      );
+    }
+    return targetMonitorPromises.get(id);
+  };
+
+  for (let stopIndex = 0; stopIndex < candidates.length; stopIndex += 1) {
+    const stop = candidates[stopIndex];
     const monitorResult = monitorResults[stopIndex];
     if (monitorResult.status !== "fulfilled") {
       fits[String(stop.id)] = {
@@ -208,6 +263,27 @@ export async function loadDestinationAwareNearby({
       });
     }
 
+    await Promise.all(
+      compatible.map(async (candidate) => {
+        const destinationMonitor = await targetMonitor(
+          candidate.destinationStopId
+        );
+        throwIfAborted(signal);
+
+        const liveArrival = freshTargetArrival(
+          destinationMonitor,
+          candidate.tripRef
+        );
+        if (
+          liveArrival !== null &&
+          liveArrival >= candidate.departureAt
+        ) {
+          candidate.destinationArrivalAt = liveArrival;
+          candidate.liveState = "live";
+        }
+      })
+    );
+
     const best = chooseBestDeparture(compatible);
     /** @type {import("../types/journey").NearbyFitStatus} */
     let status = "no-direct";
@@ -238,7 +314,7 @@ export async function loadDestinationAwareNearby({
       ),
       checkedAt: Date.now(),
     };
-  });
+  }
 
   return fits;
 }
