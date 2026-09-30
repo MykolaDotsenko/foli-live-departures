@@ -179,6 +179,21 @@ Support:
 
 Do not aggressively autocorrect without confirmation.
 
+### External search interaction rule
+
+Local public-stop matching may update as the passenger types.
+
+External address/POI lookup must be different:
+- no network request on every keystroke;
+- passenger explicitly submits the query;
+- debounce alone is not considered sufficient when provider policy forbids autocomplete;
+- results may be cached only in-memory/session scope by default so private address queries are not silently persisted;
+- requests are rate-limited according to provider policy;
+- provider attribution is visible where required;
+- the adapter can be replaced without changing the UI contract.
+
+This preserves the backendless/privacy-first product model and prevents a search field from becoming an uncontrolled third-party data stream.
+
 ---
 
 ## 5. Destination model
