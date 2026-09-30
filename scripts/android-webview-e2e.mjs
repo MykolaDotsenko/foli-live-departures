@@ -353,12 +353,24 @@ await evaluate(`(() => {
   return true;
 })()`);
 
-const suggestionText = await retry("cached stop suggestion", async () => {
-  const text = await evaluate("document.body.innerText");
-  return /Kauppatori/i.test(text) ? text : "";
-}, { attempts: 20, delayMs: 750 });
+const suggestion = await retry("cached manual stop suggestion", async () => {
+  return evaluate(`(() => {
+    const form = document.querySelector('form[data-stop-search-form="true"]');
+    const candidates = [...(form?.querySelectorAll('[role="option"]') || [])];
+    const match = candidates.find((node) =>
+      /Kauppatori/i.test(node.textContent || "")
+    );
+    return match
+      ? { found: true, text: (match.textContent || "").trim() }
+      : null;
+  })()`);
+}, { attempts: 20, delayMs: 500 });
 
-record("stop search returns cached Kauppatori during provider outage", /Kauppatori/i.test(suggestionText));
+record(
+  "stop search returns cached Kauppatori during provider outage",
+  suggestion?.found === true && /Kauppatori/i.test(suggestion.text || ""),
+  suggestion || {}
+);
 
 const selected = await evaluate(`(() => {
   const form = document.querySelector('form[data-stop-search-form="true"]');
