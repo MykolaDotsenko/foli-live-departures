@@ -937,13 +937,20 @@ test("each main-stop choice is named for its stop", async () => {
   );
   await screen.findByRole("heading", { name: "Choose stops for Home" });
 
+  // One selected stop is necessarily the main stop, so there is no
+  // redundant radio until the passenger explicitly adds a backup.
+  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("checkbox", { name: /Puistokatu.*Stop 32/i })
+  );
+
   const names = screen
     .getAllByRole("radio")
     .map((radio) => radio.labels[0].textContent);
   expect(names).toEqual([
     "Main stop: Kauppatori",
     "Main stop: Puistokatu",
-    "Main stop: Turun linna",
   ]);
   expect(
     screen.getByRole("radio", { name: "Main stop: Puistokatu" })

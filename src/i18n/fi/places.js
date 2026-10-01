@@ -26,7 +26,6 @@ export default {
 
   // A place not set up yet
   "Tick at least one stop to save.": "Valitse vähintään yksi pysäkki, niin voit tallentaa.",
-  "Confirm the stop above to save.": "Vahvista pysäkki yllä, niin voit tallentaa.",
   "Not set": "Ei vielä tallennettu",
   "Not at the stop? Search for it first, then choose it here.":
     "Et ole pysäkillä? Hae se ensin ja valitse se sitten tästä.",
