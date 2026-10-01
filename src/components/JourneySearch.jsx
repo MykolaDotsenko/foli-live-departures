@@ -16,12 +16,12 @@ function shownDestination(destination) {
 
 function selectionError(reason) {
   if (reason === "outside-service-area") {
-    return t("Outside Föli’s service area.");
+    return t("Outside Föli area.");
   }
   if (reason === "no-nearby-stops") {
-    return t("No usable Föli stop is nearby.");
+    return t("No nearby Föli stop.");
   }
-  return t("That place cannot be used.");
+  return t("Place unavailable.");
 }
 
 export default function JourneySearch({
@@ -132,7 +132,7 @@ export default function JourneySearch({
     event.preventDefault();
     const query = normalizeStopQuery(value);
     if (!query) {
-      setError(t("Enter a stop, address or place."));
+      setError(t("Enter a destination."));
       return;
     }
 
@@ -158,7 +158,7 @@ export default function JourneySearch({
       setError(
         coordinatesStatus === "loading"
           ? t("Stop locations are still loading. Try again in a moment.")
-          : t("Place search unavailable. Stop search still works.")
+          : t("Place search unavailable. Use a stop.")
       );
       return;
     }
@@ -180,7 +180,7 @@ export default function JourneySearch({
 
     if (results === null) {
       setError(
-        t("Place search unavailable. Stop search still works.")
+        t("Place search unavailable. Use a stop.")
       );
     } else if (results.length === 0) {
       setError(
@@ -192,7 +192,7 @@ export default function JourneySearch({
             ? t(
                 "Choose a stop from the suggestions or enter its stop number."
               )
-            : t("No matching destination found.")
+            : t("No destination found.")
       );
     } else {
       setError("");
@@ -349,9 +349,7 @@ export default function JourneySearch({
         </div>
 
         <p className={styles.help}>
-          {t(
-            "Stops stay on-device. Place search uses OpenStreetMap only after Search."
-          )}
+          {t("Stops stay local. Places use Photon after Search.")}
         </p>
 
         {error && (
