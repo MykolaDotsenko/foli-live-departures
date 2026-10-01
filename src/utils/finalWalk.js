@@ -8,7 +8,11 @@ function finitePositive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-/** @param {unknown} value */
+/**
+ * @param {unknown} value
+ * @param {number} min
+ * @param {number} max
+ */
 function coordinate(value, min, max) {
   const number = Number(value);
   return Number.isFinite(number) && number >= min && number <= max
