@@ -1,3 +1,4 @@
+import createBoundedCache from "../utils/boundedCache";
 /** @import { PlaceSearchResult } from "../types/journey" */
 
 const SEARCH_URL =
@@ -10,8 +11,8 @@ const MAX_CACHE_ENTRIES = 20;
 // current Föli service-boundary and nearby-stop checks before it can be used.
 const SEARCH_VIEWBOX = "21.2,61,23.4,59.9";
 
-/** @type {Map<string, PlaceSearchResult[]>} */
-const cache = new Map();
+/** @type {import("../utils/boundedCache").BoundedCache<string, PlaceSearchResult[]>} */
+const cache = createBoundedCache(MAX_CACHE_ENTRIES);
 let nextAllowedRequestAt = 0;
 
 /** @param {unknown} value */
@@ -74,16 +75,6 @@ function fetchSignalScope(externalSignal) {
       externalSignal?.removeEventListener("abort", onExternalAbort);
     },
   };
-}
-
-/** @param {string} key @param {PlaceSearchResult[]} results */
-function cacheSet(key, results) {
-  cache.delete(key);
-  cache.set(key, results);
-  if (cache.size > MAX_CACHE_ENTRIES) {
-    const oldest = cache.keys().next().value;
-    if (oldest) cache.delete(oldest);
-  }
 }
 
 /** @param {any} raw @returns {PlaceSearchResult | null} */
@@ -179,7 +170,7 @@ export async function searchPlaces(
       if (results.length >= 5) break;
     }
 
-    cacheSet(key, results);
+    cache.set(key, results);
     return results;
   } catch (error) {
     if (signal?.aborted) {
