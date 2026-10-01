@@ -80,15 +80,15 @@ test("selects an external place only when nearby Föli stops can be resolved", (
     licence: "OpenStreetMap",
   };
 
-  let selected = false;
+  let prepared = null;
   act(() => {
-    selected = result.current.chooseExternalPlace(external, [
+    prepared = result.current.chooseExternalPlace(external, [
       { id: "100", name: "Near", lat: 60.4502, lon: 22.30 },
       { id: "200", name: "Backup", lat: 60.452, lon: 22.30 },
     ]);
   });
 
-  expect(selected).toBe(true);
+  expect(prepared).toMatchObject({ ok: true, reason: "ready" });
   expect(result.current.destination).toMatchObject({
     id: "external:nominatim:node:123",
     kind: "external-place",
@@ -101,11 +101,15 @@ test("selects an external place only when nearby Föli stops can be resolved", (
   act(() => result.current.clearDestination());
 
   act(() => {
-    selected = result.current.chooseExternalPlace(external, [
+    prepared = result.current.chooseExternalPlace(external, [
       { id: "900", name: "Too far", lat: 60.48, lon: 22.30 },
     ]);
   });
 
-  expect(selected).toBe(false);
+  expect(prepared).toEqual({
+    ok: false,
+    reason: "no-nearby-stops",
+    destination: null,
+  });
   expect(result.current.destination).toBeNull();
 });
