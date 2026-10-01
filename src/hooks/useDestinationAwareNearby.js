@@ -71,6 +71,18 @@ function freshTargetArrival(monitor, tripRef) {
 }
 
 /**
+ * @param {NearbyDepartureFit} candidate
+ */
+function effectiveArrivalAt(candidate) {
+  const value = Number(
+    candidate?.finalArrivalAt ?? candidate?.destinationArrivalAt
+  );
+  return Number.isFinite(value) && value > 0
+    ? value
+    : Number.POSITIVE_INFINITY;
+}
+
+/**
  * @param {NearbyDepartureFit[]} candidates
  * @returns {NearbyDepartureFit | null}
  */
@@ -78,17 +90,10 @@ function chooseBestDeparture(candidates) {
   const usable = candidates
     .filter((candidate) => candidate.catchability !== "too-late")
     .sort((a, b) => {
-      const left = Number.isFinite(a.finalArrivalAt)
-        ? Number(a.finalArrivalAt)
-        : Number.isFinite(a.destinationArrivalAt)
-          ? Number(a.destinationArrivalAt)
-          : Number.POSITIVE_INFINITY;
-      const right = Number.isFinite(b.finalArrivalAt)
-        ? Number(b.finalArrivalAt)
-        : Number.isFinite(b.destinationArrivalAt)
-          ? Number(b.destinationArrivalAt)
-          : Number.POSITIVE_INFINITY;
-      return left - right || a.departureAt - b.departureAt;
+      return (
+        effectiveArrivalAt(a) - effectiveArrivalAt(b) ||
+        a.departureAt - b.departureAt
+      );
     });
 
   if (usable.length === 0) return null;
@@ -102,10 +107,10 @@ function chooseBestDeparture(candidates) {
     (candidate) =>
       candidate.catchability !== "tight" &&
       candidate.catchability !== "unknown" &&
-      Number.isFinite(candidate.destinationArrivalAt) &&
-      Number.isFinite(first.destinationArrivalAt) &&
-      Number(candidate.destinationArrivalAt) -
-        Number(first.destinationArrivalAt) <=
+      Number.isFinite(effectiveArrivalAt(candidate)) &&
+      Number.isFinite(effectiveArrivalAt(first)) &&
+      effectiveArrivalAt(candidate) -
+        effectiveArrivalAt(first) <=
         5 * 60
   );
 
