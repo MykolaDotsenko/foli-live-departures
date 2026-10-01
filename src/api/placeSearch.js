@@ -5,10 +5,12 @@ const CACHE_KEY = "foli-place-search-cache-v1";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_LIMIT = 20;
 const MIN_REQUEST_INTERVAL_MS = 1_100;
+const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 60_000;
 
 /** @type {Promise<PlaceSearchConfig> | null} */
 let configPromise = null;
 let lastNetworkStartedAt = 0;
+let providerBlockedUntil = 0;
 /** @type {Promise<unknown>} */
 let networkTail = Promise.resolve();
 /** @type {Map<string, Promise<PlaceSearchResult[]>>} */
@@ -168,6 +170,41 @@ function cachedResults(query) {
 }
 
 /**
+ * Retry-After is optional and may not be exposed by CORS. Prefer a valid
+ * provider value; otherwise use a conservative local cooldown.
+ *
+ * @param {Response} response
+ */
+function rateLimitDelayMs(response) {
+  const raw = response.headers?.get?.("retry-after");
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.max(
+      MIN_REQUEST_INTERVAL_MS,
+      Math.ceil(seconds * 1000)
+    );
+  }
+
+  const dateMs = raw ? Date.parse(raw) : Number.NaN;
+  if (Number.isFinite(dateMs)) {
+    return Math.max(
+      MIN_REQUEST_INTERVAL_MS,
+      dateMs - Date.now()
+    );
+  }
+
+  return DEFAULT_RATE_LIMIT_COOLDOWN_MS;
+}
+
+/** Throw without another network call while the provider asked us to slow down. */
+function assertProviderAvailable() {
+  if (Date.now() >= providerBlockedUntil) return;
+  const error = new Error("Place search is temporarily rate limited.");
+  error.name = "PlaceSearchCooldownError";
+  throw error;
+}
+
+/**
  * @param {number} ms
  * @param {AbortSignal | undefined} signal
  */
@@ -308,6 +345,7 @@ export async function searchPlaces(value, options = {}) {
   if (existing) return existing;
 
   const promise = (async () => {
+    assertProviderAvailable();
     const config = await loadPlaceSearchConfig(options.signal);
     if (!config.enabled || !config.endpoint) return [];
 
@@ -348,6 +386,18 @@ export async function searchPlaces(value, options = {}) {
       });
 
       if (!response.ok) {
+        if (response.status === 429) {
+          providerBlockedUntil = Math.max(
+            providerBlockedUntil,
+            Date.now() + rateLimitDelayMs(response)
+          );
+          const error = new Error(
+            "Place search provider asked us to slow down."
+          );
+          error.name = "PlaceSearchCooldownError";
+          throw error;
+        }
+
         throw new Error(
           `Place search failed with HTTP ${response.status}.`
         );
@@ -380,6 +430,7 @@ export async function searchPlaces(value, options = {}) {
 export function resetPlaceSearchForTests() {
   configPromise = null;
   lastNetworkStartedAt = 0;
+  providerBlockedUntil = 0;
   networkTail = Promise.resolve();
   inFlight.clear();
   try {
