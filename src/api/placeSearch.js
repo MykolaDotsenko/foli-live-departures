@@ -5,6 +5,9 @@ const SEARCH_URL =
   "https://nominatim.openstreetmap.org/search";
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 const MAX_CACHE_ENTRIES = 20;
+// Broad Southwest Finland bias. A selected result still has to pass the
+// current Föli service-boundary and nearby-stop checks before it can be used.
+const SEARCH_VIEWBOX = "21.2,61,23.4,59.9";
 
 /** @type {Map<string, PlaceSearchResult[]>} */
 const cache = new Map();
@@ -87,65 +90,20 @@ function normalizeResult(raw) {
 }
 
 /**
- * @param {readonly any[]} stops
- * @returns {string}
- */
-export function placeSearchViewbox(stops) {
-  let minLat = 90;
-  let maxLat = -90;
-  let minLon = 180;
-  let maxLon = -180;
-  let count = 0;
-
-  for (const stop of Array.isArray(stops) ? stops : []) {
-    const lat = coordinate(stop?.lat);
-    const lon = coordinate(stop?.lon);
-    if (
-      lat === null ||
-      lon === null ||
-      lat < -90 ||
-      lat > 90 ||
-      lon < -180 ||
-      lon > 180
-    ) {
-      continue;
-    }
-    minLat = Math.min(minLat, lat);
-    maxLat = Math.max(maxLat, lat);
-    minLon = Math.min(minLon, lon);
-    maxLon = Math.max(maxLon, lon);
-    count += 1;
-  }
-
-  if (count < 2) return "";
-
-  /** @param {number} value */
-  const compact = (value) => String(Number(value.toFixed(6)));
-  return [
-    Math.max(-180, minLon - 0.04),
-    Math.min(90, maxLat + 0.02),
-    Math.min(180, maxLon + 0.04),
-    Math.max(-90, minLat - 0.02),
-  ]
-    .map(compact)
-    .join(",");
-}
-
-/**
  * Explicit-submit address / POI search. Never call this on input change.
  *
  * @param {unknown} query
- * @param {{ language?: string, viewbox?: string, signal?: AbortSignal }} [options]
+ * @param {{ language?: string, signal?: AbortSignal }} [options]
  * @returns {Promise<PlaceSearchResult[]>}
  */
 export async function searchPlaces(
   query,
-  { language = "en", viewbox = "", signal } = {}
+  { language = "en", signal } = {}
 ) {
   const clean = cleanQuery(query);
   if (clean.length < 3) return [];
 
-  const key = `${clean.toLocaleLowerCase()}|${language}|${viewbox}`;
+  const key = `${clean.toLocaleLowerCase()}|${language}`;
   const cached = cache.get(key);
   if (cached) return cached;
 
@@ -161,10 +119,8 @@ export async function searchPlaces(
     "accept-language",
     String(language).toLowerCase().startsWith("fi") ? "fi,en" : "en,fi"
   );
-  if (viewbox) {
-    url.searchParams.set("viewbox", viewbox);
-    url.searchParams.set("bounded", "1");
-  }
+  url.searchParams.set("viewbox", SEARCH_VIEWBOX);
+  url.searchParams.set("bounded", "1");
 
   const response = await globalThis.fetch(url, {
     signal,
