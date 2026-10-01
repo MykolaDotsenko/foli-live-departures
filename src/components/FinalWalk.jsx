@@ -5,18 +5,8 @@ import styles from "./ActiveJourney.module.css";
 
 /** @import { FinalWalkIntent } from "../types/journey" */
 
-/**
- * @param {{
- *   walk: FinalWalkIntent | null,
- *   online?: boolean,
- *   onDone: () => void,
- * }} props
- */
-export default function FinalWalk({
-  walk,
-  online = true,
-  onDone,
-}) {
+/** @param {{ walk: FinalWalkIntent | null, online?: boolean, onDone: () => void }} props */
+export default function FinalWalk({ walk, online = true, onDone }) {
   useLanguage();
   if (!walk) return null;
 
@@ -32,34 +22,20 @@ export default function FinalWalk({
       role="region"
     >
       <div className={styles.header}>
-        <div>
-          <p className={styles.kicker}>{t("Final walk")}</p>
-          <h2 id="final-walk-title" tabIndex={-1}>
-            {t("Walk to {destination}", {
-              destination: walk.destinationLabel,
-            })}
-          </h2>
-        </div>
+        <h2 id="final-walk-title" tabIndex={-1}>
+          {t("Walk to {destination}", {
+            destination: walk.destinationLabel,
+          })}
+        </h2>
         <span className={styles.destination}>
-          {t("From {stop}", { stop: walk.fromStopName })}
+          {walk.fromStopName}
+          {distance ? ` · ${distance}` : ""}
         </span>
       </div>
 
-      <p className={styles.primaryStatus}>
-        {distance
-          ? t("About {distance} from your exit stop.", { distance })
-          : t("Continue from your exit stop to the destination.")}
-      </p>
-
-      <p className={styles.note}>
-        {t(
-          "Walking distance is approximate. Open walking directions for the street route."
-        )}
-      </p>
-
       {!online && (
         <p className={styles.offline} role="status">
-          {t("Walking directions return when you’re online.")}
+          {t("Walking link unavailable offline.")}
         </p>
       )}
 
@@ -71,7 +47,7 @@ export default function FinalWalk({
             target="_blank"
             rel="noreferrer"
           >
-            {t("Open walking directions")}
+            {t("Walk there")}
           </a>
         )}
         <button
