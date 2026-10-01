@@ -469,3 +469,61 @@ test("optimizes a place destination by transit plus final walk", async () => {
       fits["100"].best.finalWalkDurationSec
   );
 });
+
+
+test("caps realtime destination-stop enrichment while keeping all candidates eligible", async () => {
+  const destinationIds = Array.from({ length: 12 }, (_, index) =>
+    String(900 + index)
+  );
+
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? destinationIds.map((destinationId, index) =>
+            arrival(`target-trip-${index}`, 1_400 + index * 30)
+          )
+        : [],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    const index = Number(String(tripId).split("-").at(-1));
+    return [
+      stopTime("100", 1, "10:00:00"),
+      stopTime(String(900 + index), 2, `10:${String(10 + index).padStart(2, "0")}:00`),
+    ];
+  });
+
+  const distanceMap = Object.fromEntries(
+    destinationIds.map((id, index) => [id, 50 + index * 20])
+  );
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: {
+      id: "geo:dense-target",
+      kind: "geocoded-place",
+      label: "Dense destination",
+      primaryStopId: "900",
+      acceptableStopIds: destinationIds,
+      lat: 60.45,
+      lon: 22.26,
+      destinationStopDistances: distanceMap,
+    },
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].departures).toHaveLength(12);
+
+  const targetMonitorCalls = api.fetchStopMonitor.mock.calls
+    .map(([stopId]) => String(stopId))
+    .filter((stopId) => stopId !== "100");
+
+  expect(new Set(targetMonitorCalls).size).toBe(8);
+  expect(targetMonitorCalls).toHaveLength(8);
+});
