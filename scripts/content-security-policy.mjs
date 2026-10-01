@@ -79,6 +79,9 @@ export function documentPolicy(html) {
  * one the app should be talking to.
  */
 export const FOLI_CONNECT_SOURCES = ["https://data.foli.fi", "https://*.foli.fi"];
+export const PLACE_SEARCH_CONNECT_SOURCES = [
+  "https://nominatim.openstreetmap.org",
+];
 
 /**
  * @param {{ connectSources: string[] }} options
