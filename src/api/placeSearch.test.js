@@ -155,3 +155,68 @@ test("serializes concurrent uncached searches to stay within public rate limits"
   await second;
   expect(fetchSpy).toHaveBeenCalledTimes(2);
 });
+
+
+test("times out a stalled provider request", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-01T12:00:00Z"));
+
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    (_url, options = {}) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener(
+          "abort",
+          () => {
+            const error = new Error("aborted");
+            error.name = "AbortError";
+            reject(error);
+          },
+          { once: true }
+        );
+      })
+  );
+
+  const request = searchPlaces("Provider timeout");
+
+  await vi.advanceTimersByTimeAsync(7_000);
+
+  await expect(request).rejects.toMatchObject({
+    name: "PlaceSearchTimeoutError",
+    message: "Place search timed out.",
+  });
+});
+
+test("keeps caller cancellation distinct from provider timeout", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-01T12:00:00Z"));
+
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    (_url, options = {}) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener(
+          "abort",
+          () => {
+            const error = new Error("aborted");
+            error.name = "AbortError";
+            reject(error);
+          },
+          { once: true }
+        );
+      })
+  );
+
+  const controller = new AbortController();
+  const request = searchPlaces("Cancelled request", {
+    signal: controller.signal,
+  });
+
+  await vi.advanceTimersByTimeAsync(0);
+  controller.abort();
+
+  await expect(request).rejects.toMatchObject({
+    name: "AbortError",
+    message: "Place search cancelled.",
+  });
+
+  await vi.advanceTimersByTimeAsync(7_000);
+});
