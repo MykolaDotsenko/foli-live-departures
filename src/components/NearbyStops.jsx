@@ -447,29 +447,6 @@ function NearbyStops({
         </button>
       </div>
 
-      {destination && position && (
-        <div
-          className={styles.sortToggle}
-          role="group"
-          aria-label={t("Nearby stop sorting")}
-        >
-          <button
-            type="button"
-            aria-pressed={sortMode === "best"}
-            onClick={() => setSortMode("best")}
-          >
-            {t("Best for {destination}", { destination: destinationLabel })}
-          </button>
-          <button
-            type="button"
-            aria-pressed={sortMode === "nearest"}
-            onClick={() => setSortMode("nearest")}
-          >
-            {t("Nearest")}
-          </button>
-        </div>
-      )}
-
       {!hasStopCoordinates && (
         <p className={styles.meta} role="status">
           {locationDataLoading
@@ -529,6 +506,31 @@ function NearbyStops({
               destinationLabel={destinationLabel}
               onOpenStop={onSelect}
             />
+          )}
+
+          {destination && (
+            <div
+              className={styles.sortToggle}
+              role="group"
+              aria-label={t("Nearby stop sorting")}
+            >
+              <button
+                type="button"
+                aria-pressed={sortMode === "best"}
+                onClick={() => setSortMode("best")}
+              >
+                {t("Best for {destination}", {
+                  destination: destinationLabel,
+                })}
+              </button>
+              <button
+                type="button"
+                aria-pressed={sortMode === "nearest"}
+                onClick={() => setSortMode("nearest")}
+              >
+                {t("Nearest")}
+              </button>
+            </div>
           )}
 
           {nearbyStops.length > 0 && (
