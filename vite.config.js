@@ -47,11 +47,15 @@ function connectSources(env) {
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
-    // The supported release matrix is modern Chromium, Firefox, WebKit and
-    // the current Android WebView. Avoid downlevelling syntax these engines
-    // already execute natively; this keeps the static PWA within its strict
-    // production bundle budget without changing application behaviour.
-    target: "es2022",
+    // The app has no dynamic imports, so the modulepreload compatibility
+    // polyfill has no runtime work to do. All supported release browsers also
+    // have native module support.
+    modulePreload: { polyfill: false },
+    // License notices remain available in package metadata/repository; they do
+    // not need to be duplicated inside every production JS artifact.
+    rolldownOptions: {
+      output: { legalComments: "none" },
+    },
   },
   plugins: [
     react(),
