@@ -77,6 +77,7 @@ These came out of the verification round and are not yet re-scored.
 - The off-route question's "Turn off alert" asks for a second tap, like the one in the panel.
 - Get me Home is hidden during a ride: its route link would leave the page the alert runs in.
 - The badge no longer squeezes the title on a small phone.
+- A false MISSED can reopen only when a distinct live SIRI observation for the same concrete run arrives after the miss and proves the target is still ahead/at the bus. Timetable drift, GPS alone and replayed pre-miss snapshots cannot roll it back.
 
 **Board and service updates**
 - A failed service-update check is tried again as soon as Föli answers the board, not five minutes later.
@@ -106,7 +107,6 @@ These came out of the verification round and are not yet re-scored.
 - The board header on a phone stacks Filter lines and Refresh, and error screens offer both Refresh and Try again.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
 - There is no install hint on iPhone outside ride setup.
-- MISSED ends the alert for good; it does not come back if the bus turns out to be earlier on its route.
 
 **Owner decisions still open**
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
