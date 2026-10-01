@@ -50,6 +50,8 @@ export function activeJourneyFromOption(
 
   const aimedDepartureAt =
     finitePositive(option?.departure?.aimedDepartureAt) ?? null;
+  const originAimedDepartureAt =
+    finitePositive(option?.departure?.originAimedDepartureAt) ?? null;
   const destinationArrivalAt =
     finitePositive(option?.departure?.destinationArrivalAt) ?? null;
 
@@ -67,6 +69,7 @@ export function activeJourneyFromOption(
     destinationStopId: String(option.departure.destinationStopId || ""),
     departureAt,
     aimedDepartureAt,
+    originAimedDepartureAt,
     destinationArrivalAt,
     liveState: option.departure.liveState || "unknown",
     phase: "walking-to-stop",
