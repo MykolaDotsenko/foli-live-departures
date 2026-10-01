@@ -147,3 +147,148 @@ describe("failed second-run exclusion", () => {
     expect(filtered["500"].best).toBe(replacement);
   });
 });
+
+
+describe("transfer recovery fail-closed fallbacks", () => {
+  test("requires a concrete transfer plan and recovery anchor", () => {
+    expect(
+      canSearchTransferRecovery({
+        phase: "recovery",
+        transferLeg: 2,
+        transferPlan: null,
+      })
+    ).toBe(false);
+
+    expect(
+      transferRecoveryOriginStops(
+        journey({
+          transferPlan: {
+            transfer: { alightStopId: "", boardStopId: "501" },
+            second: { tripRef: "failed-run" },
+          },
+        }),
+        stops
+      )
+    ).toEqual([]);
+  });
+
+  test("treats a non-array stop catalogue conservatively but keeps the exact authoritative stop", () => {
+    const origins = transferRecoveryOriginStops(journey(), null);
+
+    expect(origins).toEqual([
+      {
+        id: "500",
+        name: "500",
+        distanceMeters: 0,
+      },
+    ]);
+  });
+
+  test("ignores a non-numeric confirmed stop and keeps the authoritative alighting stop", () => {
+    const origins = transferRecoveryOriginStops(
+      journey({
+        stopId: "platform-x",
+        atStopConfirmedAt: 2_200_000,
+      }),
+      stops
+    );
+
+    expect(origins[0]).toMatchObject({
+      id: "500",
+      distanceMeters: 0,
+    });
+  });
+
+  test("failed-run matching stays conservative when optional origin anchors are missing", () => {
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "failed-run", originAimedDepartureAt: null },
+        journey()
+      )
+    ).toBe(true);
+
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "failed-run", originAimedDepartureAt: 2_400 },
+        journey({
+          transferPlan: {
+            transfer: { alightStopId: "500", boardStopId: "501" },
+            second: {
+              tripRef: "failed-run",
+              originAimedDepartureAt: null,
+            },
+          },
+        })
+      )
+    ).toBe(true);
+
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "failed-run", originAimedDepartureAt: 2_430 },
+        journey()
+      )
+    ).toBe(true);
+
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "failed-run", originAimedDepartureAt: 2_431 },
+        journey()
+      )
+    ).toBe(false);
+
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "anything" },
+        { phase: "recovery", transferLeg: 2, transferPlan: null }
+      )
+    ).toBe(false);
+  });
+
+  test("fit filtering handles best-only, empty and null fit maps without resurrecting the failed run", () => {
+    const failed = {
+      tripRef: "failed-run",
+      originAimedDepartureAt: 2_400,
+      departureAt: 2_700,
+    };
+    const replacement = {
+      tripRef: "replacement-run",
+      originAimedDepartureAt: 2_500,
+      departureAt: 2_800,
+    };
+
+    expect(withoutFailedTransferRun(null, journey())).toEqual({});
+
+    const bestOnly = withoutFailedTransferRun(
+      {
+        "500": {
+          stopId: "500",
+          best: replacement,
+          departures: null,
+        },
+      },
+      journey()
+    );
+    expect(bestOnly["500"].departures).toEqual([replacement]);
+    expect(bestOnly["500"].best).toBe(replacement);
+
+    const failedOnly = withoutFailedTransferRun(
+      {
+        "500": {
+          stopId: "500",
+          best: failed,
+          departures: null,
+        },
+        "501": {
+          stopId: "501",
+          best: null,
+          departures: null,
+        },
+      },
+      journey()
+    );
+    expect(failedOnly["500"].departures).toEqual([]);
+    expect(failedOnly["500"].best).toBeNull();
+    expect(failedOnly["501"].departures).toEqual([]);
+    expect(failedOnly["501"].best).toBeNull();
+  });
+});

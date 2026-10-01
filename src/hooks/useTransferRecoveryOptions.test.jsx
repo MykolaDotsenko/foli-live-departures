@@ -353,3 +353,123 @@ test("returning to a visible tab clears stale recovery cards until fresh evidenc
     delete document.visibilityState;
   }
 });
+
+
+test("loader returns early without a destination or usable recovery origin", async () => {
+  await expect(
+    loadTransferRecoveryOptions({
+      journey: journey(),
+      destination: null,
+      allStops,
+    })
+  ).resolves.toEqual([]);
+
+  await expect(
+    loadTransferRecoveryOptions({
+      journey: journey({
+        transferPlan: {
+          transfer: { alightStopId: "", boardStopId: "501" },
+          second: {
+            tripRef: "failed-run",
+            lineRef: "7",
+            originAimedDepartureAt: 2_400,
+          },
+        },
+      }),
+      destination,
+      allStops,
+    })
+  ).resolves.toEqual([]);
+
+  expect(mocks.loadDestinationAwareNearby).not.toHaveBeenCalled();
+});
+
+test("manual refresh is a no-op while recovery search is inactive", async () => {
+  const { result, unmount } = renderHook(() =>
+    useTransferRecoveryOptions({
+      enabled: false,
+      journey: journey(),
+      destination,
+      allStops,
+    })
+  );
+
+  await expect(result.current.refresh()).resolves.toBeNull();
+  expect(mocks.loadDestinationAwareNearby).not.toHaveBeenCalled();
+
+  unmount();
+});
+
+test.each(["AbortError", "CanceledError"])(
+  "provider %s cancellation does not become a recovery error",
+  async (name) => {
+    const error = new Error("cancelled");
+    error.name = name;
+    mocks.loadDestinationAwareNearby.mockRejectedValue(error);
+
+    const { result, unmount } = renderHook(() =>
+      useTransferRecoveryOptions({
+        journey: journey(),
+        destination,
+        allStops,
+      })
+    );
+
+    await waitFor(() =>
+      expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(1)
+    );
+
+    expect(result.current.state).toBe("loading");
+    expect(result.current.options).toEqual([]);
+
+    unmount();
+  }
+);
+
+test("scheduled refresh skips provider work while the document stays hidden", async () => {
+  vi.useFakeTimers();
+  const visibilityDescriptor = Object.getOwnPropertyDescriptor(
+    document,
+    "visibilityState"
+  );
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    get: () => "hidden",
+  });
+
+  const replacement = departure("replacement-run", 2_760, 2_500);
+  mocks.loadDestinationAwareNearby.mockResolvedValue({
+    "500": {
+      stopId: "500",
+      status: "good",
+      best: replacement,
+      departures: [replacement],
+      additionalCount: 0,
+      checkedAt: 1,
+    },
+  });
+
+  const { result, unmount } = renderHook(() =>
+    useTransferRecoveryOptions({
+      journey: journey(),
+      destination,
+      allStops,
+    })
+  );
+
+  await vi.runAllTicks();
+  await Promise.resolve();
+  expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(1);
+
+  await vi.advanceTimersByTimeAsync(30_000);
+  expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(1);
+  expect(result.current.state).toBe("ready");
+
+  unmount();
+  vi.useRealTimers();
+  if (visibilityDescriptor) {
+    Object.defineProperty(document, "visibilityState", visibilityDescriptor);
+  } else {
+    delete document.visibilityState;
+  }
+});
