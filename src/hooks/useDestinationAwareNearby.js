@@ -3,6 +3,7 @@ import { fetchStopMonitor, fetchTripStopTimes } from "../api/foliApi";
 import { classifyCatchability } from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
 import { getDepartureTime } from "../utils/time";
+import { estimateFinalWalkSeconds } from "../utils/placeDestination";
 
 /** @import { DestinationIntent, NearbyFitMap, NearbyDepartureFit, LiveState } from "../types/journey" */
 
@@ -39,6 +40,43 @@ function liveState(arrival, serverTime) {
  * @param {string} tripRef
  * @returns {number | null}
  */
+/**
+ * @param {NearbyDepartureFit} candidate
+ * @returns {number}
+ */
+function journeyArrivalRank(candidate) {
+  const journeyArrival = Number(candidate.journeyArrivalAt);
+  if (Number.isFinite(journeyArrival) && journeyArrival > 0) {
+    return journeyArrival;
+  }
+
+  const stopArrival = Number(candidate.destinationArrivalAt);
+  return Number.isFinite(stopArrival) && stopArrival > 0
+    ? stopArrival
+    : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * @param {NearbyDepartureFit} candidate
+ * @param {DestinationIntent} destination
+ */
+function applyFinalWalk(candidate, destination) {
+  const rawDistance =
+    destination.finalWalkDistanceByStop?.[candidate.destinationStopId];
+  const distance = Number(rawDistance);
+  const walkSeconds = estimateFinalWalkSeconds(rawDistance);
+
+  candidate.finalWalkDistanceM =
+    Number.isFinite(distance) && distance >= 0 ? distance : null;
+  candidate.finalWalkSecEstimate = walkSeconds;
+
+  const stopArrival = Number(candidate.destinationArrivalAt);
+  candidate.journeyArrivalAt =
+    Number.isFinite(stopArrival) && stopArrival > 0
+      ? stopArrival + (walkSeconds || 0)
+      : null;
+}
+
 function freshTargetArrival(monitor, tripRef) {
   const serverTime = Number(monitor?.serverTime);
   if (!Number.isFinite(serverTime) || serverTime <= 0) return null;
@@ -78,12 +116,8 @@ function chooseBestDeparture(candidates) {
   const usable = candidates
     .filter((candidate) => candidate.catchability !== "too-late")
     .sort((a, b) => {
-      const left = Number.isFinite(a.destinationArrivalAt)
-        ? Number(a.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
-      const right = Number.isFinite(b.destinationArrivalAt)
-        ? Number(b.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
+      const left = journeyArrivalRank(a);
+      const right = journeyArrivalRank(b);
       return left - right || a.departureAt - b.departureAt;
     });
 
@@ -98,10 +132,10 @@ function chooseBestDeparture(candidates) {
     (candidate) =>
       candidate.catchability !== "tight" &&
       candidate.catchability !== "unknown" &&
-      Number.isFinite(candidate.destinationArrivalAt) &&
-      Number.isFinite(first.destinationArrivalAt) &&
-      Number(candidate.destinationArrivalAt) -
-        Number(first.destinationArrivalAt) <=
+      Number.isFinite(journeyArrivalRank(candidate)) &&
+      Number.isFinite(journeyArrivalRank(first)) &&
+      journeyArrivalRank(candidate) -
+        journeyArrivalRank(first) <=
         5 * 60
   );
 
@@ -287,6 +321,10 @@ export async function loadDestinationAwareNearby({
       });
     }
 
+    compatible.forEach((candidate) =>
+      applyFinalWalk(candidate, destination)
+    );
+
     await Promise.all(
       compatible.map(async (candidate) => {
         const destinationMonitor = await targetMonitor(
@@ -305,6 +343,7 @@ export async function loadDestinationAwareNearby({
           candidate.destinationArrivalAt = liveArrival;
           candidate.liveState = "live";
         }
+        applyFinalWalk(candidate, destination);
       })
     );
 
@@ -336,8 +375,8 @@ export async function loadDestinationAwareNearby({
         .slice()
         .sort(
           (left, right) =>
-            (Number(left.destinationArrivalAt) || Number.POSITIVE_INFINITY) -
-              (Number(right.destinationArrivalAt) || Number.POSITIVE_INFINITY) ||
+            journeyArrivalRank(left) -
+              journeyArrivalRank(right) ||
             left.departureAt - right.departureAt
         ),
       additionalCount: Math.max(
