@@ -19,11 +19,14 @@ import {
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
 import { rankDestinationStops } from "../utils/journeyRanking";
+import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
+import JourneyOptions from "./JourneyOptions";
 
 const NEARBY_STOP_LIMIT = 6;
+const EXPANDED_NEARBY_STOP_LIMIT = 12;
 
 function shownDestinationLabel(destination) {
   if (!destination) return "";
@@ -167,6 +170,7 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
+  const [searchExpanded, setSearchExpanded] = useState(false);
   const rankingRef = useRef({ destinationId: "", order: [] });
 
   const activeStopIdRef = useRef(activeStopId);
@@ -176,10 +180,18 @@ function NearbyStops({
   const geolocationSupported =
     typeof navigator !== "undefined" && "geolocation" in navigator;
 
-  const nearbyStops = useMemo(
+  const baseNearbyStops = useMemo(
     () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
     [position, stops]
   );
+  const expandedNearbyStops = useMemo(
+    () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
+    [position, stops]
+  );
+  const nearbyStops =
+    destination && searchExpanded
+      ? expandedNearbyStops
+      : baseNearbyStops;
 
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
@@ -188,6 +200,49 @@ function NearbyStops({
   });
 
   const destinationLabel = shownDestinationLabel(destination);
+
+  useEffect(() => {
+    setSearchExpanded(false);
+  }, [destination?.id]);
+
+  const hasViableBaseOption = baseNearbyStops.some((stop) =>
+    ["good", "tight"].includes(fitsByStop[stop.id]?.status)
+  );
+
+  useEffect(() => {
+    if (
+      !destination ||
+      !position ||
+      searchExpanded ||
+      fitState !== "ready" ||
+      expandedNearbyStops.length <= baseNearbyStops.length ||
+      hasViableBaseOption
+    ) {
+      return;
+    }
+
+    setSearchExpanded(true);
+  }, [
+    baseNearbyStops.length,
+    destination,
+    expandedNearbyStops.length,
+    fitState,
+    hasViableBaseOption,
+    position,
+    searchExpanded,
+  ]);
+
+  const directJourneyOptions = useMemo(
+    () =>
+      destination && fitState === "ready"
+        ? selectDirectJourneyOptions({
+            stops: nearbyStops,
+            fitsByStop,
+          })
+        : [],
+    [destination, fitState, fitsByStop, nearbyStops]
+  );
+
   const destinationSortedStops = useMemo(() => {
     const previousOrder =
       rankingRef.current.destinationId === destination?.id
@@ -248,6 +303,7 @@ function NearbyStops({
 
     setStatus("locating");
     setError("");
+    setSearchExpanded(false);
     const stopIdAtTap = activeStopIdRef.current;
     const searchEditsAtTap = searchEdits();
 
@@ -440,10 +496,28 @@ function NearbyStops({
             {destination && fitState === "loading" && (
               <span>{t("Checking routes…")}</span>
             )}
+            {destination && searchExpanded && fitState === "loading" && (
+              <span>{t("Checking a little farther…")}</span>
+            )}
+            {destination && searchExpanded && fitState === "ready" && (
+              <span>
+                {t("Checked {count} nearby stops", {
+                  count: nearbyStops.length,
+                })}
+              </span>
+            )}
           </div>
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
+          )}
+
+          {destination && directJourneyOptions.length > 0 && (
+            <JourneyOptions
+              options={directJourneyOptions}
+              destinationLabel={destinationLabel}
+              onOpenStop={onSelect}
+            />
           )}
 
           {nearbyStops.length > 0 && (
