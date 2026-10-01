@@ -269,6 +269,8 @@ function App() {
           aimeddeparturetime:
             selectedJourney.aimedDepartureAt ||
             selectedJourney.departureAt,
+          originaimeddeparturetime:
+            selectedJourney.originAimedDepartureAt || undefined,
         }
       : null);
   const selectedJourneyCancelled =
