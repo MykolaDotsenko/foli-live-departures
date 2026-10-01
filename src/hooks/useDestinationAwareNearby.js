@@ -8,6 +8,7 @@ import { getDepartureTime } from "../utils/time";
 
 const REFRESH_MS = 30_000;
 const MAX_DEPARTURES_PER_STOP = 16;
+const MAX_TRIP_LOOKUPS = 96;
 const TRIP_BATCH_SIZE = 8;
 
 /** @param {AbortSignal | undefined} signal */
@@ -130,17 +131,29 @@ export async function loadDestinationAwareNearby({
   );
   throwIfAborted(signal);
 
+  // Round-robin across stops so an expanded dense-hub search does not let
+  // the nearest platforms consume the entire trip-detail budget. The cap is
+  // the same order of work as the original six-stop P0 worst case.
   const uniqueTripIds = new Set();
-  monitorResults.forEach((result) => {
-    if (result.status !== "fulfilled") return;
-    for (const arrival of result.value.arrivals.slice(
-      0,
-      MAX_DEPARTURES_PER_STOP
-    )) {
+  for (
+    let departureIndex = 0;
+    departureIndex < MAX_DEPARTURES_PER_STOP &&
+    uniqueTripIds.size < MAX_TRIP_LOOKUPS;
+    departureIndex += 1
+  ) {
+    for (const result of monitorResults) {
+      if (
+        result.status !== "fulfilled" ||
+        uniqueTripIds.size >= MAX_TRIP_LOOKUPS
+      ) {
+        continue;
+      }
+
+      const arrival = result.value.arrivals[departureIndex];
       const tripId = String(arrival?.tripref || "");
       if (tripId) uniqueTripIds.add(tripId);
     }
-  });
+  }
 
   /** @type {Map<string, import("../types/foli").TripStopTime[] | null>} */
   const tripTimes = new Map();
@@ -187,6 +200,7 @@ export async function loadDestinationAwareNearby({
         stopId: String(stop.id),
         status: "unavailable",
         best: null,
+        departures: [],
         additionalCount: 0,
         checkedAt: Date.now(),
       };
@@ -308,6 +322,14 @@ export async function loadDestinationAwareNearby({
       stopId: String(stop.id),
       status,
       best,
+      departures: compatible
+        .slice()
+        .sort(
+          (left, right) =>
+            (Number(left.destinationArrivalAt) || Number.POSITIVE_INFINITY) -
+              (Number(right.destinationArrivalAt) || Number.POSITIVE_INFINITY) ||
+            left.departureAt - right.departureAt
+        ),
       additionalCount: Math.max(
         0,
         compatible.filter((candidate) => candidate !== best).length

@@ -19,11 +19,14 @@ import {
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
 import { rankDestinationStops } from "../utils/journeyRanking";
+import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
+import JourneyOptions from "./JourneyOptions";
 
 const NEARBY_STOP_LIMIT = 6;
+const EXPANDED_NEARBY_STOP_LIMIT = 12;
 
 function shownDestinationLabel(destination) {
   if (!destination) return "";
@@ -167,6 +170,7 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
+  const [expandedDestinationId, setExpandedDestinationId] = useState("");
   const rankingRef = useRef({ destinationId: "", order: [] });
 
   const activeStopIdRef = useRef(activeStopId);
@@ -176,10 +180,20 @@ function NearbyStops({
   const geolocationSupported =
     typeof navigator !== "undefined" && "geolocation" in navigator;
 
-  const nearbyStops = useMemo(
+  const baseNearbyStops = useMemo(
     () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
     [position, stops]
   );
+  const expandedNearbyStops = useMemo(
+    () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
+    [position, stops]
+  );
+  const searchExpanded =
+    Boolean(destination?.id) && expandedDestinationId === destination.id;
+  const nearbyStops =
+    destination && searchExpanded
+      ? expandedNearbyStops
+      : baseNearbyStops;
 
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
@@ -188,6 +202,58 @@ function NearbyStops({
   });
 
   const destinationLabel = shownDestinationLabel(destination);
+
+  const baseDirectJourneyOptions = useMemo(
+    () =>
+      destination && fitState === "ready" && !searchExpanded
+        ? selectDirectJourneyOptions({
+            stops: baseNearbyStops,
+            fitsByStop,
+          })
+        : [],
+    [
+      baseNearbyStops,
+      destination,
+      fitState,
+      fitsByStop,
+      searchExpanded,
+    ]
+  );
+
+  useEffect(() => {
+    if (
+      !destination ||
+      !position ||
+      searchExpanded ||
+      fitState !== "ready" ||
+      expandedNearbyStops.length <= baseNearbyStops.length ||
+      baseDirectJourneyOptions.length >= 2
+    ) {
+      return;
+    }
+
+    setExpandedDestinationId(destination.id);
+  }, [
+    baseDirectJourneyOptions.length,
+    baseNearbyStops.length,
+    destination,
+    expandedNearbyStops.length,
+    fitState,
+    position,
+    searchExpanded,
+  ]);
+
+  const directJourneyOptions = useMemo(
+    () =>
+      destination && fitState === "ready"
+        ? selectDirectJourneyOptions({
+            stops: nearbyStops,
+            fitsByStop,
+          })
+        : [],
+    [destination, fitState, fitsByStop, nearbyStops]
+  );
+
   const destinationSortedStops = useMemo(() => {
     const previousOrder =
       rankingRef.current.destinationId === destination?.id
@@ -248,6 +314,7 @@ function NearbyStops({
 
     setStatus("locating");
     setError("");
+    setExpandedDestinationId("");
     const stopIdAtTap = activeStopIdRef.current;
     const searchEditsAtTap = searchEdits();
 
@@ -380,29 +447,6 @@ function NearbyStops({
         </button>
       </div>
 
-      {destination && position && (
-        <div
-          className={styles.sortToggle}
-          role="group"
-          aria-label={t("Nearby stop sorting")}
-        >
-          <button
-            type="button"
-            aria-pressed={sortMode === "best"}
-            onClick={() => setSortMode("best")}
-          >
-            {t("Best for {destination}", { destination: destinationLabel })}
-          </button>
-          <button
-            type="button"
-            aria-pressed={sortMode === "nearest"}
-            onClick={() => setSortMode("nearest")}
-          >
-            {t("Nearest")}
-          </button>
-        </div>
-      )}
-
       {!hasStopCoordinates && (
         <p className={styles.meta} role="status">
           {locationDataLoading
@@ -437,13 +481,56 @@ function NearbyStops({
                 })}
               </span>
             )}
-            {destination && fitState === "loading" && (
+            {destination && fitState === "loading" && !searchExpanded && (
               <span>{t("Checking routes…")}</span>
+            )}
+            {destination && searchExpanded && fitState === "loading" && (
+              <span>{t("Checking a little farther…")}</span>
+            )}
+            {destination && searchExpanded && fitState === "ready" && (
+              <span>
+                {t("Checked {count} nearby stops", {
+                  count: nearbyStops.length,
+                })}
+              </span>
             )}
           </div>
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
+          )}
+
+          {destination && directJourneyOptions.length > 0 && (
+            <JourneyOptions
+              options={directJourneyOptions}
+              destinationLabel={destinationLabel}
+              onOpenStop={onSelect}
+            />
+          )}
+
+          {destination && (
+            <div
+              className={styles.sortToggle}
+              role="group"
+              aria-label={t("Nearby stop sorting")}
+            >
+              <button
+                type="button"
+                aria-pressed={sortMode === "best"}
+                onClick={() => setSortMode("best")}
+              >
+                {t("Best for {destination}", {
+                  destination: destinationLabel,
+                })}
+              </button>
+              <button
+                type="button"
+                aria-pressed={sortMode === "nearest"}
+                onClick={() => setSortMode("nearest")}
+              >
+                {t("Nearest")}
+              </button>
+            </div>
           )}
 
           {nearbyStops.length > 0 && (

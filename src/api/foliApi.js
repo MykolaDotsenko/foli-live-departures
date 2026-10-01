@@ -86,8 +86,11 @@ const STOP_SCHEDULE_MAX_TRIPS = 1024;
 const tripDetailsCache = createBoundedCache(
   Math.ceil(STOP_SCHEDULE_MAX_TRIPS * 1.5)
 );
+// One expanded Journey Assistant search is deliberately capped at 96 unique
+// trips. Keep one full search plus headroom for the open board/Ride Mode so
+// static stop-time data does not churn out of the LRU every 30-second refresh.
 /** @type {BoundedCache<string, TripStopTime[]>} */
-const tripStopTimesCache = createBoundedCache(60);
+const tripStopTimesCache = createBoundedCache(128);
 /** @type {BoundedCache<string, string[]>} */
 const stopBoardingTripsCache = createBoundedCache(20);
 /** @type {BoundedCache<string, RouteTrip[]>} */
