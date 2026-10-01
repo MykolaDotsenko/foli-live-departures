@@ -101,6 +101,30 @@ export default {
   "Use destination": "Käytä määränpäätä",
   "Choose Home, Work, School or a Föli stop.":
     "Valitse Koti, Työ, Koulu tai Fölin pysäkki.",
+  "Stop, address or place": "Pysäkki, osoite tai paikka",
+  "e.g. Prisma Itäharju or Turun linna":
+    "esim. Prisma Itäharju tai Turun linna",
+  Search: "Hae",
+  "Searching…": "Haetaan…",
+  "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
+  "Stops are searched locally. Address and place search runs only when you press Search.":
+    "Pysäkit haetaan laitteelta. Osoite- ja paikkahaku käynnistyy vain, kun painat Hae.",
+  "Places and addresses": "Paikat ja osoitteet",
+  "Place search data": "Paikkahaun tiedot",
+  "Place search needs an internet connection. Stop search still works.":
+    "Paikkahaku tarvitsee internetyhteyden. Pysäkkihaku toimii edelleen.",
+  "Place search is temporarily unavailable. Stop search still works.":
+    "Paikkahaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii edelleen.",
+  "Choose a stop from the suggestions, or try a more specific address or place.":
+    "Valitse pysäkki ehdotuksista tai kokeile tarkempaa osoitetta tai paikkaa.",
+  "No matching stop, address or place was found.":
+    "Hakua vastaavaa pysäkkiä, osoitetta tai paikkaa ei löytynyt.",
+  "That place is outside Föli’s service area.":
+    "Paikka on Fölin palvelualueen ulkopuolella.",
+  "No Föli stop is close enough to use for that place.":
+    "Paikan lähellä ei ole riittävän lähellä olevaa Fölin pysäkkiä.",
+  "That place could not be used as a destination.":
+    "Paikkaa ei voitu käyttää määränpäänä.",
   "Enter a stop name or number.": "Kirjoita pysäkin nimi tai numero.",
   "More than one stop has this name. Choose one from the suggestions.":
     "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
