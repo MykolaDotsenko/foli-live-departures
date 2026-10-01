@@ -722,7 +722,7 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation, explicit automatic direct-replacement recovery and next-action transfer guidance are implemented through PR-C.**
+**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation, explicit automatic direct-replacement recovery and next-action transfer guidance are implemented through PR #120.**
 
 Implemented:
 - transfer topology;
