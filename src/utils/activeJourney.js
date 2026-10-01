@@ -183,7 +183,53 @@ export function observeActiveJourney(journey, observation) {
   const receivedAtMs = finitePositive(observation?.receivedAtMs);
   const referenceTimeSec = finitePositive(observation?.referenceTimeSec);
 
+  // A cancellation alert is stronger than disappearance from the board and
+  // remains actionable even when the cancelled SIRI row has already gone.
+  if (observation?.cancelled === true) {
+    const updatedDeparture =
+      arrival && referenceTimeSec !== null
+        ? finitePositive(getDepartureTime(arrival, referenceTimeSec)) ??
+          journey.departureAt
+        : journey.departureAt;
+    const observedPlanned = arrival
+      ? finitePositive(arrival.aimeddeparturetime) ??
+        finitePositive(arrival.aimedarrivaltime) ??
+        journey.aimedDepartureAt
+      : journey.aimedDepartureAt;
+    const nextLastSeenAt =
+      receivedAtMs === null
+        ? journey.lastSeenAt
+        : Math.max(journey.lastSeenAt, receivedAtMs);
+
+    if (
+      journey.departureAt === updatedDeparture &&
+      journey.aimedDepartureAt === observedPlanned &&
+      journey.phase === "recovery" &&
+      journey.recoveryReason === "cancelled" &&
+      journey.lastSeenAt === nextLastSeenAt
+    ) {
+      return journey;
+    }
+
+    return {
+      ...journey,
+      departureAt: updatedDeparture,
+      aimedDepartureAt: observedPlanned,
+      phase: "recovery",
+      recoveryReason: "cancelled",
+      lastSeenAt: nextLastSeenAt,
+    };
+  }
+
   if (arrival) {
+    // The board can initially be a cached snapshot from before the passenger
+    // selected this route. It may be useful to display, but it must not
+    // overwrite the selected journey or undo recovery. Wait for a board
+    // response received after selection.
+    if (receivedAtMs === null || receivedAtMs <= journey.selectedAt) {
+      return journey;
+    }
+
     const updatedDeparture =
       finitePositive(getDepartureTime(arrival, referenceTimeSec)) ??
       journey.departureAt;
@@ -192,32 +238,7 @@ export function observeActiveJourney(journey, observation) {
       finitePositive(arrival.aimedarrivaltime) ??
       journey.aimedDepartureAt;
 
-    const nextLastSeenAt =
-      receivedAtMs === null
-        ? journey.lastSeenAt
-        : Math.max(journey.lastSeenAt, receivedAtMs);
-
-    if (observation.cancelled === true) {
-      if (
-        journey.departureAt === updatedDeparture &&
-        journey.aimedDepartureAt === observedPlanned &&
-        journey.phase === "recovery" &&
-        journey.recoveryReason === "cancelled" &&
-        journey.lastSeenAt === nextLastSeenAt
-      ) {
-        return journey;
-      }
-
-      return {
-        ...journey,
-        departureAt: updatedDeparture,
-        aimedDepartureAt: observedPlanned,
-        phase: "recovery",
-        recoveryReason: "cancelled",
-        lastSeenAt: nextLastSeenAt,
-      };
-    }
-
+    const nextLastSeenAt = Math.max(journey.lastSeenAt, receivedAtMs);
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
       : "walking-to-stop";
