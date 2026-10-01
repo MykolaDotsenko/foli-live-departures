@@ -78,9 +78,7 @@ test("builds a geocoded destination without persisting it", () => {
         secondaryLabel: "Turku",
         lat: 60.4518,
         lon: 22.2666,
-        category: "shop",
-        provider: "nominatim",
-      },
+          },
       [
         { id: "100", name: "Near", lat: 60.4519, lon: 22.2666 },
         { id: "200", name: "Backup", lat: 60.453, lon: 22.2666 },
@@ -96,7 +94,6 @@ test("builds a geocoded destination without persisting it", () => {
     label: "Prisma",
     primaryStopId: "100",
     acceptableStopIds: ["100", "200"],
-    placeProvider: "nominatim",
   });
 });
 
@@ -116,9 +113,7 @@ test("keeps the current destination when a geocoded place is unusable", () => {
         secondaryLabel: "",
         lat: 62,
         lon: 24,
-        category: "place",
-        provider: "nominatim",
-      },
+        },
       [{ id: "4", name: "Turun linna", lat: 60.4355, lon: 22.2345 }],
       {
         type: "MultiPolygon",
