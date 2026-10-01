@@ -10,12 +10,10 @@ import { resetLanguageForTests } from "../i18n";
 
 const api = vi.hoisted(() => ({
   searchPlaces: vi.fn(),
-  placeSearchViewbox: vi.fn(() => "22,61,23,60"),
 }));
 
 vi.mock("../api/placeSearch", () => ({
   searchPlaces: api.searchPlaces,
-  placeSearchViewbox: api.placeSearchViewbox,
 }));
 
 import JourneySearch from "./JourneySearch";
@@ -44,7 +42,6 @@ const prisma = {
 beforeEach(() => {
   resetLanguageForTests("en");
   api.searchPlaces.mockReset().mockResolvedValue([]);
-  api.placeSearchViewbox.mockReset().mockReturnValue("22,61,23,60");
 });
 
 function renderSearch(overrides = {}) {
@@ -137,7 +134,6 @@ test("address or POI lookup runs only after explicit Search", async () => {
       "Prisma Itäharju",
       expect.objectContaining({
         language: "en",
-        viewbox: "22,61,23,60",
         signal: expect.any(globalThis.AbortSignal),
       })
     )
