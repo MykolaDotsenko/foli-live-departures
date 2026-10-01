@@ -15,27 +15,27 @@ const walk = {
   distanceMeters: 140,
 };
 
-test("shows the final destination, approximate distance and walking handoff", () => {
+test("shows destination, exit context and walking handoff", () => {
   render(<FinalWalk walk={walk} online onDone={() => {}} />);
 
   expect(
     screen.getByRole("heading", { name: "Walk to Prisma Itäharju" })
   ).toBeInTheDocument();
-  expect(screen.getByText("About 140 m from your exit stop.")).toBeInTheDocument();
+  expect(screen.getByText("Prisma stop · 140 m")).toBeInTheDocument();
 
-  const link = screen.getByRole("link", { name: "Open walking directions" });
+  const link = screen.getByRole("link", { name: "Walk there" });
   expect(link).toHaveAttribute("href", expect.stringContaining("travelmode=walking"));
   expect(link).toHaveAttribute("href", expect.stringContaining("60.4518"));
 });
 
-test("keeps final-walk guidance useful offline without a dead map link", () => {
+test("stays useful offline without a dead map link", () => {
   render(<FinalWalk walk={walk} online={false} onDone={() => {}} />);
 
   expect(
-    screen.getByText("Walking directions return when you’re online.")
+    screen.getByText("Walking link unavailable offline.")
   ).toBeInTheDocument();
   expect(
-    screen.queryByRole("link", { name: "Open walking directions" })
+    screen.queryByRole("link", { name: "Walk there" })
   ).not.toBeInTheDocument();
 });
 
