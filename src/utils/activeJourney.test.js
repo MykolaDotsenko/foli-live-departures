@@ -117,6 +117,19 @@ describe("active journey transitions", () => {
         }),
         journey
       )
+    ).toBe(false);
+
+    expect(
+      directOptionMatchesActiveJourney(
+        option({
+          departure: {
+            ...option().departure,
+            aimedDepartureAt: 1_485,
+            originAimedDepartureAt: 905,
+          },
+        }),
+        journey
+      )
     ).toBe(true);
   });
 
