@@ -123,7 +123,7 @@ GEO_KEEPALIVE_PID=$!
 
 run_webview_e2e() {
   local attempt="$1"
-  node scripts/android-webview-e2e.mjs \
+  node scripts/android-webview-e2e.mjs 2>&1 \
     | tee "artifacts/android-e2e/webview-e2e-attempt-${attempt}.log"
 }
 
