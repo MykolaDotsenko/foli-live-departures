@@ -11,6 +11,7 @@ on:
       - "index.html"
       - "package.json"
       - "package-lock.json"
+      - "capacitor.config.json"
       - "vite.config.*"
 
 permissions:

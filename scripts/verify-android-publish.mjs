@@ -16,6 +16,17 @@ const failures = [];
 if (!/^permissions:\n  contents: read$/m.test(buildWorkflow)) {
   failures.push("Android APK build workflow must stay read-only.");
 }
+for (const [name, workflow] of [
+  ["Android APK build", buildWorkflow],
+  ["Android E2E", e2eWorkflow],
+]) {
+  if (!workflow.includes('      - "capacitor.config.json"')) {
+    failures.push(
+      `${name} workflow must rerun when canonical capacitor.config.json changes.`
+    );
+  }
+}
+
 if (buildWorkflow.includes("gh release create")) {
   failures.push(
     "Android APK build workflow must not publish directly; publication must follow E2E."
