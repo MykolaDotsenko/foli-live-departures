@@ -13,6 +13,12 @@ function phaseTitle(journey) {
   return t("Walk to {stop}", { stop: journey.stopName });
 }
 
+function destinationText(journey) {
+  return journey.destinationKind === "saved-place"
+    ? t(journey.destinationLabel)
+    : journey.destinationLabel;
+}
+
 function recoveryText(journey) {
   return journey.recoveryReason === "cancelled"
     ? t("Your selected bus was cancelled.")
@@ -50,7 +56,7 @@ export default function ActiveJourney({
         </div>
         <span className={styles.destination}>
           {t("To {destination}", {
-            destination: journey.destinationLabel,
+            destination: destinationText(journey),
           })}
         </span>
       </div>
