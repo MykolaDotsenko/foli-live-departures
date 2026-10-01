@@ -40,16 +40,63 @@ function liveState(arrival, serverTime) {
  * @param {string} tripRef
  * @returns {number | null}
  */
-function freshTargetArrival(monitor, tripRef) {
+function freshTargetArrival(monitor, candidate) {
   const serverTime = Number(monitor?.serverTime);
   if (!Number.isFinite(serverTime) || serverTime <= 0) return null;
 
-  const row = (Array.isArray(monitor?.arrivals) ? monitor.arrivals : []).find(
-    (arrival) =>
-      String(arrival?.tripref || "") === String(tripRef) &&
-      arrival?.monitored === true
-  );
-  if (!row) return null;
+  const plannedTarget =
+    Number.isFinite(Number(candidate?.aimedDepartureAt)) &&
+    Number.isFinite(Number(candidate?.rideDurationSec))
+      ? Number(candidate.aimedDepartureAt) + Number(candidate.rideDurationSec)
+      : null;
+  const plannedOrigin = Number(candidate?.originAimedDepartureAt);
+
+  const matches = (Array.isArray(monitor?.arrivals) ? monitor.arrivals : [])
+    .filter(
+      (row) =>
+        String(row?.tripref || "") === String(candidate?.tripRef || "") &&
+        row?.monitored === true
+    )
+    .filter((row) => {
+      const rowOrigin = Number(row?.originaimeddeparturetime);
+      if (
+        Number.isFinite(plannedOrigin) &&
+        plannedOrigin > 0 &&
+        Number.isFinite(rowOrigin) &&
+        rowOrigin > 0 &&
+        Math.abs(rowOrigin - plannedOrigin) > 60
+      ) {
+        return false;
+      }
+
+      const rowTarget = Number(row?.aimedarrivaltime ?? row?.aimeddeparturetime);
+      return !(
+        plannedTarget !== null &&
+        Number.isFinite(rowTarget) &&
+        rowTarget > 0 &&
+        Math.abs(rowTarget - plannedTarget) > 90
+      );
+    });
+
+  if (matches.length === 0) return null;
+
+  let row = matches[0];
+  if (matches.length > 1) {
+    if (plannedTarget === null) return null;
+    const ranked = matches
+      .map((item) => ({
+        item,
+        delta: Math.abs(
+          Number(item?.aimedarrivaltime ?? item?.aimeddeparturetime) -
+            plannedTarget
+        ),
+      }))
+      .filter(({ delta }) => Number.isFinite(delta))
+      .sort((a, b) => a.delta - b.delta);
+    if (ranked.length === 0 || ranked[0].delta > 90) return null;
+    if (ranked[1] && ranked[1].delta === ranked[0].delta) return null;
+    row = ranked[0].item;
+  }
 
   const recordedAt = Number(row.recordedattime);
   if (
@@ -337,7 +384,7 @@ export async function loadDestinationAwareNearby({
 
         const liveArrival = freshTargetArrival(
           destinationMonitor,
-          candidate.tripRef
+          candidate
         );
         if (
           liveArrival !== null &&
