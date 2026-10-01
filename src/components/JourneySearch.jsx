@@ -150,6 +150,11 @@ export default function JourneySearch({
       return;
     }
 
+    if (exact.length === 0 && matches.length === 1) {
+      chooseStop(matches[0]);
+      return;
+    }
+
     setFocused(matches.length > 0);
 
     if (coordinatesStatus !== "ready") {
