@@ -74,6 +74,11 @@ export interface RideSignals {
   previousPassedConfirmed?: boolean;
   targetAtStop?: boolean;
   targetPassedConfirmed?: boolean;
+  /**
+   * A distinct matched live target observation arrived after MISSED was
+   * entered. This is the only evidence allowed to reopen a false miss.
+   */
+  liveTargetObservedAfterMiss?: boolean;
   /** False while the timetable alone may not raise the stage. */
   scheduleMayRaise?: boolean;
   /** The reason and confidence kept when the stage is held. */
