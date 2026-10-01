@@ -591,6 +591,9 @@ export function observeActiveJourney(journey, observation) {
       firstTransferLeg && finitePositive(firstTransferLeg.arrivalAt) !== null
         ? Number(firstTransferLeg.arrivalAt) + departureShift
         : null;
+    /** @type {import("../types/journey").LiveState} */
+    const firstLegLiveState =
+      arrival.monitored === true ? "live" : "schedule";
     const nextTransferPlan =
       firstTransferLeg && journey.transferPlan
         ? {
@@ -601,7 +604,7 @@ export function observeActiveJourney(journey, observation) {
               aimedDepartureAt: observedPlanned,
               arrivalAt:
                 shiftedFirstArrival ?? firstTransferLeg.arrivalAt,
-              liveState: arrival.monitored === true ? "live" : "schedule",
+              liveState: firstLegLiveState,
             },
           }
         : journey.transferPlan;
