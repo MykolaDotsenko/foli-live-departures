@@ -882,7 +882,7 @@ function App() {
             <dt>{t("What stays on this phone")}</dt>
             <dd>
               {t(
-                "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, and a ride in progress for up to six hours. Clearing this site’s data removes all of it."
+                "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, a ride in progress for up to six hours, and recent place-search results for this browser session only. Clearing this site’s data removes all of it."
               )}
             </dd>
             <dt>{t("What leaves the phone")}</dt>
@@ -895,6 +895,11 @@ function App() {
             <dd>
               {t(
                 "Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved."
+              )}
+            </dd>
+            <dd>
+              {t(
+                "If you press Search destination for an address or place, that text is sent to OpenStreetMap Nominatim, which sees your IP address and the search text. Nothing is sent there while you are only typing or choosing a Föli stop."
               )}
             </dd>
             <dd>
