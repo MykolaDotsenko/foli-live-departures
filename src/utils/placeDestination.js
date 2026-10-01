@@ -6,6 +6,23 @@ const MAX_DESTINATION_STOPS = 6;
 const ABSOLUTE_MAX_WALK_METERS = 1_600;
 const EXTRA_RADIUS_METERS = 650;
 const MIN_SEARCH_RADIUS_METERS = 450;
+const FINAL_WALK_DETOUR_FACTOR = 1.25;
+const FINAL_WALK_SPEED_MPS = 1.2;
+
+/**
+ * Ranking-only estimate. It deliberately inflates straight-line distance and
+ * is never presented as turn-by-turn walking time.
+ *
+ * @param {unknown} distanceM
+ * @returns {number | null}
+ */
+export function estimateFinalWalkSeconds(distanceM) {
+  const distance = Number(distanceM);
+  if (!Number.isFinite(distance) || distance < 0) return null;
+  return Math.ceil(
+    (distance * FINAL_WALK_DETOUR_FACTOR) / FINAL_WALK_SPEED_MPS
+  );
+}
 
 /**
  * @param {readonly any[]} stops
