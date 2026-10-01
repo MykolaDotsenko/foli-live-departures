@@ -44,7 +44,6 @@ test("builds a geocoded destination with stop walking distances", () => {
     acceptableStopIds: ["100", "200", "300"],
     lat: 60.4518,
     lon: 22.2666,
-    placeProvider: "nominatim",
   });
   expect(result.destination.destinationStopDistances["100"]).toBeLessThan(20);
 });
