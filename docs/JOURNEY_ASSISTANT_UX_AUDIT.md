@@ -935,3 +935,27 @@ and understand, without transport expertise:
 At the same time, an experienced passenger who only wants a departure board should still be able to use the app almost exactly as quickly as today.
 
 **The new product must be more capable without feeling heavier.**
+
+
+### One-transfer journey UX — 2026-10-01
+
+Status: implemented as a bounded fallback after direct journey search.
+
+Passenger sequence:
+1. direct journey options are checked first;
+2. when no meaningful direct option exists, the app checks conservative one-transfer options;
+3. cards show both line numbers, transfer stop/platform, walking allowance, total walking and transfer-risk wording;
+4. selecting one locks the concrete first and second trips;
+5. Active Journey shows leg 1 of 2;
+6. Ride Mode controls the first boarded leg to the selected transfer occurrence;
+7. only authoritative arrival at that occurrence may advance the journey to leg 2;
+8. premature Ride Mode termination enters recovery instead of silently continuing;
+9. leg 2 repeats the existing explicit at-stop / selected-departure / Ride Mode handoff;
+10. final walking guidance is possible only after the final leg.
+
+UX constraints:
+- never hide the full nearby-stop list;
+- never present a broken/unknown transfer as a recommendation;
+- never imply that timetable-only second-leg timing is live;
+- never auto-switch the committed transfer itinerary;
+- transfer recovery must return the passenger to fresh choices.

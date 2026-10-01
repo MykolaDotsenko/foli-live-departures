@@ -1,0 +1,187 @@
+.wrapper {
+  display: grid;
+  gap: 9px;
+  padding: 11px;
+  border: 1px solid #c9d9e7;
+  border-radius: 14px;
+  background: #f6f9fc;
+}
+
+.headingRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.kicker {
+  margin: 0 0 2px;
+  color: #315f87;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.headingRow h3 {
+  margin: 0;
+  color: #233a4d;
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.count {
+  flex: 0 0 auto;
+  color: #61717f;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.card {
+  display: grid;
+  min-width: 0;
+  min-height: 154px;
+  align-content: start;
+  gap: 4px;
+  padding: 11px;
+  border: 1px solid #becfdd;
+  border-radius: 12px;
+  background: #fff;
+  color: #263d4e;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.card:hover {
+  border-color: #7595af;
+  background: #fbfdff;
+}
+
+.card[data-risk="tight"] {
+  border-color: #d4ad6f;
+}
+
+.card:focus-visible {
+  outline: 3px solid #007985;
+  outline-offset: 2px;
+}
+
+.badge {
+  width: fit-content;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #e8f0f7;
+  color: #315f87;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+
+.arrival {
+  color: #18384e;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.route,
+.transfer,
+.meta,
+.risk,
+.finalWalk {
+  overflow-wrap: anywhere;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.route {
+  color: #304d62;
+}
+
+.transfer,
+.meta,
+.finalWalk {
+  color: #566c7d;
+  font-weight: 700;
+}
+
+.risk {
+  margin-top: auto;
+  padding-top: 4px;
+  color: #2e6559;
+  font-weight: 850;
+}
+
+.card[data-risk="tight"] .risk {
+  color: #805515;
+}
+
+.note {
+  margin: 0;
+  color: #60717e;
+  font-size: 0.7rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    min-height: auto;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .wrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+  }
+
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .badge,
+  :root[data-theme="dark"] .risk {
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .headingRow h3,
+  :root[data-theme="dark"] .arrival,
+  :root[data-theme="dark"] .route {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .count,
+  :root[data-theme="dark"] .transfer,
+  :root[data-theme="dark"] .meta,
+  :root[data-theme="dark"] .finalWalk,
+  :root[data-theme="dark"] .note {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .card {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+  }
+
+  :root[data-theme="dark"] .card:hover {
+    border-color: var(--dm-accent);
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .badge {
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .card[data-risk="tight"] {
+    border-color: #806540;
+  }
+}

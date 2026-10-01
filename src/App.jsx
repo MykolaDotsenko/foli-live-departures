@@ -29,7 +29,10 @@ import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
-import { arrivalMatchesActiveJourney } from "./utils/activeJourney";
+import {
+  arrivalMatchesActiveJourney,
+  transferJourneyForRideSelection,
+} from "./utils/activeJourney";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
@@ -73,7 +76,7 @@ function selectedJourneyDepartureAction() {
 
 function firstJourneyOption() {
   const element = document.querySelector(
-    '[aria-labelledby="direct-journey-options-title"] button'
+    '[aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
   );
   return element instanceof globalThis.HTMLElement ? element : null;
 }
@@ -158,9 +161,13 @@ function App() {
   const journey = useDestinationIntent();
   const [finalWalk, setFinalWalk] = useState(null);
   const pendingFinalWalkRef = useRef(null);
+  const pendingTransferJourneyRef = useRef(null);
   const {
     journey: selectedJourney,
     selectDirectJourney,
+    selectTransferJourney,
+    continueTransferAfterRide,
+    recoverTransferAfterRide,
     confirmAtStop,
     clearJourney,
     observeStopFeed,
@@ -457,13 +464,20 @@ function App() {
   // top of the page. Focus goes to its heading, so a screen reader hears
   // "No need to watch for your stop" instead of nothing.
   const startRide = (config) => {
-    const nextFinalWalk = finalWalkFromRideSelection({
-      journey: selectedJourney,
-      destination: journey.destination,
-      rideConfig: config,
-    });
+    const pendingTransfer = transferJourneyForRideSelection(
+      selectedJourney,
+      config
+    );
+    const nextFinalWalk = pendingTransfer
+      ? null
+      : finalWalkFromRideSelection({
+          journey: selectedJourney,
+          destination: journey.destination,
+          rideConfig: config,
+        });
     const started = ride.startRide(config);
     if (started) {
+      pendingTransferJourneyRef.current = pendingTransfer;
       pendingFinalWalkRef.current = nextFinalWalk;
       setFinalWalk(null);
       clearJourney();
@@ -475,12 +489,34 @@ function App() {
   // Turning the alert off, or getting off, takes the whole panel away with
   // the button in it. Focus goes back to the board, which is what is left.
   const endRide = () => {
+    const pendingTransfer = pendingTransferJourneyRef.current;
+    const continuedTransfer = pendingTransfer
+      ? continueTransferAfterRide(pendingTransfer, ride.session)
+      : null;
+    const transferRecovery =
+      pendingTransfer && !continuedTransfer
+        ? recoverTransferAfterRide(pendingTransfer, ride.session)
+        : null;
     const completed = completedFinalWalk(
       pendingFinalWalkRef.current,
       ride.session
     );
+    pendingTransferJourneyRef.current = null;
     pendingFinalWalkRef.current = null;
     ride.endRide();
+
+    if (continuedTransfer) {
+      setFinalWalk(null);
+      selectStop(continuedTransfer.stopId);
+      requestFocus(activeJourneyHeading);
+      return;
+    }
+
+    if (transferRecovery) {
+      setFinalWalk(null);
+      requestFocus(activeJourneyHeading);
+      return;
+    }
 
     if (completed) {
       selectStop(completed.fromStopId);
@@ -539,6 +575,15 @@ function App() {
 
     requestFocus(activeJourneyHeading);
     selectStop(option.stopId);
+  };
+
+  const selectTransferJourneyOption = (option) => {
+    if (!journey.destination) return;
+    const selected = selectTransferJourney(option, journey.destination);
+    if (!selected) return;
+
+    requestFocus(activeJourneyHeading);
+    selectStop(option.originStopId);
   };
 
   const confirmJourneyAtStop = () => {
@@ -837,6 +882,7 @@ function App() {
             selectedJourney?.phase === "recovery" ? selectedJourney : null
           }
           onSelectJourney={selectJourneyOption}
+          onSelectTransferJourney={selectTransferJourneyOption}
           onSelect={selectStop}
         />
 

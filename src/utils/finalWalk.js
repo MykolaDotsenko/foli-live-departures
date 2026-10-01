@@ -26,6 +26,8 @@ export function finalWalkFromRideSelection({
   rideConfig,
 }) {
   const targetStopId = String(rideConfig?.targetStop?.id || "");
+  if (journey?.transferPlan && journey.transferLeg === 1) return null;
+
   if (
     !journey ||
     destination?.kind !== "external-place" ||

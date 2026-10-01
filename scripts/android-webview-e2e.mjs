@@ -229,12 +229,15 @@ await evaluate(`(() => {
 
 const nativePlaceHandoff = await retry("native place-search handoff", async () =>
   evaluate(`(() => {
-    const text = document.body.innerText;
     const link = [...document.querySelectorAll("a")].find((node) =>
       node.href === "https://turku.digitransit.fi/"
     );
-    return /official Turku journey planner/i.test(text) && link
-      ? { text: link.textContent?.trim() || "", href: link.href }
+    return link
+      ? {
+          text: link.textContent?.trim() || "",
+          href: link.href,
+          language: document.documentElement.lang || ""
+        }
       : null;
   })()`),
   { attempts: 20, delayMs: 250 }
