@@ -2,10 +2,12 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
+  directPlaceSearchSupported: vi.fn(),
   searchPlaces: vi.fn(),
 }));
 
 vi.mock("../api/placeSearch", () => ({
+  directPlaceSearchSupported: api.directPlaceSearchSupported,
   searchPlaces: api.searchPlaces,
 }));
 
@@ -24,6 +26,7 @@ const result = {
 };
 
 beforeEach(() => {
+  api.directPlaceSearchSupported.mockReset().mockReturnValue(true);
   api.searchPlaces.mockReset();
 });
 
@@ -46,6 +49,7 @@ test("starts idle and exposes successful explicit-search results", async () => {
   expect(hook.current.status).toBe("loading");
   await expect(promise).resolves.toEqual([result]);
 
+  expect(hook.current.directEnabled).toBe(true);
   await waitFor(() => expect(hook.current.status).toBe("ready"));
   expect(hook.current.results).toEqual([result]);
   expect(hook.current.error).toBe("");
@@ -68,7 +72,7 @@ test("provider failure degrades to an empty error state without throwing", async
     returned = await hook.current.search("Library", "en");
   });
 
-  expect(returned).toEqual([]);
+  expect(returned).toBeNull();
   expect(hook.current.results).toEqual([]);
   expect(hook.current.status).toBe("error");
   expect(hook.current.error).toBe("unavailable");
@@ -178,4 +182,24 @@ test("unmount aborts the active provider request", () => {
   expect(observedSignal?.aborted).toBe(false);
   unmount();
   expect(observedSignal?.aborted).toBe(true);
+});
+
+
+test("exposes packaged-app policy as a graceful external handoff", async () => {
+  api.directPlaceSearchSupported.mockReturnValue(false);
+  const policyError = new Error("native direct provider disabled");
+  policyError.name = "PlaceSearchPolicyError";
+  api.searchPlaces.mockRejectedValue(policyError);
+
+  const { result: hook } = renderHook(() => usePlaceSearch());
+  expect(hook.current.directEnabled).toBe(false);
+
+  let returned;
+  await act(async () => {
+    returned = await hook.current.search("Prisma", "en");
+  });
+
+  expect(returned).toBeNull();
+  expect(hook.current.status).toBe("error");
+  expect(hook.current.error).toBe("external-handoff");
 });

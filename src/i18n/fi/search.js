@@ -195,6 +195,11 @@ export default {
   "© OpenStreetMap contributors": "© OpenStreetMapin tekijät",
   "Place search is temporarily unavailable. Föli stop search still works.":
     "Paikkahaku ei ole tilapäisesti käytettävissä. Fölin pysäkkihaku toimii edelleen.",
+  "Address and place search is available in the official Turku journey planner from the installed app. Föli stop search still works here.":
+    "Asennetussa sovelluksessa osoite- ja paikkahaku on käytettävissä Turun virallisessa reittioppaassa. Fölin pysäkkihaku toimii edelleen tässä sovelluksessa.",
+  "The installed app keeps address and place text on this device. Use the official Turku journey planner for address and POI search.":
+    "Asennettu sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
+  "Open Turku journey planner": "Avaa Turun reittiopas",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
