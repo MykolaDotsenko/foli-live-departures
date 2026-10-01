@@ -130,4 +130,29 @@ export default {
   "Nearby Föli stops for {destination}":
     "Fölin lähipysäkit määränpäähän {destination}",
 
+
+  // Direct journey alternatives
+  "Direct options": "Suorat vaihtoehdot",
+  "Best ways to {destination}": "Parhaat tavat määränpäähän {destination}",
+  "{count} options": "{count} vaihtoehtoa",
+  Fastest: "Nopein",
+  "Less walking": "Vähemmän kävelyä",
+  "Easier to catch": "Helpompi ehtiä",
+  "Arrive about {time}": "Perillä noin {time}",
+  "from {stop}": "pysäkiltä {stop}",
+  "to stop": "pysäkille",
+  "{distance} less walking · about {minutes} min later":
+    "{distance} vähemmän kävelyä · noin {minutes} min myöhemmin",
+  "{distance} less walking": "{distance} vähemmän kävelyä",
+  "More time to catch · about {minutes} min later":
+    "Enemmän aikaa ehtiä · noin {minutes} min myöhemmin",
+  "More time to catch": "Enemmän aikaa ehtiä",
+  "Earliest arrival we found": "Aikaisin löytämämme saapuminen",
+  "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
+    "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja ja likimääräistä linnuntie-etäisyyttä lähtöpysäkille.",
+  "{label}: line {line} from {stop}, arrive about {time}":
+    "{label}: linja {line} pysäkiltä {stop}, perillä noin {time}",
+  "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
+  "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
+
 };
