@@ -102,21 +102,13 @@ export default {
   "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
   "Stops stay on-device. Places use OpenStreetMap Nominatim after Search.":
     "Pysäkit pysyvät laitteella. Paikkahaku käyttää OpenStreetMap Nominatimia vasta haun jälkeen.",
-  "Places and addresses": "Paikat ja osoitteet",
   "Place search data": "Paikkahaun tiedot",
-  "Offline: place search unavailable. Stop search still works.":
-    "Offline: paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
-  "Waiting for stop locations.": "Odotetaan pysäkkien sijaintitietoja.",
   "Place search unavailable. Stop search still works.":
     "Paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
-  "Choose a stop or refine the place search.":
-    "Valitse pysäkki tai tarkenna paikkahakua.",
   "No matching destination found.": "Sopivaa määränpäätä ei löytynyt.",
   "Outside Föli’s service area.": "Fölin palvelualueen ulkopuolella.",
   "No usable Föli stop is nearby.": "Lähistöllä ei ole sopivaa Fölin pysäkkiä.",
   "That place cannot be used.": "Paikkaa ei voi käyttää määränpäänä.",
-  "More than one stop has this name. Choose one from the suggestions.":
-    "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
   "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
