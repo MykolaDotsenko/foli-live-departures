@@ -246,6 +246,7 @@ export async function loadDestinationAwareNearby({
         boardingSequence: null,
         boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
         destinationStopIds: destination.acceptableStopIds,
+        destinationStopAccess: destination.stopAccess || {},
       });
 
       if (!fit.compatible) {
@@ -277,10 +278,16 @@ export async function loadDestinationAwareNearby({
           Number(arrival.originaimeddeparturetime) > 0
             ? Number(arrival.originaimeddeparturetime)
             : null,
-        destinationArrivalAt:
+        alightingArrivalAt:
           fit.rideDurationSec === null
             ? null
             : Number(departureAt) + fit.rideDurationSec,
+        destinationArrivalAt:
+          fit.totalDurationSec === null
+            ? null
+            : Number(departureAt) + fit.totalDurationSec,
+        finalWalkDistanceM: fit.finalWalkDistanceM || 0,
+        finalWalkDurationSec: fit.finalWalkDurationSec || 0,
         catchability,
         liveState: liveState(arrival, nowSec),
         rideDurationSec: fit.rideDurationSec,
@@ -302,7 +309,9 @@ export async function loadDestinationAwareNearby({
           liveArrival !== null &&
           liveArrival >= candidate.departureAt
         ) {
-          candidate.destinationArrivalAt = liveArrival;
+          candidate.alightingArrivalAt = liveArrival;
+          candidate.destinationArrivalAt =
+            liveArrival + Number(candidate.finalWalkDurationSec || 0);
           candidate.liveState = "live";
         }
       })
