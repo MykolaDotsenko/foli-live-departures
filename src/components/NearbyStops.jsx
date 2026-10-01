@@ -170,7 +170,7 @@ function NearbyStops({
   const [position, setPosition] = useState(null);
   const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
-  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [expandedDestinationId, setExpandedDestinationId] = useState("");
   const rankingRef = useRef({ destinationId: "", order: [] });
 
   const activeStopIdRef = useRef(activeStopId);
@@ -188,6 +188,8 @@ function NearbyStops({
     () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
     [position, stops]
   );
+  const searchExpanded =
+    Boolean(destination?.id) && expandedDestinationId === destination.id;
   const nearbyStops =
     destination && searchExpanded
       ? expandedNearbyStops
@@ -200,10 +202,6 @@ function NearbyStops({
   });
 
   const destinationLabel = shownDestinationLabel(destination);
-
-  useEffect(() => {
-    setSearchExpanded(false);
-  }, [destination?.id]);
 
   const baseDirectJourneyOptions = useMemo(
     () =>
@@ -234,7 +232,7 @@ function NearbyStops({
       return;
     }
 
-    setSearchExpanded(true);
+    setExpandedDestinationId(destination.id);
   }, [
     baseDirectJourneyOptions.length,
     baseNearbyStops.length,
@@ -316,7 +314,7 @@ function NearbyStops({
 
     setStatus("locating");
     setError("");
-    setSearchExpanded(false);
+    setExpandedDestinationId("");
     const stopIdAtTap = activeStopIdRef.current;
     const searchEditsAtTap = searchEdits();
 
