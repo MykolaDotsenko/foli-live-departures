@@ -178,3 +178,96 @@ test("provider failure clears stale choices and exposes an error state", async (
 
   unmount();
 });
+
+
+test("equivalent recovery updates keep visible options instead of restarting the search", async () => {
+  const replacement = departure("replacement-run", 2_760, 2_500);
+  mocks.loadDestinationAwareNearby.mockResolvedValue({
+    "500": {
+      stopId: "500",
+      status: "good",
+      best: replacement,
+      departures: [replacement],
+      additionalCount: 0,
+      checkedAt: 1,
+    },
+  });
+
+  const { result, rerender, unmount } = renderHook(
+    ({ selected }) =>
+      useTransferRecoveryOptions({
+        enabled: true,
+        journey: selected,
+        destination,
+        allStops,
+      }),
+    { initialProps: { selected: journey({ lastSeenAt: 1 }) } }
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  expect(result.current.options).toHaveLength(1);
+  expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(1);
+
+  rerender({ selected: journey({ lastSeenAt: 2 }) });
+
+  expect(result.current.state).toBe("ready");
+  expect(result.current.options).toHaveLength(1);
+  expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(1);
+
+  unmount();
+});
+
+test("changing the authoritative recovery anchor resets stale choices and searches again", async () => {
+  const first = departure("replacement-run", 2_760, 2_500);
+  const second = departure("replacement-run-2", 2_820, 2_550);
+  mocks.loadDestinationAwareNearby
+    .mockResolvedValueOnce({
+      "500": {
+        stopId: "500",
+        status: "good",
+        best: first,
+        departures: [first],
+        additionalCount: 0,
+        checkedAt: 1,
+      },
+    })
+    .mockResolvedValueOnce({
+      "501": {
+        stopId: "501",
+        status: "good",
+        best: second,
+        departures: [second],
+        additionalCount: 0,
+        checkedAt: 2,
+      },
+    });
+
+  const { result, rerender, unmount } = renderHook(
+    ({ selected }) =>
+      useTransferRecoveryOptions({
+        enabled: true,
+        journey: selected,
+        destination,
+        allStops,
+      }),
+    { initialProps: { selected: journey() } }
+  );
+
+  await waitFor(() => expect(result.current.options[0]?.departure.tripRef).toBe("replacement-run"));
+
+  rerender({
+    selected: journey({
+      stopId: "501",
+      atStopConfirmedAt: 2_200_000,
+    }),
+  });
+
+  await waitFor(() =>
+    expect(result.current.options[0]?.departure.tripRef).toBe(
+      "replacement-run-2"
+    )
+  );
+  expect(mocks.loadDestinationAwareNearby).toHaveBeenCalledTimes(2);
+
+  unmount();
+});

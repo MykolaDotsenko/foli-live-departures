@@ -68,6 +68,8 @@ export default function useTransferRecoveryOptions({
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
   const abortRef = useRef(null);
+  const requestRef = useRef({ journey, destination, allStops });
+  requestRef.current = { journey, destination, allStops };
 
   const active = Boolean(
     enabled &&
@@ -80,18 +82,28 @@ export default function useTransferRecoveryOptions({
         ? [
             journey?.id || "",
             journey?.recoveryReason || "",
-            journey?.tripRef || "",
-            journey?.originAimedDepartureAt || "",
+            journey?.transferLeg || "",
+            journey?.stopId || "",
+            journey?.atStopConfirmedAt || "",
+            journey?.transferPlan?.transfer?.alightStopId || "",
+            journey?.transferPlan?.transfer?.boardStopId || "",
+            journey?.transferPlan?.second?.tripRef || "",
+            journey?.transferPlan?.second?.originAimedDepartureAt || "",
             destination?.id || "",
           ].join("|")
         : "",
     [
       active,
       destination?.id,
+      journey?.atStopConfirmedAt,
       journey?.id,
-      journey?.originAimedDepartureAt,
       journey?.recoveryReason,
-      journey?.tripRef,
+      journey?.stopId,
+      journey?.transferLeg,
+      journey?.transferPlan?.second?.originAimedDepartureAt,
+      journey?.transferPlan?.second?.tripRef,
+      journey?.transferPlan?.transfer?.alightStopId,
+      journey?.transferPlan?.transfer?.boardStopId,
     ]
   );
 
@@ -103,10 +115,11 @@ export default function useTransferRecoveryOptions({
     abortRef.current = controller;
 
     try {
+      const request = requestRef.current;
       const next = await loadTransferRecoveryOptions({
-        journey,
-        destination,
-        allStops,
+        journey: request.journey,
+        destination: request.destination,
+        allStops: request.allStops,
         signal: controller.signal,
       });
       if (controller.signal.aborted) return null;
@@ -125,7 +138,7 @@ export default function useTransferRecoveryOptions({
       setState("error");
       return null;
     }
-  }, [active, allStops, destination, journey]);
+  }, [active]);
 
   useEffect(() => {
     abortRef.current?.abort();
