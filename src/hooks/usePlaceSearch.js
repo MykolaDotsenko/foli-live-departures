@@ -59,7 +59,7 @@ export default function usePlaceSearch({ stops, language }) {
 
         setResults([]);
         setState("error");
-        return [];
+        return null;
       }
     },
     [language, stops]
