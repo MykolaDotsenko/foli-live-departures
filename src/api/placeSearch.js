@@ -26,6 +26,7 @@ function normalizedQuery(value) {
  * @returns {number | null}
  */
 function finiteCoordinate(value) {
+  if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
