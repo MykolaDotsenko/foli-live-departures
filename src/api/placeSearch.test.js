@@ -308,3 +308,74 @@ test("backs off locally after a 429 without issuing another provider request", a
   // search fails locally during cooldown and does not hammer the provider.
   expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+
+test("honours Retry-After HTTP dates and falls back when the header is absent", async () => {
+  const now = 1_800_000_000_000;
+  vi.spyOn(Date, "now").mockReturnValue(now);
+
+  const datedFetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response(
+        { message: "slow down" },
+        false,
+        429,
+        {
+          "retry-after": new Date(now + 5_000).toUTCString(),
+        }
+      )
+    );
+
+  vi.stubGlobal("fetch", datedFetch);
+
+  await expect(
+    searchPlaces("Date limited place")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+  await expect(
+    searchPlaces("Still blocked")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+  expect(datedFetch).toHaveBeenCalledTimes(2);
+
+  resetPlaceSearchForTests();
+
+  const fallbackFetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response({ message: "slow down" }, false, 429)
+    );
+
+  vi.stubGlobal("fetch", fallbackFetch);
+
+  await expect(
+    searchPlaces("Fallback limited place")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+  await expect(
+    searchPlaces("Still fallback blocked")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+  expect(fallbackFetch).toHaveBeenCalledTimes(2);
+});
