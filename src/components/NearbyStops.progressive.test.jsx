@@ -146,7 +146,7 @@ test("expands beyond the first six stops when no usable option exists there", as
   expect(nearestButtons[0]).toHaveAccessibleName(/Stop 1, stop 100/i);
 });
 
-test("does not expand when the first six already contain a usable option", async () => {
+test("does not expand when the first six already contain two meaningful options", async () => {
   const now = Math.floor(Date.now() / 1000);
 
   nearbyHook.useDestinationAwareNearby.mockImplementation(({ stops: candidates }) => {
@@ -156,40 +156,69 @@ test("does not expand when the first six already contain a usable option", async
         index === 1
           ? {
               stopId: stop.id,
-              status: "good",
+              status: "tight",
               best: {
-                tripRef: "trip-good",
+                tripRef: "trip-fast",
                 lineRef: "2",
                 destinationStopId: "900",
-                departureAt: now + 500,
-                destinationArrivalAt: now + 1_500,
-                catchability: "comfortable",
+                departureAt: now + 260,
+                destinationArrivalAt: now + 1_400,
+                catchability: "tight",
                 liveState: "live",
-                rideDurationSec: 1_000,
+                rideDurationSec: 1_140,
               },
               departures: [
                 {
-                  tripRef: "trip-good",
+                  tripRef: "trip-fast",
                   lineRef: "2",
                   destinationStopId: "900",
-                  departureAt: now + 500,
-                  destinationArrivalAt: now + 1_500,
-                  catchability: "comfortable",
+                  departureAt: now + 260,
+                  destinationArrivalAt: now + 1_400,
+                  catchability: "tight",
                   liveState: "live",
-                  rideDurationSec: 1_000,
+                  rideDurationSec: 1_140,
                 },
               ],
               additionalCount: 0,
               checkedAt: Date.now(),
             }
-          : {
-              stopId: stop.id,
-              status: "no-direct",
-              best: null,
-              departures: [],
-              additionalCount: 0,
-              checkedAt: Date.now(),
-            },
+          : index === 0
+            ? {
+                stopId: stop.id,
+                status: "good",
+                best: {
+                  tripRef: "trip-safe",
+                  lineRef: "18",
+                  destinationStopId: "900",
+                  departureAt: now + 600,
+                  destinationArrivalAt: now + 1_650,
+                  catchability: "comfortable",
+                  liveState: "live",
+                  rideDurationSec: 1_050,
+                },
+                departures: [
+                  {
+                    tripRef: "trip-safe",
+                    lineRef: "18",
+                    destinationStopId: "900",
+                    departureAt: now + 600,
+                    destinationArrivalAt: now + 1_650,
+                    catchability: "comfortable",
+                    liveState: "live",
+                    rideDurationSec: 1_050,
+                  },
+                ],
+                additionalCount: 0,
+                checkedAt: Date.now(),
+              }
+            : {
+                stopId: stop.id,
+                status: "no-direct",
+                best: null,
+                departures: [],
+                additionalCount: 0,
+                checkedAt: Date.now(),
+              },
       ])
     );
 
