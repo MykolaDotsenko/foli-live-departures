@@ -15,12 +15,6 @@ function positive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-/** @param {unknown} value */
-function finite(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
 /** @param {ActiveDirectJourney | null | undefined} journey */
 function secondLeg(journey) {
   return journey?.transferPlan && journey.transferLeg === 1

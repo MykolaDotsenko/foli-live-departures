@@ -90,7 +90,7 @@ test("polls the second boarding stop as live-only data", async () => {
   await waitFor(() => expect(result.current.providerState).toBe("live"));
   expect(mocks.fetchStopMonitor).toHaveBeenCalledWith(
     "501",
-    expect.any(AbortSignal),
+    expect.any(globalThis.AbortSignal),
     { scheduleFallback: false }
   );
   expect(result.current.departureAt).toBe(2_060);
