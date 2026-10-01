@@ -178,6 +178,11 @@ export default {
     "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
   "Offline: this selected plan may be out of date.":
     "Offline: valittu suunnitelma voi olla vanhentunut.",
+  "Live monitoring is paused while another stop is open. Return to the selected stop to resume it.":
+    "Live-seuranta on tauolla, koska toinen pysäkki on avoinna. Palaa valitulle pysäkille jatkaaksesi seurantaa.",
+  "Live monitoring is temporarily unavailable. The selected departure may be out of date.":
+    "Live-seuranta ei ole tilapäisesti käytettävissä. Valitun lähdön tiedot voivat olla vanhentuneita.",
+  "Return to selected stop": "Palaa valitulle pysäkille",
   "I'm at the stop": "Olen pysäkillä",
   "Show selected departure": "Näytä valittu lähtö",
   "Find another option": "Etsi toinen vaihtoehto",
