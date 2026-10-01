@@ -172,7 +172,7 @@ test("provider failure is explicit and local stop search remains available", asy
   expect(
     await screen.findByRole("alert")
   ).toHaveTextContent(
-    "Place search is temporarily unavailable. Stop search still works."
+    "Place search is unavailable. Stop search still works."
   );
 });
 
@@ -225,7 +225,7 @@ test("keeps current UI open when a provider result cannot be used", async () => 
   );
 
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "That place is outside Föli’s service area."
+    "Outside Föli’s service area."
   );
 });
 
@@ -289,7 +289,7 @@ test("waits for stop coordinates before external place search", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Address and place search is waiting for stop locations. Try again in a moment."
+    "Place search is waiting for stop locations."
   );
 });
 
