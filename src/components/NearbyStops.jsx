@@ -493,7 +493,7 @@ function NearbyStops({
                 })}
               </span>
             )}
-            {destination && fitState === "loading" && (
+            {destination && fitState === "loading" && !searchExpanded && (
               <span>{t("Checking routes…")}</span>
             )}
             {destination && searchExpanded && fitState === "loading" && (
