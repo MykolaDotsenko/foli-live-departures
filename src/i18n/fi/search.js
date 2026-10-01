@@ -102,8 +102,8 @@ export default {
   Search: "Hae",
   "Searching…": "Haetaan…",
   "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
-  "Stops are searched locally. Address and place search runs only when you press Search.":
-    "Pysäkit haetaan laitteelta. Osoite- ja paikkahaku käynnistyy vain, kun painat Hae.",
+  "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search.":
+    "Pysäkit haetaan tällä laitteella. Osoite- ja paikkahaku lähettää hakusi OpenStreetMap Nominatim -palveluun vain, kun painat Hae.",
   "Places and addresses": "Paikat ja osoitteet",
   "Place search data": "Paikkahaun tiedot",
   "Place search needs an internet connection. Stop search still works.":
