@@ -35,7 +35,7 @@ export function activeJourneyFromOption(
   const selectedAt = Number(nowMs);
 
   if (
-    !/^\\d+$/.test(stopId) ||
+    !/^\d+$/.test(stopId) ||
     !tripRef ||
     !destinationId ||
     !label ||
@@ -52,10 +52,7 @@ export function activeJourneyFromOption(
     finitePositive(option?.departure?.destinationArrivalAt) ?? null;
 
   return {
-    id: String(
-      option.id ||
-        [stopId, tripRef, departureAt].join(":")
-    ),
+    id: String(option.id || [stopId, tripRef, departureAt].join(":")),
     destinationId,
     destinationLabel: label,
     optionLabel: option.label,
