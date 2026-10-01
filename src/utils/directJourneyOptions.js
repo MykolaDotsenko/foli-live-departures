@@ -148,6 +148,7 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     )[0];
 
   if (lessWalking) {
+    /** @type {DirectJourneyOption} */
     const item = {
       id: optionId(lessWalking.stopId, lessWalking.departure),
       label: "less-walking",
