@@ -223,5 +223,16 @@ export default {
     "Joukkoliikenne + likimääräinen kävely",
   "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
     "Loppukävely on linnuntie-etäisyyteen perustuva likimääräinen arvio. Todellinen kävelyreitti voi olla pidempi.",
+  "This place appears outside Föli’s service area. Choose a destination inside the Föli area.":
+    "Paikka näyttää olevan Fölin liikennöintialueen ulkopuolella. Valitse määränpää Fölin alueelta.",
+  "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
+    "Paikkahakua on tilapäisesti rajoitettu. Odota hetki ja yritä uudelleen; Fölin pysäkkihaku toimii edelleen.",
+  "Final walk": "Loppukävely",
+  "Walk to {destination}": "Kävele määränpäähän {destination}",
+  "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
+    "Kävelyetäisyys on likimääräinen linnuntiearvio. Todellinen kävelyreitti voi olla pidempi.",
+  "Walking link unavailable offline.":
+    "Kävelyreittilinkki ei ole käytettävissä offline-tilassa.",
+  Done: "Valmis",
 
 };
