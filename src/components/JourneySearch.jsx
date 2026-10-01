@@ -43,6 +43,7 @@ export default function JourneySearch({
 }) {
   const language = useLanguage();
   const placeSearch = usePlaceSearch();
+  const directPlaceSearchEnabled = placeSearch.directEnabled !== false;
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
@@ -146,8 +147,18 @@ export default function JourneySearch({
       return;
     }
 
+    if (!directPlaceSearchEnabled) {
+      setError(
+        t(
+          "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
+        )
+      );
+      return;
+    }
+
     setError("");
     const results = await placeSearch.search(rawQuery, language);
+    if (results === null) return;
 
     if (results.length === 0) {
       setError(
@@ -301,11 +312,31 @@ export default function JourneySearch({
         <p className={styles.help}>
           {t("Choose Home, Work, School, a Föli stop, address or place.")}
         </p>
-        <p className={styles.privacyNote}>
-          {t(
-            "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session."
-          )}
-        </p>
+        {directPlaceSearchEnabled ? (
+          <p className={styles.privacyNote}>
+            {t(
+              "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session."
+            )}
+          </p>
+        ) : (
+          <div className={styles.handoff}>
+            <p className={styles.privacyNote}>
+              {t(
+                "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
+              )}
+            </p>
+            {online && (
+              <a
+                className={styles.handoffLink}
+                href="https://turku.digitransit.fi/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("Open Turku journey planner")}
+              </a>
+            )}
+          </div>
+        )}
 
         {placeSearch.results.length > 0 && (
           <section
@@ -352,9 +383,13 @@ export default function JourneySearch({
               ? t(
                   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works."
                 )
-              : t(
-                  "Place search is temporarily unavailable. Föli stop search still works."
-                )}
+              : placeSearch.error === "external-handoff"
+                ? t(
+                    "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
+                  )
+                : t(
+                    "Place search is temporarily unavailable. Föli stop search still works."
+                  )}
           </p>
         )}
 

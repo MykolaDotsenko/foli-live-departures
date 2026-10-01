@@ -500,6 +500,8 @@ Existing Ride Mode regression suite stays green with equivalent safety semantics
 
 ## P1.1 — Address and POI destination search
 
+**Implementation status (2026-10-01): implemented and in provider-hardening.** The unified stop/address/POI flow shipped through PR #113. Current work hardens provider-policy degradation, browser E2E and packaged-Android trust boundaries without changing the backendless architecture.
+
 ### Deliverable
 
 One search field accepts:
@@ -510,7 +512,7 @@ One search field accepts:
 - stop;
 - saved place.
 
-Provider adapter must isolate the external geocoder schema and call it directly from the browser. No proxy/backend is allowed.
+Provider adapter must isolate the external geocoder schema. Direct browser calls are allowed only where provider policy and public-client credential rules permit them; otherwise the feature must fail closed to local stop search plus an external official-planner handoff. No proxy/backend is allowed.
 
 ### Key risks
 
@@ -538,7 +540,11 @@ Search result disambiguation:
 - provider credentials are browser-safe/public-client credentials only;
 - no confidential secret is bundled or proxied;
 - addresses are not silently persisted;
-- provider/privacy disclosure exists.
+- provider/privacy disclosure exists;
+- typing never triggers third-party geocoding;
+- provider failure is distinct from a valid zero-result response;
+- a runtime provider kill switch degrades to an external official-planner handoff;
+- packaged Android makes no direct public-Nominatim request.
 
 ### Expected UX gain
 

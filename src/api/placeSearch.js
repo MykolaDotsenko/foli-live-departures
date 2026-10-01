@@ -6,6 +6,8 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_LIMIT = 20;
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 60_000;
+const PUBLIC_PROVIDER_ORIGIN = "https://nominatim.openstreetmap.org";
+const NATIVE_BUILD = import.meta.env.VITE_NATIVE_BUILD === "true";
 
 /** @type {Promise<PlaceSearchConfig> | null} */
 let configPromise = null;
@@ -37,6 +39,29 @@ function normalizedQuery(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
+/**
+ * Public Nominatim is intentionally web-only in this project. A packaged
+ * WebView cannot guarantee the provider-identification and no-software-update
+ * switching requirements of the public service. Native builds therefore
+ * fail closed and hand address/POI search to the official journey planner.
+ */
+/** @returns {boolean} */
+export function directPlaceSearchSupported() {
+  if (NATIVE_BUILD) return false;
+
+  try {
+    const capacitor = /** @type {{ isNativePlatform?: () => boolean } | undefined} */ (
+      /** @type {any} */ (globalThis).Capacitor
+    );
+    if (capacitor?.isNativePlatform?.()) return false;
+  } catch {
+    return false;
+  }
+
+  const origin = String(globalThis.location?.origin || "").toLowerCase();
+  return origin !== "https://localhost" && origin !== "capacitor://localhost";
+}
+
 /** @returns {PlaceSearchConfig} */
 function disabledConfig() {
   return {
@@ -64,7 +89,9 @@ function normalizeConfig(raw) {
     return disabledConfig();
   }
 
-  if (url.protocol !== "https:") return disabledConfig();
+  if (url.protocol !== "https:" || url.origin !== PUBLIC_PROVIDER_ORIGIN) {
+    return disabledConfig();
+  }
 
   const rawViewbox = Array.isArray(config.viewbox)
     ? /** @type {unknown[]} */ (config.viewbox)
@@ -95,8 +122,8 @@ function normalizeConfig(raw) {
 
 /**
  * Runtime config is intentionally same-origin and not precached. It lets the
- * static site disable or repoint public place search without changing the JS
- * bundle.
+ * static site disable or tune public place search without changing the JS
+ * bundle. The direct-provider origin itself stays allowlisted in code.
  *
  * @param {AbortSignal | undefined} signal
  * @returns {Promise<PlaceSearchConfig>}
@@ -336,6 +363,14 @@ export async function searchPlaces(value, options = {}) {
   const query = normalizedQuery(value);
   if (query.length < 3) return [];
 
+  if (!directPlaceSearchSupported()) {
+    const error = new Error(
+      "Direct public place search is disabled in packaged app runtimes."
+    );
+    error.name = "PlaceSearchPolicyError";
+    throw error;
+  }
+
   const languageKey = String(options.language || "").trim().toLowerCase();
   const cacheKey = `${query.toLowerCase()}|${languageKey}`;
   const cached = cachedResults(cacheKey);
@@ -347,7 +382,13 @@ export async function searchPlaces(value, options = {}) {
   const promise = (async () => {
     assertProviderAvailable();
     const config = await loadPlaceSearchConfig(options.signal);
-    if (!config.enabled || !config.endpoint) return [];
+    if (!config.enabled || !config.endpoint) {
+      const error = new Error(
+        "Direct public place search is disabled by runtime policy."
+      );
+      error.name = "PlaceSearchPolicyError";
+      throw error;
+    }
 
     const params = new URLSearchParams({
       q: query,

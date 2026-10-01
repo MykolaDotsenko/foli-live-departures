@@ -101,7 +101,7 @@ These came out of the verification round and are not yet re-scored.
 ## Still open
 
 **Found by the reviews, not done**
-- **Nearby stops are proximity-aware, not destination-aware.** In a dense hub a passenger can see several nearby platforms without knowing which concrete trip continues toward Home or another chosen destination. The planned fix keeps every nearby stop, ranks them by practical suitability when a destination is selected, marks other-direction/no-direct-service options, and carries that context into the departure board. See [Destination-aware Nearby design](DESTINATION_AWARE_NEARBY_SPEC.md).
+- **Transfer journeys remain the main Journey Assistant gap.** Direct destination-aware options, arbitrary address/POI destinations, pre-boarding orchestration and final-walk handoff are implemented. A journey that requires a transfer still needs transfer routing, multi-leg orchestration and missed-transfer recovery before the app can claim full journey-planner coverage.
 - Place setup still asks for a checkbox and a "Main stop" choice per stop, and a confirmation (UX, 70).
 - The board header on a phone stacks Filter lines and Refresh, and error screens offer both Refresh and Try again.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
@@ -124,7 +124,7 @@ These came out of the verification round and are not yet re-scored.
 These are stated, not hidden.
 
 - **A browser can pause the get-off alert.** A page in the background or on a locked phone may stop running. The panel says so, asks the passenger to keep it open, and plays a test alert first. Guaranteed lock-screen alerts need a small backend with Web Push; that is Phase 2 in [Ride Mode design](RIDE_MODE_SPEC.md).
-- **No journey planner inside the app.** Get me Home hands the route to Google Maps. The app does not choose transfers or walking paths.
+- **Direct journeys are planned in-app; transfers are not.** Journey Assistant can rank concrete direct Föli trips to stop/address/POI destinations and account for an approximate final walk. It does not yet own multi-leg transfer routing or turn-by-turn walking paths; final walking can hand off externally.
 - **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
 - **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
 - **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.

@@ -274,6 +274,49 @@ A provider that requires a confidential server-side credential is **not compatib
 
 Public geocoding services with restrictive fair-use policies must be treated as optional capabilities, not as an unlimited autocomplete backend. If provider policy forbids autocomplete, external queries occur only after an explicit passenger action and are locally cached/throttled.
 
+### Provider feasibility audit — 2026-10-01
+
+This audit is a release contract, not a suggestion.
+
+**Digitransit Geocoding / VARELY Routing**
+
+- Digitransit production APIs require registration/subscription and issue API keys through the developer portal.
+- The official portal exposes Geocoding v1 and Routing v2 VARELY, but the public documentation does not establish those subscription keys as browser-public identifiers that can be safely shipped by an unrelated static PWA and origin-restricted to this GitHub Pages site.
+- Therefore Turku Departures does **not** embed a Digitransit subscription key and does not call those authenticated APIs directly from the frontend.
+- The official Turku Digitransit journey planner remains an allowed external handoff because navigation to that service does not expose a project credential.
+
+References:
+- https://portal-api.digitransit.fi/products
+- https://portal-api.digitransit.fi/api-details
+- https://digitransit.fi/en/developers/apis/1-routing-api/
+
+**Public OpenStreetMap Nominatim**
+
+- end-user-triggered search is permitted for moderate use;
+- autocomplete is forbidden;
+- the documented maximum is one request per second for the application, not one request per user;
+- requests must identify the application through a valid Referer/User-Agent and attribution must be visible;
+- repeated requests should be cached;
+- apps must be switchable away from the public service without requiring a software update.
+
+Reference: https://operations.osmfoundation.org/policies/nominatim/
+
+Current web-PWA controls:
+- no request while typing;
+- search only after explicit passenger submit;
+- serialized network starts with a 1.1 second minimum interval per client;
+- bounded session cache and request de-duplication;
+- visible OpenStreetMap attribution;
+- 429 cooldown and fail-closed provider errors;
+- runtime provider config is excluded from the service-worker precache;
+- a runtime `enabled: false` switch moves the session to the official-planner handoff instead of pretending the provider returned zero matches.
+
+The local throttle cannot guarantee the provider's **aggregate** one-request-per-second limit across every user of a public site. Public Nominatim is therefore an optional low-volume capability, not a scale guarantee. If usage or provider policy makes direct use unsuitable, disable it through runtime config; local Föli-stop search remains functional and arbitrary address/POI search degrades to the official Turku journey planner.
+
+**Packaged Android**
+
+Direct public-Nominatim search is disabled. The packaged WebView keeps address/POI text local and offers the official Turku journey planner. Android emulator E2E records outbound requests and fails if the tested flow contacts `nominatim.openstreetmap.org`.
+
 ---
 
 ## 6A. Client-only architecture invariant

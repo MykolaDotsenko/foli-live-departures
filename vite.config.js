@@ -29,9 +29,12 @@ const FOLI_ENDPOINT_VARIABLES = [
   "VITE_FOLI_BOUNDARY_URL",
 ];
 
-const PLACE_SEARCH_CONNECT_SOURCES = [
-  "https://nominatim.openstreetmap.org",
-];
+const NATIVE_BUILD =
+  String(process.env.VITE_NATIVE_BUILD || "").trim().toLowerCase() === "true";
+
+const PLACE_SEARCH_CONNECT_SOURCES = NATIVE_BUILD
+  ? []
+  : ["https://nominatim.openstreetmap.org"];
 
 function connectSources(env) {
   return [

@@ -957,7 +957,7 @@ function App() {
             </dd>
             <dd>
               {t(
-                "If you press Search destination for an address or place, that text is sent to OpenStreetMap Nominatim, which sees your IP address and the search text. Nothing is sent there while you are only typing or choosing a Föli stop."
+                "In the web app, if you press Search destination for an address or place, that text is sent to OpenStreetMap Nominatim, which sees your IP address and the search text. Nothing is sent there while you are only typing or choosing a Föli stop. The installed Android app does not send address/place text to Nominatim; it offers the official Turku journey planner instead."
               )}
             </dd>
             <dd>

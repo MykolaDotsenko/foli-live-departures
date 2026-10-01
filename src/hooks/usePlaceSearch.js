@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { searchPlaces } from "../api/placeSearch";
+import {
+  directPlaceSearchSupported,
+  searchPlaces,
+} from "../api/placeSearch";
 
 /** @import { PlaceSearchResult } from "../types/journey" */
 
 export default function usePlaceSearch() {
+  const [directEnabled, setDirectEnabled] = useState(() =>
+    directPlaceSearchSupported()
+  );
   /** @type {[PlaceSearchResult[], import("react").Dispatch<import("react").SetStateAction<PlaceSearchResult[]>>]} */
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState("idle");
@@ -39,7 +45,7 @@ export default function usePlaceSearch() {
         controller.signal.aborted ||
         requestIdRef.current !== requestId
       ) {
-        return [];
+        return null;
       }
 
       setResults(next);
@@ -51,19 +57,23 @@ export default function usePlaceSearch() {
         searchError?.name === "AbortError" ||
         searchError?.name === "CanceledError"
       ) {
-        return [];
+        return null;
       }
 
       if (requestIdRef.current === requestId) {
+        const policyHandoff = searchError?.name === "PlaceSearchPolicyError";
         setResults([]);
         setStatus("error");
+        if (policyHandoff) setDirectEnabled(false);
         setError(
           searchError?.name === "PlaceSearchCooldownError"
             ? "rate-limited"
-            : "unavailable"
+            : policyHandoff
+              ? "external-handoff"
+              : "unavailable"
         );
       }
-      return [];
+      return null;
     }
   }, []);
 
@@ -74,5 +84,5 @@ export default function usePlaceSearch() {
     []
   );
 
-  return { results, status, error, search, clear };
+  return { results, status, error, search, clear, directEnabled };
 }
