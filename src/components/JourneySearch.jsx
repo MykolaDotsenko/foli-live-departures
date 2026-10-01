@@ -157,7 +157,7 @@ export default function JourneySearch({
     if (coordinatesStatus !== "ready") {
       setError(
         coordinatesStatus === "loading"
-          ? t("Waiting for stop locations.")
+          ? t("Stop locations are still loading. Try again in a moment.")
           : t("Place search unavailable. Stop search still works.")
       );
       return;
@@ -167,10 +167,10 @@ export default function JourneySearch({
       setError(
         exact.length > 1
           ? t(
-              "More than one stop has this name. Choose one from the suggestions."
+              "More than one stop has this name. Choose the correct stop number from the suggestions."
             )
           : t(
-              "Offline: place search unavailable. Stop search still works."
+              "Place search unavailable. Stop search still works."
             )
       );
       return;
@@ -186,11 +186,11 @@ export default function JourneySearch({
       setError(
         exact.length > 1
           ? t(
-              "More than one stop has this name. Choose one from the suggestions."
+              "More than one stop has this name. Choose the correct stop number from the suggestions."
             )
           : matches.length > 0
             ? t(
-                "Choose a stop or refine the place search."
+                "Choose a stop from the suggestions or enter its stop number."
               )
             : t("No matching destination found.")
       );
@@ -305,11 +305,7 @@ export default function JourneySearch({
               id="journey-destination-suggestions"
               className={styles.suggestions}
               role="listbox"
-              aria-label={
-                showPlaceResults
-                  ? t("Places and addresses")
-                  : t("Destination stop suggestions")
-              }
+              aria-label={t("Journey destination")}
             >
               {showPlaceResults
                 ? placeResults.map((place) => (
