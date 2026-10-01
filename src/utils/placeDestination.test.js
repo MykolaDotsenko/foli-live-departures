@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import {
   destinationFromExternalPlace,
   destinationStopsForPlace,
+  prepareExternalPlaceDestination,
   estimateFinalWalkSeconds,
 } from "./placeDestination";
 
@@ -49,25 +50,50 @@ test("refuses a place with no Föli stop within the absolute walking guardrail",
   expect(destinationFromExternalPlace(place, stops)).toBeNull();
 });
 
-test("caps destination candidates and keeps them ordered by final straight-line distance", () => {
-  const stops = Array.from({ length: 10 }, (_, index) => ({
+test("keeps a broad dense-hub candidate set ordered by final distance", () => {
+  const stops = Array.from({ length: 30 }, (_, index) => ({
     id: String(index + 1),
-    name: `Stop ${index + 1}`,
-    lat: 60.4501 + index * 0.0002,
+    name: `Candidate ${index + 1}`,
+    lat: 60.4501 + index * 0.00008,
     lon: 22.30,
   }));
 
   const candidates = destinationStopsForPlace(stops, place);
 
-  expect(candidates).toHaveLength(6);
-  expect(candidates.map((stop) => stop.id)).toEqual([
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-  ]);
+  expect(candidates).toHaveLength(24);
+  expect(candidates[0].id).toBe("1");
+  expect(candidates.at(-1)?.id).toBe("24");
+});
+
+test("rejects a geocoded place explicitly outside the service boundary", () => {
+  const boundary = {
+    type: "MultiPolygon",
+    coordinates: [
+      [
+        [
+          [22.0, 60.0],
+          [22.2, 60.0],
+          [22.2, 60.2],
+          [22.0, 60.2],
+          [22.0, 60.0],
+        ],
+      ],
+    ],
+  };
+
+  const prepared = prepareExternalPlaceDestination({
+    place,
+    stops: [
+      { id: "100", lat: 60.4501, lon: 22.30 },
+    ],
+    serviceBoundary: boundary,
+  });
+
+  expect(prepared).toEqual({
+    ok: false,
+    reason: "outside-service-area",
+    destination: null,
+  });
 });
 
 test("final-walk estimate is conservative and rejects missing values", () => {
