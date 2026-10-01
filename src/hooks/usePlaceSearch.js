@@ -57,7 +57,11 @@ export default function usePlaceSearch() {
       if (requestIdRef.current === requestId) {
         setResults([]);
         setStatus("error");
-        setError("unavailable");
+        setError(
+          searchError?.name === "PlaceSearchCooldownError"
+            ? "rate-limited"
+            : "unavailable"
+        );
       }
       return [];
     }
