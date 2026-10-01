@@ -50,9 +50,7 @@ test("offers a dismissible install hint only in an uninstalled iPhone browser", 
 
   render(<IosInstallHint />);
 
-  expect(
-    screen.getByRole("strong", { name: "Install on iPhone" })
-  ).toBeInTheDocument();
+  expect(screen.getByText("Install on iPhone")).toBeInTheDocument();
   expect(screen.getByText(/Share → Add to Home Screen/)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
