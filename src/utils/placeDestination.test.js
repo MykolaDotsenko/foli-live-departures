@@ -84,3 +84,31 @@ test("fails closed when no public stop is realistically near the place", () => {
   expect(result.ok).toBe(false);
   expect(result.reason).toBe("no-nearby-stops");
 });
+
+
+test("does not arbitrarily stop at eight dense-hub destination platforms", () => {
+  const denseStops = Array.from({ length: 14 }, (_, index) => ({
+    id: String(100 + index),
+    name: `Platform ${index + 1}`,
+    lat: 60.4518 + index * 0.00018,
+    lon: 22.2666,
+  }));
+
+  const candidates = destinationStopCandidates(denseStops, place);
+
+  expect(candidates.length).toBeGreaterThan(8);
+  expect(candidates.map((stop) => stop.id)).toContain("113");
+});
+
+test("keeps destination expansion bounded even when many stops are nearby", () => {
+  const denseStops = Array.from({ length: 40 }, (_, index) => ({
+    id: String(200 + index),
+    name: `Dense platform ${index + 1}`,
+    lat: 60.4518 + index * 0.00002,
+    lon: 22.2666,
+  }));
+
+  const candidates = destinationStopCandidates(denseStops, place);
+
+  expect(candidates).toHaveLength(24);
+});
