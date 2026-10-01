@@ -71,15 +71,25 @@ export default function JourneySearch({
   };
 
   const chooseExternalPlace = (place) => {
-    const selected = onChooseExternalPlace?.(place) === true;
-    if (!selected) {
-      setError(
-        coordinatesStatus === "loading"
-          ? t("Stop locations are still loading. Try again in a moment.")
-          : t(
-              "No Föli stop close enough to this place could be resolved. Try another destination."
-            )
-      );
+    const prepared = onChooseExternalPlace?.(place);
+    if (!prepared?.ok) {
+      if (coordinatesStatus === "loading") {
+        setError(
+          t("Stop locations are still loading. Try again in a moment.")
+        );
+      } else if (prepared?.reason === "outside-service-area") {
+        setError(
+          t(
+            "This place appears outside Föli’s service area. Choose a destination inside the Föli area."
+          )
+        );
+      } else {
+        setError(
+          t(
+            "No Föli stop close enough to this place could be resolved. Try another destination."
+          )
+        );
+      }
       return;
     }
 
