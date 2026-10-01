@@ -63,6 +63,11 @@
   background: #00656f;
 }
 
+.button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .locateButton {
   width: 46px;
   padding: 0;
