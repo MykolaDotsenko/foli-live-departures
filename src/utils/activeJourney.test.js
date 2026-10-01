@@ -891,3 +891,59 @@ test("first-leg live delay shifts transfer arrival but not the committed second-
     journeyArrivalAt: 3_600,
   });
 });
+
+
+test.each(["transfer-cancelled", "transfer-risk", "transfer-missed"])(
+  "fresh first-leg feed cannot undo %s recovery",
+  (recoveryReason) => {
+    const selected = {
+      ...activeJourneyFromTransferOption(
+        transferOption(),
+        destination,
+        1_000_000
+      ),
+      phase: "recovery",
+      recoveryReason,
+    };
+
+    const updated = observeActiveJourney(selected, {
+      stopId: "100",
+      arrival: {
+        tripref: "first",
+        lineref: "1",
+        monitored: true,
+        aimeddeparturetime: 1_480,
+        originaimeddeparturetime: 900,
+        expecteddeparturetime: 1_620,
+      },
+      referenceTimeSec: 1_400,
+      receivedAtMs: 1_040_000,
+      feedError: false,
+      cancelled: false,
+    });
+
+    expect(updated).toMatchObject({
+      phase: "recovery",
+      recoveryReason,
+    });
+  }
+);
+
+test("a recovered transfer plan is never carried into a new Ride Mode session", () => {
+  const selected = {
+    ...activeJourneyFromTransferOption(
+      transferOption(),
+      destination,
+      1_000_000
+    ),
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  };
+
+  expect(
+    transferJourneyForRideSelection(selected, {
+      tripRef: "first",
+      targetStop: { id: "500", stopSequence: 8 },
+    })
+  ).toBeNull();
+});

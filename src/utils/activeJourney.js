@@ -195,7 +195,13 @@ export function activeJourneyFromTransferOption(
  * @returns {ActiveDirectJourney | null}
  */
 export function transferJourneyForRideSelection(journey, rideConfig) {
-  if (!journey?.transferPlan || journey.transferLeg !== 1) return null;
+  if (
+    !journey?.transferPlan ||
+    journey.transferLeg !== 1 ||
+    journey.phase === "recovery"
+  ) {
+    return null;
+  }
   if (String(rideConfig?.tripRef || "") !== journey.tripRef) return null;
   if (
     String(rideConfig?.targetStop?.id || "") !== journey.destinationStopId
@@ -604,8 +610,15 @@ export function observeActiveJourney(journey, observation) {
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
       : "walking-to-stop";
-    const nextPhase =
-      journey.phase === "recovery" ? recoveredPhase : journey.phase;
+    const canRecoverFromDeparture =
+      journey.phase === "recovery" &&
+      journey.recoveryReason === "departed";
+    const nextPhase = canRecoverFromDeparture
+      ? recoveredPhase
+      : journey.phase;
+    const nextRecoveryReason = canRecoverFromDeparture
+      ? null
+      : journey.recoveryReason;
     const nextLineRef = String(arrival.lineref || journey.lineRef);
 
     if (
@@ -616,7 +629,7 @@ export function observeActiveJourney(journey, observation) {
       journey.transferPlan === nextTransferPlan &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
-      journey.recoveryReason === null &&
+      journey.recoveryReason === nextRecoveryReason &&
       journey.lastSeenAt === nextLastSeenAt
     ) {
       return journey;
@@ -631,7 +644,7 @@ export function observeActiveJourney(journey, observation) {
       transferPlan: nextTransferPlan,
       lineRef: nextLineRef,
       phase: nextPhase,
-      recoveryReason: null,
+      recoveryReason: nextRecoveryReason,
       lastSeenAt: nextLastSeenAt,
     };
   }
