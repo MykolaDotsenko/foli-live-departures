@@ -7,7 +7,6 @@ import styles from "./BusStopForm.module.css";
 import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
-const OSM_ATTRIBUTION = "© OpenStreetMap contributors";
 
 function shownDestination(destination) {
   return destination?.kind === "saved-place"
@@ -17,12 +16,12 @@ function shownDestination(destination) {
 
 function selectionError(reason) {
   if (reason === "outside-service-area") {
-    return t("That place is outside Föli’s service area.");
+    return t("Outside Föli’s service area.");
   }
   if (reason === "no-nearby-stops") {
-    return t("No Föli stop is close enough to use for that place.");
+    return t("No usable Föli stop is nearby.");
   }
-  return t("That place could not be used as a destination.");
+  return t("That place cannot be used.");
 }
 
 export default function JourneySearch({
@@ -158,12 +157,8 @@ export default function JourneySearch({
     if (coordinatesStatus !== "ready") {
       setError(
         coordinatesStatus === "loading"
-          ? t(
-              "Address and place search is waiting for stop locations. Try again in a moment."
-            )
-          : t(
-              "Address and place search is temporarily unavailable. Stop search still works."
-            )
+          ? t("Place search is waiting for stop locations.")
+          : t("Place search is unavailable. Stop search still works.")
       );
       return;
     }
@@ -185,9 +180,7 @@ export default function JourneySearch({
 
     if (results === null) {
       setError(
-        t(
-          "Place search is temporarily unavailable. Stop search still works."
-        )
+        t("Place search is unavailable. Stop search still works.")
       );
     } else if (results.length === 0) {
       setError(
@@ -199,7 +192,7 @@ export default function JourneySearch({
             ? t(
                 "Choose a stop from the suggestions, or try a more specific address or place."
               )
-            : t("No matching stop, address or place was found.")
+            : t("No matching destination found.")
       );
     } else {
       setError("");
@@ -361,22 +354,9 @@ export default function JourneySearch({
 
         <p className={styles.help}>
           {t(
-            "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
+            "Stop search stays on this device. Place searches go to OpenStreetMap Nominatim only when you press Search."
           )}
         </p>
-
-        {showPlaceResults && (
-          <p className={styles.help}>
-            {t("Place search data")}{" "}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {OSM_ATTRIBUTION}
-            </a>
-          </p>
-        )}
 
         {error && (
           <p className={styles.error} role="alert">
