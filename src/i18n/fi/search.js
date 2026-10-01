@@ -94,7 +94,6 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-  "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
   "Stop, address or place": "Pysäkki, osoite tai paikka",
   "e.g. Prisma or Turun linna": "esim. Prisma tai Turun linna",
   Search: "Hae",
