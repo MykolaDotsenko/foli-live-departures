@@ -242,3 +242,37 @@ test("shows door-to-door arrival and final walk for a geocoded place", () => {
     )
   ).not.toBeInTheDocument();
 });
+
+
+test("recovery hides stale departure and arrival timing", () => {
+  const staleDeparture = 2_000_000_000;
+  const staleArrival = 2_000_001_330;
+
+  render(
+    <ActiveJourney
+      journey={journey({
+        destinationKind: "geocoded-place",
+        destinationLabel: "Prisma Itäharju",
+        phase: "recovery",
+        recoveryReason: "cancelled",
+        departureAt: staleDeparture,
+        destinationArrivalAt: 2_000_001_000,
+        finalWalkDistanceM: 320,
+        finalWalkDurationSec: 330,
+        finalArrivalAt: staleArrival,
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(screen.getByText("Your selected bus was cancelled.")).toBeInTheDocument();
+  expect(
+    screen.queryByText(`Arrive about ${formatClock(staleArrival)}`)
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText("Final walk ≈ 320 m")).not.toBeInTheDocument();
+});
