@@ -33,6 +33,13 @@ function finiteCoordinate(value) {
 /**
  * @param {string} language
  */
+function compactCoordinate(value) {
+  return String(Number(Number(value).toFixed(6)));
+}
+
+/**
+ * @param {string} language
+ */
 function providerLanguages(language) {
   return String(language || "").toLowerCase().startsWith("fi")
     ? "fi,en"
@@ -222,7 +229,9 @@ export function placeSearchViewbox(stops) {
   const minLon = Math.max(-180, Math.min(...lons) - padding);
   const maxLon = Math.min(180, Math.max(...lons) + padding);
 
-  return [minLon, maxLat, maxLon, minLat].join(",");
+  return [minLon, maxLat, maxLon, minLat]
+    .map(compactCoordinate)
+    .join(",");
 }
 
 /**
