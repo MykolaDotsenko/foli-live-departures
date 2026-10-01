@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   fetchAlerts: vi.fn(),
@@ -33,6 +33,11 @@ beforeEach(() => {
       },
     ],
   });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 // The routes found to serve one stop were kept while the next stop's lookup
@@ -383,8 +388,7 @@ test("disabling alert monitoring clears the previous payload before another tran
 });
 
 
-test("supports a bounded faster refresh cadence for an active committed transfer", async () => {
-  vi.useFakeTimers();
+test("supports a bounded faster refresh cadence for an active committed transfer", () => {
   const intervalSpy = vi.spyOn(window, "setInterval");
 
   renderHook(() =>
@@ -395,8 +399,6 @@ test("supports a bounded faster refresh cadence for an active committed transfer
   );
 
   expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
-
-  vi.useRealTimers();
 });
 
 test("never allows alert polling faster than the 30-second safety floor", () => {
