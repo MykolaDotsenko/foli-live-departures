@@ -53,7 +53,7 @@ function normalizeConfig(raw) {
   const endpoint = String(raw.endpoint || "").trim();
   let url;
   try {
-    url = new URL(endpoint);
+    url = new globalThis.URL(endpoint);
   } catch {
     return disabledConfig();
   }
@@ -96,7 +96,7 @@ function normalizeConfig(raw) {
 export async function loadPlaceSearchConfig(signal) {
   if (!configPromise) {
     const url = `${import.meta.env.BASE_URL}${CONFIG_FILE}`;
-    configPromise = fetch(url, {
+    configPromise = globalThis.fetch(url, {
       method: "GET",
       credentials: "same-origin",
       cache: "no-store",
@@ -122,7 +122,7 @@ export async function loadPlaceSearchConfig(signal) {
  */
 function readCache() {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "[]");
+    const parsed = JSON.parse(globalThis.sessionStorage?.getItem(CACHE_KEY) || "[]");
     if (!Array.isArray(parsed)) return [];
 
     const now = Date.now();
@@ -147,7 +147,7 @@ function writeCache(query, results) {
   try {
     const entries = readCache().filter((entry) => entry.query !== query);
     entries.unshift({ query, savedAt: Date.now(), results });
-    sessionStorage.setItem(
+    globalThis.sessionStorage?.setItem(
       CACHE_KEY,
       JSON.stringify(entries.slice(0, CACHE_LIMIT))
     );
@@ -289,11 +289,11 @@ export async function searchPlaces(value, options = {}) {
       params.set("accept-language", options.language);
     }
 
-    const requestUrl = new URL(config.endpoint);
+    const requestUrl = new globalThis.URL(config.endpoint);
     requestUrl.search = params.toString();
 
     lastNetworkStartedAt = Date.now();
-    const response = await fetch(requestUrl.href, {
+    const response = await globalThis.fetch(requestUrl.href, {
       method: "GET",
       mode: "cors",
       credentials: "omit",
@@ -333,7 +333,7 @@ export function resetPlaceSearchForTests() {
   lastNetworkStartedAt = 0;
   inFlight.clear();
   try {
-    sessionStorage.removeItem(CACHE_KEY);
+    globalThis.sessionStorage?.removeItem(CACHE_KEY);
   } catch {
     // ignore
   }
