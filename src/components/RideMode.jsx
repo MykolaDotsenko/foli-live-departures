@@ -5,6 +5,7 @@ import { RIDE_STAGE, rideStageRank } from "../utils/rideProgress";
 import styles from "./RideMode.module.css";
 import useScrollPaddingFor from "../hooks/useScrollPaddingFor";
 import { realStopName, stopLabel } from "../utils/stopNames";
+import { formatDistance } from "../utils/geo";
 
 const STAGE_COPY = {
   [RIDE_STAGE.BOARDED]: {
@@ -84,6 +85,145 @@ function remainingLabel(value, stage) {
   if (!Number.isFinite(count)) return "";
   if (count <= 0) return t("almost there");
   return count === 1 ? t("1 stop") : t("{count} stops", { count });
+}
+
+function transferNextAction(journey, revalidation, stage, targetStop) {
+  if (
+    !journey?.transferPlan ||
+    journey.transferLeg !== 1 ||
+    stage === RIDE_STAGE.MISSED
+  ) {
+    return null;
+  }
+
+  const transfer = journey.transferPlan.transfer || {};
+  const second = journey.transferPlan.second || {};
+  const line = String(second.lineRef || "").trim();
+  if (!line) return null;
+
+  const decision = String(revalidation?.decision || "");
+  const failed =
+    journey.phase === "recovery" ||
+    decision === "cancelled" ||
+    decision === "missed" ||
+    decision === "unsafe";
+
+  if (failed) {
+    return {
+      state: "recovery",
+      title: stage === RIDE_STAGE.NOW
+        ? msg("After you get off")
+        : msg("Connection needs a new plan"),
+      text: stage === RIDE_STAGE.NOW
+        ? msg("Journey Assistant will check fresh options from this transfer area.")
+        : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
+      params: { stop: stopLabel(targetStop) },
+      meta: "",
+      metaParams: {},
+    };
+  }
+
+  const sameStop =
+    String(transfer.alightStopId || "") ===
+    String(transfer.boardStopId || "");
+  const boardStop = String(
+    transfer.boardStopName ||
+      transfer.boardStopId ||
+      second.boardStopId ||
+      ""
+  ).trim();
+  const rawWalk = transfer.walkingDistanceM;
+  const walkingDistanceM =
+    rawWalk !== null &&
+    rawWalk !== undefined &&
+    rawWalk !== "" &&
+    Number.isFinite(Number(rawWalk)) &&
+    Number(rawWalk) >= 0
+      ? Number(rawWalk)
+      : null;
+
+  // Cross-platform guidance needs a concrete boarding stop. A generic
+  // placeholder can send a passenger in the wrong direction at a busy hub,
+  // so fail closed into the transfer-area recovery flow instead.
+  if (!sameStop && !boardStop) {
+    return {
+      state: "recovery",
+      title:
+        stage === RIDE_STAGE.NOW
+          ? msg("After you get off")
+          : msg("Connection needs a new plan"),
+      text:
+        stage === RIDE_STAGE.NOW
+          ? msg("Journey Assistant will check fresh options from this transfer area.")
+          : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
+      params: { stop: stopLabel(targetStop) },
+      meta: "",
+      metaParams: {},
+    };
+  }
+
+  if (stage === RIDE_STAGE.NOW) {
+    if (sameStop) {
+      return {
+        state: "next",
+        title: msg("After you get off"),
+        text: msg("Wait here for line {line}."),
+        params: { line },
+        meta: "",
+        metaParams: {},
+      };
+    }
+
+    if (!boardStop) {
+      return {
+        state: "recovery",
+        title: msg("After you get off"),
+        text: msg("Journey Assistant will check fresh options from this transfer area."),
+        params: {},
+        meta: "",
+        metaParams: {},
+      };
+    }
+
+    return {
+      state: "next",
+      title: msg("After you get off"),
+      text:
+        walkingDistanceM === null
+          ? msg("Go to {stop} for line {line}.")
+          : msg("Walk ≈{distance} to {stop} for line {line}."),
+      params: {
+        distance:
+          walkingDistanceM === null ? "" : formatDistance(walkingDistanceM),
+        stop: boardStop,
+        line,
+      },
+      meta: "",
+      metaParams: {},
+    };
+  }
+
+  const slackSec = Number(revalidation?.feasibility?.slackSec);
+  const liveMargin =
+    revalidation?.providerState === "live" &&
+    Number.isFinite(slackSec) &&
+    slackSec >= 0
+      ? Math.floor(slackSec / 60)
+      : null;
+
+  return {
+    state: decision === "tight" ? "tight" : "next",
+    title: msg("Next after this bus"),
+    text: msg("Change at {stop} to line {line}."),
+    params: { stop: stopLabel(targetStop), line },
+    meta:
+      liveMargin === null
+        ? ""
+        : liveMargin < 1
+          ? msg("Live transfer margin: less than 1 min.")
+          : msg("Live transfer margin: about {minutes} min."),
+    metaParams: { minutes: liveMargin },
+  };
 }
 
 function trackingLabel(health) {
@@ -240,6 +380,8 @@ export default function RideMode({
   onTestAlert,
   onEndRide,
   onOpenStop,
+  transferJourney = null,
+  transferRevalidation = null,
 }) {
   // Every word below follows the language, including a switch mid-ride.
   useLanguage();
@@ -379,6 +521,12 @@ export default function RideMode({
   });
   const evidence = liveEvidence(runtime, session);
   const remaining = remainingLabel(runtime.remainingStops, session.stage);
+  const transferNext = transferNextAction(
+    transferJourney,
+    transferRevalidation,
+    session.stage,
+    session.targetStop
+  );
 
   const recoverAtNextStop = () => {
     const nextStopId = session.nextStop?.id;
@@ -479,6 +627,25 @@ export default function RideMode({
       <p className={styles.instruction} role="alert">
         {urgent ? t(copy.instruction, copy.params) : ""}
       </p>
+
+      {transferNext && (
+        <div
+          className={styles.transferNext}
+          data-state={transferNext.state}
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span>{t(transferNext.title)}</span>
+          <strong>{t(transferNext.text, transferNext.params)}</strong>
+          {transferNext.meta && (
+            <small>
+              {t(transferNext.meta, transferNext.metaParams)}
+            </small>
+          )}
+        </div>
+      )}
+
       {/* The button's new name is not announced by every screen reader:
           the second tap it is waiting for is said here as well. */}
       <p className={styles.srOnly} role="status">

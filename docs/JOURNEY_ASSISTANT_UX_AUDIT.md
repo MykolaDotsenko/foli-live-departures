@@ -722,7 +722,7 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation and explicit automatic direct-replacement recovery are implemented through PR #119.**
+**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation, explicit automatic direct-replacement recovery and next-action transfer guidance are implemented through PR #120.**
 
 Implemented:
 - transfer topology;
@@ -750,6 +750,15 @@ Automatic recovery acceptance criteria:
 - ordinary board refreshes do not flicker/reset verified recovery cards;
 - replacement choices are direct-only in this slice;
 - nothing changes until the passenger explicitly selects a replacement.
+
+Next-action acceptance criteria:
+- during leg 1, Ride Mode names the transfer stop, committed next line and fresh transfer margin when known;
+- at the transfer stop, “Get off now” remains the primary urgent instruction;
+- immediately after that instruction, same-stop transfers say to wait there, while cross-platform transfers name the concrete boarding stop and approximate walk;
+- if the boarding platform identity is missing, the app fails closed to transfer-area recovery instead of inventing directions;
+- a broken committed second leg never keeps promising the old line;
+- Finnish and English expose the same transfer actions;
+- Active Journey leg 2 continues with one immediate instruction: stay, walk, or wait for the selected line.
 
 ---
 
@@ -967,8 +976,10 @@ Passenger sequence:
 6. Ride Mode controls the first boarded leg to the selected transfer occurrence;
 7. only authoritative arrival at that occurrence may advance the journey to leg 2;
 8. premature Ride Mode termination enters recovery instead of silently continuing;
-9. leg 2 repeats the existing explicit at-stop / selected-departure / Ride Mode handoff;
-10. final walking guidance is possible only after the final leg.
+9. while leg 1 is active, Ride Mode shows the next committed transfer action without competing with the current get-off instruction;
+10. at the transfer, same-stop journeys say to stay, while cross-platform journeys name the concrete next platform/stop and approximate walk;
+11. leg 2 repeats the existing explicit at-stop / selected-departure / Ride Mode handoff;
+12. final walking guidance is possible only after the final leg.
 
 UX constraints:
 - never hide the full nearby-stop list;

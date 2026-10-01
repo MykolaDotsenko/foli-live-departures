@@ -208,20 +208,46 @@ const nativeJourneyInput = await retry("native journey destination input", async
 );
 record("Journey Assistant destination input is present", nativeJourneyInput === true);
 
-const nativePlaceHandoff = await retry("native place-search handoff", async () =>
-  evaluate(`(() => {
-    const link = [...document.querySelectorAll("a")].find((node) =>
-      node.href === "https://turku.digitransit.fi/"
-    );
-    return link
-      ? {
-          text: link.textContent?.trim() || "",
-          href: link.href,
-          language: document.documentElement.lang || ""
-        }
-      : null;
-  })()`),
-  { attempts: 20, delayMs: 250 }
+const nativePlaceHandoff = await retry(
+  "native place-search handoff",
+  async () => {
+    const snapshot = await evaluate(`(() => {
+      const link = [...document.querySelectorAll("a")].find((node) =>
+        node.href === "https://turku.digitransit.fi/"
+      );
+      const journey = document.querySelector('[aria-labelledby="journey-search-title"]');
+      return {
+        link: link
+          ? {
+              text: link.textContent?.trim() || "",
+              href: link.href
+            }
+          : null,
+        language: document.documentElement.lang || "",
+        online: navigator.onLine,
+        journeyPresent: Boolean(journey),
+        privacyTextPresent: /official Turku journey planner|Turun virallista reittiopasta/i.test(
+          journey?.textContent || ""
+        )
+      };
+    })()`);
+
+    if (!snapshot?.link) {
+      throw new Error(
+        `handoff link not ready: ${JSON.stringify(snapshot || {})}`
+      );
+    }
+
+    return {
+      ...snapshot.link,
+      language: snapshot.language
+    };
+  },
+  // The native handoff link is intentionally conditioned on the app's online
+  // state. On a cold emulator WebView that connectivity probe can settle well
+  // after navigator.onLine is already true, so wait for UI readiness rather
+  // than weakening the link assertion.
+  { attempts: 60, delayMs: 500 }
 );
 record(
   "packaged Android hands address/POI search to the official planner",

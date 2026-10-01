@@ -510,3 +510,113 @@ test("does not round a sub-minute tight transfer margin up to one minute", () =>
     )
   ).toBeInTheDocument();
 });
+
+
+test("gives explicit cross-platform next actions on transfer leg 2", () => {
+  const onShowDeparture = vi.fn();
+  const common = {
+    transferLeg: 2,
+    lineRef: "7",
+    stopId: "501",
+    stopName: "Kauppatori D4",
+    distanceMeters: 90,
+    transferPlan: {
+      transfer: {
+        alightStopId: "500",
+        boardStopId: "501",
+        boardStopName: "Kauppatori D4",
+        walkingDistanceM: 90,
+      },
+      second: { lineRef: "7" },
+    },
+  };
+
+  const { rerender } = render(
+    <ActiveJourney
+      journey={journey(common)}
+      stop={{ id: "501", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={onShowDeparture}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Walk to Kauppatori D4" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Walk about 90 m to Kauppatori D4 for line 7.")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/When you reach the transfer stop, confirm it here/i)
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      journey={journey({
+        ...common,
+        phase: "waiting",
+        atStopConfirmedAt: 1_900_000_010_000,
+      })}
+      stop={{ id: "501", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={onShowDeparture}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(screen.getByText("Wait here for line 7.")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "When line 7 arrives, open the selected departure and start the Get-off alert."
+    )
+  ).toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show line 7 departure" })
+  );
+  expect(onShowDeparture).toHaveBeenCalledTimes(1);
+});
+
+test("same-stop transfer leg 2 says stay instead of pretending there is a walk", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        transferLeg: 2,
+        lineRef: "7",
+        stopId: "500",
+        stopName: "Kauppatori",
+        distanceMeters: 0,
+        transferPlan: {
+          transfer: {
+            alightStopId: "500",
+            boardStopId: "500",
+            boardStopName: "Kauppatori",
+            walkingDistanceM: 0,
+          },
+          second: { lineRef: "7" },
+        },
+      })}
+      stop={{ id: "500", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Stay at Kauppatori" })
+  ).toBeInTheDocument();
+  expect(screen.getByText("Stay here for line 7.")).toBeInTheDocument();
+  expect(
+    screen.getByText(/You are at the transfer stop/i)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/About 0 m to the boarding stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
+});

@@ -5,10 +5,25 @@ import { buildWalkingDirectionsUrl } from "../utils/maps";
 import { formatClock, formatDue } from "../utils/time";
 import styles from "./ActiveJourney.module.css";
 
+function isSecondTransferLeg(journey) {
+  return Boolean(journey?.transferPlan && journey.transferLeg === 2);
+}
+
+function secondLegUsesSameStop(journey) {
+  return (
+    isSecondTransferLeg(journey) &&
+    String(journey.transferPlan.transfer?.alightStopId || "") ===
+      String(journey.transferPlan.transfer?.boardStopId || "")
+  );
+}
+
 function phaseTitle(journey) {
   if (journey.phase === "recovery") return t("Choose another route");
   if (journey.phase === "waiting") {
     return t("Wait for line {line}", { line: journey.lineRef || "—" });
+  }
+  if (secondLegUsesSameStop(journey)) {
+    return t("Stay at {stop}", { stop: journey.stopName });
   }
   return t("Walk to {stop}", { stop: journey.stopName });
 }
@@ -124,8 +139,11 @@ export default function ActiveJourney({
 
   if (!journey) return null;
 
-  const walkingUrl = online ? buildWalkingDirectionsUrl(stop) : "";
   const transferLiveStatus = transferLiveStatusText(journey);
+  const secondTransferLeg = isSecondTransferLeg(journey);
+  const sameTransferStop = secondLegUsesSameStop(journey);
+  const walkingUrl =
+    online && !sameTransferStop ? buildWalkingDirectionsUrl(stop) : "";
 
   return (
     <section
@@ -201,14 +219,32 @@ export default function ActiveJourney({
       {journey.phase === "walking-to-stop" && (
         <>
           <p className={styles.primaryStatus}>
-            {t("About {distance} to the boarding stop.", {
-              distance: formatDistance(journey.distanceMeters),
-            })}
+            {secondTransferLeg
+              ? sameTransferStop
+                ? t("Stay here for line {line}.", {
+                    line: journey.lineRef || "—",
+                  })
+                : t("Walk about {distance} to {stop} for line {line}.", {
+                    distance: formatDistance(journey.distanceMeters),
+                    stop: journey.stopName,
+                    line: journey.lineRef || "—",
+                  })
+              : t("About {distance} to the boarding stop.", {
+                  distance: formatDistance(journey.distanceMeters),
+                })}
           </p>
           <p className={styles.note}>
-            {t(
-              "When you reach the stop, confirm it here. The app will not assume your physical location."
-            )}
+            {secondTransferLeg
+              ? sameTransferStop
+                ? t(
+                    "You are at the transfer stop. Confirm it below before waiting for the next bus."
+                  )
+                : t(
+                    "When you reach the transfer stop, confirm it here. The app will not assume your physical location."
+                  )
+              : t(
+                  "When you reach the stop, confirm it here. The app will not assume your physical location."
+                )}
           </p>
         </>
       )}
@@ -216,16 +252,25 @@ export default function ActiveJourney({
       {journey.phase === "waiting" && (
         <>
           <p className={styles.primaryStatus}>
-            {t("Your selected bus is pinned first in the departure board.")}
+            {secondTransferLeg
+              ? t("Wait here for line {line}.", {
+                  line: journey.lineRef || "—",
+                })
+              : t("Your selected bus is pinned first in the departure board.")}
           </p>
           <p className={styles.note}>
             {journey.transferPlan && journey.transferLeg === 1
               ? t(
                   "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
                 )
-              : t(
-                  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-                )}
+              : secondTransferLeg
+                ? t(
+                    "When line {line} arrives, open the selected departure and start the Get-off alert.",
+                    { line: journey.lineRef || "—" }
+                  )
+                : t(
+                    "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+                  )}
           </p>
         </>
       )}
@@ -304,7 +349,11 @@ export default function ActiveJourney({
               className={styles.primaryButton}
               onClick={onShowDeparture}
             >
-              {t("Show selected departure")}
+              {secondTransferLeg
+                ? t("Show line {line} departure", {
+                    line: journey.lineRef || "—",
+                  })
+                : t("Show selected departure")}
             </button>
           )}
 
