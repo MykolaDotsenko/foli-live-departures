@@ -117,14 +117,30 @@ function NearbyStopCard({
                 {t("Line {line}", { line: fit.best.lineRef || "—" })} ·{" "}
                 {formatDue(fit.best.departureAt)}
               </strong>
-              {Number.isFinite(fit.best.destinationArrivalAt) && (
+              {Number.isFinite(
+                fit.best.finalArrivalAt ?? fit.best.destinationArrivalAt
+              ) && (
                 <>
                   {" · "}
                   {t("arrive about {time}", {
-                    time: formatClock(fit.best.destinationArrivalAt),
+                    time: formatClock(
+                      fit.best.finalArrivalAt ??
+                        fit.best.destinationArrivalAt
+                    ),
                   })}
                 </>
               )}
+              {Number.isFinite(fit.best.finalWalkDistanceM) &&
+                fit.best.finalWalkDistanceM > 0 && (
+                  <>
+                    {" · "}
+                    {t("final walk ≈ {distance}", {
+                      distance: formatDistance(
+                        fit.best.finalWalkDistanceM
+                      ),
+                    })}
+                  </>
+                )}
             </span>
           )}
         </span>
