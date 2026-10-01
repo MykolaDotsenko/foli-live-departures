@@ -819,6 +819,15 @@ function App() {
           >
             CC BY 4.0
           </a>
+          {" · "}
+          {t("Place search data")}:{" "}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noreferrer"
+          >
+            © OpenStreetMap contributors
+          </a>
         </p>
 
         <div className="maker-row">
