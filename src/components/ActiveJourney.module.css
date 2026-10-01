@@ -62,7 +62,8 @@
 .primaryStatus,
 .note,
 .recovery,
-.offline {
+.offline,
+.monitoringNotice {
   margin: 0;
   line-height: 1.45;
 }
@@ -94,6 +95,16 @@
   color: #53656a;
   font-size: 0.74rem;
   font-weight: 750;
+}
+
+.monitoringNotice {
+  padding: 8px 9px;
+  border: 1px solid #d8c9a6;
+  border-radius: 9px;
+  background: #fffaf0;
+  color: #6d5425;
+  font-size: 0.74rem;
+  font-weight: 780;
 }
 
 .actions {
@@ -212,6 +223,12 @@
 
   :root[data-theme="dark"] .offline {
     background: var(--dm-sunken);
+  }
+
+  :root[data-theme="dark"] .monitoringNotice {
+    border-color: #705f3d;
+    background: #332f25;
+    color: #f0dcae;
   }
 
   :root[data-theme="dark"] .ghostButton,
