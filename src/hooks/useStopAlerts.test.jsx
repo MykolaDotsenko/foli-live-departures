@@ -339,3 +339,45 @@ test("disabled alert monitoring makes no provider request", async () => {
   expect(mocks.fetchAlerts).not.toHaveBeenCalled();
   expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
 });
+
+
+test("disabling alert monitoring clears the previous payload before another transfer can reuse the hook", async () => {
+  const cancellationPayload = {
+    cancellations: [
+      {
+        id: "cancel-old",
+        line: "50",
+        departure: 1_900_000_000,
+        stops: [
+          {
+            stop: "164",
+            arrival: 1_900_000_600,
+            isactive: true,
+          },
+        ],
+      },
+    ],
+    messages: [],
+  };
+
+  mocks.fetchAlerts.mockResolvedValue(cancellationPayload);
+
+  const { result, rerender } = renderHook(
+    ({ enabled }) =>
+      useStopAlerts("164", line50, routesById, { enabled }),
+    { initialProps: { enabled: true } }
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts).toEqual([
+      expect.objectContaining({ type: "cancellation", line: "50" }),
+    ])
+  );
+  expect(result.current.receivedAtMs).toEqual(expect.any(Number));
+
+  rerender({ enabled: false });
+
+  await waitFor(() => expect(result.current.alerts).toEqual([]));
+  expect(result.current.receivedAtMs).toBeNull();
+  expect(result.current.error).toBe(false);
+});

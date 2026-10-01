@@ -119,6 +119,9 @@ export default function useStopAlerts(
       abortRef.current?.abort();
       membershipAbortRef.current?.abort();
       failedRef.current = false;
+      setPayload(null);
+      setReceivedAtMs(null);
+      setServed({ stopId: "", ids: EMPTY_ROUTE_IDS });
       setError(false);
       return undefined;
     }
