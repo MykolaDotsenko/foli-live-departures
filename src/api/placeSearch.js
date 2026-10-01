@@ -31,7 +31,7 @@ function finiteCoordinate(value) {
 }
 
 /**
- * @param {string} language
+ * @param {number} value
  */
 function compactCoordinate(value) {
   return String(Number(Number(value).toFixed(6)));
@@ -52,7 +52,9 @@ function providerLanguages(language) {
  */
 function readCache() {
   try {
-    const parsed = JSON.parse(globalThis.sessionStorage.getItem(CACHE_KEY));
+    const raw = globalThis.sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
   } catch {
     // Cache is an optimization only.
@@ -204,27 +206,31 @@ function normalizeResult(raw, language) {
  * @returns {string}
  */
 export function placeSearchViewbox(stops) {
-  const coordinates = (Array.isArray(stops) ? stops : [])
-    .map((stop) => ({
-      lat: finiteCoordinate(stop?.lat),
-      lon: finiteCoordinate(stop?.lon),
-    }))
-    .filter(
-      (point) =>
-        point.lat !== null &&
-        point.lon !== null &&
-        point.lat >= -90 &&
-        point.lat <= 90 &&
-        point.lon >= -180 &&
-        point.lon <= 180
-    );
+  /** @type {number[]} */
+  const lats = [];
+  /** @type {number[]} */
+  const lons = [];
 
-  if (coordinates.length < 2) return "";
+  for (const stop of Array.isArray(stops) ? stops : []) {
+    const lat = finiteCoordinate(stop?.lat);
+    const lon = finiteCoordinate(stop?.lon);
+    if (
+      lat === null ||
+      lon === null ||
+      lat < -90 ||
+      lat > 90 ||
+      lon < -180 ||
+      lon > 180
+    ) {
+      continue;
+    }
+    lats.push(lat);
+    lons.push(lon);
+  }
 
-  const lats = coordinates.map((point) => point.lat);
-  const lons = coordinates.map((point) => point.lon);
+  if (lats.length < 2) return "";
+
   const padding = 0.02;
-
   const minLat = Math.max(-90, Math.min(...lats) - padding);
   const maxLat = Math.min(90, Math.max(...lats) + padding);
   const minLon = Math.max(-180, Math.min(...lons) - padding);
@@ -290,10 +296,15 @@ export async function searchPlaces(
   }
 
   const payload = await response.json();
-  const results = (Array.isArray(payload) ? payload : [])
-    .map((item) => normalizeResult(item, language))
-    .filter(Boolean)
-    .slice(0, 5);
+  const normalized = (Array.isArray(payload) ? payload : []).map((item) =>
+    normalizeResult(item, language)
+  );
+  /** @type {PlaceSearchResult[]} */
+  const results = [];
+  for (const item of normalized) {
+    if (item) results.push(item);
+    if (results.length >= 5) break;
+  }
 
   storeResults(key, results);
   return results;
