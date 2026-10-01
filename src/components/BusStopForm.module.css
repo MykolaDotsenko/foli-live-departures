@@ -114,7 +114,8 @@
   box-shadow: 0 16px 36px rgba(31, 67, 74, 0.16);
 }
 
-.suggestion {
+.suggestion,
+.suggestionButton {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -125,12 +126,25 @@
   cursor: pointer;
 }
 
-.suggestion:last-child {
+.suggestion:last-child,
+.suggestionButton:last-child {
   border-bottom: 0;
 }
 
+.suggestionButton {
+  width: 100%;
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+}
+
 .suggestion:hover,
-.suggestion[aria-selected="true"] {
+.suggestion[aria-selected="true"],
+.suggestionButton:hover,
+.suggestionButton:focus-visible {
   background: #edf8f8;
 }
 
@@ -306,12 +320,15 @@
     box-shadow: 0 16px 36px var(--dm-shadow);
   }
 
-  :root[data-theme="dark"] .suggestion {
+  :root[data-theme="dark"] .suggestion,
+  :root[data-theme="dark"] .suggestionButton {
     border-bottom-color: var(--dm-line);
   }
 
   :root[data-theme="dark"] .suggestion:hover,
-  :root[data-theme="dark"] .suggestion[aria-selected="true"] {
+  :root[data-theme="dark"] .suggestion[aria-selected="true"],
+  :root[data-theme="dark"] .suggestionButton:hover,
+  :root[data-theme="dark"] .suggestionButton:focus-visible {
     background: var(--dm-accent-surface);
   }
 
