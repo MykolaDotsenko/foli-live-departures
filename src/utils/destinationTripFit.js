@@ -18,6 +18,26 @@ function gtfsClockSeconds(value) {
 }
 
 /**
+ * @param {TripStopTime} boarding
+ * @param {TripStopTime} destination
+ * @returns {number | null}
+ */
+function stopRideDurationSec(boarding, destination) {
+  const boardClock =
+    gtfsClockSeconds(boarding.departureTime) ??
+    gtfsClockSeconds(boarding.arrivalTime);
+  const destinationClock =
+    gtfsClockSeconds(destination.arrivalTime) ??
+    gtfsClockSeconds(destination.departureTime);
+
+  return boardClock !== null &&
+    destinationClock !== null &&
+    destinationClock >= boardClock
+    ? destinationClock - boardClock
+    : null;
+}
+
+/**
  * Repeated stop IDs are deliberately rejected unless the caller can anchor
  * the occurrence by stop_sequence.
  *
@@ -64,6 +84,7 @@ export function resolveBoardingOccurrence(
  *   boardingSequence?: number | null,
  *   boardingAimedDepartureEpochSec?: number | null,
  *   destinationStopIds: readonly string[],
+ *   destinationStopAccess?: Record<string, { distanceMeters?: number, walkDurationSec?: number }>,
  * }} input
  */
 export function analyzeTripFit({
@@ -72,6 +93,7 @@ export function analyzeTripFit({
   boardingSequence = null,
   boardingAimedDepartureEpochSec = null,
   destinationStopIds,
+  destinationStopAccess = {},
 }) {
   const boarding = resolveBoardingOccurrence(
     stopTimes,
@@ -106,15 +128,14 @@ export function analyzeTripFit({
   }
 
   const anyTarget = stopTimes.some((item) => targets.has(String(item.stopId)));
-  const destination =
-    stopTimes.find(
-      (item) =>
-        targets.has(String(item.stopId)) &&
-        Number(item.stopSequence) > Number(boarding.stopSequence) &&
-        item.dropOffType !== 1
-    ) || null;
+  const downstream = stopTimes.filter(
+    (item) =>
+      targets.has(String(item.stopId)) &&
+      Number(item.stopSequence) > Number(boarding.stopSequence) &&
+      item.dropOffType !== 1
+  );
 
-  if (!destination) {
+  if (downstream.length === 0) {
     return {
       compatible: false,
       reason: anyTarget
@@ -123,27 +144,66 @@ export function analyzeTripFit({
       boarding,
       destination: null,
       rideDurationSec: null,
+      finalWalkDistanceM: 0,
+      finalWalkDurationSec: 0,
+      totalDurationSec: null,
     };
   }
 
-  const boardClock =
-    gtfsClockSeconds(boarding.departureTime) ??
-    gtfsClockSeconds(boarding.arrivalTime);
-  const destinationClock =
-    gtfsClockSeconds(destination.arrivalTime) ??
-    gtfsClockSeconds(destination.departureTime);
-  const rideDurationSec =
-    boardClock !== null &&
-    destinationClock !== null &&
-    destinationClock >= boardClock
-      ? destinationClock - boardClock
-      : null;
+  const ranked = downstream.map((destination, index) => {
+    const rideDurationSec = stopRideDurationSec(boarding, destination);
+    const access =
+      destinationStopAccess?.[String(destination.stopId)] || {};
+    const walkDistance = finiteNumber(access.distanceMeters);
+    const walkDuration = finiteNumber(access.walkDurationSec);
+    const finalWalkDistanceM =
+      walkDistance !== null && walkDistance >= 0 ? walkDistance : 0;
+    const finalWalkDurationSec =
+      walkDuration !== null && walkDuration >= 0 ? walkDuration : 0;
+    const totalDurationSec =
+      rideDurationSec === null
+        ? null
+        : rideDurationSec + finalWalkDurationSec;
+
+    return {
+      destination,
+      rideDurationSec,
+      finalWalkDistanceM,
+      finalWalkDurationSec,
+      totalDurationSec,
+      index,
+    };
+  });
+
+  ranked.sort((left, right) => {
+    const leftTotal =
+      left.totalDurationSec === null
+        ? Number.POSITIVE_INFINITY
+        : left.totalDurationSec;
+    const rightTotal =
+      right.totalDurationSec === null
+        ? Number.POSITIVE_INFINITY
+        : right.totalDurationSec;
+
+    return (
+      leftTotal - rightTotal ||
+      left.finalWalkDurationSec - right.finalWalkDurationSec ||
+      Number(left.destination.stopSequence) -
+        Number(right.destination.stopSequence) ||
+      left.index - right.index
+    );
+  });
+
+  const best = ranked[0];
 
   return {
     compatible: true,
     reason: "compatible",
     boarding,
-    destination,
-    rideDurationSec,
+    destination: best.destination,
+    rideDurationSec: best.rideDurationSec,
+    finalWalkDistanceM: best.finalWalkDistanceM,
+    finalWalkDurationSec: best.finalWalkDurationSec,
+    totalDurationSec: best.totalDurationSec,
   };
 }
