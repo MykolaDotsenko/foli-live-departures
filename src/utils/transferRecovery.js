@@ -35,10 +35,10 @@ export function canSearchTransferRecovery(journey) {
  * @param {readonly any[]} allStops
  */
 export function transferRecoveryOriginStops(journey, allStops) {
-  if (!canSearchTransferRecovery(journey)) return [];
+  if (!canSearchTransferRecovery(journey) || !journey?.transferPlan) return [];
 
   const alightStopId = String(
-    journey.transferPlan?.transfer?.alightStopId || ""
+    journey.transferPlan.transfer?.alightStopId || ""
   );
   if (!alightStopId) return [];
 

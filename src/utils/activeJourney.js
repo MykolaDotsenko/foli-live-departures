@@ -267,6 +267,7 @@ function secondLegJourney(pending, selectedAt, phase, recoveryReason) {
   const departureAt = finitePositive(second?.departureAt);
   if (
     !plan ||
+    !second ||
     departureAt === null ||
     !Number.isFinite(selectedAt) ||
     selectedAt <= 0
