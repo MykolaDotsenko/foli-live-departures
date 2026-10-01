@@ -88,3 +88,56 @@ test.each([
 
   expect(screen.getByText(message)).toBeInTheDocument();
 });
+
+
+test("renders nothing without an active destination or while recovery search is idle", () => {
+  const { container, rerender } = render(
+    <TransferRecoveryPanel
+      state="loading"
+      options={[]}
+      destination={null}
+      onSelectJourney={() => {}}
+    />
+  );
+
+  expect(container).toBeEmptyDOMElement();
+
+  rerender(
+    <TransferRecoveryPanel
+      state="idle"
+      options={[]}
+      destination={destination}
+      onSelectJourney={() => {}}
+    />
+  );
+  expect(container).toBeEmptyDOMElement();
+});
+
+test("localizes a saved-place recovery destination and ignores unknown transient states", () => {
+  const { rerender, container } = render(
+    <TransferRecoveryPanel
+      state="loading"
+      options={[]}
+      destination={{
+        id: "place:home",
+        kind: "saved-place",
+        label: "Home",
+      }}
+      onSelectJourney={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Continue to Home" })
+  ).toBeInTheDocument();
+
+  rerender(
+    <TransferRecoveryPanel
+      state="refreshing"
+      options={[]}
+      destination={destination}
+      onSelectJourney={() => {}}
+    />
+  );
+  expect(container).toBeEmptyDOMElement();
+});

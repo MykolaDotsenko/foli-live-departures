@@ -292,3 +292,14 @@ describe("transfer recovery fail-closed fallbacks", () => {
     expect(failedOnly["501"].best).toBeNull();
   });
 });
+
+
+test("missing candidate departure identity never matches a failed transfer run", () => {
+  expect(departureMatchesFailedTransferRun(null, journey())).toBe(false);
+  expect(
+    departureMatchesFailedTransferRun(
+      { tripRef: "" },
+      journey()
+    )
+  ).toBe(false);
+});
