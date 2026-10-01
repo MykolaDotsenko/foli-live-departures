@@ -155,7 +155,7 @@ test("shows door-to-destination arrival and final walk for a place", () => {
       `Arrive about ${formatClock(placeDeparture.finalArrivalAt)}`
     )
   ).toBeInTheDocument();
-  expect(screen.getByText("Final walk ≈ 240 m")).toBeInTheDocument();
+  expect(screen.getByText("Walk ≈ 240 m")).toBeInTheDocument();
   expect(
     screen.getByText(
       "Föli data · walking distances are approximate."
