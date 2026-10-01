@@ -1,5 +1,6 @@
 import { parseGtfsClock } from "./gtfsSchedule";
 import { resolveRideBoardingIndex } from "./rideProgress";
+import { approximateWalkSeconds } from "./walkingEstimate";
 
 /** @import { TripStopTime } from "../types/foli" */
 
@@ -64,6 +65,7 @@ export function resolveBoardingOccurrence(
  *   boardingSequence?: number | null,
  *   boardingAimedDepartureEpochSec?: number | null,
  *   destinationStopIds: readonly string[],
+ *   destinationStopDistances?: Record<string, number> | null,
  * }} input
  */
 export function analyzeTripFit({
@@ -72,6 +74,7 @@ export function analyzeTripFit({
   boardingSequence = null,
   boardingAimedDepartureEpochSec = null,
   destinationStopIds,
+  destinationStopDistances = null,
 }) {
   const boarding = resolveBoardingOccurrence(
     stopTimes,
@@ -106,15 +109,14 @@ export function analyzeTripFit({
   }
 
   const anyTarget = stopTimes.some((item) => targets.has(String(item.stopId)));
-  const destination =
-    stopTimes.find(
-      (item) =>
-        targets.has(String(item.stopId)) &&
-        Number(item.stopSequence) > Number(boarding.stopSequence) &&
-        item.dropOffType !== 1
-    ) || null;
+  const downstream = stopTimes.filter(
+    (item) =>
+      targets.has(String(item.stopId)) &&
+      Number(item.stopSequence) > Number(boarding.stopSequence) &&
+      item.dropOffType !== 1
+  );
 
-  if (!destination) {
+  if (downstream.length === 0) {
     return {
       compatible: false,
       reason: anyTarget
@@ -123,27 +125,71 @@ export function analyzeTripFit({
       boarding,
       destination: null,
       rideDurationSec: null,
+      finalWalkDistanceM: null,
+      finalWalkDurationSec: null,
     };
   }
 
   const boardClock =
     gtfsClockSeconds(boarding.departureTime) ??
     gtfsClockSeconds(boarding.arrivalTime);
-  const destinationClock =
-    gtfsClockSeconds(destination.arrivalTime) ??
-    gtfsClockSeconds(destination.departureTime);
-  const rideDurationSec =
-    boardClock !== null &&
-    destinationClock !== null &&
-    destinationClock >= boardClock
-      ? destinationClock - boardClock
+
+  const candidates = downstream.map((destination) => {
+    const destinationClock =
+      gtfsClockSeconds(destination.arrivalTime) ??
+      gtfsClockSeconds(destination.departureTime);
+    const rideDurationSec =
+      boardClock !== null &&
+      destinationClock !== null &&
+      destinationClock >= boardClock
+        ? destinationClock - boardClock
+        : null;
+
+    const rawDistance = destinationStopDistances
+      ? finiteNumber(destinationStopDistances[String(destination.stopId)])
       : null;
+    const finalWalkDistanceM =
+      rawDistance !== null && rawDistance >= 0 ? rawDistance : null;
+    const finalWalkDurationSec =
+      approximateWalkSeconds(finalWalkDistanceM);
+
+    return {
+      destination,
+      rideDurationSec,
+      finalWalkDistanceM,
+      finalWalkDurationSec,
+    };
+  });
+
+  let selected = candidates[0];
+
+  if (destinationStopDistances) {
+    const scored = candidates
+      .filter(
+        (candidate) =>
+          candidate.rideDurationSec !== null &&
+          candidate.finalWalkDurationSec !== null
+      )
+      .sort(
+        (left, right) =>
+          left.rideDurationSec +
+            left.finalWalkDurationSec -
+            (right.rideDurationSec + right.finalWalkDurationSec) ||
+          left.rideDurationSec - right.rideDurationSec ||
+          Number(left.destination.stopSequence) -
+            Number(right.destination.stopSequence)
+      );
+
+    if (scored.length > 0) selected = scored[0];
+  }
 
   return {
     compatible: true,
     reason: "compatible",
     boarding,
-    destination,
-    rideDurationSec,
+    destination: selected.destination,
+    rideDurationSec: selected.rideDurationSec,
+    finalWalkDistanceM: selected.finalWalkDistanceM,
+    finalWalkDurationSec: selected.finalWalkDurationSec,
   };
 }
