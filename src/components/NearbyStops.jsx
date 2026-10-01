@@ -20,6 +20,7 @@ import {
 import { formatClock, formatDue } from "../utils/time";
 import { rankDestinationStops } from "../utils/journeyRanking";
 import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
+import { directOptionMatchesActiveJourney } from "../utils/activeJourney";
 import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
@@ -163,6 +164,7 @@ function NearbyStops({
   online = true,
   searchEdits = () => 0,
   destination = null,
+  excludedJourney = null,
   onSelectJourney = null,
   onSelect,
 }) {
@@ -204,22 +206,27 @@ function NearbyStops({
 
   const destinationLabel = shownDestinationLabel(destination);
 
-  const baseDirectJourneyOptions = useMemo(
-    () =>
-      destination && fitState === "ready" && !searchExpanded
-        ? selectDirectJourneyOptions({
-            stops: baseNearbyStops,
-            fitsByStop,
-          })
-        : [],
-    [
-      baseNearbyStops,
-      destination,
-      fitState,
+  const baseDirectJourneyOptions = useMemo(() => {
+    if (!destination || fitState !== "ready" || searchExpanded) return [];
+
+    const options = selectDirectJourneyOptions({
+      stops: baseNearbyStops,
       fitsByStop,
-      searchExpanded,
-    ]
-  );
+    });
+    return excludedJourney
+      ? options.filter(
+          (option) =>
+            !directOptionMatchesActiveJourney(option, excludedJourney)
+        )
+      : options;
+  }, [
+    baseNearbyStops,
+    destination,
+    excludedJourney,
+    fitState,
+    fitsByStop,
+    searchExpanded,
+  ]);
 
   useEffect(() => {
     if (
@@ -244,16 +251,26 @@ function NearbyStops({
     searchExpanded,
   ]);
 
-  const directJourneyOptions = useMemo(
-    () =>
-      destination && fitState === "ready"
-        ? selectDirectJourneyOptions({
-            stops: nearbyStops,
-            fitsByStop,
-          })
-        : [],
-    [destination, fitState, fitsByStop, nearbyStops]
-  );
+  const directJourneyOptions = useMemo(() => {
+    if (!destination || fitState !== "ready") return [];
+
+    const options = selectDirectJourneyOptions({
+      stops: nearbyStops,
+      fitsByStop,
+    });
+    return excludedJourney
+      ? options.filter(
+          (option) =>
+            !directOptionMatchesActiveJourney(option, excludedJourney)
+        )
+      : options;
+  }, [
+    destination,
+    excludedJourney,
+    fitState,
+    fitsByStop,
+    nearbyStops,
+  ]);
 
   const destinationSortedStops = useMemo(() => {
     const previousOrder =
