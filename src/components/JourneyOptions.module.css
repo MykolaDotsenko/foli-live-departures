@@ -95,6 +95,7 @@
 
 .route,
 .meta,
+.finalWalk,
 .tradeoff {
   overflow-wrap: anywhere;
   font-size: 0.76rem;
@@ -108,6 +109,11 @@
 .meta {
   color: #526a67;
   font-weight: 700;
+}
+
+.finalWalk {
+  color: #355c55;
+  font-weight: 800;
 }
 
 .tradeoff {
@@ -154,6 +160,7 @@
 
   :root[data-theme="dark"] .count,
   :root[data-theme="dark"] .meta,
+  :root[data-theme="dark"] .finalWalk,
   :root[data-theme="dark"] .note {
     color: var(--dm-muted);
   }
