@@ -25,7 +25,9 @@ function catchabilityRank(departure) {
  * @returns {number}
  */
 function arrivalRank(departure) {
-  const arrival = Number(departure.destinationArrivalAt);
+  const arrival = Number(
+    departure.finalArrivalAt ?? departure.destinationArrivalAt
+  );
   return Number.isFinite(arrival) && arrival > 0
     ? arrival
     : Number.POSITIVE_INFINITY;
