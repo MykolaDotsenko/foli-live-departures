@@ -75,6 +75,7 @@ export type ActiveJourneyRecoveryReason =
 export interface ActiveDirectJourney {
   id: string;
   destinationId: string;
+  destinationKind: DestinationIntent["kind"];
   destinationLabel: string;
   optionLabel: DirectJourneyLabel;
   stopId: string;
