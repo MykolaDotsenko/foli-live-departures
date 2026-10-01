@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import ActiveJourney from "./components/ActiveJourney";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
@@ -14,6 +15,7 @@ import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
+import useActiveJourney from "./hooks/useActiveJourney";
 import useDestinationIntent from "./hooks/useDestinationIntent";
 import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
@@ -26,6 +28,9 @@ import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
+import { arrivalMatchesActiveJourney } from "./utils/activeJourney";
+import { advanceServerTime } from "./utils/time";
+import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
 import { realStopName } from "./utils/stopNames";
 
@@ -44,6 +49,23 @@ function pageHeading() {
 
 function rideHeading() {
   return document.getElementById("ride-mode-title");
+}
+
+function activeJourneyHeading() {
+  return document.getElementById("active-journey-title");
+}
+
+function selectedJourneyDepartureAction() {
+  return (
+    document.getElementById("selected-journey-departure-action") ||
+    pageHeading()
+  );
+}
+
+function firstJourneyOption() {
+  return document.querySelector(
+    '[aria-labelledby="direct-journey-options-title"] button'
+  );
 }
 
 function announceStop(stopId, name, loading) {
@@ -124,6 +146,7 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const journey = useDestinationIntent();
+  const activeJourney = useActiveJourney();
   const requestFocus = usePendingFocus();
   // The passenger's own edits to the stop search, counted, so a late "Near
   // you" fix can tell that they started typing while it was on its way. A
@@ -221,6 +244,64 @@ function App() {
     () => serviceAlerts.filter((alert) => alert.type === "cancellation"),
     [serviceAlerts]
   );
+
+  const selectedJourney = activeJourney.journey;
+  const selectedJourneyArrival = useMemo(() => {
+    if (!selectedJourney || selectedJourney.stopId !== stopId) return null;
+    return (
+      arrivals.find((arrival) =>
+        arrivalMatchesActiveJourney(arrival, selectedJourney)
+      ) || null
+    );
+  }, [arrivals, selectedJourney, stopId]);
+
+  const selectedJourneyCancelled =
+    selectedJourneyArrival &&
+    isCancelledHere(selectedJourneyArrival, stopCancellations);
+
+  const selectedJourneyStop = useMemo(
+    () =>
+      selectedJourney
+        ? stops.find((candidate) => candidate.id === selectedJourney.stopId) ||
+          null
+        : null,
+    [selectedJourney, stops]
+  );
+
+  useEffect(() => {
+    if (!selectedJourney || selectedJourney.stopId !== stopId) return;
+
+    activeJourney.observeStopFeed({
+      stopId,
+      arrival: selectedJourneyArrival,
+      referenceTimeSec: advanceServerTime(serverTime, receivedAtMs),
+      receivedAtMs,
+      feedError: error,
+      cancelled: selectedJourneyCancelled === true,
+    });
+  }, [
+    activeJourney.observeStopFeed,
+    error,
+    receivedAtMs,
+    selectedJourney,
+    selectedJourneyArrival,
+    selectedJourneyCancelled,
+    serverTime,
+    stopId,
+  ]);
+
+  useEffect(() => {
+    if (
+      selectedJourney &&
+      selectedJourney.destinationId !== journey.destination?.id
+    ) {
+      activeJourney.clearJourney();
+    }
+  }, [
+    activeJourney.clearJourney,
+    journey.destination?.id,
+    selectedJourney,
+  ]);
   // Föli's own name for the stop, or "" while none is known: the board and
   // the title then call it by its number, in the reader's language.
   const displayStopName = selectedStop?.name || realStopName(stopName);
@@ -334,7 +415,10 @@ function App() {
   // "No need to watch for your stop" instead of nothing.
   const startRide = (config) => {
     const started = ride.startRide(config);
-    if (started) requestFocus(rideHeading);
+    if (started) {
+      activeJourney.clearJourney();
+      requestFocus(rideHeading);
+    }
     return started;
   };
 
@@ -343,6 +427,55 @@ function App() {
   const endRide = () => {
     requestFocus(pageHeading);
     ride.endRide();
+  };
+
+  const chooseJourneyPlace = (place) => {
+    activeJourney.clearJourney();
+    journey.choosePlace(place);
+  };
+
+  const chooseJourneyStop = (stop) => {
+    activeJourney.clearJourney();
+    journey.chooseStop(stop);
+  };
+
+  const clearJourneyDestination = () => {
+    activeJourney.clearJourney();
+    journey.clearDestination();
+  };
+
+  const selectJourneyOption = (option) => {
+    if (!journey.destination) return;
+    const selected = activeJourney.selectDirectJourney(
+      option,
+      journey.destination
+    );
+    if (!selected) return;
+
+    requestFocus(activeJourneyHeading);
+    selectStop(option.stopId);
+  };
+
+  const confirmJourneyAtStop = () => {
+    requestFocus(activeJourneyHeading);
+    activeJourney.confirmAtStop();
+  };
+
+  const showSelectedJourneyDeparture = () => {
+    if (!selectedJourney) return;
+    requestFocus(selectedJourneyDepartureAction);
+    selectStop(selectedJourney.stopId);
+  };
+
+  const chooseAnotherJourney = () => {
+    requestFocus(firstJourneyOption);
+    activeJourney.clearJourney();
+  };
+
+  const openSelectedJourneyStop = () => {
+    if (!selectedJourney) return;
+    requestFocus(pageHeading);
+    selectStop(selectedJourney.stopId);
   };
 
   const currentStop = stopId
@@ -469,9 +602,21 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
-            onChoosePlace={journey.choosePlace}
-            onChooseStop={journey.chooseStop}
-            onClear={journey.clearDestination}
+            onChoosePlace={chooseJourneyPlace}
+            onChooseStop={chooseJourneyStop}
+            onClear={clearJourneyDestination}
+          />
+        )}
+
+        {!ride.session && selectedJourney && (
+          <ActiveJourney
+            journey={selectedJourney}
+            stop={selectedJourneyStop}
+            online={online}
+            onConfirmAtStop={confirmJourneyAtStop}
+            onShowDeparture={showSelectedJourneyDeparture}
+            onChooseAnother={chooseAnotherJourney}
+            onOpenStop={openSelectedJourneyStop}
           />
         )}
 
@@ -551,6 +696,7 @@ function App() {
               }
               placesById={placesById}
               destination={journey.destination}
+              selectedJourney={selectedJourney}
               onStartRide={startRide}
               activeRideTripRef={ride.session?.tripRef || ""}
               cancellations={stopCancellations}
@@ -574,6 +720,7 @@ function App() {
           online={online}
           searchEdits={readSearchEdits}
           destination={journey.destination}
+          onSelectJourney={selectJourneyOption}
           onSelect={selectStop}
         />
 
