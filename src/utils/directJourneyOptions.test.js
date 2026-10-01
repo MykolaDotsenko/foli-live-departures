@@ -200,3 +200,41 @@ test("withholds an option when catchability is unknown", () => {
 
   expect(options).toEqual([]);
 });
+
+
+test("ranks place options by final arrival after walking", () => {
+  const fastBusLongWalk = {
+    ...departure({ tripRef: "long-walk", arrival: 2_000 }),
+    finalWalkDistanceM: 900,
+    finalWalkDurationSec: 938,
+    finalArrivalAt: 2_938,
+  };
+  const laterBusShortWalk = {
+    ...departure({ tripRef: "short-walk", arrival: 2_200 }),
+    finalWalkDistanceM: 80,
+    finalWalkDurationSec: 84,
+    finalArrivalAt: 2_284,
+  };
+
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "a", distanceMeters: 120 },
+      { id: "b", distanceMeters: 150 },
+    ],
+    fitsByStop: {
+      a: {
+        status: "good",
+        best: fastBusLongWalk,
+        departures: [fastBusLongWalk],
+      },
+      b: {
+        status: "good",
+        best: laterBusShortWalk,
+        departures: [laterBusShortWalk],
+      },
+    },
+  });
+
+  expect(options[0].stopId).toBe("b");
+  expect(options[0].departure.tripRef).toBe("short-walk");
+});
