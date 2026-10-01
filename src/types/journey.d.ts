@@ -120,3 +120,14 @@ export interface ActiveDirectJourney {
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;
+
+
+export interface FinalWalkIntent {
+  destinationId: string;
+  destinationLabel: string;
+  lat: number;
+  lon: number;
+  fromStopId: string;
+  fromStopName: string;
+  distanceMeters: number | null;
+}
