@@ -96,23 +96,21 @@ export default {
   "Saved destinations": "Tallennetut määränpäät",
   "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
   "Stop, address or place": "Pysäkki, osoite tai paikka",
-  "e.g. Prisma Itäharju or Turun linna":
-    "esim. Prisma Itäharju tai Turun linna",
+  "e.g. Prisma or Turun linna": "esim. Prisma tai Turun linna",
   Search: "Hae",
   "Searching…": "Haetaan…",
   "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
-  "Stop search stays on this device. Place searches go to OpenStreetMap Nominatim only when you press Search.":
-    "Pysäkkihaku pysyy laitteella. Paikkahaku lähetetään OpenStreetMap Nominatimille vain, kun painat Hae.",
+  "Stops stay on-device. Places use OpenStreetMap Nominatim after Search.":
+    "Pysäkit pysyvät laitteella. Paikkahaku käyttää OpenStreetMap Nominatimia vasta haun jälkeen.",
   "Places and addresses": "Paikat ja osoitteet",
   "Place search data": "Paikkahaun tiedot",
-  "Place search needs an internet connection. Stop search still works.":
-    "Paikkahaku tarvitsee internetyhteyden. Pysäkkihaku toimii edelleen.",
-  "Place search is waiting for stop locations.":
-    "Paikkahaku odottaa pysäkkien sijaintitietoja.",
-  "Place search is unavailable. Stop search still works.":
+  "Offline: place search unavailable. Stop search still works.":
+    "Offline: paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
+  "Waiting for stop locations.": "Odotetaan pysäkkien sijaintitietoja.",
+  "Place search unavailable. Stop search still works.":
     "Paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
-  "Choose a stop suggestion or refine the place search.":
-    "Valitse pysäkkiehdotus tai tarkenna paikkahakua.",
+  "Choose a stop or refine the place search.":
+    "Valitse pysäkki tai tarkenna paikkahakua.",
   "No matching destination found.": "Sopivaa määränpäätä ei löytynyt.",
   "Outside Föli’s service area.": "Fölin palvelualueen ulkopuolella.",
   "No usable Föli stop is nearby.": "Lähistöllä ei ole sopivaa Fölin pysäkkiä.",
@@ -166,8 +164,8 @@ export default {
   "Timetable estimate": "Aikatauluarvio",
   "Realtime uncertain": "Reaaliaikatieto epävarma",
   Estimate: "Arvio",
-  "Direct options use current Föli data. Walking distances are approximate straight-line estimates.":
-    "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja. Kävelyetäisyydet ovat likimääräisiä linnuntie-arvioita.",
+  "Föli data · walking distances are approximate.":
+    "Föli-data · kävelyetäisyydet ovat likimääräisiä.",
   "Final walk ≈ {distance}": "Loppukävely ≈ {distance}",
   "final walk ≈ {distance}": "loppukävely ≈ {distance}",
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
@@ -182,21 +180,21 @@ export default {
   "To {destination}": "Määränpää {destination}",
   "Leaves {due}": "Lähtö {due}",
   "About {distance} to the boarding stop.": "Noin {distance} lähtöpysäkille.",
-  "When you reach the stop, confirm it here. The app will not assume your physical location.":
-    "Kun saavut pysäkille, vahvista se tässä. Sovellus ei oleta sijaintiasi automaattisesti.",
-  "Your selected bus is pinned first in the departure board.":
-    "Valitsemasi bussi on kiinnitetty lähtötaulun ensimmäiseksi.",
-  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
-    "Kun nouset kyytiin, käytä kyseisen lähdön Poistumishälytystä. Ride Mode vastaa sen jälkeen matkasta.",
+  "At the stop? Confirm here. We don’t infer your location.":
+    "Oletko pysäkillä? Vahvista tässä. Emme päättele sijaintiasi.",
+  "Selected bus is pinned first below.":
+    "Valittu bussi näkyy ensimmäisenä alla.",
+  "After boarding, start Get-off alert. Ride Mode takes over.":
+    "Noustuasi kyytiin käynnistä poistumishälytys. Ride Mode ottaa ohjauksen.",
   "Your selected bus was cancelled.": "Valitsemasi bussi peruttiin.",
   "Your selected bus is no longer a reliable option.":
     "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
-  "Offline: this selected plan may be out of date.":
+  "Offline: selected plan may be stale.":
     "Offline: valittu suunnitelma voi olla vanhentunut.",
-  "Live monitoring is paused while another stop is open. Return to the selected stop to resume it.":
-    "Live-seuranta on tauolla, koska toinen pysäkki on avoinna. Palaa valitulle pysäkille jatkaaksesi seurantaa.",
-  "Live monitoring is temporarily unavailable. The selected departure may be out of date.":
-    "Live-seuranta ei ole tilapäisesti käytettävissä. Valitun lähdön tiedot voivat olla vanhentuneita.",
+  "Live monitoring paused while another stop is open. Return to resume.":
+    "Live-seuranta on tauolla toisen pysäkin ollessa avoinna. Palaa jatkaaksesi.",
+  "Live monitoring unavailable. Selected time may be stale.":
+    "Live-seuranta ei ole käytettävissä. Valittu aika voi olla vanhentunut.",
   "Return to selected stop": "Palaa valitulle pysäkille",
   "I'm at the stop": "Olen pysäkillä",
   "Show selected departure": "Näytä valittu lähtö",
