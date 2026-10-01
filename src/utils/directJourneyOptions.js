@@ -45,6 +45,7 @@ function usable(departure) {
   );
 }
 
+/** @param {{ distanceMeters: number, departure: NearbyDepartureFit }} candidate */
 function totalWalkingM(candidate) {
   const finalWalk = Number(candidate.departure.finalWalkDistanceM);
   return (
