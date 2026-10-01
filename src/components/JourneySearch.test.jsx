@@ -11,7 +11,6 @@ import { resetLanguageForTests } from "../i18n";
 const placeSearch = vi.hoisted(() => ({
   state: "idle",
   results: [],
-  searchedQuery: "",
   search: vi.fn(),
   clear: vi.fn(),
 }));
@@ -20,7 +19,6 @@ vi.mock("../hooks/usePlaceSearch", () => ({
   default: () => ({
     state: placeSearch.state,
     results: placeSearch.results,
-    searchedQuery: placeSearch.searchedQuery,
     search: placeSearch.search,
     clear: placeSearch.clear,
   }),
@@ -55,7 +53,6 @@ beforeEach(() => {
   resetLanguageForTests("en");
   placeSearch.state = "idle";
   placeSearch.results = [];
-  placeSearch.searchedQuery = "";
   placeSearch.search.mockReset().mockResolvedValue([]);
   placeSearch.clear.mockReset();
 });
@@ -144,16 +141,16 @@ test("renders explicit place results and selects one as a geocoded destination",
   placeSearch.results = [prisma];
   const props = renderSearch();
 
-  const region = screen.getByRole("region", {
+  const listbox = screen.getByRole("listbox", {
     name: "Places and addresses",
   });
-  expect(within(region).getByText("Prisma Itäharju")).toBeInTheDocument();
+  expect(within(listbox).getByText("Prisma Itäharju")).toBeInTheDocument();
   expect(
-    within(region).getByText("Turku, Varsinais-Suomi, Suomi")
+    within(listbox).getByText("Turku, Varsinais-Suomi, Suomi")
   ).toBeInTheDocument();
 
   fireEvent.click(
-    within(region).getByRole("button", {
+    within(listbox).getByRole("option", {
       name: /Prisma Itäharju.*Turku/i,
     })
   );
@@ -208,7 +205,7 @@ test("keeps the current UI open when a provider result cannot be used", () => {
   });
 
   fireEvent.click(
-    screen.getByRole("button", {
+    screen.getByRole("option", {
       name: /Prisma Itäharju.*Turku/i,
     })
   );
