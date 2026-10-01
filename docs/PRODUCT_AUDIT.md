@@ -140,7 +140,7 @@ Every pull request to `master` runs:
 
 1. ESLint, including the rule that JSX text must go through the translator
 2. Vitest and Testing Library (1,000+ tests, coverage ratchet 88 / 81 / 90 / 91), with a test that every phrase has a Finnish translation and every translation is still used
-3. production build, PWA precache and install-sheet checks, and the bundle budget (600 KB)
+3. production build, PWA precache and install-sheet checks, and dual JS/CSS bundle budgets (625 KB raw and 180 KB deterministic gzip)
 4. the Föli API reference drift check
 5. Playwright on Chromium, Firefox, mobile WebKit and Chromium mobile, with axe WCAG A/AA checks, a Finnish phone and worst-case mobile overflow
 6. a Chromium PWA project that installs the real service worker and reopens offline

@@ -182,7 +182,7 @@ The verification suite covers:
 - axe accessibility checks;
 - 320–430 px mobile layouts and horizontal-overflow regression;
 - 200% text scaling and touch-target checks;
-- production bundle budget;
+- production JS/CSS bundle budgets for both raw parse footprint and deterministic gzip transfer size;
 - live Föli API contract smoke tests;
 - branding/reference consistency;
 - high/critical runtime dependency audit;
