@@ -92,7 +92,7 @@ test("waiting state points to the pinned selected departure", () => {
     screen.getByRole("heading", { name: "Wait for line 18" })
   ).toBeInTheDocument();
   expect(
-    screen.getByText("Your selected bus is pinned first in the departure board.")
+    screen.getByText("Selected bus is pinned first below.")
   ).toBeInTheDocument();
 
   fireEvent.click(
@@ -146,7 +146,7 @@ test("offline state does not pretend the selected plan is current", () => {
   );
 
   expect(
-    screen.getByText("Offline: this selected plan may be out of date.")
+    screen.getByText("Offline: selected plan may be stale.")
   ).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
 });
@@ -171,7 +171,7 @@ test("paused monitoring makes returning to the selected stop the primary action"
 
   expect(
     screen.getByText(
-      "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
+      "Live monitoring paused while another stop is open. Return to resume."
     )
   ).toBeInTheDocument();
 
@@ -202,7 +202,7 @@ test("degraded monitoring never implies the live departure is current", () => {
 
   expect(
     screen.getByText(
-      "Live monitoring is temporarily unavailable. The selected departure may be out of date."
+      "Live monitoring unavailable. Selected time may be stale."
     )
   ).toBeInTheDocument();
 });
