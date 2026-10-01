@@ -252,26 +252,28 @@ test("uses boarding plus final walk when labelling a place option as less walkin
           {
             ...departure({ tripRef: "fast", arrival: 2_000 }),
             finalWalkDistanceM: 600,
-            journeyArrivalAt: 2_625,
+            journeyArrivalAt: 2_400,
           },
         ],
       },
       balanced: {
         status: "good",
-        best: departure({ tripRef: "balanced", arrival: 2_180 }),
+        best: departure({ tripRef: "balanced", arrival: 2_200 }),
         departures: [
           {
-            ...departure({ tripRef: "balanced", arrival: 2_180 }),
+            ...departure({ tripRef: "balanced", arrival: 2_200 }),
             finalWalkDistanceM: 50,
-            journeyArrivalAt: 2_240,
+            journeyArrivalAt: 2_500,
           },
         ],
       },
     },
   });
 
-  // The balanced option walks 300 + 50 = 350 m versus 50 + 600 = 650 m.
-  expect(options.some((item) => item.label === "less-walking")).toBe(true);
+  // Fastest: 50 + 600 = 650 m total approximate walking.
+  // Balanced: 300 + 50 = 350 m, arrives only 100 s later.
+  expect(options[0].stopId).toBe("fast");
   const lessWalking = options.find((item) => item.label === "less-walking");
-  expect(lessWalking?.stopId).toBe("fast");
+  expect(lessWalking?.stopId).toBe("balanced");
+  expect(lessWalking?.walkingDeltaMeters).toBe(-300);
 });
