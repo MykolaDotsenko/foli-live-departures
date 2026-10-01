@@ -10,7 +10,6 @@ export default function usePlaceSearch({ stops, language }) {
   /** @type {[PlaceSearchResult[], import("react").Dispatch<import("react").SetStateAction<PlaceSearchResult[]>>]} */
   const [results, setResults] = useState([]);
   const [state, setState] = useState("idle");
-  const [searchedQuery, setSearchedQuery] = useState("");
   const controllerRef = useRef(null);
 
   const clear = useCallback(() => {
@@ -18,7 +17,6 @@ export default function usePlaceSearch({ stops, language }) {
     controllerRef.current = null;
     setResults([]);
     setState("idle");
-    setSearchedQuery("");
   }, []);
 
   const search = useCallback(
@@ -27,15 +25,13 @@ export default function usePlaceSearch({ stops, language }) {
       if (clean.length < 3) {
         setResults([]);
         setState("idle");
-        setSearchedQuery("");
-        return [];
+            return [];
       }
 
       controllerRef.current?.abort();
       const controller = new AbortController();
       controllerRef.current = controller;
       setState("loading");
-      setSearchedQuery(clean);
 
       try {
         const next = await searchPlaces(clean, {
@@ -75,7 +71,6 @@ export default function usePlaceSearch({ stops, language }) {
   return {
     results,
     state,
-    searchedQuery,
     search,
     clear,
   };
