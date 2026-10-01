@@ -99,18 +99,32 @@ export default function useStopAlerts(
     ];
 
     if (!enabled || !stopId || candidateRouteIds.length === 0) {
-      setServed({ stopId, ids: EMPTY_ROUTE_IDS });
+      setServed((current) =>
+        current.stopId === stopId && current.ids === EMPTY_ROUTE_IDS
+          ? current
+          : { stopId, ids: EMPTY_ROUTE_IDS }
+      );
       return () => controller.abort();
     }
 
     fetchStopServedRouteIds(stopId, candidateRouteIds, controller.signal)
       .then((routeIds) => {
-        if (!controller.signal.aborted) setServed({ stopId, ids: routeIds });
+        if (!controller.signal.aborted) {
+          setServed((current) =>
+            current.stopId === stopId && current.ids === routeIds
+              ? current
+              : { stopId, ids: routeIds }
+          );
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
           // Realtime line matching still provides a safe partial fallback.
-          setServed({ stopId, ids: EMPTY_ROUTE_IDS });
+          setServed((current) =>
+            current.stopId === stopId && current.ids === EMPTY_ROUTE_IDS
+              ? current
+              : { stopId, ids: EMPTY_ROUTE_IDS }
+          );
         }
       });
 
@@ -129,7 +143,11 @@ export default function useStopAlerts(
       failedRef.current = false;
       setPayload(null);
       setReceivedAtMs(null);
-      setServed({ stopId: "", ids: EMPTY_ROUTE_IDS });
+      setServed((current) =>
+        current.stopId === "" && current.ids === EMPTY_ROUTE_IDS
+          ? current
+          : { stopId: "", ids: EMPTY_ROUTE_IDS }
+      );
       setError(false);
       return undefined;
     }

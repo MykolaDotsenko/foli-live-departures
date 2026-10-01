@@ -413,3 +413,19 @@ test("never allows alert polling faster than the 30-second safety floor", () => 
 
   expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
 });
+
+
+test("tolerates unstable inline line arrays without entering a render loop", async () => {
+  mocks.fetchAlerts.mockResolvedValue({ messages: [] });
+
+  const { result } = renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 60_000,
+    })
+  );
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1));
+  expect(result.current.error).toBe(false);
+  expect(result.current.alerts).toEqual([]);
+});
