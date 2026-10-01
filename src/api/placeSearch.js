@@ -50,7 +50,10 @@ export function directPlaceSearchSupported() {
   if (NATIVE_BUILD) return false;
 
   try {
-    if (globalThis.Capacitor?.isNativePlatform?.()) return false;
+    const capacitor = /** @type {{ isNativePlatform?: () => boolean } | undefined} */ (
+      /** @type {any} */ (globalThis).Capacitor
+    );
+    if (capacitor?.isNativePlatform?.()) return false;
   } catch {
     return false;
   }
