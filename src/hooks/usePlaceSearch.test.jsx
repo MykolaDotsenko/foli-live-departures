@@ -59,7 +59,7 @@ test("passes language and stop-derived bounds to the provider", async () => {
     expect.objectContaining({
       language: "fi",
       viewbox: "22,61,23,60",
-      signal: expect.any(AbortSignal),
+      signal: expect.any(globalThis.AbortSignal),
     })
   );
   expect(found).toHaveLength(1);
