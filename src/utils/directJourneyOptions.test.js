@@ -238,3 +238,52 @@ test("ranks place options by final arrival after walking", () => {
   expect(options[0].stopId).toBe("b");
   expect(options[0].departure.tripRef).toBe("short-walk");
 });
+
+
+test("counts final walking when choosing the less-walking alternative", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "near-origin", distanceMeters: 70 },
+      { id: "far-origin", distanceMeters: 250 },
+    ],
+    fitsByStop: {
+      "near-origin": {
+        status: "good",
+        best: departure({
+          tripRef: "fast",
+          arrival: 2_000,
+          finalWalkDistanceM: 900,
+        }),
+        departures: [
+          departure({
+            tripRef: "fast",
+            arrival: 2_000,
+            finalWalkDistanceM: 900,
+          }),
+        ],
+      },
+      "far-origin": {
+        status: "good",
+        best: departure({
+          tripRef: "walk",
+          arrival: 2_240,
+          finalWalkDistanceM: 80,
+        }),
+        departures: [
+          departure({
+            tripRef: "walk",
+            arrival: 2_240,
+            finalWalkDistanceM: 80,
+          }),
+        ],
+      },
+    },
+  });
+
+  const lessWalking = options.find(
+    (item) => item.label === "less-walking"
+  );
+
+  expect(lessWalking?.stopId).toBe("far-origin");
+  expect(lessWalking?.walkingDeltaMeters).toBe(-640);
+});
