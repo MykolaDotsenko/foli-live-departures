@@ -348,7 +348,13 @@ export default function JourneySearch({
 
         {placeSearch.status === "error" && !error && (
           <p className={styles.error} role="alert">
-            {t("Place search is temporarily unavailable. Föli stop search still works.")}
+            {placeSearch.error === "rate-limited"
+              ? t(
+                  "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works."
+                )
+              : t(
+                  "Place search is temporarily unavailable. Föli stop search still works."
+                )}
           </p>
         )}
 
