@@ -2,16 +2,15 @@ import createBoundedCache from "../utils/boundedCache";
 import client from "./httpClient";
 /** @import { PlaceSearchResult } from "../types/journey" */
 
-const PHOTON =
-  import.meta.env.VITE_PHOTON_SEARCH_URL || "https://photon.komoot.io/api";
-const NOMINATIM =
-  import.meta.env.VITE_NOMINATIM_SEARCH_URL ||
-  import.meta.env.VITE_PLACE_SEARCH_URL ||
-  "https://nominatim.openstreetmap.org/search";
+const PHOTON_URL =
+  import.meta.env.VITE_PHOTON_SEARCH_URL ||
+  "https://photon.komoot.io/api";
+
+const REQUEST_TIMEOUT_MS = 7_000;
+const MAX_RESULTS = 5;
 
 /** @type {import("../utils/boundedCache").BoundedCache<string, PlaceSearchResult[]>} */
 const cache = createBoundedCache(24);
-let nextNominatimAt = 0;
 
 /** @param {AbortSignal | undefined} signal */
 function abortIfNeeded(signal) {
@@ -22,75 +21,86 @@ function abortIfNeeded(signal) {
 }
 
 /** @param {unknown} value */
-function text(value) {
-  return String(value || "").trim();
-}
-
-/** @param {unknown} value */
-function coordinate(value) {
+function numberOrNull(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
+/** @param {unknown[]} values */
+function addressParts(values) {
+  const seen = new Set();
+  return values
+    .map((value) => String(value || "").trim())
+    .filter((value) => {
+      const key = value.toLocaleLowerCase();
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join(", ");
+}
+
 /**
+ * Normalize Photon GeoJSON into the app's provider-neutral place model.
+ *
  * @param {any} raw
  * @returns {PlaceSearchResult | null}
  */
-function normalize(raw) {
-  const photon = Array.isArray(raw?.geometry?.coordinates);
-  const properties = photon ? raw?.properties || {} : raw || {};
-  const coordinates = photon
-    ? raw.geometry.coordinates
-    : [properties.lon, properties.lat];
-  const lon = coordinate(coordinates[0]);
-  const lat = coordinate(coordinates[1]);
+function normalizeResult(raw) {
+  const properties = raw?.properties || {};
+  const coordinates = raw?.geometry?.coordinates;
+  const lat = numberOrNull(coordinates?.[1]);
+  const lon = numberOrNull(coordinates?.[0]);
 
   if (
     lat === null ||
     lon === null ||
-    Math.abs(lat) > 90 ||
-    Math.abs(lon) > 180
+    lat < -90 ||
+    lat > 90 ||
+    lon < -180 ||
+    lon > 180
   ) {
     return null;
   }
 
-  const street = [text(properties.street), text(properties.housenumber)]
-    .filter(Boolean)
-    .join(" ");
-  const display = text(properties.display_name);
-  const label =
-    text(properties.name) ||
-    street ||
-    text(display.split(",")[0]) ||
-    text(properties.city);
+  const street = String(properties.street || "").trim();
+  const houseNumber = String(properties.housenumber || "").trim();
+  const streetAddress = [street, houseNumber].filter(Boolean).join(" ");
+  const label = String(
+    properties.name ||
+      streetAddress ||
+      properties.city ||
+      ""
+  ).trim();
   if (!label) return null;
 
-  const secondaryLabel = display
-    ? display.startsWith(`${label},`)
-      ? display.slice(label.length + 1).trim()
-      : display
-    : [
-        street !== label ? street : "",
-        properties.district,
-        properties.city,
-        properties.postcode,
-        properties.country,
-      ]
-        .map(text)
-        .filter(Boolean)
-        .join(", ");
+  const secondaryLabel = addressParts([
+    streetAddress !== label ? streetAddress : "",
+    properties.district,
+    properties.city,
+    properties.county,
+    properties.state,
+    properties.postcode,
+    properties.country,
+  ]);
 
-  const rawType = text(properties.osm_type).toLowerCase();
-  const osmType = { n: "node", w: "way", r: "relation" }[rawType] || rawType;
-  const osmId = text(properties.osm_id);
-  const providerId = text(properties.place_id);
+  const rawType = String(properties.osm_type || "").trim().toLowerCase();
+  const osmType =
+    rawType === "n"
+      ? "node"
+      : rawType === "w"
+        ? "way"
+        : rawType === "r"
+          ? "relation"
+          : rawType;
+  const osmId = String(properties.osm_id || "").trim();
 
   return {
     id:
       osmType && osmId
         ? `osm:${osmType}:${osmId}`
-        : `${photon ? "photon" : "nominatim"}:${providerId || `${lat},${lon}`}`,
+        : `photon:${lat},${lon}`,
     label,
     secondaryLabel,
     lat,
@@ -99,69 +109,18 @@ function normalize(raw) {
 }
 
 /** @param {unknown} rows */
-function normalizeRows(rows) {
+function normalizeResults(rows) {
   /** @type {PlaceSearchResult[]} */
   const results = [];
-  const ids = new Set();
 
   for (const raw of Array.isArray(rows) ? rows : []) {
-    const item = normalize(raw);
-    if (!item || ids.has(item.id)) continue;
-    ids.add(item.id);
+    const item = normalizeResult(raw);
+    if (!item || results.some((existing) => existing.id === item.id)) continue;
     results.push(item);
-    if (results.length === 5) break;
+    if (results.length >= MAX_RESULTS) break;
   }
 
   return results;
-}
-
-/**
- * @param {"photon" | "nominatim"} provider
- * @param {string} query
- * @param {string} language
- * @param {AbortSignal | undefined} signal
- */
-async function providerSearch(provider, query, language, signal) {
-  const photon = provider === "photon";
-  abortIfNeeded(signal);
-
-  if (!photon) {
-    const now = Date.now();
-    const at = Math.max(now, nextNominatimAt);
-    nextNominatimAt = at + 1_100;
-    if (at > now) {
-      await new Promise((resolve) => globalThis.setTimeout(resolve, at - now));
-    }
-    abortIfNeeded(signal);
-  }
-
-  const finnish = String(language).toLowerCase().startsWith("fi");
-  const { data } = await client.get(photon ? PHOTON : NOMINATIM, {
-    signal,
-    timeout: 7_000,
-    params: photon
-      ? {
-          q: query,
-          limit: 5,
-          lang: finnish ? "fi" : "en",
-          countrycode: "FI",
-          bbox: "21.2,59.9,23.4,61",
-          lat: 60.4518,
-          lon: 22.2666,
-        }
-      : {
-          q: query,
-          format: "jsonv2",
-          limit: 5,
-          countrycodes: "fi",
-          layer: "address,poi",
-          "accept-language": finnish ? "fi,en" : "en,fi",
-          viewbox: "21.2,61,23.4,59.9",
-          bounded: 1,
-        },
-  });
-
-  return normalizeRows(photon ? data?.features : data);
 }
 
 /** @param {unknown} error @param {AbortSignal | undefined} signal */
@@ -174,8 +133,9 @@ function rethrowCancellation(error, signal) {
 }
 
 /**
- * Explicit-submit address / POI search. Photon is primary; Nominatim is the
- * rate-limited fallback. Results are cached only in memory for this tab.
+ * Explicit-submit address / POI search. Never call this on input change.
+ * Results are cached only in memory for the current tab. No passenger GPS
+ * is sent: the location bias is the fixed Turku city centre.
  *
  * @param {unknown} query
  * @param {{ language?: string, signal?: AbortSignal }} [options]
@@ -192,25 +152,27 @@ export async function searchPlaces(
   const cached = cache.get(key);
   if (cached) return cached;
 
-  try {
-    const primary = await providerSearch("photon", clean, language, signal);
-    if (primary.length) {
-      cache.set(key, primary);
-      return primary;
-    }
-  } catch (error) {
-    rethrowCancellation(error, signal);
-  }
+  abortIfNeeded(signal);
 
   try {
-    const fallback = await providerSearch(
-      "nominatim",
-      clean,
-      language,
-      signal
-    );
-    cache.set(key, fallback);
-    return fallback;
+    const { data } = await client.get(PHOTON_URL, {
+      signal,
+      timeout: REQUEST_TIMEOUT_MS,
+      params: {
+        q: clean,
+        limit: MAX_RESULTS,
+        lang: String(language).toLowerCase().startsWith("fi") ? "fi" : "en",
+        countrycode: "FI",
+        bbox: "21.2,59.9,23.4,61",
+        lat: 60.4518,
+        lon: 22.2666,
+        zoom: 10,
+      },
+    });
+
+    const results = normalizeResults(data?.features);
+    cache.set(key, results);
+    return results;
   } catch (error) {
     rethrowCancellation(error, signal);
     const unavailable = new Error("Place search unavailable.");
@@ -220,6 +182,5 @@ export async function searchPlaces(
 }
 
 export function resetPlaceSearchForTests() {
-  nextNominatimAt = 0;
   cache.clear();
 }
