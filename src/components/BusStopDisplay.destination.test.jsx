@@ -279,3 +279,69 @@ test("keeps the selected journey visible through an existing line filter", () =>
   expect(within(rows[1]).getByText("18")).toBeInTheDocument();
   expect(screen.queryByText("Hidden by filter")).not.toBeInTheDocument();
 });
+
+
+test("keeps a just-departed selected row visible during journey grace", () => {
+  destinationFits.hook.mockReturnValue({
+    fitsByRowKey: {},
+    state: "ready",
+  });
+
+  const now = Math.floor(Date.now() / 1000);
+  const planned = now - 60;
+
+  render(
+    <BusStopDisplay
+      stopId="164"
+      stopName="Kauppatori"
+      stops={[]}
+      routesById={new Map()}
+      routesByShortName={new Map()}
+      serverTime={now}
+      receivedAtMs={Date.now()}
+      loading={false}
+      refreshing={false}
+      error={false}
+      onRefresh={() => {}}
+      selectedJourney={{
+        id: "selected",
+        destinationId: "stop:900",
+        destinationKind: "public-stop",
+        destinationLabel: "Home stop",
+        optionLabel: "fastest",
+        stopId: "164",
+        stopName: "Kauppatori",
+        distanceMeters: 100,
+        tripRef: "trip-selected",
+        lineRef: "2",
+        destinationStopId: "900",
+        departureAt: planned,
+        aimedDepartureAt: planned,
+        destinationArrivalAt: now + 1200,
+        liveState: "live",
+        phase: "waiting",
+        recoveryReason: null,
+        selectedAt: Date.now() - 30_000,
+        atStopConfirmedAt: Date.now() - 20_000,
+        lastSeenAt: Date.now(),
+      }}
+      arrivals={[
+        {
+          lineref: "2",
+          tripref: "trip-selected",
+          destinationdisplay: "Selected journey",
+          monitored: true,
+          recordedattime: now - 10,
+          aimeddeparturetime: planned,
+          expecteddeparturetime: planned,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.getByText("Your bus")).toBeInTheDocument();
+  expect(screen.getByText("Selected journey")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Checking for the next departures…")
+  ).not.toBeInTheDocument();
+});
