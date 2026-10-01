@@ -1,118 +1,35 @@
 /** @import { PlaceSearchResult } from "../types/journey" */
 
-const DEFAULT_SEARCH_URL = "https://nominatim.openstreetmap.org/search";
 const SEARCH_URL =
-  import.meta.env.VITE_PLACE_SEARCH_URL || DEFAULT_SEARCH_URL;
-
-const CACHE_KEY = "journey-place-search-v1";
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-const MAX_CACHE_ENTRIES = 20;
+  import.meta.env.VITE_PLACE_SEARCH_URL ||
+  "https://nominatim.openstreetmap.org/search";
 const MIN_REQUEST_INTERVAL_MS = 1_100;
+const MAX_CACHE_ENTRIES = 20;
 
+/** @type {Map<string, PlaceSearchResult[]>} */
+const cache = new Map();
 let nextAllowedRequestAt = 0;
 
-/**
- * @param {unknown} value
- * @returns {string}
- */
-function normalizedQuery(value) {
-  return String(value || "")
-    .trim()
-    .replace(/\s+/g, " ");
+function cleanQuery(value) {
+  return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-/**
- * @param {unknown} value
- * @returns {number | null}
- */
-function finiteCoordinate(value) {
+function coordinate(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
 
-/**
- * @param {number} value
- */
-function compactCoordinate(value) {
-  return String(Number(Number(value).toFixed(6)));
+function abortError() {
+  const error = new Error("The request was cancelled.");
+  error.name = "AbortError";
+  return error;
 }
 
-/**
- * @param {string} language
- */
-function providerLanguages(language) {
-  return String(language || "").toLowerCase().startsWith("fi")
-    ? "fi,en"
-    : "en,fi";
-}
-
-/**
- * Session-only cache: repeated searches in one app session do not hit the
- * donated public service again, while destination history is not persisted.
- */
-function readCache() {
-  try {
-    const raw = globalThis.sessionStorage.getItem(CACHE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // Cache is an optimization only.
-  }
-  return [];
-}
-
-/**
- * @param {any[]} entries
- */
-function writeCache(entries) {
-  try {
-    globalThis.sessionStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify(entries.slice(0, MAX_CACHE_ENTRIES))
-    );
-  } catch {
-    // Search must still work when storage is unavailable.
-  }
-}
-
-/**
- * @param {string} key
- * @returns {PlaceSearchResult[] | null}
- */
-function cachedResults(key) {
-  const now = Date.now();
-  const entry = readCache().find(
-    (item) =>
-      item?.key === key &&
-      Number.isFinite(Number(item.savedAt)) &&
-      now - Number(item.savedAt) <= CACHE_TTL_MS &&
-      Array.isArray(item.results)
-  );
-  return entry ? entry.results : null;
-}
-
-/**
- * @param {string} key
- * @param {PlaceSearchResult[]} results
- */
-function storeResults(key, results) {
-  const current = readCache().filter((item) => item?.key !== key);
-  writeCache([{ key, savedAt: Date.now(), results }, ...current]);
-}
-
-/**
- * @param {number} ms
- * @param {AbortSignal | undefined} signal
- */
-function delay(ms, signal) {
+/** @param {number} ms @param {AbortSignal | undefined} signal */
+function wait(ms, signal) {
+  if (signal?.aborted) return Promise.reject(abortError());
   if (ms <= 0) return Promise.resolve();
-  if (signal?.aborted) {
-    const error = new Error("The request was cancelled.");
-    error.name = "AbortError";
-    return Promise.reject(error);
-  }
 
   return new Promise((resolve, reject) => {
     const timer = globalThis.setTimeout(resolve, ms);
@@ -120,36 +37,33 @@ function delay(ms, signal) {
       "abort",
       () => {
         globalThis.clearTimeout(timer);
-        const error = new Error("The request was cancelled.");
-        error.name = "AbortError";
-        reject(error);
+        reject(abortError());
       },
       { once: true }
     );
   });
 }
 
-/**
- * Public Nominatim requires <= 1 request/second. Calls are explicit-submit
- * only; this guard also protects accidental double-clicks.
- *
- * @param {AbortSignal | undefined} signal
- */
-async function waitForRateLimit(signal) {
+/** Public Nominatim allows at most one request per second. */
+async function reserveRequest(signal) {
   const now = Date.now();
-  const reservedAt = Math.max(now, nextAllowedRequestAt);
-  nextAllowedRequestAt = reservedAt + MIN_REQUEST_INTERVAL_MS;
-  await delay(reservedAt - now, signal);
+  const at = Math.max(now, nextAllowedRequestAt);
+  nextAllowedRequestAt = at + MIN_REQUEST_INTERVAL_MS;
+  await wait(at - now, signal);
 }
 
-/**
- * @param {any} raw
- * @param {string} language
- * @returns {PlaceSearchResult | null}
- */
-function normalizeResult(raw, language) {
-  const lat = finiteCoordinate(raw?.lat);
-  const lon = finiteCoordinate(raw?.lon);
+function cacheSet(key, results) {
+  cache.delete(key);
+  cache.set(key, results);
+  if (cache.size > MAX_CACHE_ENTRIES) {
+    cache.delete(cache.keys().next().value);
+  }
+}
+
+/** @param {any} raw @returns {PlaceSearchResult | null} */
+function normalizeResult(raw) {
+  const lat = coordinate(raw?.lat);
+  const lon = coordinate(raw?.lon);
   if (
     lat === null ||
     lon === null ||
@@ -162,39 +76,23 @@ function normalizeResult(raw, language) {
   }
 
   const display = String(raw?.display_name || "").trim();
-  const names = raw?.namedetails || {};
-  const languageKey = String(language || "").toLowerCase().startsWith("fi")
-    ? "name:fi"
-    : "name:en";
-  const label = String(
-    raw?.name ||
-      names?.[languageKey] ||
-      names?.name ||
-      display.split(",")[0] ||
-      ""
-  ).trim();
+  const label = String(raw?.name || display.split(",")[0] || "").trim();
   if (!label) return null;
 
-  const secondaryLabel = display
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .filter((part, index) => index > 0 || part !== label)
-    .slice(0, 4)
-    .join(", ");
+  const parts = display.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts[0] === label) parts.shift();
 
   const osmType = String(raw?.osm_type || "").trim();
   const osmId = String(raw?.osm_id || "").trim();
   const placeId = String(raw?.place_id || "").trim();
-  const id =
-    osmType && osmId
-      ? `osm:${osmType}:${osmId}`
-      : `nominatim:${placeId || `${lat},${lon}`}`;
 
   return {
-    id,
+    id:
+      osmType && osmId
+        ? `osm:${osmType}:${osmId}`
+        : `nominatim:${placeId || `${lat},${lon}`}`,
     label,
-    secondaryLabel,
+    secondaryLabel: parts.slice(0, 4).join(", "),
     lat,
     lon,
     category: String(raw?.addresstype || raw?.type || raw?.category || ""),
@@ -207,14 +105,15 @@ function normalizeResult(raw, language) {
  * @returns {string}
  */
 export function placeSearchViewbox(stops) {
-  /** @type {number[]} */
-  const lats = [];
-  /** @type {number[]} */
-  const lons = [];
+  let minLat = 90;
+  let maxLat = -90;
+  let minLon = 180;
+  let maxLon = -180;
+  let count = 0;
 
   for (const stop of Array.isArray(stops) ? stops : []) {
-    const lat = finiteCoordinate(stop?.lat);
-    const lon = finiteCoordinate(stop?.lon);
+    const lat = coordinate(stop?.lat);
+    const lon = coordinate(stop?.lon);
     if (
       lat === null ||
       lon === null ||
@@ -225,20 +124,23 @@ export function placeSearchViewbox(stops) {
     ) {
       continue;
     }
-    lats.push(lat);
-    lons.push(lon);
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+    minLon = Math.min(minLon, lon);
+    maxLon = Math.max(maxLon, lon);
+    count += 1;
   }
 
-  if (lats.length < 2) return "";
+  if (count < 2) return "";
 
-  const padding = 0.02;
-  const minLat = Math.max(-90, Math.min(...lats) - padding);
-  const maxLat = Math.min(90, Math.max(...lats) + padding);
-  const minLon = Math.max(-180, Math.min(...lons) - padding);
-  const maxLon = Math.min(180, Math.max(...lons) + padding);
-
-  return [minLon, maxLat, maxLon, minLat]
-    .map(compactCoordinate)
+  const compact = (value) => String(Number(value.toFixed(6)));
+  return [
+    Math.max(-180, minLon - 0.02),
+    Math.min(90, maxLat + 0.02),
+    Math.min(180, maxLon + 0.02),
+    Math.max(-90, minLat - 0.02),
+  ]
+    .map(compact)
     .join(",");
 }
 
@@ -246,39 +148,32 @@ export function placeSearchViewbox(stops) {
  * Explicit-submit address / POI search. Never call this on input change.
  *
  * @param {unknown} query
- * @param {{
- *   language?: string,
- *   viewbox?: string,
- *   signal?: AbortSignal,
- * }} [options]
+ * @param {{ language?: string, viewbox?: string, signal?: AbortSignal }} [options]
  * @returns {Promise<PlaceSearchResult[]>}
  */
 export async function searchPlaces(
   query,
   { language = "en", viewbox = "", signal } = {}
 ) {
-  const cleanQuery = normalizedQuery(query);
-  if (cleanQuery.length < 3) return [];
+  const clean = cleanQuery(query);
+  if (clean.length < 3) return [];
 
-  const key = [
-    cleanQuery.toLocaleLowerCase(),
-    language,
-    viewbox,
-  ].join("|");
-  const cached = cachedResults(key);
+  const key = `${clean.toLocaleLowerCase()}|${language}|${viewbox}`;
+  const cached = cache.get(key);
   if (cached) return cached;
 
-  await waitForRateLimit(signal);
+  await reserveRequest(signal);
 
   const url = new globalThis.URL(SEARCH_URL);
-  url.searchParams.set("q", cleanQuery);
+  url.searchParams.set("q", clean);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "5");
   url.searchParams.set("countrycodes", "fi");
   url.searchParams.set("layer", "address,poi");
-  url.searchParams.set("addressdetails", "1");
-  url.searchParams.set("namedetails", "1");
-  url.searchParams.set("accept-language", providerLanguages(language));
+  url.searchParams.set(
+    "accept-language",
+    String(language).toLowerCase().startsWith("fi") ? "fi,en" : "en,fi"
+  );
   if (viewbox) {
     url.searchParams.set("viewbox", viewbox);
     url.searchParams.set("bounded", "1");
@@ -287,35 +182,26 @@ export async function searchPlaces(
   const response = await globalThis.fetch(url, {
     signal,
     referrerPolicy: "strict-origin-when-cross-origin",
-    headers: {
-      Accept: "application/json",
-    },
+    headers: { Accept: "application/json" },
   });
-
   if (!response.ok) {
     throw new Error(`Place search failed (${response.status}).`);
   }
 
   const payload = await response.json();
-  const normalized = (Array.isArray(payload) ? payload : []).map((item) =>
-    normalizeResult(item, language)
-  );
   /** @type {PlaceSearchResult[]} */
   const results = [];
-  for (const item of normalized) {
+  for (const raw of Array.isArray(payload) ? payload : []) {
+    const item = normalizeResult(raw);
     if (item) results.push(item);
     if (results.length >= 5) break;
   }
 
-  storeResults(key, results);
+  cacheSet(key, results);
   return results;
 }
 
 export function resetPlaceSearchForTests() {
   nextAllowedRequestAt = 0;
-  try {
-    globalThis.sessionStorage.removeItem(CACHE_KEY);
-  } catch {
-    // Test cleanup only.
-  }
+  cache.clear();
 }
