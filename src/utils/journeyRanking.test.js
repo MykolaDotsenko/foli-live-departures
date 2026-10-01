@@ -97,3 +97,31 @@ test("ranks uncertain evidence above a known uncatchable departure", () => {
 
   expect(ranked.map((stop) => stop.id)).toEqual(["unknown", "late"]);
 });
+
+
+test("uses final place arrival for stable stop ordering", () => {
+  const ranked = rankDestinationStops(
+    [
+      { id: "fast-bus", distanceMeters: 80 },
+      { id: "short-walk", distanceMeters: 120 },
+    ],
+    {
+      "fast-bus": {
+        status: "good",
+        best: {
+          destinationArrivalAt: 2_000,
+          finalArrivalAt: 2_900,
+        },
+      },
+      "short-walk": {
+        status: "good",
+        best: {
+          destinationArrivalAt: 2_200,
+          finalArrivalAt: 2_300,
+        },
+      },
+    }
+  );
+
+  expect(ranked[0].id).toBe("short-walk");
+});
