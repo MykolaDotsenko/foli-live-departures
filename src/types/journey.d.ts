@@ -116,3 +116,14 @@ export interface PlaceSearchResult {
   lat: number;
   lon: number;
 }
+
+
+export interface FinalWalkIntent {
+  destinationId: string;
+  destinationLabel: string;
+  lat: number;
+  lon: number;
+  fromStopId: string;
+  fromStopName: string;
+  distanceMeters: number | null;
+}
