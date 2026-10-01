@@ -7,6 +7,7 @@ const CACHE_LIMIT = 20;
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 60_000;
 const PUBLIC_PROVIDER_ORIGIN = "https://nominatim.openstreetmap.org";
+const NATIVE_BUILD = import.meta.env.VITE_NATIVE_BUILD === "true";
 
 /** @type {Promise<PlaceSearchConfig> | null} */
 let configPromise = null;
@@ -46,6 +47,8 @@ function normalizedQuery(value) {
  */
 /** @returns {boolean} */
 export function directPlaceSearchSupported() {
+  if (NATIVE_BUILD) return false;
+
   try {
     if (globalThis.Capacitor?.isNativePlatform?.()) return false;
   } catch {

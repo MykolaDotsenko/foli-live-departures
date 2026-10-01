@@ -53,14 +53,18 @@ jobs:
       - name: Build web application
         env:
           VITE_BASE_PATH: /
+          VITE_NATIVE_BUILD: "true"
         run: npm run build
+
+      - name: Verify native provider trust boundary
+        run: npm run verify:native-boundary
 
       - name: Configure Capacitor
         run: |
           cat > capacitor.config.json <<'JSON'
           {
             "appId": "fi.turku.folilivedepartures",
-            "appName": "Turku Föli",
+            "appName": "Turku Departures",
             "webDir": "dist",
             "server": {
               "androidScheme": "https"
