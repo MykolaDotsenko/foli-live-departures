@@ -966,7 +966,7 @@ function App() {
             </dd>
             <dd>
               {t(
-                "Stops stay on-device. Place search is sent to the OpenStreetMap-based Photon service only after you press Search."
+                "Place queries go to Photon only after Search. GPS is not sent."
               )}
             </dd>
             <dd>
