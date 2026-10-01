@@ -52,6 +52,9 @@ jobs:
       - name: Verify Android release contract
         run: npm run verify:android-release
 
+      - name: Verify tested Android artifact publication
+        run: npm run verify:android-publish
+
       - name: Verify immutable workflow action pins
         run: npm run verify:workflow-pins
 

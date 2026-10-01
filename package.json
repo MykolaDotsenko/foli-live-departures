@@ -24,7 +24,8 @@
     "verify:deployment": "node scripts/verify-deploy-workflow.mjs",
     "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs",
     "verify:architecture": "node scripts/verify-backendless.mjs",
-    "verify:android-release": "node scripts/verify-android-release.mjs"
+    "verify:android-release": "node scripts/verify-android-release.mjs",
+    "verify:android-publish": "node scripts/verify-android-publish.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
