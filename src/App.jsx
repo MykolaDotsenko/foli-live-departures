@@ -147,7 +147,13 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const journey = useDestinationIntent();
-  const activeJourney = useActiveJourney();
+  const {
+    journey: selectedJourney,
+    selectDirectJourney,
+    confirmAtStop,
+    clearJourney,
+    observeStopFeed,
+  } = useActiveJourney();
   const requestFocus = usePendingFocus();
   // The passenger's own edits to the stop search, counted, so a late "Near
   // you" fix can tell that they started typing while it was on its way. A
@@ -246,7 +252,6 @@ function App() {
     [serviceAlerts]
   );
 
-  const selectedJourney = activeJourney.journey;
   const selectedJourneyArrival = useMemo(() => {
     if (!selectedJourney || selectedJourney.stopId !== stopId) return null;
     return (
@@ -285,7 +290,7 @@ function App() {
   useEffect(() => {
     if (!selectedJourney || selectedJourney.stopId !== stopId) return;
 
-    activeJourney.observeStopFeed({
+    observeStopFeed({
       stopId,
       arrival: selectedJourneyArrival,
       referenceTimeSec: advanceServerTime(serverTime, receivedAtMs),
@@ -294,7 +299,7 @@ function App() {
       cancelled: selectedJourneyCancelled === true,
     });
   }, [
-    activeJourney.observeStopFeed,
+    observeStopFeed,
     error,
     receivedAtMs,
     selectedJourney,
@@ -309,10 +314,10 @@ function App() {
       selectedJourney &&
       selectedJourney.destinationId !== journey.destination?.id
     ) {
-      activeJourney.clearJourney();
+      clearJourney();
     }
   }, [
-    activeJourney.clearJourney,
+    clearJourney,
     journey.destination?.id,
     selectedJourney,
   ]);
@@ -430,7 +435,7 @@ function App() {
   const startRide = (config) => {
     const started = ride.startRide(config);
     if (started) {
-      activeJourney.clearJourney();
+      clearJourney();
       requestFocus(rideHeading);
     }
     return started;
@@ -444,23 +449,23 @@ function App() {
   };
 
   const chooseJourneyPlace = (place) => {
-    activeJourney.clearJourney();
+    clearJourney();
     journey.choosePlace(place);
   };
 
   const chooseJourneyStop = (stop) => {
-    activeJourney.clearJourney();
+    clearJourney();
     journey.chooseStop(stop);
   };
 
   const clearJourneyDestination = () => {
-    activeJourney.clearJourney();
+    clearJourney();
     journey.clearDestination();
   };
 
   const selectJourneyOption = (option) => {
     if (!journey.destination) return;
-    const selected = activeJourney.selectDirectJourney(
+    const selected = selectDirectJourney(
       option,
       journey.destination
     );
@@ -472,7 +477,7 @@ function App() {
 
   const confirmJourneyAtStop = () => {
     requestFocus(activeJourneyHeading);
-    activeJourney.confirmAtStop();
+    confirmAtStop();
   };
 
   const showSelectedJourneyDeparture = () => {
@@ -483,7 +488,7 @@ function App() {
 
   const chooseAnotherJourney = () => {
     requestFocus(firstJourneyOption);
-    activeJourney.clearJourney();
+    clearJourney();
   };
 
   const openSelectedJourneyStop = () => {
