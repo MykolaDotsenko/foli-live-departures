@@ -158,7 +158,7 @@ test("shows door-to-destination arrival and final walk for a place", () => {
   expect(screen.getByText("Final walk ≈ 240 m")).toBeInTheDocument();
   expect(
     screen.getByText(
-      "Direct options use current Föli data. Walking distances are approximate straight-line estimates."
+      "Föli data · walking distances are approximate."
     )
   ).toBeInTheDocument();
 });
