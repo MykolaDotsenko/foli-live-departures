@@ -36,6 +36,7 @@ import { realStopName } from "./utils/stopNames";
 
 const PRODUCT_NAME = "Turku Departures";
 const MAKER_NAME = "Mykola Dotsenko";
+const OSM_ATTRIBUTION = "© OpenStreetMap contributors";
 
 // The page's one h1: the stop's name on the board, or the app's own name
 // before a stop is open. It is where focus goes when the button pressed
@@ -826,7 +827,7 @@ function App() {
             target="_blank"
             rel="noreferrer"
           >
-            © OpenStreetMap contributors
+            {OSM_ATTRIBUTION}
           </a>
         </p>
 
