@@ -551,7 +551,7 @@ describe("transfer revalidation fallback and branch safety", () => {
     expect(cancelled).toMatchObject({
       providerState: "cancelled",
       decision: "cancelled",
-      receivedAtMs: null,
+      missingSinceMs: null,
     });
   });
 
@@ -601,13 +601,12 @@ describe("transfer revalidation fallback and branch safety", () => {
     expect(applyTransferRevalidation(journey, null)).toBe(journey);
   });
 
-  test("live evidence without delay metadata updates only the selected leg timing and keeps feasibility fallback", () => {
+  test("live evidence derives delay from the committed planned time and keeps feasibility fallback", () => {
     const next = applyTransferRevalidation(journey, {
       providerState: "live",
       decision: "good",
       departureAt: 2_030,
       feasibility: null,
-      receivedAtMs: 1_800_000,
       missingSinceMs: null,
     });
 
@@ -618,8 +617,8 @@ describe("transfer revalidation fallback and branch safety", () => {
     expect(next.transferPlan.transfer.feasibility).toEqual(
       journey.transferPlan.transfer.feasibility
     );
-    expect(next.destinationArrivalAt).toBe(journey.destinationArrivalAt);
-    expect(next.journeyArrivalAt).toBe(journey.journeyArrivalAt);
+    expect(next.destinationArrivalAt).toBe(2_430);
+    expect(next.journeyArrivalAt).toBe(2_430);
   });
 
   test("ETA propagation uses safe fallbacks when optional plan-level arrival baselines are absent", () => {
