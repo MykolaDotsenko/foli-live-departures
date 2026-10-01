@@ -1642,8 +1642,20 @@ The final experience should feel simpler to the passenger than the current produ
 
 ## P2 — Transfer journeys
 
-**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116.**
+**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation is the next release slice.**
 
 Direct options remain preferred. If none are found after progressive nearby expansion, Journey Assistant may search for one conservative transfer using bounded client-side Föli SIRI/GTFS lookups. Ride Mode remains authoritative on each boarded leg; premature leg-1 termination fails closed into recovery and can never create final-walk guidance.
 
-Out of scope for this release: 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
+Live second-leg revalidation contract:
+- monitor only the already committed second trip at its concrete transfer boarding stop;
+- use live-only SIRI for revalidation, never timetable fallback disguised as live evidence;
+- require trip identity plus planned/origin-time occurrence anchors when available;
+- age repeated provider snapshots naturally;
+- fresh delay/early-running evidence may update the transfer margin;
+- cancellation is strong failure evidence even if the departure row has disappeared;
+- provider failure or stale data degrades to unknown and must not create false missed/unsafe recovery;
+- disappearance becomes missed only after the planned departure grace window plus repeated successful absence;
+- once live evidence has put the committed transfer into recovery, Ride Mode completion cannot silently restore or advance that old plan;
+- no automatic replacement itinerary is selected in this slice.
+
+Out of scope for this release: automatic transfer alternative selection, 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
