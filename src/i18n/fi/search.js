@@ -87,7 +87,6 @@ export default {
     "Etäisyydet ovat likimääräisiä linnuntie-etäisyyksiä. Kävelyreitit ovat taas käytettävissä, kun yhteys toimii.",
 
   // Journey destination
-  Journey: "Matka",
   "Where do you want to go?": "Minne haluat mennä?",
   "Clear destination": "Tyhjennä määränpää",
   "Going to": "Määränpää",
