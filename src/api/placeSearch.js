@@ -22,37 +22,19 @@ function coordinate(value) {
   return Number.isFinite(number) ? number : null;
 }
 
-function abortError() {
-  const error = new Error("The request was cancelled.");
-  error.name = "AbortError";
-  return error;
-}
-
-/** @param {number} ms @param {AbortSignal | undefined} signal */
-function wait(ms, signal) {
-  if (signal?.aborted) return Promise.reject(abortError());
-  if (ms <= 0) return Promise.resolve();
-
-  return new Promise((resolve, reject) => {
-    const timer = globalThis.setTimeout(resolve, ms);
-    signal?.addEventListener(
-      "abort",
-      () => {
-        globalThis.clearTimeout(timer);
-        reject(abortError());
-      },
-      { once: true }
-    );
-  });
-}
-
 /** Public Nominatim allows at most one request per second. */
 /** @param {AbortSignal | undefined} signal */
 async function reserveRequest(signal) {
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   const now = Date.now();
   const at = Math.max(now, nextAllowedRequestAt);
   nextAllowedRequestAt = at + MIN_REQUEST_INTERVAL_MS;
-  await wait(at - now, signal);
+  if (at > now) {
+    await new Promise((resolve) =>
+      globalThis.setTimeout(resolve, at - now)
+    );
+  }
+  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 }
 
 /** @param {string} key @param {PlaceSearchResult[]} results */
@@ -84,8 +66,9 @@ function normalizeResult(raw) {
   const label = String(raw?.name || display.split(",")[0] || "").trim();
   if (!label) return null;
 
-  const parts = display.split(",").map((part) => part.trim()).filter(Boolean);
-  if (parts[0] === label) parts.shift();
+  const secondaryLabel = display.startsWith(`${label},`)
+    ? display.slice(label.length + 1).trim()
+    : display;
 
   const osmType = String(raw?.osm_type || "").trim();
   const osmId = String(raw?.osm_id || "").trim();
@@ -97,11 +80,9 @@ function normalizeResult(raw) {
         ? `osm:${osmType}:${osmId}`
         : `nominatim:${placeId || `${lat},${lon}`}`,
     label,
-    secondaryLabel: parts.slice(0, 4).join(", "),
+    secondaryLabel,
     lat,
     lon,
-    category: String(raw?.addresstype || raw?.type || raw?.category || ""),
-    provider: "nominatim",
   };
 }
 
