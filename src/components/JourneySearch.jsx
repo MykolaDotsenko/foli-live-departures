@@ -8,6 +8,19 @@ import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
 
+function OpenStreetMapAttribution({ compact = false }) {
+  return (
+    <a
+      className={compact ? styles.compactAttribution : styles.destinationAttribution}
+      href="https://www.openstreetmap.org/copyright"
+      target="_blank"
+      rel="noreferrer"
+    >
+      {t("© OpenStreetMap contributors")}
+    </a>
+  );
+}
+
 function destinationLabel(destination) {
   if (!destination) return "";
   return destination.kind === "saved-place"
@@ -147,6 +160,9 @@ export default function JourneySearch({
         <span className={styles.compactDestination}>
           <span>{t("Going to")}</span>
           <strong>{destinationLabel(destination)}</strong>
+          {destination.source === "osm-nominatim" && (
+            <OpenStreetMapAttribution compact />
+          )}
         </span>
         <span className={styles.compactActions}>
           <button type="button" onClick={() => setExpanded(true)}>
@@ -182,6 +198,9 @@ export default function JourneySearch({
         <div className={styles.destination} role="status">
           <span>{t("Going to")}</span>
           <strong>{destinationLabel(destination)}</strong>
+          {destination.source === "osm-nominatim" && (
+            <OpenStreetMapAttribution />
+          )}
         </div>
       )}
 
@@ -273,7 +292,7 @@ export default function JourneySearch({
         </p>
         <p className={styles.privacyNote}>
           {t(
-            "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search."
+            "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session."
           )}
         </p>
 
