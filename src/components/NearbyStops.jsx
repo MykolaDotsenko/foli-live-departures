@@ -134,7 +134,7 @@ function NearbyStopCard({
                 fit.best.finalWalkDistanceM > 0 && (
                   <>
                     {" · "}
-                    {t("final walk ≈ {distance}", {
+                    {t("Walk ≈ {distance}", {
                       distance: formatDistance(
                         fit.best.finalWalkDistanceM
                       ),
