@@ -108,33 +108,27 @@ export function analyzeTripFit({
     };
   }
 
-  const anyTarget = stopTimes.some((item) => targets.has(String(item.stopId)));
-  const downstream = stopTimes.filter(
-    (item) =>
-      targets.has(String(item.stopId)) &&
-      Number(item.stopSequence) > Number(boarding.stopSequence) &&
-      item.dropOffType !== 1
-  );
-
-  if (downstream.length === 0) {
-    return {
-      compatible: false,
-      reason: anyTarget
-        ? "destination-not-downstream"
-        : "destination-not-on-trip",
-      boarding,
-      destination: null,
-      rideDurationSec: null,
-      finalWalkDistanceM: null,
-      finalWalkDurationSec: null,
-    };
-  }
-
   const boardClock =
     gtfsClockSeconds(boarding.departureTime) ??
     gtfsClockSeconds(boarding.arrivalTime);
 
-  const candidates = downstream.map((destination) => {
+  let anyTarget = false;
+  /** @type {{ destination: TripStopTime, rideDurationSec: number | null, finalWalkDistanceM: number | null, finalWalkDurationSec: number | null } | null} */
+  let selected = null;
+  /** @type {{ totalSec: number, rideSec: number, sequence: number } | null} */
+  let selectedScore = null;
+
+  for (const destination of stopTimes) {
+    if (!targets.has(String(destination.stopId))) continue;
+    anyTarget = true;
+
+    if (
+      Number(destination.stopSequence) <= Number(boarding.stopSequence) ||
+      destination.dropOffType === 1
+    ) {
+      continue;
+    }
+
     const destinationClock =
       gtfsClockSeconds(destination.arrivalTime) ??
       gtfsClockSeconds(destination.departureTime);
@@ -153,43 +147,54 @@ export function analyzeTripFit({
     const finalWalkDurationSec =
       approximateWalkSeconds(finalWalkDistanceM);
 
-    return {
+    const candidate = {
       destination,
       rideDurationSec,
       finalWalkDistanceM,
       finalWalkDurationSec,
     };
-  });
 
-  let selected = candidates[0];
+    if (!selected) selected = candidate;
 
-  if (destinationStopDistances) {
-    /** @type {{ candidate: (typeof candidates)[number], totalSec: number, rideSec: number }[]} */
-    const scored = [];
-    for (const candidate of candidates) {
-      if (
-        candidate.rideDurationSec === null ||
-        candidate.finalWalkDurationSec === null
-      ) {
-        continue;
-      }
-      scored.push({
-        candidate,
-        totalSec:
-          candidate.rideDurationSec + candidate.finalWalkDurationSec,
-        rideSec: candidate.rideDurationSec,
-      });
+    if (
+      !destinationStopDistances ||
+      rideDurationSec === null ||
+      finalWalkDurationSec === null
+    ) {
+      continue;
     }
 
-    scored.sort(
-      (left, right) =>
-        left.totalSec - right.totalSec ||
-        left.rideSec - right.rideSec ||
-        Number(left.candidate.destination.stopSequence) -
-          Number(right.candidate.destination.stopSequence)
-    );
+    const score = {
+      totalSec: rideDurationSec + finalWalkDurationSec,
+      rideSec: rideDurationSec,
+      sequence: Number(destination.stopSequence),
+    };
 
-    if (scored.length > 0) selected = scored[0].candidate;
+    if (
+      !selectedScore ||
+      score.totalSec < selectedScore.totalSec ||
+      (score.totalSec === selectedScore.totalSec &&
+        (score.rideSec < selectedScore.rideSec ||
+          (score.rideSec === selectedScore.rideSec &&
+            score.sequence < selectedScore.sequence)))
+    ) {
+      selected = candidate;
+      selectedScore = score;
+    }
+  }
+
+  if (!selected) {
+    return {
+      compatible: false,
+      reason: anyTarget
+        ? "destination-not-downstream"
+        : "destination-not-on-trip",
+      boarding,
+      destination: null,
+      rideDurationSec: null,
+      finalWalkDistanceM: null,
+      finalWalkDurationSec: null,
+    };
   }
 
   return {
