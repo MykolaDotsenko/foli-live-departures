@@ -55,6 +55,7 @@ beforeEach(() => {
     error: "",
     search: placeSearch.search,
     clear: placeSearch.clear,
+    directEnabled: true,
   });
 });
 
@@ -312,4 +313,55 @@ test("keeps an opened stop board compact until the passenger asks to change dest
 
   fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
   expect(props.onClear).toHaveBeenCalledTimes(1);
+});
+
+
+test("packaged app keeps address text local and offers the official planner handoff", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+
+  renderSearch();
+  const input = screen.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+
+  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Search destination" })
+  );
+
+  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "official Turku journey planner"
+  );
+  expect(
+    screen.getByRole("link", { name: "Open Turku journey planner" })
+  ).toHaveAttribute("href", "https://turku.digitransit.fi/");
+  expect(
+    screen.getByText(/keeps address and place text on this device/i)
+  ).toBeInTheDocument();
+});
+
+test("provider failure is not misreported as a valid zero-match result", async () => {
+  placeSearch.search.mockResolvedValueOnce(null);
+  renderSearch();
+  const input = screen.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+
+  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
+  fireEvent.click(
+    screen.getByRole("button", { name: "Search destination" })
+  );
+
+  await waitFor(() => expect(placeSearch.search).toHaveBeenCalledTimes(1));
+  expect(
+    screen.queryByText(/No matching stop, place or address was found/i)
+  ).not.toBeInTheDocument();
 });

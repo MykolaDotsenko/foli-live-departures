@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
+  directPlaceSearchSupported,
   resetPlaceSearchForTests,
   searchPlaces,
 } from "./placeSearch";
@@ -477,4 +478,47 @@ test("cancels a queued explicit search before it starts another provider request
   // Config + first provider request only. The aborted queued search never
   // starts a second provider request after the previous task finishes.
   expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+
+test("fails closed without network in a packaged native runtime", async () => {
+  const previous = globalThis.Capacitor;
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+  Object.defineProperty(globalThis, "Capacitor", {
+    configurable: true,
+    value: { isNativePlatform: () => true },
+  });
+
+  try {
+    expect(directPlaceSearchSupported()).toBe(false);
+    await expect(searchPlaces("Prisma Itäharju")).rejects.toMatchObject({
+      name: "PlaceSearchPolicyError",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  } finally {
+    if (previous === undefined) {
+      delete globalThis.Capacitor;
+    } else {
+      Object.defineProperty(globalThis, "Capacitor", {
+        configurable: true,
+        value: previous,
+      });
+    }
+  }
+});
+
+test("runtime config cannot expand the provider trust boundary to another origin", async () => {
+  const fetchMock = vi.fn().mockResolvedValueOnce(
+    response({
+      enabled: true,
+      endpoint: "https://example.com/search",
+      countrycodes: "fi",
+      limit: 5,
+    })
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(searchPlaces("Prisma Itäharju")).resolves.toEqual([]);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
 });
