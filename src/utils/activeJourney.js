@@ -78,15 +78,6 @@ export function activeJourneyFromOption(
 }
 
 /**
- * A trip ref identifies the run in normal service. Planned boarding time is
- * an additional occurrence anchor for loops/repeated visits when both sides
- * expose it.
- *
- * @param {any} arrival
- * @param {ActiveDirectJourney | null | undefined} journey
- * @returns {boolean}
- */
-/**
  * Compare a Journey Assistant option with an already selected concrete trip.
  * Used to keep a failed selected trip out of recovery alternatives without
  * hiding other departures that happen to share a line.
@@ -117,6 +108,15 @@ export function directOptionMatchesActiveJourney(option, journey) {
   );
 }
 
+/**
+ * A trip ref identifies the run in normal service. Planned boarding time is
+ * an additional occurrence anchor for loops/repeated visits when both sides
+ * expose it.
+ *
+ * @param {any} arrival
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @returns {boolean}
+ */
 export function arrivalMatchesActiveJourney(arrival, journey) {
   if (!journey || String(arrival?.tripref || "") !== journey.tripRef) {
     return false;
