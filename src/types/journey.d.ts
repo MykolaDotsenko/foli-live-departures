@@ -40,6 +40,9 @@ export interface NearbyDepartureFit {
   aimedDepartureAt?: number | null;
   originAimedDepartureAt?: number | null;
   destinationArrivalAt: number | null;
+  finalWalkDistanceM?: number | null;
+  finalWalkSecEstimate?: number | null;
+  journeyArrivalAt?: number | null;
   catchability: Catchability;
   liveState: LiveState;
   rideDurationSec: number | null;
