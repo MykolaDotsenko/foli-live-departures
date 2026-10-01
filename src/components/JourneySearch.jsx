@@ -8,6 +8,7 @@ import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
 
+/** @param {{ compact?: boolean }} props */
 function OpenStreetMapAttribution({ compact = false }) {
   return (
     <a
