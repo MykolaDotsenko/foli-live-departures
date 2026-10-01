@@ -8,20 +8,14 @@ import {
 import { beforeEach, expect, test, vi } from "vitest";
 import { resetLanguageForTests } from "../i18n";
 
-const placeSearch = vi.hoisted(() => ({
-  state: "idle",
-  results: [],
-  search: vi.fn(),
-  clear: vi.fn(),
+const api = vi.hoisted(() => ({
+  searchPlaces: vi.fn(),
+  placeSearchViewbox: vi.fn(() => "22,61,23,60"),
 }));
 
-vi.mock("../hooks/usePlaceSearch", () => ({
-  default: () => ({
-    state: placeSearch.state,
-    results: placeSearch.results,
-    search: placeSearch.search,
-    clear: placeSearch.clear,
-  }),
+vi.mock("../api/placeSearch", () => ({
+  searchPlaces: api.searchPlaces,
+  placeSearchViewbox: api.placeSearchViewbox,
 }));
 
 import JourneySearch from "./JourneySearch";
@@ -45,16 +39,12 @@ const prisma = {
   secondaryLabel: "Turku, Varsinais-Suomi, Suomi",
   lat: 60.4518,
   lon: 22.2666,
-  category: "shop",
-  provider: "nominatim",
 };
 
 beforeEach(() => {
   resetLanguageForTests("en");
-  placeSearch.state = "idle";
-  placeSearch.results = [];
-  placeSearch.search.mockReset().mockResolvedValue([]);
-  placeSearch.clear.mockReset();
+  api.searchPlaces.mockReset().mockResolvedValue([]);
+  api.placeSearchViewbox.mockReset().mockReturnValue("22,61,23,60");
 });
 
 function renderSearch(overrides = {}) {
@@ -63,6 +53,7 @@ function renderSearch(overrides = {}) {
     places: [home],
     destination: null,
     online: true,
+    coordinatesStatus: "ready",
     onChoosePlace: vi.fn(),
     onChooseStop: vi.fn(),
     onChooseGeocodedPlace: vi.fn(() => ({
@@ -83,65 +74,74 @@ function renderSearch(overrides = {}) {
   return props;
 }
 
+function destinationInput() {
+  return screen.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+}
+
+async function searchFor(query) {
+  fireEvent.change(destinationInput(), { target: { value: query } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+}
+
 test("offers saved destinations as one-tap choices", () => {
   const props = renderSearch();
   fireEvent.click(screen.getByRole("button", { name: "Home" }));
   expect(props.onChoosePlace).toHaveBeenCalledWith(home);
 });
 
-test("typing shows local stop suggestions without calling the place provider", () => {
+test("typing shows local stop suggestions without calling the external provider", () => {
   renderSearch();
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
-
-  fireEvent.change(input, { target: { value: "Turun" } });
+  fireEvent.change(destinationInput(), { target: { value: "Turun" } });
 
   expect(
     screen.getByRole("listbox", {
       name: "Destination stop suggestions",
     })
   ).toBeInTheDocument();
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
 });
 
-test("an exact public stop keeps the one-submit local fast path", () => {
+test("exact public stop keeps the local one-submit fast path", () => {
   const props = renderSearch();
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
-
-  fireEvent.change(input, { target: { value: "Turun linna" } });
+  fireEvent.change(destinationInput(), { target: { value: "Turun linna" } });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
   expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
 });
 
-test("a non-exact address or place lookup runs only after explicit Search", async () => {
-  placeSearch.search.mockResolvedValue([prisma]);
+test("address or POI lookup runs only after explicit Search", async () => {
+  api.searchPlaces.mockResolvedValue([prisma]);
   renderSearch();
 
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
+  fireEvent.change(destinationInput(), {
+    target: { value: "Prisma Itäharju" },
   });
-  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
-
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
   await waitFor(() =>
-    expect(placeSearch.search).toHaveBeenCalledWith("Prisma Itäharju")
+    expect(api.searchPlaces).toHaveBeenCalledWith(
+      "Prisma Itäharju",
+      expect.objectContaining({
+        language: "en",
+        viewbox: "22,61,23,60",
+        signal: expect.any(globalThis.AbortSignal),
+      })
+    )
   );
 });
 
-test("renders explicit place results and selects one as a geocoded destination", () => {
-  placeSearch.state = "ready";
-  placeSearch.results = [prisma];
+test("renders provider results and selects one as a geocoded destination", async () => {
+  api.searchPlaces.mockResolvedValue([prisma]);
   const props = renderSearch();
 
-  const listbox = screen.getByRole("listbox", {
+  await searchFor("Prisma Itäharju");
+
+  const listbox = await screen.findByRole("listbox", {
     name: "Places and addresses",
   });
   expect(within(listbox).getByText("Prisma Itäharju")).toBeInTheDocument();
@@ -158,16 +158,27 @@ test("renders explicit place results and selects one as a geocoded destination",
   expect(props.onChooseGeocodedPlace).toHaveBeenCalledWith(prisma);
 });
 
-test("does not call place search while offline", async () => {
-  renderSearch({ online: false });
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
+test("provider failure is explicit and local stop search remains available", async () => {
+  api.searchPlaces.mockRejectedValue(new Error("provider down"));
+  renderSearch();
 
-  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
+  await searchFor("Prisma Itäharju");
+
+  expect(
+    await screen.findByRole("alert")
+  ).toHaveTextContent(
+    "Place search is temporarily unavailable. Stop search still works."
+  );
+});
+
+test("does not call external place search while offline", () => {
+  renderSearch({ online: false });
+  fireEvent.change(destinationInput(), {
+    target: { value: "Prisma Itäharju" },
+  });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Place search needs an internet connection. Stop search still works."
   );
@@ -175,11 +186,7 @@ test("does not call place search while offline", async () => {
 
 test("does not guess between duplicate stop names", async () => {
   renderSearch();
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
-
-  fireEvent.change(input, { target: { value: "Kauppatori" } });
+  fireEvent.change(destinationInput(), { target: { value: "Kauppatori" } });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
   await waitFor(() =>
@@ -192,10 +199,8 @@ test("does not guess between duplicate stop names", async () => {
   ).toHaveLength(2);
 });
 
-test("keeps the current UI open when a provider result cannot be used", () => {
-  placeSearch.state = "ready";
-  placeSearch.results = [prisma];
-
+test("keeps current UI open when a provider result cannot be used", async () => {
+  api.searchPlaces.mockResolvedValue([prisma]);
   renderSearch({
     onChooseGeocodedPlace: vi.fn(() => ({
       ok: false,
@@ -204,8 +209,12 @@ test("keeps the current UI open when a provider result cannot be used", () => {
     })),
   });
 
+  await searchFor("Prisma Itäharju");
+  const listbox = await screen.findByRole("listbox", {
+    name: "Places and addresses",
+  });
   fireEvent.click(
-    screen.getByRole("option", {
+    within(listbox).getByRole("option", {
       name: /Prisma Itäharju.*Turku/i,
     })
   );
@@ -226,9 +235,9 @@ test("shows and clears the active destination", () => {
     },
   });
 
-  const activeDestination = screen.getByRole("status");
-  expect(within(activeDestination).getByText("Going to")).toBeInTheDocument();
-  expect(within(activeDestination).getByText("Home")).toBeInTheDocument();
+  const status = screen.getByRole("status");
+  expect(within(status).getByText("Going to")).toBeInTheDocument();
+  expect(within(status).getByText("Home")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
   expect(props.onClear).toHaveBeenCalledTimes(1);
@@ -242,7 +251,7 @@ test("requires a destination value", () => {
   );
 });
 
-test("keeps an opened stop board compact until the passenger asks to change destination", () => {
+test("keeps an opened stop board compact until change is requested", () => {
   const props = renderSearch({
     compact: true,
     destination: {
@@ -257,44 +266,33 @@ test("keeps an opened stop board compact until the passenger asks to change dest
   expect(
     screen.getByRole("region", { name: "Journey destination" })
   ).toBeInTheDocument();
-  expect(
-    screen.queryByRole("combobox", { name: "Stop, address or place" })
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Change" }));
-  expect(
-    screen.getByRole("combobox", { name: "Stop, address or place" })
-  ).toBeInTheDocument();
+  expect(destinationInput()).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
   expect(props.onClear).toHaveBeenCalledTimes(1);
 });
 
-
-test("waits for stop coordinates before external place search", async () => {
+test("waits for stop coordinates before external place search", () => {
   renderSearch({ coordinatesStatus: "loading" });
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
+  fireEvent.change(destinationInput(), {
+    target: { value: "Prisma Itäharju" },
   });
-
-  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Address and place search is waiting for stop locations. Try again in a moment."
   );
 });
 
-test("exact local stop still works while stop coordinates are unavailable", () => {
+test("exact local stop still works while coordinates are unavailable", () => {
   const props = renderSearch({ coordinatesStatus: "unavailable" });
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
-
-  fireEvent.change(input, { target: { value: "Turun linna" } });
+  fireEvent.change(destinationInput(), { target: { value: "Turun linna" } });
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
 
   expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
-  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
 });
