@@ -41,7 +41,6 @@ for (const [name, sources] of Object.entries(required)) {
 const requiredConnectSources = [
   "https://data.foli.fi",
   "https://photon.komoot.io",
-  "https://nominatim.openstreetmap.org",
 ];
 const connectSources = directives.get("connect-src") || [];
 for (const source of requiredConnectSources) {
