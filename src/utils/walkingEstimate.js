@@ -11,6 +11,9 @@ const STREET_DETOUR_FACTOR = 1.25;
  * @returns {number | null}
  */
 export function approximateWalkSeconds(distanceM) {
+  if (distanceM === null || distanceM === undefined || distanceM === "") {
+    return null;
+  }
   const distance = Number(distanceM);
   if (!Number.isFinite(distance) || distance < 0) return null;
   if (distance === 0) return 0;
