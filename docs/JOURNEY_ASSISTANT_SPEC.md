@@ -836,6 +836,20 @@ Journey planning must not duplicate or weaken those rules.
 
 At any moment, show one dominant action.
 
+The current direct-journey implementation is deliberately fail-closed:
+
+- selecting a route pins one concrete trip and boarding occurrence;
+- no automatic route replacement after commitment;
+- “At stop” is never inferred merely from opening a stop board;
+- the passenger explicitly confirms **I’m at the stop**;
+- opening another stop pauses selected-trip monitoring instead of creating a second poll;
+- provider/feed failure degrades confidence; it does not imply departure;
+- a cancellation alert enters recovery even if the SIRI departure row has already disappeared;
+- a cached board from before route selection cannot change selected timing or undo recovery;
+- the selected trip remains visible even if a saved line filter would otherwise hide its line;
+- in recovery the failed concrete trip is excluded from recommendation cards, while the full Nearby list and departure board remain available;
+- Ride Mode remains the sole authoritative onboard safety engine.
+
 Examples:
 
 > **Walk to Kauppatori D2**
