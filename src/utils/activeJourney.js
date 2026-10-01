@@ -98,6 +98,17 @@ export function directOptionMatchesActiveJourney(option, journey) {
     return false;
   }
 
+  const selectedOrigin = finitePositive(
+    journey.originAimedDepartureAt
+  );
+  const optionOrigin = finitePositive(
+    option?.departure?.originAimedDepartureAt
+  );
+
+  if (selectedOrigin !== null && optionOrigin !== null) {
+    return Math.abs(selectedOrigin - optionOrigin) <= 30;
+  }
+
   const selectedPlanned = finitePositive(journey.aimedDepartureAt);
   const optionPlanned =
     finitePositive(option?.departure?.aimedDepartureAt) ??
