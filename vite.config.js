@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import {
   FOLI_CONNECT_SOURCES,
+  PLACE_SEARCH_CONNECT_SOURCES,
   contentSecurityPolicyPlugin,
   originOf,
 } from "./scripts/content-security-policy.mjs";
@@ -32,6 +33,8 @@ const FOLI_ENDPOINT_VARIABLES = [
 function connectSources(env) {
   return [
     ...FOLI_CONNECT_SOURCES,
+    ...PLACE_SEARCH_CONNECT_SOURCES,
+    originOf(env.VITE_PLACE_SEARCH_URL || ""),
     ...FOLI_ENDPOINT_VARIABLES.map((name) => originOf(env[name] || "")),
   ];
 }
