@@ -141,7 +141,6 @@ describe("live transfer revalidation", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_120,
-      delaySec: 120,
     });
     expect(state.feasibility.slackSec).toBeGreaterThan(
       journey.transferPlan.transfer.feasibility.slackSec
@@ -308,7 +307,6 @@ describe("applying revalidation to a committed journey", () => {
       departureAt: 2_120,
       // This remains the timetable baseline used for downstream propagation.
       arrivalAt: 2_400,
-      liveState: "delayed",
     });
     expect(next.destinationArrivalAt).toBe(2_520);
     expect(next.journeyArrivalAt).toBe(2_520);
@@ -351,12 +349,9 @@ describe("applying revalidation to a committed journey", () => {
       providerState,
       decision,
       departureAt: 2_000,
-      delaySec: null,
       feasibility: journey.transferPlan.transfer.feasibility,
       receivedAtMs: 2_100_000,
       missingSinceMs: null,
-      matchedAtMs: null,
-      providerAgeSec: null,
     });
 
     expect(next).toMatchObject({
@@ -370,12 +365,9 @@ describe("applying revalidation to a committed journey", () => {
       providerState: "degraded",
       decision: "unknown",
       departureAt: 2_000,
-      delaySec: null,
       feasibility: journey.transferPlan.transfer.feasibility,
       receivedAtMs: 2_100_000,
       missingSinceMs: null,
-      matchedAtMs: null,
-      providerAgeSec: null,
     });
 
     expect(next.phase).toBe("waiting");
@@ -461,7 +453,6 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "tight",
       departureAt: 1_800,
-      liveState: "live",
     });
     expect(state.feasibility).toMatchObject({
       recommendable: true,
@@ -471,18 +462,13 @@ describe("transfer revalidation fallback and branch safety", () => {
     });
   });
 
-  test("unmonitored and timestamp-less rows stay stale and preserve prior match evidence", () => {
+  test("unmonitored and timestamp-less rows stay stale", () => {
     const prior = {
       providerState: "live",
       decision: "good",
       departureAt: 2_000,
-      delaySec: 0,
       feasibility: journey.transferPlan.transfer.feasibility,
-      receivedAtMs: 1_690_000,
       missingSinceMs: null,
-      matchedAtMs: 1_690_000,
-      providerAgeSec: 0,
-      liveState: "live",
     };
 
     const unmonitored = evaluateTransferRevalidation({
@@ -495,7 +481,6 @@ describe("transfer revalidation fallback and branch safety", () => {
     expect(unmonitored).toMatchObject({
       providerState: "stale",
       decision: "unknown",
-      matchedAtMs: 1_690_000,
     });
 
     const noProviderTimestamp = evaluateTransferRevalidation({
@@ -506,7 +491,6 @@ describe("transfer revalidation fallback and branch safety", () => {
       previous: prior,
     });
     expect(noProviderTimestamp.providerState).toBe("stale");
-    expect(noProviderTimestamp.providerAgeSec).toBeNull();
   });
 
   test("non-array or timestamp-less missing evidence cannot fabricate a miss", () => {
@@ -531,14 +515,12 @@ describe("transfer revalidation fallback and branch safety", () => {
       previous: {
         providerState: "missing",
         missingSinceMs: 0,
-        matchedAtMs: 123,
       },
     });
     expect(invalidPrior).toMatchObject({
       providerState: "missing",
       decision: "unknown",
       missingSinceMs: 2_500_000,
-      matchedAtMs: 123,
     });
   });
 
@@ -546,7 +528,6 @@ describe("transfer revalidation fallback and branch safety", () => {
     const previous = {
       providerState: "missing",
       missingSinceMs: 1_700_000,
-      matchedAtMs: 1_650_000,
     };
 
     const degraded = evaluateTransferRevalidation({
@@ -559,7 +540,6 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "degraded",
       decision: "unknown",
       missingSinceMs: 1_700_000,
-      matchedAtMs: 1_650_000,
     });
 
     const cancelled = evaluateTransferRevalidation({
@@ -572,7 +552,6 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "cancelled",
       decision: "cancelled",
       receivedAtMs: null,
-      matchedAtMs: 1_650_000,
     });
   });
 
@@ -597,8 +576,6 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_000,
-      delaySec: 0,
-      liveState: "live",
     });
   });
 
@@ -629,19 +606,14 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_030,
-      delaySec: null,
       feasibility: null,
       receivedAtMs: 1_800_000,
       missingSinceMs: null,
-      matchedAtMs: 1_800_000,
-      providerAgeSec: 0,
-      liveState: undefined,
     });
 
     expect(next.transferPlan.second).toMatchObject({
       tripRef: "second",
       departureAt: 2_030,
-      liveState: "live",
     });
     expect(next.transferPlan.transfer.feasibility).toEqual(
       journey.transferPlan.transfer.feasibility
@@ -662,13 +634,9 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_060,
-      delaySec: 60,
       feasibility: sparse.transferPlan.transfer.feasibility,
       receivedAtMs: 1_800_000,
       missingSinceMs: null,
-      matchedAtMs: 1_800_000,
-      providerAgeSec: 0,
-      liveState: "delayed",
     });
 
     expect(next.destinationArrivalAt).toBe(2_460);
@@ -686,13 +654,9 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_100,
-      delaySec: 100,
       feasibility: journey.transferPlan.transfer.feasibility,
       receivedAtMs: 1_800_000,
       missingSinceMs: null,
-      matchedAtMs: 1_800_000,
-      providerAgeSec: 0,
-      liveState: "delayed",
     });
 
     expect(next).toMatchObject({

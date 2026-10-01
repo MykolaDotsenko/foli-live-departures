@@ -172,13 +172,8 @@ export interface TransferRevalidationState {
   providerState: TransferProviderState;
   decision: TransferRevalidationDecision;
   departureAt: number | null;
-  delaySec: number | null;
   feasibility: TransferFeasibility | null;
-  receivedAtMs: number | null;
   missingSinceMs: number | null;
-  matchedAtMs: number | null;
-  providerAgeSec: number | null;
-  liveState?: LiveState;
 }
 
 export interface ActiveDirectJourney {

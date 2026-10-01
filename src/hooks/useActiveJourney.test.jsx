@@ -234,12 +234,8 @@ test("applies live second-leg revalidation through the public hook API", () => {
       providerState: "cancelled",
       decision: "cancelled",
       departureAt: transfer.second.departureAt,
-      delaySec: null,
       feasibility: transfer.transfer.feasibility,
-      receivedAtMs: Date.now(),
       missingSinceMs: null,
-      matchedAtMs: null,
-      providerAgeSec: null,
     });
   });
 

@@ -23,6 +23,30 @@ function secondLeg(journey) {
 }
 
 /**
+ * @param {import("../types/journey").TransferProviderState} providerState
+ * @param {TransferRevalidationDecision} decision
+ * @param {number | null} departureAt
+ * @param {TransferFeasibility | null} feasibility
+ * @param {number | null} [missingSinceMs]
+ * @returns {TransferRevalidationState}
+ */
+function state(
+  providerState,
+  decision,
+  departureAt,
+  feasibility,
+  missingSinceMs = null
+) {
+  return {
+    providerState,
+    decision,
+    departureAt,
+    feasibility,
+    missingSinceMs,
+  };
+}
+
+/**
  * Exact selected-trip matching for the second leg. Trip ref is required;
  * planned/origin times add occurrence identity when the provider exposes them.
  *
@@ -84,31 +108,16 @@ export function evaluateTransferRevalidation({
   previous = null,
 } = {}) {
   const second = secondLeg(journey);
-  /** @type {TransferRevalidationState} */
-  const idle = {
-    providerState: "idle",
-    decision: "unknown",
-    departureAt: null,
-    delaySec: null,
-    feasibility: null,
-    receivedAtMs: null,
-    missingSinceMs: null,
-    matchedAtMs: null,
-    providerAgeSec: null,
-  };
-
   const plan = journey?.transferPlan;
-  if (!second || !journey || !plan) return idle;
+  if (!second || !journey || !plan) {
+    return state("idle", "unknown", null, null);
+  }
 
   const plannedDepartureAt = positive(second.departureAt);
-  const plannedAimedAt =
-    positive(second.aimedDepartureAt) ?? plannedDepartureAt;
   const incomingAt =
-    positive(incomingArrivalAt) ??
-    positive(plan.first?.arrivalAt);
+    positive(incomingArrivalAt) ?? positive(plan.first?.arrivalAt);
   const reference = positive(referenceTimeSec);
   const received = positive(receivedAtMs);
-
   const plannedFeasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: plannedDepartureAt,
@@ -120,37 +129,26 @@ export function evaluateTransferRevalidation({
   });
 
   if (cancelled) {
-    return {
-      providerState: "cancelled",
-      decision: "cancelled",
-      departureAt: plannedDepartureAt,
-      delaySec: null,
-      feasibility: plannedFeasibility,
-      receivedAtMs: received,
-      missingSinceMs: null,
-      matchedAtMs: previous?.matchedAtMs ?? null,
-      providerAgeSec: null,
-    };
+    return state(
+      "cancelled",
+      "cancelled",
+      plannedDepartureAt,
+      plannedFeasibility
+    );
   }
-
   if (feedError) {
-    return {
-      providerState: "degraded",
-      decision: "unknown",
-      departureAt: plannedDepartureAt,
-      delaySec: null,
-      feasibility: plannedFeasibility,
-      receivedAtMs: received,
-      missingSinceMs: previous?.missingSinceMs ?? null,
-      matchedAtMs: previous?.matchedAtMs ?? null,
-      providerAgeSec: null,
-    };
+    return state(
+      "degraded",
+      "unknown",
+      plannedDepartureAt,
+      plannedFeasibility,
+      previous?.missingSinceMs ?? null
+    );
   }
 
-  const rows = Array.isArray(arrivals) ? arrivals : [];
-  const arrival =
-    rows.find((candidate) => transferSecondArrivalMatches(candidate, journey)) ||
-    null;
+  const arrival = (Array.isArray(arrivals) ? arrivals : []).find((candidate) =>
+    transferSecondArrivalMatches(candidate, journey)
+  );
 
   if (!arrival) {
     const missingSinceMs =
@@ -158,59 +156,35 @@ export function evaluateTransferRevalidation({
       positive(previous.missingSinceMs) !== null
         ? previous.missingSinceMs
         : received;
-    const missingDurationMs =
-      received !== null && positive(missingSinceMs) !== null
-        ? Math.max(0, received - Number(missingSinceMs))
-        : 0;
+    const confirmed =
+      received !== null &&
+      positive(missingSinceMs) !== null &&
+      received - Number(missingSinceMs) >= TRANSFER_MISSING_CONFIRMATION_MS;
     const pastGrace =
       reference !== null &&
       plannedDepartureAt !== null &&
       reference >= plannedDepartureAt + TRANSFER_DEPARTED_GRACE_SEC;
-    const confirmed =
-      missingDurationMs >= TRANSFER_MISSING_CONFIRMATION_MS;
 
-    return {
-      providerState: "missing",
-      decision: pastGrace && confirmed ? "missed" : "unknown",
-      departureAt: plannedDepartureAt,
-      delaySec: null,
-      feasibility: plannedFeasibility,
-      receivedAtMs: received,
-      missingSinceMs,
-      matchedAtMs: previous?.matchedAtMs ?? null,
-      providerAgeSec: null,
-    };
+    return state(
+      "missing",
+      pastGrace && confirmed ? "missed" : "unknown",
+      plannedDepartureAt,
+      plannedFeasibility,
+      missingSinceMs
+    );
   }
 
   const providerAgeSec = dataAgeSeconds(arrival.recordedattime, reference);
-  const fresh =
-    arrival.monitored === true &&
-    providerAgeSec !== null &&
-    providerAgeSec <= TRANSFER_LIVE_MAX_AGE_SEC;
-  const matchedAtMs = received ?? previous?.matchedAtMs ?? null;
-
-  if (!fresh) {
-    return {
-      providerState: "stale",
-      decision: "unknown",
-      departureAt: plannedDepartureAt,
-      delaySec: null,
-      feasibility: plannedFeasibility,
-      receivedAtMs: received,
-      missingSinceMs: null,
-      matchedAtMs,
-      providerAgeSec,
-    };
+  if (
+    arrival.monitored !== true ||
+    providerAgeSec === null ||
+    providerAgeSec > TRANSFER_LIVE_MAX_AGE_SEC
+  ) {
+    return state("stale", "unknown", plannedDepartureAt, plannedFeasibility);
   }
 
   const liveDepartureAt =
     positive(getDepartureTime(arrival, reference)) ?? plannedDepartureAt;
-  const delaySec =
-    liveDepartureAt !== null && plannedAimedAt !== null
-      ? liveDepartureAt - plannedAimedAt
-      : null;
-  const liveState =
-    delaySec !== null && Math.abs(delaySec) >= 30 ? "delayed" : "live";
   const feasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: liveDepartureAt,
@@ -220,11 +194,6 @@ export function evaluateTransferRevalidation({
       String(plan.transfer.boardStopId),
     incomingLiveState,
   });
-
-  // The local/reference clock advancing beyond an old prediction is not
-  // itself evidence that the bus left. Require the provider snapshot itself
-  // to have been recorded after that predicted departure; otherwise a still
-  // visible row may simply be ageing between polls.
   const providerObservedAt = positive(arrival.recordedattime);
   const clearlyDeparted =
     providerObservedAt !== null &&
@@ -233,64 +202,15 @@ export function evaluateTransferRevalidation({
     providerObservedAt >= liveDepartureAt + 30;
 
   /** @type {TransferRevalidationDecision} */
-  let decision = "unknown";
-  if (clearlyDeparted) decision = "missed";
-  else if (!feasibility.recommendable) decision = "unsafe";
-  else if (feasibility.state === "tight") decision = "tight";
-  else decision = "good";
+  const decision = clearlyDeparted
+    ? "missed"
+    : !feasibility.recommendable
+      ? "unsafe"
+      : feasibility.state === "tight"
+        ? "tight"
+        : "good";
 
-  return {
-    providerState: "live",
-    decision,
-    departureAt: liveDepartureAt,
-    delaySec,
-    feasibility,
-    receivedAtMs: received,
-    missingSinceMs: null,
-    matchedAtMs,
-    providerAgeSec,
-    liveState,
-  };
-}
-
-/**
- * @param {TransferFeasibility | null | undefined} left
- * @param {TransferFeasibility | null | undefined} right
- */
-function sameFeasibility(left, right) {
-  if (left === right) return true;
-  if (!left || !right) return false;
-  return (
-    left.state === right.state &&
-    left.recommendable === right.recommendable &&
-    left.incomingArrivalAt === right.incomingArrivalAt &&
-    left.outgoingDepartureAt === right.outgoingDepartureAt &&
-    left.walkingDistanceM === right.walkingDistanceM &&
-    left.requiredSec === right.requiredSec &&
-    left.availableSec === right.availableSec &&
-    left.slackSec === right.slackSec
-  );
-}
-
-/**
- * @param {TransferRevalidationState | null | undefined} left
- * @param {TransferRevalidationState | null | undefined} right
- */
-function sameRevalidation(left, right) {
-  if (left === right) return true;
-  if (!left || !right) return false;
-  return (
-    left.providerState === right.providerState &&
-    left.decision === right.decision &&
-    left.departureAt === right.departureAt &&
-    left.delaySec === right.delaySec &&
-    left.receivedAtMs === right.receivedAtMs &&
-    left.missingSinceMs === right.missingSinceMs &&
-    left.matchedAtMs === right.matchedAtMs &&
-    left.providerAgeSec === right.providerAgeSec &&
-    left.liveState === right.liveState &&
-    sameFeasibility(left.feasibility, right.feasibility)
-  );
+  return state("live", decision, liveDepartureAt, feasibility);
 }
 
 /**
@@ -306,19 +226,28 @@ export function applyTransferRevalidation(journey, revalidation) {
   if (!journey?.transferPlan || journey.transferLeg !== 1 || !revalidation) {
     return journey;
   }
-  if (sameRevalidation(journey.transferRevalidation, revalidation)) {
+  if (
+    journey.transferRevalidation === revalidation ||
+    (journey.transferRevalidation &&
+      JSON.stringify(journey.transferRevalidation) ===
+        JSON.stringify(revalidation))
+  ) {
     return journey;
   }
 
-  const next = {
-    ...journey,
-    transferRevalidation: revalidation,
-  };
+  const next = { ...journey, transferRevalidation: revalidation };
 
   if (
     revalidation.providerState === "live" &&
     positive(revalidation.departureAt) !== null
   ) {
+    const second = journey.transferPlan.second;
+    const departureAt = Number(revalidation.departureAt);
+    const aimedAt =
+      positive(second.aimedDepartureAt) ?? positive(second.departureAt);
+    const delaySec =
+      aimedAt === null ? null : departureAt - aimedAt;
+
     next.transferPlan = {
       ...journey.transferPlan,
       transfer: {
@@ -327,24 +256,17 @@ export function applyTransferRevalidation(journey, revalidation) {
           revalidation.feasibility ?? journey.transferPlan.transfer.feasibility,
       },
       second: {
-        ...journey.transferPlan.second,
-        departureAt: Number(revalidation.departureAt),
-        liveState: revalidation.liveState || "live",
+        ...second,
+        departureAt,
+        liveState:
+          delaySec !== null && Math.abs(delaySec) >= 30 ? "delayed" : "live",
       },
     };
 
-    // Keep the immutable option-level arrival times as the timetable
-    // baseline. Recompute from that baseline on every fresh observation so
-    // +120 s followed by +60 s becomes +60 s, not +180 s.
-    const hasDelay =
-      revalidation.delaySec !== null &&
-      revalidation.delaySec !== undefined &&
-      Number.isFinite(Number(revalidation.delaySec));
-    if (hasDelay) {
-      const delaySec = Number(revalidation.delaySec);
+    if (delaySec !== null) {
       const plannedDestinationArrival =
         positive(journey.transferPlan.destinationArrivalAt) ??
-        positive(journey.transferPlan.second?.arrivalAt) ??
+        positive(second?.arrivalAt) ??
         positive(journey.destinationArrivalAt);
       const plannedJourneyArrival =
         positive(journey.transferPlan.journeyArrivalAt) ??
@@ -364,27 +286,16 @@ export function applyTransferRevalidation(journey, revalidation) {
 
   if (journey.phase === "recovery") return next;
 
-  if (revalidation.decision === "cancelled") {
-    return {
-      ...next,
-      phase: "recovery",
-      recoveryReason: "transfer-cancelled",
-    };
-  }
-  if (revalidation.decision === "missed") {
-    return {
-      ...next,
-      phase: "recovery",
-      recoveryReason: "transfer-missed",
-    };
-  }
-  if (revalidation.decision === "unsafe") {
-    return {
-      ...next,
-      phase: "recovery",
-      recoveryReason: "transfer-risk",
-    };
-  }
+  const recoveryReason =
+    revalidation.decision === "cancelled"
+      ? "transfer-cancelled"
+      : revalidation.decision === "missed"
+        ? "transfer-missed"
+        : revalidation.decision === "unsafe"
+          ? "transfer-risk"
+          : null;
 
-  return next;
+  return recoveryReason
+    ? { ...next, phase: "recovery", recoveryReason }
+    : next;
 }

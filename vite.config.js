@@ -46,11 +46,6 @@ function connectSources(env) {
 
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
-  build: {
-    // Lightning CSS produces a materially smaller production stylesheet than
-    // esbuild here without changing the supported CSS or runtime behaviour.
-    cssMinify: "lightningcss",
-  },
   plugins: [
     react(),
     contentSecurityPolicyPlugin({
