@@ -24,7 +24,10 @@ export default function useActiveJourney() {
     });
   }, []);
 
-  /** @param {DirectJourneyOption} option @param {DestinationIntent} destination */
+  /**
+   * @param {DirectJourneyOption} option
+   * @param {DestinationIntent} destination
+   */
   const selectDirectJourney = useCallback(
     (option, destination) => {
       const next = activeJourneyFromOption(option, destination);
