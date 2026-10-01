@@ -78,12 +78,16 @@ function chooseBestDeparture(candidates) {
   const usable = candidates
     .filter((candidate) => candidate.catchability !== "too-late")
     .sort((a, b) => {
-      const left = Number.isFinite(a.destinationArrivalAt)
-        ? Number(a.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
-      const right = Number.isFinite(b.destinationArrivalAt)
-        ? Number(b.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
+      const left = Number.isFinite(a.finalArrivalAt)
+        ? Number(a.finalArrivalAt)
+        : Number.isFinite(a.destinationArrivalAt)
+          ? Number(a.destinationArrivalAt)
+          : Number.POSITIVE_INFINITY;
+      const right = Number.isFinite(b.finalArrivalAt)
+        ? Number(b.finalArrivalAt)
+        : Number.isFinite(b.destinationArrivalAt)
+          ? Number(b.destinationArrivalAt)
+          : Number.POSITIVE_INFINITY;
       return left - right || a.departureAt - b.departureAt;
     });
 
@@ -246,6 +250,8 @@ export async function loadDestinationAwareNearby({
         boardingSequence: null,
         boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
         destinationStopIds: destination.acceptableStopIds,
+        destinationStopDistances:
+          destination.destinationStopDistances || null,
       });
 
       if (!fit.compatible) {
@@ -281,6 +287,14 @@ export async function loadDestinationAwareNearby({
           fit.rideDurationSec === null
             ? null
             : Number(departureAt) + fit.rideDurationSec,
+        finalWalkDistanceM: fit.finalWalkDistanceM ?? null,
+        finalWalkDurationSec: fit.finalWalkDurationSec ?? null,
+        finalArrivalAt:
+          fit.rideDurationSec === null
+            ? null
+            : Number(departureAt) +
+              fit.rideDurationSec +
+              (fit.finalWalkDurationSec ?? 0),
         catchability,
         liveState: liveState(arrival, nowSec),
         rideDurationSec: fit.rideDurationSec,
@@ -303,6 +317,8 @@ export async function loadDestinationAwareNearby({
           liveArrival >= candidate.departureAt
         ) {
           candidate.destinationArrivalAt = liveArrival;
+          candidate.finalArrivalAt =
+            liveArrival + (candidate.finalWalkDurationSec ?? 0);
           candidate.liveState = "live";
         }
       })
@@ -336,8 +352,10 @@ export async function loadDestinationAwareNearby({
         .slice()
         .sort(
           (left, right) =>
-            (Number(left.destinationArrivalAt) || Number.POSITIVE_INFINITY) -
-              (Number(right.destinationArrivalAt) || Number.POSITIVE_INFINITY) ||
+            (Number(left.finalArrivalAt ?? left.destinationArrivalAt) ||
+              Number.POSITIVE_INFINITY) -
+              (Number(right.finalArrivalAt ?? right.destinationArrivalAt) ||
+                Number.POSITIVE_INFINITY) ||
             left.departureAt - right.departureAt
         ),
       additionalCount: Math.max(
