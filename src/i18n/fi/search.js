@@ -101,8 +101,8 @@ export default {
   "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
   "Stops stay on-device. Place search uses OpenStreetMap only after Search.":
     "Pysäkit pysyvät laitteella. Paikkahaku käyttää OpenStreetMapia vasta Hae-painikkeen jälkeen.",
-  "Stops stay on-device. Place search is sent only after you press Search. It uses the OpenStreetMap-based Photon service first and may fall back to OpenStreetMap Nominatim if needed.":
-    "Pysäkit pysyvät laitteella. Paikkahaku lähetetään vasta, kun painat Hae. Haku käyttää ensin OpenStreetMap-pohjaista Photon-palvelua ja voi tarvittaessa käyttää varalla OpenStreetMap Nominatimia.",
+  "Stops stay on-device. Place search is sent to the OpenStreetMap-based Photon service only after you press Search.":
+    "Pysäkit pysyvät laitteella. Paikkahaku lähetetään OpenStreetMap-pohjaiseen Photon-palveluun vasta, kun painat Hae.",
   "Place search data": "Paikkahaun tiedot",
   "Place search unavailable. Stop search still works.":
     "Paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
