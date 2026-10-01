@@ -86,6 +86,37 @@ export function activeJourneyFromOption(
  * @param {ActiveDirectJourney | null | undefined} journey
  * @returns {boolean}
  */
+/**
+ * Compare a Journey Assistant option with an already selected concrete trip.
+ * Used to keep a failed selected trip out of recovery alternatives without
+ * hiding other departures that happen to share a line.
+ *
+ * @param {DirectJourneyOption | null | undefined} option
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @returns {boolean}
+ */
+export function directOptionMatchesActiveJourney(option, journey) {
+  if (
+    !journey ||
+    String(option?.stopId || "") !== journey.stopId ||
+    String(option?.departure?.tripRef || "") !== journey.tripRef
+  ) {
+    return false;
+  }
+
+  const selectedPlanned = finitePositive(journey.aimedDepartureAt);
+  const optionPlanned =
+    finitePositive(option?.departure?.aimedDepartureAt) ??
+    finitePositive(option?.departure?.departureAt);
+
+  if (selectedPlanned === null || optionPlanned === null) return true;
+
+  return (
+    Math.abs(selectedPlanned - optionPlanned) <=
+    PLANNED_MATCH_TOLERANCE_SECONDS
+  );
+}
+
 export function arrivalMatchesActiveJourney(arrival, journey) {
   if (!journey || String(arrival?.tripref || "") !== journey.tripRef) {
     return false;
