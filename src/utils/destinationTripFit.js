@@ -64,6 +64,7 @@ export function resolveBoardingOccurrence(
  *   boardingSequence?: number | null,
  *   boardingAimedDepartureEpochSec?: number | null,
  *   destinationStopIds: readonly string[],
+ *   destinationExtraSecByStop?: Record<string, number> | null,
  * }} input
  */
 export function analyzeTripFit({
@@ -72,6 +73,7 @@ export function analyzeTripFit({
   boardingSequence = null,
   boardingAimedDepartureEpochSec = null,
   destinationStopIds,
+  destinationExtraSecByStop = null,
 }) {
   const boarding = resolveBoardingOccurrence(
     stopTimes,
@@ -105,16 +107,17 @@ export function analyzeTripFit({
     };
   }
 
-  const anyTarget = stopTimes.some((item) => targets.has(String(item.stopId)));
-  const destination =
-    stopTimes.find(
-      (item) =>
-        targets.has(String(item.stopId)) &&
-        Number(item.stopSequence) > Number(boarding.stopSequence) &&
-        item.dropOffType !== 1
-    ) || null;
+  const anyTarget = stopTimes.some((item) =>
+    targets.has(String(item.stopId))
+  );
+  const downstream = stopTimes.filter(
+    (item) =>
+      targets.has(String(item.stopId)) &&
+      Number(item.stopSequence) > Number(boarding.stopSequence) &&
+      item.dropOffType !== 1
+  );
 
-  if (!destination) {
+  if (downstream.length === 0) {
     return {
       compatible: false,
       reason: anyTarget
@@ -129,15 +132,52 @@ export function analyzeTripFit({
   const boardClock =
     gtfsClockSeconds(boarding.departureTime) ??
     gtfsClockSeconds(boarding.arrivalTime);
-  const destinationClock =
+
+  let destination = downstream[0];
+  let destinationClock =
     gtfsClockSeconds(destination.arrivalTime) ??
     gtfsClockSeconds(destination.departureTime);
-  const rideDurationSec =
+  let rideDurationSec =
     boardClock !== null &&
     destinationClock !== null &&
     destinationClock >= boardClock
       ? destinationClock - boardClock
       : null;
+
+  if (
+    boardClock !== null &&
+    destinationExtraSecByStop &&
+    typeof destinationExtraSecByStop === "object"
+  ) {
+    let bestScore = Number.POSITIVE_INFINITY;
+
+    for (const candidate of downstream) {
+      const candidateClock =
+        gtfsClockSeconds(candidate.arrivalTime) ??
+        gtfsClockSeconds(candidate.departureTime);
+      const candidateExtra = finiteNumber(
+        destinationExtraSecByStop[String(candidate.stopId)]
+      );
+
+      if (
+        candidateClock === null ||
+        candidateClock < boardClock ||
+        candidateExtra === null ||
+        candidateExtra < 0
+      ) {
+        continue;
+      }
+
+      const candidateRide = candidateClock - boardClock;
+      const score = candidateRide + candidateExtra;
+      if (score < bestScore) {
+        bestScore = score;
+        destination = candidate;
+        destinationClock = candidateClock;
+        rideDurationSec = candidateRide;
+      }
+    }
+  }
 
   return {
     compatible: true,
