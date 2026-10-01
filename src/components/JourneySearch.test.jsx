@@ -112,6 +112,15 @@ test("exact public stop keeps the local one-submit fast path", () => {
   expect(api.searchPlaces).not.toHaveBeenCalled();
 });
 
+test("unique partial stop match stays on-device", () => {
+  const props = renderSearch();
+  fireEvent.change(destinationInput(), { target: { value: "Turun" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
+  expect(api.searchPlaces).not.toHaveBeenCalled();
+});
+
 test("address or POI lookup runs only after explicit Search", async () => {
   api.searchPlaces.mockResolvedValue([prisma]);
   renderSearch();
