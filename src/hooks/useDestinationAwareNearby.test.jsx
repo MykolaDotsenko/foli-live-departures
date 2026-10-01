@@ -418,3 +418,54 @@ test("caps dense-hub trip-detail lookups and samples every stop fairly", async (
     expect(fetchedTripIds.has(`${stop.id}-trip-8`)).toBe(false);
   }
 });
+
+
+test("optimizes a place destination by transit plus final walk", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? [arrival("place-trip", 1_600)]
+        : [],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:10:00"),
+    stopTime("901", 3, "10:12:00"),
+  ]);
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: {
+      id: "geo:osm:node:1",
+      kind: "geocoded-place",
+      label: "Prisma",
+      primaryStopId: "900",
+      acceptableStopIds: ["900", "901"],
+      lat: 60.45,
+      lon: 22.26,
+      destinationStopDistances: {
+        "900": 900,
+        "901": 80,
+      },
+      placeProvider: "nominatim",
+    },
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best).toMatchObject({
+    destinationStopId: "901",
+    destinationArrivalAt: 2_320,
+    finalWalkDistanceM: 80,
+  });
+  expect(fits["100"].best.finalArrivalAt).toBe(
+    fits["100"].best.destinationArrivalAt +
+      fits["100"].best.finalWalkDurationSec
+  );
+});
