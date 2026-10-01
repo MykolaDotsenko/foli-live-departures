@@ -127,18 +127,22 @@ export async function searchPlaces(
     cache.set(key, results);
     return results;
   } catch (error) {
-    if (signal?.aborted || error?.code === "ERR_CANCELED") {
+    const failure = /** @type {any} */ (error);
+    if (signal?.aborted || failure?.code === "ERR_CANCELED") {
       const aborted = new Error("Place search cancelled.");
       aborted.name = "AbortError";
       throw aborted;
     }
-    if (error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT") {
+    if (
+      failure?.code === "ECONNABORTED" ||
+      failure?.code === "ETIMEDOUT"
+    ) {
       const timeout = new Error("Place search timed out.");
       timeout.name = "PlaceSearchTimeoutError";
       throw timeout;
     }
 
-    const status = Number(error?.response?.status);
+    const status = Number(failure?.response?.status);
     if (Number.isFinite(status) && status > 0) {
       throw new Error(`Place search failed (${status}).`);
     }
