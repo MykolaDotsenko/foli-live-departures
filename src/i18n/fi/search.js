@@ -158,4 +158,29 @@ export default {
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
   "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
 
+
+  // Active pre-boarding journey
+  "Active journey": "Aktiivinen matka",
+  "Choose another route": "Valitse toinen reitti",
+  "Wait for line {line}": "Odota linjaa {line}",
+  "Walk to {stop}": "Kävele pysäkille {stop}",
+  "To {destination}": "Määränpää {destination}",
+  "Leaves {due}": "Lähtö {due}",
+  "About {distance} to the boarding stop.": "Noin {distance} lähtöpysäkille.",
+  "When you reach the stop, confirm it here. The app will not assume your physical location.":
+    "Kun saavut pysäkille, vahvista se tässä. Sovellus ei oleta sijaintiasi automaattisesti.",
+  "Your selected bus is pinned first in the departure board.":
+    "Valitsemasi bussi on kiinnitetty lähtötaulun ensimmäiseksi.",
+  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
+    "Kun nouset kyytiin, käytä kyseisen lähdön Poistumishälytystä. Ride Mode vastaa sen jälkeen matkasta.",
+  "Your selected bus was cancelled.": "Valitsemasi bussi peruttiin.",
+  "Your selected bus is no longer a reliable option.":
+    "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
+  "Offline: this selected plan may be out of date.":
+    "Offline: valittu suunnitelma voi olla vanhentunut.",
+  "I'm at the stop": "Olen pysäkillä",
+  "Show selected departure": "Näytä valittu lähtö",
+  "Find another option": "Etsi toinen vaihtoehto",
+  "View selected stop": "Näytä valittu pysäkki",
+
 };
