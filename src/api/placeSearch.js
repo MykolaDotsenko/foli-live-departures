@@ -25,7 +25,7 @@ function coordinate(value) {
 /** Public Nominatim allows at most one request per second. */
 /** @param {AbortSignal | undefined} signal */
 async function reserveRequest(signal) {
-  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (signal?.aborted) throw new globalThis.DOMException("Aborted", "AbortError");
   const now = Date.now();
   const at = Math.max(now, nextAllowedRequestAt);
   nextAllowedRequestAt = at + MIN_REQUEST_INTERVAL_MS;
@@ -34,7 +34,7 @@ async function reserveRequest(signal) {
       globalThis.setTimeout(resolve, at - now)
     );
   }
-  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (signal?.aborted) throw new globalThis.DOMException("Aborted", "AbortError");
 }
 
 /** @param {string} key @param {PlaceSearchResult[]} results */
