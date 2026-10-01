@@ -157,8 +157,8 @@ export default function JourneySearch({
     if (coordinatesStatus !== "ready") {
       setError(
         coordinatesStatus === "loading"
-          ? t("Place search is waiting for stop locations.")
-          : t("Place search is unavailable. Stop search still works.")
+          ? t("Waiting for stop locations.")
+          : t("Place search unavailable. Stop search still works.")
       );
       return;
     }
@@ -170,7 +170,7 @@ export default function JourneySearch({
               "More than one stop has this name. Choose one from the suggestions."
             )
           : t(
-              "Place search needs an internet connection. Stop search still works."
+              "Offline: place search unavailable. Stop search still works."
             )
       );
       return;
@@ -180,7 +180,7 @@ export default function JourneySearch({
 
     if (results === null) {
       setError(
-        t("Place search is unavailable. Stop search still works.")
+        t("Place search unavailable. Stop search still works.")
       );
     } else if (results.length === 0) {
       setError(
@@ -190,7 +190,7 @@ export default function JourneySearch({
             )
           : matches.length > 0
             ? t(
-                "Choose a stop suggestion or refine the place search."
+                "Choose a stop or refine the place search."
               )
             : t("No matching destination found.")
       );
@@ -280,7 +280,7 @@ export default function JourneySearch({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               className={styles.input}
-              placeholder={t("e.g. Prisma Itäharju or Turun linna")}
+              placeholder={t("e.g. Prisma or Turun linna")}
               autoComplete="off"
               inputMode="search"
               enterKeyHint="search"
@@ -354,7 +354,7 @@ export default function JourneySearch({
 
         <p className={styles.help}>
           {t(
-            "Stop search stays on this device. Place searches go to OpenStreetMap Nominatim only when you press Search."
+            "Stops stay on-device. Places use OpenStreetMap Nominatim after Search."
           )}
         </p>
 
