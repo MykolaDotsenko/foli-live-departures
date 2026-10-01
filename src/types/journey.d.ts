@@ -40,8 +40,25 @@ export interface NearbyStopFit {
   stopId: string;
   status: NearbyFitStatus;
   best: NearbyDepartureFit | null;
+  departures: NearbyDepartureFit[];
   additionalCount: number;
   checkedAt: number;
+}
+
+export type DirectJourneyLabel =
+  | "fastest"
+  | "less-walking"
+  | "easier-to-catch";
+
+export interface DirectJourneyOption {
+  id: string;
+  label: DirectJourneyLabel;
+  stopId: string;
+  stopName: string;
+  distanceMeters: number;
+  departure: NearbyDepartureFit;
+  arrivalDeltaSec: number;
+  walkingDeltaMeters: number;
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;
