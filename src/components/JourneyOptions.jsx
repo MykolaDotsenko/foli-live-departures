@@ -9,6 +9,10 @@ function labelText(label) {
   return t("Fastest");
 }
 
+function shownArrivalAt(departure) {
+  return departure?.finalArrivalAt ?? departure?.destinationArrivalAt;
+}
+
 function estimateSourceText(liveState) {
   if (liveState === "live") return t("Live estimate");
   if (liveState === "schedule") return t("Timetable estimate");
@@ -95,7 +99,7 @@ export default function JourneyOptions({
 
             <span className={styles.arrival}>
               {t("Arrive about {time}", {
-                time: formatClock(option.departure.destinationArrivalAt),
+                time: formatClock(shownArrivalAt(option.departure)),
               })}
             </span>
 
@@ -115,6 +119,17 @@ export default function JourneyOptions({
               {estimateSourceText(option.departure.liveState)}
             </span>
 
+            {Number.isFinite(option.departure.finalWalkDistanceM) &&
+              option.departure.finalWalkDistanceM > 0 && (
+                <span className={styles.finalWalk}>
+                  {t("Final walk ≈ {distance}", {
+                    distance: formatDistance(
+                      option.departure.finalWalkDistanceM
+                    ),
+                  })}
+                </span>
+              )}
+
             <span className={styles.tradeoff}>{tradeoffText(option)}</span>
           </button>
         ))}
@@ -122,7 +137,7 @@ export default function JourneyOptions({
 
       <p className={styles.note}>
         {t(
-          "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
+          "Direct options use current Föli data. Walking distances are approximate straight-line estimates."
         )}
       </p>
     </section>
