@@ -58,7 +58,7 @@ test("walking state asks for explicit at-stop confirmation", () => {
     screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
   ).toBeInTheDocument();
   expect(
-    screen.getByText(/The app will not assume your physical location/i)
+    screen.getByText(/We don’t infer your location/i)
   ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "I'm at the stop" }));
