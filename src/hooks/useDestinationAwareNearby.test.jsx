@@ -364,3 +364,52 @@ test("re-evaluates when the approved destination stop set changes", async () => 
     )
   );
 });
+
+
+test("caps dense-hub trip-detail lookups and samples every stop fairly", async () => {
+  const denseStops = Array.from({ length: 12 }, (_, index) => ({
+    id: String(index + 1),
+    distanceMeters: 50 + index * 25,
+  }));
+
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals: Array.from({ length: 16 }, (_, departureIndex) =>
+      arrival(
+        `${stopId}-trip-${departureIndex}`,
+        1_300 + departureIndex * 60,
+        { lineref: String(Number(stopId) + 1) }
+      )
+    ),
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  // No fetched trip serves its own boarding stop, so target-stop monitor
+  // enrichment is never triggered. This isolates the trip-detail budget.
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("9999", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  await loadDestinationAwareNearby({
+    stops: denseStops,
+    destination,
+    positionAccuracy: 15,
+  });
+
+  expect(api.fetchTripStopTimes).toHaveBeenCalledTimes(96);
+
+  const fetchedTripIds = new Set(
+    api.fetchTripStopTimes.mock.calls.map(([tripId]) => tripId)
+  );
+
+  for (const stop of denseStops) {
+    expect(fetchedTripIds.has(`${stop.id}-trip-0`)).toBe(true);
+    expect(fetchedTripIds.has(`${stop.id}-trip-7`)).toBe(true);
+    expect(fetchedTripIds.has(`${stop.id}-trip-8`)).toBe(false);
+  }
+});
