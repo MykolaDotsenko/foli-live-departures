@@ -853,6 +853,13 @@ function App() {
             onTestAlert={ride.testAlert}
             onEndRide={endRide}
             onOpenStop={selectStop}
+            transferJourney={
+              pendingTransferJourneyRef.current?.transferPlan &&
+              pendingTransferJourneyRef.current.transferLeg === 1
+                ? pendingTransferJourneyRef.current
+                : null
+            }
+            transferRevalidation={transferRevalidation}
           />
         )}
 
