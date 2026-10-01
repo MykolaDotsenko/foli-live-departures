@@ -317,9 +317,9 @@ export function applyTransferRevalidation(journey, revalidation) {
     next.transferPlan = {
       ...journey.transferPlan,
       transfer: {
-        ...plan.transfer,
+        ...journey.transferPlan.transfer,
         feasibility:
-          revalidation.feasibility ?? plan.transfer.feasibility,
+          revalidation.feasibility ?? journey.transferPlan.transfer.feasibility,
       },
       second: {
         ...journey.transferPlan.second,
