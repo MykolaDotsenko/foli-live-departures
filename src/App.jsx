@@ -912,7 +912,7 @@ function App() {
             </dd>
             <dd>
               {t(
-                "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
+                "Stop search stays on this device. Place searches go to OpenStreetMap Nominatim only when you press Search."
               )}
             </dd>
             <dd>
