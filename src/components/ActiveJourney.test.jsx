@@ -149,3 +149,59 @@ test("offline state does not pretend the selected plan is current", () => {
   ).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
 });
+
+
+test("paused monitoring makes returning to the selected stop the primary action", () => {
+  const onOpenStop = vi.fn();
+  const onConfirmAtStop = vi.fn();
+
+  render(
+    <ActiveJourney
+      journey={journey()}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      monitoringState="paused"
+      onConfirmAtStop={onConfirmAtStop}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={onOpenStop}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
+    )
+  ).toBeInTheDocument();
+
+  expect(
+    screen.queryByRole("button", { name: "I'm at the stop" })
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Return to selected stop" })
+  );
+  expect(onOpenStop).toHaveBeenCalledTimes(1);
+  expect(onConfirmAtStop).not.toHaveBeenCalled();
+});
+
+test("degraded monitoring never implies the live departure is current", () => {
+  render(
+    <ActiveJourney
+      journey={journey({ phase: "waiting", atStopConfirmedAt: 1_900_000_010_000 })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      monitoringState="degraded"
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live monitoring is temporarily unavailable. The selected departure may be out of date."
+    )
+  ).toBeInTheDocument();
+});
