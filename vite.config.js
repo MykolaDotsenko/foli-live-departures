@@ -46,6 +46,13 @@ function connectSources(env) {
 
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
+  build: {
+    // The supported release matrix is modern Chromium, Firefox, WebKit and
+    // the current Android WebView. Avoid downlevelling syntax these engines
+    // already execute natively; this keeps the static PWA within its strict
+    // production bundle budget without changing application behaviour.
+    target: "es2022",
+  },
   plugins: [
     react(),
     contentSecurityPolicyPlugin({
