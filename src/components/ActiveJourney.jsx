@@ -71,13 +71,23 @@ export default function ActiveJourney({
             due: formatDue(journey.departureAt, nowMs),
           })}
         </span>
-        {journey.destinationArrivalAt && (
+        {(journey.finalArrivalAt || journey.destinationArrivalAt) && (
           <span>
             {t("Arrive about {time}", {
-              time: formatClock(journey.destinationArrivalAt),
+              time: formatClock(
+                journey.finalArrivalAt || journey.destinationArrivalAt
+              ),
             })}
           </span>
         )}
+        {Number.isFinite(journey.finalWalkDistanceM) &&
+          journey.finalWalkDistanceM > 0 && (
+            <span>
+              {t("Final walk ≈ {distance}", {
+                distance: formatDistance(journey.finalWalkDistanceM),
+              })}
+            </span>
+          )}
       </div>
 
       {journey.phase === "walking-to-stop" && (
