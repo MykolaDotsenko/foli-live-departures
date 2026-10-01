@@ -4,10 +4,13 @@ import {
   searchPlaces,
 } from "./placeSearch";
 
-function response(json, ok = true, status = 200) {
+function response(json, ok = true, status = 200, headers = {}) {
   return {
     ok,
     status,
+    headers: {
+      get: vi.fn((name) => headers[String(name).toLowerCase()] ?? null),
+    },
     json: vi.fn().mockResolvedValue(json),
   };
 }
@@ -264,4 +267,44 @@ test("keeps cached place labels language-specific", async () => {
   expect(english[0]?.title).toBe("Library");
   expect(finnish[0]?.title).toBe("Kirjasto");
   expect(fetchMock).toHaveBeenCalledTimes(3);
+});
+
+
+test("backs off locally after a 429 without issuing another provider request", async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response(
+        { message: "slow down" },
+        false,
+        429,
+        { "retry-after": "60" }
+      )
+    );
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    searchPlaces("First place")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+
+  await expect(
+    searchPlaces("Second place")
+  ).rejects.toMatchObject({
+    name: "PlaceSearchCooldownError",
+  });
+
+  // Runtime config + the first provider request only. The second explicit
+  // search fails locally during cooldown and does not hammer the provider.
+  expect(fetchMock).toHaveBeenCalledTimes(2);
 });
