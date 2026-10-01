@@ -1,4 +1,5 @@
 import createBoundedCache from "../utils/boundedCache";
+import client from "./httpClient";
 /** @import { PlaceSearchResult } from "../types/journey" */
 
 const SEARCH_URL =
@@ -6,18 +7,31 @@ const SEARCH_URL =
   "https://nominatim.openstreetmap.org/search";
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 const REQUEST_TIMEOUT_MS = 7_000;
-const MAX_CACHE_ENTRIES = 20;
-// Broad Southwest Finland bias. A selected result still has to pass the
-// current Föli service-boundary and nearby-stop checks before it can be used.
 const SEARCH_VIEWBOX = "21.2,61,23.4,59.9";
 
 /** @type {import("../utils/boundedCache").BoundedCache<string, PlaceSearchResult[]>} */
-const cache = createBoundedCache(MAX_CACHE_ENTRIES);
+const cache = createBoundedCache(20);
 let nextAllowedRequestAt = 0;
 
-/** @param {unknown} value */
-function cleanQuery(value) {
-  return String(value || "").trim().replace(/\s+/g, " ");
+/** @param {AbortSignal | undefined} signal */
+function abortIfNeeded(signal) {
+  if (!signal?.aborted) return;
+  const error = new Error("Place search cancelled.");
+  error.name = "AbortError";
+  throw error;
+}
+
+/** Public Nominatim allows at most one request per second. */
+/** @param {AbortSignal | undefined} signal */
+async function reserveRequest(signal) {
+  abortIfNeeded(signal);
+  const now = Date.now();
+  const at = Math.max(now, nextAllowedRequestAt);
+  nextAllowedRequestAt = at + MIN_REQUEST_INTERVAL_MS;
+  if (at > now) {
+    await new Promise((resolve) => globalThis.setTimeout(resolve, at - now));
+  }
+  abortIfNeeded(signal);
 }
 
 /** @param {unknown} value */
@@ -25,56 +39,6 @@ function coordinate(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
-}
-
-/** Public Nominatim allows at most one request per second. */
-/** @param {AbortSignal | undefined} signal */
-async function reserveRequest(signal) {
-  if (signal?.aborted) throw new globalThis.DOMException("Aborted", "AbortError");
-  const now = Date.now();
-  const at = Math.max(now, nextAllowedRequestAt);
-  nextAllowedRequestAt = at + MIN_REQUEST_INTERVAL_MS;
-  if (at > now) {
-    await new Promise((resolve) =>
-      globalThis.setTimeout(resolve, at - now)
-    );
-  }
-  if (signal?.aborted) throw new globalThis.DOMException("Aborted", "AbortError");
-}
-
-/**
- * Bound provider latency without turning a caller cancellation into a user
- * facing provider error. The external signal owns lifecycle cancellation;
- * this controller adds only the provider timeout.
- *
- * @param {AbortSignal | undefined} externalSignal
- */
-function fetchSignalScope(externalSignal) {
-  const controller = new AbortController();
-  let timedOut = false;
-
-  const onExternalAbort = () => controller.abort();
-  if (externalSignal?.aborted) {
-    controller.abort();
-  } else {
-    externalSignal?.addEventListener("abort", onExternalAbort, {
-      once: true,
-    });
-  }
-
-  const timeoutId = globalThis.setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, REQUEST_TIMEOUT_MS);
-
-  return {
-    signal: controller.signal,
-    didTimeOut: () => timedOut,
-    dispose() {
-      globalThis.clearTimeout(timeoutId);
-      externalSignal?.removeEventListener("abort", onExternalAbort);
-    },
-  };
 }
 
 /** @param {any} raw @returns {PlaceSearchResult | null} */
@@ -96,10 +60,6 @@ function normalizeResult(raw) {
   const label = String(raw?.name || display.split(",")[0] || "").trim();
   if (!label) return null;
 
-  const secondaryLabel = display.startsWith(`${label},`)
-    ? display.slice(label.length + 1).trim()
-    : display;
-
   const osmType = String(raw?.osm_type || "").trim();
   const osmId = String(raw?.osm_id || "").trim();
   const placeId = String(raw?.place_id || "").trim();
@@ -110,7 +70,9 @@ function normalizeResult(raw) {
         ? `osm:${osmType}:${osmId}`
         : `nominatim:${placeId || `${lat},${lon}`}`,
     label,
-    secondaryLabel,
+    secondaryLabel: display.startsWith(`${label},`)
+      ? display.slice(label.length + 1).trim()
+      : display,
     lat,
     lon,
   };
@@ -127,7 +89,7 @@ export async function searchPlaces(
   query,
   { language = "en", signal } = {}
 ) {
-  const clean = cleanQuery(query);
+  const clean = String(query || "").trim().replace(/\s+/g, " ");
   if (clean.length < 3) return [];
 
   const key = `${clean.toLocaleLowerCase()}|${language}`;
@@ -136,35 +98,27 @@ export async function searchPlaces(
 
   await reserveRequest(signal);
 
-  const url = new globalThis.URL(SEARCH_URL);
-  url.searchParams.set("q", clean);
-  url.searchParams.set("format", "jsonv2");
-  url.searchParams.set("limit", "5");
-  url.searchParams.set("countrycodes", "fi");
-  url.searchParams.set("layer", "address,poi");
-  url.searchParams.set(
-    "accept-language",
-    String(language).toLowerCase().startsWith("fi") ? "fi,en" : "en,fi"
-  );
-  url.searchParams.set("viewbox", SEARCH_VIEWBOX);
-  url.searchParams.set("bounded", "1");
-
-  const scope = fetchSignalScope(signal);
-
   try {
-    const response = await globalThis.fetch(url, {
-      signal: scope.signal,
-      referrerPolicy: "strict-origin-when-cross-origin",
-      headers: { Accept: "application/json" },
+    const { data } = await client.get(SEARCH_URL, {
+      signal,
+      timeout: REQUEST_TIMEOUT_MS,
+      params: {
+        q: clean,
+        format: "jsonv2",
+        limit: 5,
+        countrycodes: "fi",
+        layer: "address,poi",
+        "accept-language": String(language).toLowerCase().startsWith("fi")
+          ? "fi,en"
+          : "en,fi",
+        viewbox: SEARCH_VIEWBOX,
+        bounded: 1,
+      },
     });
-    if (!response.ok) {
-      throw new Error(`Place search failed (${response.status}).`);
-    }
 
-    const payload = await response.json();
     /** @type {PlaceSearchResult[]} */
     const results = [];
-    for (const raw of Array.isArray(payload) ? payload : []) {
+    for (const raw of Array.isArray(data) ? data : []) {
       const item = normalizeResult(raw);
       if (item) results.push(item);
       if (results.length >= 5) break;
@@ -173,19 +127,22 @@ export async function searchPlaces(
     cache.set(key, results);
     return results;
   } catch (error) {
-    if (signal?.aborted) {
+    if (signal?.aborted || error?.code === "ERR_CANCELED") {
       const aborted = new Error("Place search cancelled.");
       aborted.name = "AbortError";
       throw aborted;
     }
-    if (scope.didTimeOut()) {
+    if (error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT") {
       const timeout = new Error("Place search timed out.");
       timeout.name = "PlaceSearchTimeoutError";
       throw timeout;
     }
+
+    const status = Number(error?.response?.status);
+    if (Number.isFinite(status) && status > 0) {
+      throw new Error(`Place search failed (${status}).`);
+    }
     throw error;
-  } finally {
-    scope.dispose();
   }
 }
 
