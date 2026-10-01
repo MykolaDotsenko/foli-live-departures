@@ -122,9 +122,9 @@ export function placeSearchViewbox(stops) {
   /** @param {number} value */
   const compact = (value) => String(Number(value.toFixed(6)));
   return [
-    Math.max(-180, minLon - 0.02),
+    Math.max(-180, minLon - 0.04),
     Math.min(90, maxLat + 0.02),
-    Math.min(180, maxLon + 0.02),
+    Math.min(180, maxLon + 0.04),
     Math.max(-90, minLat - 0.02),
   ]
     .map(compact)
