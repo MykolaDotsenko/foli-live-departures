@@ -207,12 +207,36 @@ function BusStopDisplay({
     Boolean(heldArrival) &&
     (followedLines.length === 0 ||
       followedLines.includes(String(heldArrival.lineref || "")));
-  const visibleArrivals = holdsSetupRow
-    ? // Gone by the clock, so it sorts first and the cut keeps it.
-      [heldArrival, ...listedArrivals]
-        .sort(byDepartureTime(referenceTime))
-        .slice(0, MAX_VISIBLE_DEPARTURES)
-    : listedArrivals;
+
+  // A saved line filter is a convenience, never stronger than an explicit
+  // journey choice. Keep the selected concrete trip visible even when the
+  // passenger's old filter would otherwise hide its line. This exception is
+  // one row only; all other departures still obey the filter.
+  const selectedJourneyFeedArrival =
+    selectedJourney?.stopId === stopId
+      ? arrivals.find((arrival) =>
+          arrivalMatchesActiveJourney(arrival, selectedJourney)
+        ) || null
+      : null;
+  const forcedArrivals = [];
+  if (holdsSetupRow && heldArrival) forcedArrivals.push(heldArrival);
+  if (
+    selectedJourneyFeedArrival &&
+    !listedArrivals.includes(selectedJourneyFeedArrival) &&
+    !forcedArrivals.includes(selectedJourneyFeedArrival)
+  ) {
+    forcedArrivals.push(selectedJourneyFeedArrival);
+  }
+
+  const visibleArrivals =
+    forcedArrivals.length > 0
+      ? [
+          ...forcedArrivals,
+          ...listedArrivals.filter(
+            (arrival) => !forcedArrivals.includes(arrival)
+          ),
+        ].slice(0, MAX_VISIBLE_DEPARTURES)
+      : listedArrivals;
   // The held row counts as one to come, or the board put "No upcoming
   // departures" in place of the list and its setup.
   const upcomingCount = upcomingArrivals.length + (holdsSetupRow ? 1 : 0);
