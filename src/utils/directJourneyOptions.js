@@ -163,7 +163,8 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     })
     .sort(
       (left, right) =>
-        left.distanceMeters - right.distanceMeters ||
+        totalApproxWalkingMeters(left) -
+          totalApproxWalkingMeters(right) ||
         arrivalRank(left.departure) - arrivalRank(right.departure)
     )[0];
 
