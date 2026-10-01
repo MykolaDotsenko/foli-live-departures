@@ -154,6 +154,18 @@ export default {
   "Choose another route": "Valitse toinen reitti",
   "Wait for line {line}": "Odota linjaa {line}",
   "Walk to {stop}": "Kävele pysäkille {stop}",
+  "Stay at {stop}": "Pysy pysäkillä {stop}",
+  "Stay here for line {line}.": "Pysy tässä ja odota linjaa {line}.",
+  "Walk about {distance} to {stop} for line {line}.":
+    "Kävele noin {distance} pysäkille {stop} linjaa {line} varten.",
+  "You are at the transfer stop. Confirm it below before waiting for the next bus.":
+    "Olet vaihtopysäkillä. Vahvista pysäkki alta ennen seuraavan bussin odottamista.",
+  "When you reach the transfer stop, confirm it here. The app will not assume your physical location.":
+    "Kun saavut vaihtopysäkille, vahvista se tässä. Sovellus ei oleta sijaintiasi automaattisesti.",
+  "Wait here for line {line}.": "Odota tässä linjaa {line}.",
+  "When line {line} arrives, open the selected departure and start the Get-off alert.":
+    "Kun linja {line} saapuu, avaa valittu lähtö ja käynnistä poistumishälytys.",
+  "Show line {line} departure": "Näytä linjan {line} lähtö",
   "To {destination}": "Määränpää {destination}",
   "Leaves {due}": "Lähtö {due}",
   "About {distance} to the boarding stop.": "Noin {distance} lähtöpysäkille.",
