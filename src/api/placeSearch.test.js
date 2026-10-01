@@ -177,13 +177,13 @@ test("times out a stalled provider request", async () => {
   );
 
   const request = searchPlaces("Provider timeout");
-
-  await vi.advanceTimersByTimeAsync(7_000);
-
-  await expect(request).rejects.toMatchObject({
+  const rejection = expect(request).rejects.toMatchObject({
     name: "PlaceSearchTimeoutError",
     message: "Place search timed out.",
   });
+
+  await vi.advanceTimersByTimeAsync(7_000);
+  await rejection;
 });
 
 test("keeps caller cancellation distinct from provider timeout", async () => {
@@ -209,14 +209,14 @@ test("keeps caller cancellation distinct from provider timeout", async () => {
   const request = searchPlaces("Cancelled request", {
     signal: controller.signal,
   });
-
-  await vi.advanceTimersByTimeAsync(0);
-  controller.abort();
-
-  await expect(request).rejects.toMatchObject({
+  const rejection = expect(request).rejects.toMatchObject({
     name: "AbortError",
     message: "Place search cancelled.",
   });
+
+  await vi.advanceTimersByTimeAsync(0);
+  controller.abort();
+  await rejection;
 
   await vi.advanceTimersByTimeAsync(7_000);
 });
