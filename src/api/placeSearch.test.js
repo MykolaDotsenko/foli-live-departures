@@ -14,7 +14,6 @@ import {
 } from "./placeSearch";
 
 const PHOTON_URL = "https://photon.komoot.io/api";
-const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
 function photonFeature(overrides = {}) {
   return {
@@ -37,19 +36,6 @@ function photonFeature(overrides = {}) {
   };
 }
 
-function nominatimRow(overrides = {}) {
-  return {
-    place_id: 1,
-    osm_type: "node",
-    osm_id: 456,
-    lat: "60.4518",
-    lon: "22.2666",
-    name: "Prisma",
-    display_name: "Prisma, Kalevantie 41, Turku, Suomi",
-    ...overrides,
-  };
-}
-
 beforeEach(() => {
   vi.useRealTimers();
   http.get.mockReset();
@@ -61,12 +47,12 @@ afterEach(() => {
   resetPlaceSearchForTests();
 });
 
-test("does not call any provider for a too-short explicit query", async () => {
+test("does not call the provider for a too-short explicit query", async () => {
   await expect(searchPlaces("ab")).resolves.toEqual([]);
   expect(http.get).not.toHaveBeenCalled();
 });
 
-test("uses Photon first and normalizes GeoJSON place results", async () => {
+test("uses Photon only after explicit search and normalizes GeoJSON", async () => {
   http.get.mockResolvedValueOnce({
     data: {
       type: "FeatureCollection",
@@ -134,49 +120,6 @@ test("builds a readable address label when Photon has no place name", async () =
   ]);
 });
 
-test("falls back to rate-limited Nominatim when Photon returns no useful match", async () => {
-  http.get
-    .mockResolvedValueOnce({ data: { features: [] } })
-    .mockResolvedValueOnce({ data: [nominatimRow()] });
-
-  const results = await searchPlaces("Prisma Turku", {
-    language: "en",
-  });
-
-  expect(results[0]).toMatchObject({
-    id: "osm:node:456",
-    label: "Prisma",
-    lat: 60.4518,
-    lon: 22.2666,
-  });
-
-  expect(http.get).toHaveBeenCalledTimes(2);
-  const [url, config] = http.get.mock.calls[1];
-  expect(url).toBe(NOMINATIM_URL);
-  expect(config.params).toEqual({
-    q: "Prisma Turku",
-    format: "jsonv2",
-    limit: 5,
-    countrycodes: "fi",
-    layer: "address,poi",
-    "accept-language": "en,fi",
-    viewbox: "21.2,61,23.4,59.9",
-    bounded: 1,
-  });
-});
-
-test("falls back when Photon is unavailable", async () => {
-  http.get
-    .mockRejectedValueOnce({ response: { status: 503 } })
-    .mockResolvedValueOnce({ data: [nominatimRow()] });
-
-  await expect(searchPlaces("Prisma")).resolves.toHaveLength(1);
-  expect(http.get.mock.calls.map(([url]) => url)).toEqual([
-    PHOTON_URL,
-    NOMINATIM_URL,
-  ]);
-});
-
 test("caches the final result in memory for the current tab", async () => {
   http.get.mockResolvedValueOnce({
     data: { features: [photonFeature()] },
@@ -188,62 +131,30 @@ test("caches the final result in memory for the current tab", async () => {
   expect(http.get).toHaveBeenCalledTimes(1);
 });
 
-test("caches a confirmed no-result fallback response too", async () => {
-  http.get
-    .mockResolvedValueOnce({ data: { features: [] } })
-    .mockResolvedValueOnce({ data: [] });
+test("caches a confirmed no-result response", async () => {
+  http.get.mockResolvedValueOnce({ data: { features: [] } });
 
   await searchPlaces("Definitely nowhere", { language: "en" });
   await searchPlaces("Definitely   nowhere", { language: "en" });
 
-  expect(http.get).toHaveBeenCalledTimes(2);
+  expect(http.get).toHaveBeenCalledTimes(1);
 });
 
-test("serializes Nominatim fallbacks to stay inside the public rate limit", async () => {
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date("2026-10-01T12:00:00Z"));
-
-  http.get.mockImplementation(async (url) => {
-    if (url === PHOTON_URL) return { data: { features: [] } };
-    return { data: [] };
+test("drops malformed Photon rows rather than inventing a place", async () => {
+  http.get.mockResolvedValueOnce({
+    data: {
+      features: [
+        photonFeature({
+          geometry: { coordinates: ["bad", 60.45] },
+        }),
+      ],
+    },
   });
 
-  const first = searchPlaces("First fallback");
-  const second = searchPlaces("Second fallback");
-
-  await vi.advanceTimersByTimeAsync(0);
-  await first;
-
-  const fallbackCalls = () =>
-    http.get.mock.calls.filter(([url]) => url === NOMINATIM_URL).length;
-
-  expect(fallbackCalls()).toBe(1);
-
-  await vi.advanceTimersByTimeAsync(1_099);
-  expect(fallbackCalls()).toBe(1);
-
-  await vi.advanceTimersByTimeAsync(1);
-  await second;
-  expect(fallbackCalls()).toBe(2);
+  await expect(searchPlaces("Broken result")).resolves.toEqual([]);
 });
 
-test("drops malformed Photon rows and can still use the fallback", async () => {
-  http.get
-    .mockResolvedValueOnce({
-      data: {
-        features: [
-          photonFeature({
-            geometry: { coordinates: ["bad", 60.45] },
-          }),
-        ],
-      },
-    })
-    .mockResolvedValueOnce({ data: [nominatimRow()] });
-
-  await expect(searchPlaces("Broken primary")).resolves.toHaveLength(1);
-});
-
-test("caller cancellation never starts a fallback request", async () => {
+test("caller cancellation never starts a provider request", async () => {
   const controller = new AbortController();
   controller.abort();
 
@@ -257,7 +168,7 @@ test("caller cancellation never starts a fallback request", async () => {
   expect(http.get).not.toHaveBeenCalled();
 });
 
-test("transport cancellation from Photon is propagated without fallback", async () => {
+test("transport cancellation is propagated as an AbortError", async () => {
   http.get.mockRejectedValueOnce({ code: "ERR_CANCELED" });
 
   await expect(searchPlaces("Cancelled in flight")).rejects.toMatchObject({
@@ -268,17 +179,15 @@ test("transport cancellation from Photon is propagated without fallback", async 
   expect(http.get).toHaveBeenCalledTimes(1);
 });
 
-test("reports unavailable only after both providers fail", async () => {
-  http.get
-    .mockRejectedValueOnce({ code: "ECONNABORTED" })
-    .mockRejectedValueOnce({ response: { status: 429 } });
+test("provider failure becomes an explicit unavailable error", async () => {
+  http.get.mockRejectedValueOnce({ response: { status: 503 } });
 
-  await expect(searchPlaces("Both providers down")).rejects.toMatchObject({
+  await expect(searchPlaces("Provider down")).rejects.toMatchObject({
     name: "PlaceSearchUnavailableError",
     message: "Place search unavailable.",
   });
 
-  expect(http.get).toHaveBeenCalledTimes(2);
+  expect(http.get).toHaveBeenCalledTimes(1);
 });
 
 test("deduplicates repeated Photon representations of the same OSM object", async () => {
