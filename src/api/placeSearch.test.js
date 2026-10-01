@@ -24,7 +24,7 @@ test("derives a padded Föli-area viewbox from stop coordinates", () => {
     { lat: null, lon: 99 },
   ]);
 
-  expect(viewbox).toBe("22.18,60.52,22.419999999999998,60.379999999999995");
+  expect(viewbox).toBe("22.18,60.52,22.42,60.38");
 });
 
 test("does not call the provider for a too-short explicit query", async () => {
