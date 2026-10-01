@@ -103,21 +103,25 @@ These came out of the verification round and are not yet re-scored.
 
 **Found by the reviews, not done**
 - **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
-- Place setup still asks for a checkbox and a "Main stop" choice per stop, and a confirmation (UX, 70).
-- The board header on a phone stacks Filter lines and Refresh, and error screens offer both Refresh and Try again.
+- **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
-- There is no install hint on iPhone outside ride setup.
+- Public web address/POI lookup is intentionally policy-switchable and fails closed to the official Turku journey planner, but the public Nominatim service is not a city-wide scaling guarantee. A promoted launch needs either a provider arrangement suitable for the expected traffic or direct-search disabled by runtime policy.
 
 **Owner decisions still open**
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
-3. **The Android app ID** `fi.turku.*` uses the City's namespace.
+3. **Web place-search production policy,** before city-wide promotion: provider arrangement suitable for expected traffic, or runtime-disable direct address/POI lookup and hand off to the official planner.
 4. **Swedish.**
-5. **GitHub description and topics.**
+5. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
 
 **Closed owner decisions**
 - **One product name:** Turku Departures.
 - **Maker and contact:** Mykola Dotsenko is named; direct contact, problem reporting and source-code links are visible in the footer.
+- **Android identity:** production package ID is `io.github.mykoladotsenko.turkudepartures`; the independent app no longer uses `fi.turku.*`.
+- **Repository metadata:** the public description and topics are set.
+- **Place setup interaction:** selecting one stop makes it the main stop automatically; a Main stop choice appears only when backups make that distinction meaningful, and Save is the explicit confirmation.
+- **Board retry actions:** failure states own the retry action instead of competing with a simultaneous header Refresh.
+- **iPhone install discovery:** uninstalled iOS browsers get a dismissible Home Screen installation hint; installed standalone PWAs and native Android do not.
 
 ## Known limitations
 
@@ -136,12 +140,13 @@ These are stated, not hidden.
 Every pull request to `master` runs:
 
 1. ESLint, including the rule that JSX text must go through the translator
-2. Vitest and Testing Library (900+ tests, coverage ratchet 82 / 75 / 85 / 86), with a test that every phrase has a Finnish translation and every translation is still used
+2. Vitest and Testing Library (1,000+ tests, coverage ratchet 88 / 81 / 90 / 91), with a test that every phrase has a Finnish translation and every translation is still used
 3. production build, PWA precache and install-sheet checks, and the bundle budget (600 KB)
 4. the Föli API reference drift check
 5. Playwright on Chromium, Firefox, mobile WebKit and Chromium mobile, with axe WCAG A/AA checks, a Finnish phone and worst-case mobile overflow
 6. a Chromium PWA project that installs the real service worker and reopens offline
 7. the README's and the install sheet's screenshots, taken by the same flows
+8. a fail-on-high/critical runtime dependency audit and an Android production-release contract gate
 
 ## Product principle
 
