@@ -170,6 +170,11 @@ export default function useTransferRecoveryOptions({
     const refreshNow = async () => {
       if (!mounted || document.visibilityState !== "visible") return;
       window.clearTimeout(timeoutId);
+      // Returning to a previously hidden tab can leave time-sensitive bus
+      // options minutes out of date. Fail closed: hide them until a fresh
+      // provider response proves which replacements are still catchable.
+      setOptions([]);
+      setState("loading");
       await refresh();
       scheduleNext();
     };

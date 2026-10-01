@@ -271,3 +271,85 @@ test("changing the authoritative recovery anchor resets stale choices and search
 
   unmount();
 });
+
+
+test("returning to a visible tab clears stale recovery cards until fresh evidence arrives", async () => {
+  let resolveRefresh;
+  const first = departure("replacement-run", 2_760, 2_500);
+  const fresh = departure("replacement-run-2", 2_900, 2_600);
+
+  mocks.loadDestinationAwareNearby
+    .mockResolvedValueOnce({
+      "500": {
+        stopId: "500",
+        status: "good",
+        best: first,
+        departures: [first],
+        additionalCount: 0,
+        checkedAt: 1,
+      },
+    })
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveRefresh = () =>
+            resolve({
+              "500": {
+                stopId: "500",
+                status: "good",
+                best: fresh,
+                departures: [fresh],
+                additionalCount: 0,
+                checkedAt: 2,
+              },
+            });
+        })
+    );
+
+  const visibilityDescriptor = Object.getOwnPropertyDescriptor(
+    document,
+    "visibilityState"
+  );
+  let visibilityState = "visible";
+  Object.defineProperty(document, "visibilityState", {
+    configurable: true,
+    get: () => visibilityState,
+  });
+
+  const { result, unmount } = renderHook(() =>
+    useTransferRecoveryOptions({
+      enabled: true,
+      journey: journey(),
+      destination,
+      allStops,
+    })
+  );
+
+  await waitFor(() =>
+    expect(result.current.options[0]?.departure.tripRef).toBe(
+      "replacement-run"
+    )
+  );
+
+  visibilityState = "hidden";
+  document.dispatchEvent(new Event("visibilitychange"));
+  visibilityState = "visible";
+  document.dispatchEvent(new Event("visibilitychange"));
+
+  await waitFor(() => expect(result.current.state).toBe("loading"));
+  expect(result.current.options).toEqual([]);
+
+  resolveRefresh();
+  await waitFor(() =>
+    expect(result.current.options[0]?.departure.tripRef).toBe(
+      "replacement-run-2"
+    )
+  );
+
+  unmount();
+  if (visibilityDescriptor) {
+    Object.defineProperty(document, "visibilityState", visibilityDescriptor);
+  } else {
+    delete document.visibilityState;
+  }
+});
