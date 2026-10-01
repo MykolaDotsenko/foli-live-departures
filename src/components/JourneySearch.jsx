@@ -4,6 +4,7 @@ import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
 import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 import styles from "./JourneySearch.module.css";
+import stopStyles from "./BusStopForm.module.css";
 import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
@@ -235,7 +236,7 @@ export default function JourneySearch({
       )}
 
       <form onSubmit={submit} noValidate>
-        <label htmlFor="journey-destination" className={styles.label}>
+        <label htmlFor="journey-destination" className={stopStyles.label}>
           {t("Stop, address or place")}
         </label>
         <div className={styles.searchRow}>
@@ -251,7 +252,7 @@ export default function JourneySearch({
               }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              className={styles.input}
+              className={stopStyles.input}
               placeholder={t("e.g. Prisma Itäharju or Turun linna")}
               autoComplete="off"
               inputMode="search"
@@ -264,7 +265,7 @@ export default function JourneySearch({
             {showSuggestions && (
               <div
                 id="journey-destination-suggestions"
-                className={styles.suggestions}
+                className={stopStyles.suggestions}
                 role="listbox"
                 aria-label={
                   showPlaceResults
@@ -278,13 +279,13 @@ export default function JourneySearch({
                         key={place.id}
                         type="button"
                         role="option"
-                        className={styles.suggestion}
+                        className={stopStyles.suggestionButton}
                         onPointerDown={(event) => event.preventDefault()}
                         onClick={() => chooseGeocodedPlace(place)}
                       >
-                        <strong>{place.label}</strong>
+                        <strong className={stopStyles.suggestionName}>{place.label}</strong>
                         {place.secondaryLabel && (
-                          <span>{place.secondaryLabel}</span>
+                          <span className={stopStyles.suggestionId}>{place.secondaryLabel}</span>
                         )}
                       </button>
                     ))
@@ -293,14 +294,14 @@ export default function JourneySearch({
                         key={stop.id}
                         type="button"
                         role="option"
-                        className={styles.suggestion}
+                        className={stopStyles.suggestionButton}
                         onPointerDown={(event) => event.preventDefault()}
                         onClick={() => chooseStop(stop)}
                       >
-                        <strong>
+                        <strong className={stopStyles.suggestionName}>
                           <StopName stop={stop} />
                         </strong>
-                        <span>{t("Stop {id}", { id: stop.id })}</span>
+                        <span className={stopStyles.suggestionId}>{t("Stop {id}", { id: stop.id })}</span>
                       </button>
                     ))}
               </div>
@@ -308,7 +309,7 @@ export default function JourneySearch({
           </div>
           <button
             type="submit"
-            className={styles.submit}
+            className={stopStyles.button}
             disabled={placeSearch.state === "loading"}
             aria-busy={placeSearch.state === "loading"}
           >
@@ -317,14 +318,14 @@ export default function JourneySearch({
               : t("Search")}
           </button>
         </div>
-        <p className={styles.help}>
+        <p className={stopStyles.help}>
           {t(
             "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
           )}
         </p>
 
         {showPlaceResults && (
-          <p className={styles.help}>
+          <p className={stopStyles.help}>
             {t("Place search data")}{" "}
             <a
               href="https://www.openstreetmap.org/copyright"
@@ -337,7 +338,7 @@ export default function JourneySearch({
         )}
 
         {error && (
-          <p className={styles.error} role="alert">
+          <p className={stopStyles.error} role="alert">
             {error}
           </p>
         )}
