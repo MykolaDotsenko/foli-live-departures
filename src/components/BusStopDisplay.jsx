@@ -20,6 +20,7 @@ import {
 } from "./departureBoard/departures";
 import useClockTick from "../hooks/useClockTick";
 import useDestinationBoardFits from "../hooks/useDestinationBoardFits";
+import { arrivalMatchesActiveJourney } from "../utils/activeJourney";
 import useLineFilter from "../hooks/useLineFilter";
 import useLineTimetable from "../hooks/useLineTimetable";
 import useTripEnrichment from "../hooks/useTripEnrichment";
@@ -63,6 +64,7 @@ function BusStopDisplay({
   onToggleFavorite,
   placesById,
   destination = null,
+  selectedJourney = null,
   onStartRide,
   activeRideTripRef = "",
   cancellations = [],
@@ -260,13 +262,27 @@ function BusStopDisplay({
     arrival,
     rowKey: rowKeys[index],
     fit: destinationFitsByKey[rowKeys[index]] || null,
+    selected:
+      selectedJourney?.stopId === stopId &&
+      arrivalMatchesActiveJourney(arrival, selectedJourney),
     originalIndex: index,
   }));
 
-  if (destination && destinationFitState === "ready") {
+  if (
+    selectedJourney?.stopId === stopId ||
+    (destination && destinationFitState === "ready")
+  ) {
     destinationRows.sort((left, right) => {
-      const leftRank = left.fit?.status === "compatible" ? 0 : 1;
-      const rightRank = right.fit?.status === "compatible" ? 0 : 1;
+      const leftRank = left.selected
+        ? 0
+        : left.fit?.status === "compatible"
+          ? 1
+          : 2;
+      const rightRank = right.selected
+        ? 0
+        : right.fit?.status === "compatible"
+          ? 1
+          : 2;
       return leftRank - rightRank || left.originalIndex - right.originalIndex;
     });
   }
@@ -370,6 +386,7 @@ function BusStopDisplay({
           arrivals={displayedArrivals}
           rowKeys={displayedRowKeys}
           destination={destination}
+          selectedJourney={selectedJourney}
           destinationFitsByKey={destinationFitsByKey}
           referenceTime={referenceTime}
           effectiveServerTime={effectiveServerTime}
