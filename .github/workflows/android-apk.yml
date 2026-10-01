@@ -56,22 +56,6 @@ jobs:
       - name: Verify native provider trust boundary
         run: npm run verify:native-boundary
 
-      - name: Configure Capacitor
-        run: |
-          cat > capacitor.config.json <<'JSON'
-          {
-            "appId": "fi.turku.folilivedepartures",
-            "appName": "Turku Departures",
-            "webDir": "dist",
-            "server": {
-              "androidScheme": "https"
-            },
-            "android": {
-              "allowMixedContent": false
-            }
-          }
-          JSON
-
       - name: Create Android project
         run: |
           npx cap add android
