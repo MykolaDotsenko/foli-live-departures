@@ -594,6 +594,7 @@ export function observeActiveJourney(journey, observation) {
     /** @type {import("../types/journey").LiveState} */
     const firstLegLiveState =
       arrival.monitored === true ? "live" : "schedule";
+    /** @type {import("../types/journey").TransferJourneyOption | null} */
     const nextTransferPlan =
       firstTransferLeg && journey.transferPlan
         ? {
