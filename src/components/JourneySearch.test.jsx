@@ -172,7 +172,7 @@ test("provider failure is explicit and local stop search remains available", asy
   expect(
     await screen.findByRole("alert")
   ).toHaveTextContent(
-    "Place search is unavailable. Stop search still works."
+    "Place search unavailable. Stop search still works."
   );
 });
 
@@ -185,7 +185,7 @@ test("does not call external place search while offline", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Place search needs an internet connection. Stop search still works."
+    "Offline: place search unavailable. Stop search still works."
   );
 });
 
@@ -289,7 +289,7 @@ test("waits for stop coordinates before external place search", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Place search is waiting for stop locations."
+    "Waiting for stop locations."
   );
 });
 
