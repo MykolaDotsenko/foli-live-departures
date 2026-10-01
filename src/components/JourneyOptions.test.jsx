@@ -119,3 +119,70 @@ test("selects the concrete journey when orchestration is available", () => {
   expect(onSelectJourney).toHaveBeenCalledWith(selected);
   expect(onOpenStop).not.toHaveBeenCalled();
 });
+
+
+test("shows final-walk distance and door-arrival wording for external places", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Prisma Itäharju"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "place-fast",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Itäharju",
+          distanceMeters: 180,
+          departure: {
+            ...baseDeparture,
+            finalWalkDistanceM: 240,
+            finalWalkSecEstimate: 250,
+            journeyArrivalAt: 2_000_001_450,
+          },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(
+    screen.getByText(/Reach destination about/i)
+  ).toBeInTheDocument();
+  expect(screen.getByText(/final walk ≈ 240 m/i)).toBeInTheDocument();
+  expect(
+    screen.getByText(/real walking route can be longer/i)
+  ).toBeInTheDocument();
+});
+
+test("does not present a missing final walk as zero metres", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "normal",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Home stop",
+          distanceMeters: 180,
+          departure: {
+            ...baseDeparture,
+            finalWalkDistanceM: null,
+            journeyArrivalAt: null,
+          },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.queryByText(/final walk/i)).not.toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
+    )
+  ).toBeInTheDocument();
+});
