@@ -53,7 +53,7 @@ test("starts idle and exposes successful explicit-search results", async () => {
     "Prisma Itäharju",
     expect.objectContaining({
       language: "fi",
-      signal: expect.any(AbortSignal),
+      signal: expect.any(globalThis.AbortSignal),
     })
   );
 });
