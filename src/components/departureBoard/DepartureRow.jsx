@@ -10,6 +10,7 @@ import {
   getDepartureTime,
 } from "../../utils/time";
 import { isCancelledHere } from "./departures";
+import { arrivalMatchesActiveJourney } from "../../utils/activeJourney";
 import {
   destinationNames,
   routeBadgeStyle,
@@ -68,6 +69,7 @@ function DepartureRow({
   rideCandidateKey,
   activeRideTripRef,
   journeyDestination = null,
+  selectedJourney = null,
   destinationFit = null,
   onToggleRideSetup,
   onCloseRideSetup,
@@ -114,9 +116,16 @@ function DepartureRow({
   const servesJourneyDestination =
     destinationFit?.status === "compatible" && Boolean(journeyDestinationLabel);
 
+  const selectedForJourney =
+    selectedJourney?.stopId === stopId &&
+    arrivalMatchesActiveJourney(arrival, selectedJourney);
+
   return (
     <>
-      <tr data-cancelled={cancelled ? "true" : undefined}>
+      <tr
+        data-cancelled={cancelled ? "true" : undefined}
+        data-selected-journey={selectedForJourney ? "true" : undefined}
+      >
         <td>
           <span
             className={styles.lineBadge}
@@ -147,6 +156,11 @@ function DepartureRow({
               an accessible bus is a symbol here rather than a chip wrapping
               onto two more lines. The symbol is held to the status before
               it: on its own it was left alone on a line at 360px. */}
+          {selectedForJourney && (
+            <span className={styles.selectedJourneyBadge}>
+              {t("Your bus")}
+            </span>
+          )}
           {servesJourneyDestination && (
             <span className={styles.destinationFitBadge}>
               {t("Goes to {destination}", {
@@ -217,6 +231,11 @@ function DepartureRow({
               />
               <button
                 ref={rideButtonRef}
+                id={
+                  selectedForJourney
+                    ? "selected-journey-departure-action"
+                    : undefined
+                }
                 type="button"
                 className={styles.rideButton}
                 disabled={sameRideActive}
