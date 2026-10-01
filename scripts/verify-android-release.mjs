@@ -79,19 +79,6 @@ if (!runner.includes('capacitor.config.json')) {
   );
 }
 
-if (failures.length > 0) {
-  throw new Error(
-    ["Android production-release contract failed:", ...failures.map((f) => `- ${f}`)].join(
-      "\n"
-    )
-  );
-}
-
-console.log(
-  "Android release contract verified: independent app identity, persistent signing inputs, exact signed-APK emulator verification and immutable version publishing are enforced."
-);
-
-
 if (releaseWorkflow.includes("jarsigner -verify -strict")) {
   failures.push(
     "AAB verification must not use jarsigner --strict because Android release certificates are normally self-signed."
@@ -110,3 +97,16 @@ if (releaseJobStart < 0 || publishJobStart < 0) {
     );
   }
 }
+
+
+if (failures.length > 0) {
+  throw new Error(
+    ["Android production-release contract failed:", ...failures.map((f) => `- ${f}`)].join(
+      "\n"
+    )
+  );
+}
+
+console.log(
+  "Android release contract verified: independent app identity, green-master gating, least-privilege signing, persistent production signing inputs, exact signed-APK emulator verification and immutable version publishing are enforced."
+);
