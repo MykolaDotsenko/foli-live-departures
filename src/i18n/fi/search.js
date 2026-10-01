@@ -197,8 +197,8 @@ export default {
   "Search destination": "Hae määränpää",
   "Choose Home, Work, School, a Föli stop, address or place.":
     "Valitse Koti, Työ, Koulu, Fölin pysäkki, osoite tai paikka.",
-  "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search.":
-    "Pysäkkiehdotukset pysyvät tällä laitteella. Paikka- tai osoiteteksti lähetetään OpenStreetMapille vasta, kun painat Hae.",
+  "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
+    "Pysäkkiehdotukset pysyvät tällä laitteella. Paikka- tai osoiteteksti lähetetään OpenStreetMapille vasta, kun painat Hae; toistuvat haut välimuistitetaan vain tämän selainistunnon ajaksi.",
   "Places & addresses": "Paikat ja osoitteet",
   "Choose one": "Valitse yksi",
   "Place search data": "Paikkahaun tiedot",
@@ -222,5 +222,15 @@ export default {
   "final walk ≈ {distance}": "loppukävely ≈ {distance}",
   "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer.":
     "Saapumisaika sisältää likimääräisen loppukävelyn linnuntie-etäisyyden perusteella; todellinen kävelyreitti voi olla pidempi.",
+  "Live transit + approximate walk":
+    "Live-joukkoliikenne + likimääräinen kävely",
+  "Timetable + approximate walk":
+    "Aikataulu + likimääräinen kävely",
+  "Realtime uncertain + approximate walk":
+    "Reaaliaika epävarma + likimääräinen kävely",
+  "Transit + approximate walk":
+    "Joukkoliikenne + likimääräinen kävely",
+  "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
+    "Loppukävely on linnuntie-etäisyyteen perustuva likimääräinen arvio. Todellinen kävelyreitti voi olla pidempi.",
 
 };
