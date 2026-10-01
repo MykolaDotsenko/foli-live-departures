@@ -255,9 +255,22 @@ function App() {
     );
   }, [arrivals, selectedJourney, stopId]);
 
+  const selectedJourneyCancellationProbe =
+    selectedJourneyArrival ||
+    (selectedJourney?.stopId === stopId
+      ? {
+          lineref: selectedJourney.lineRef,
+          aimeddeparturetime:
+            selectedJourney.aimedDepartureAt ||
+            selectedJourney.departureAt,
+        }
+      : null);
   const selectedJourneyCancelled =
-    selectedJourneyArrival &&
-    isCancelledHere(selectedJourneyArrival, stopCancellations);
+    selectedJourneyCancellationProbe &&
+    isCancelledHere(
+      selectedJourneyCancellationProbe,
+      stopCancellations
+    );
 
   const selectedJourneyStop = useMemo(
     () =>
