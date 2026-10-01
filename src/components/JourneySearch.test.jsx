@@ -272,3 +272,32 @@ test("keeps an opened stop board compact until the passenger asks to change dest
   fireEvent.click(screen.getByRole("button", { name: "Clear destination" }));
   expect(props.onClear).toHaveBeenCalledTimes(1);
 });
+
+
+test("waits for stop coordinates before external place search", async () => {
+  renderSearch({ coordinatesStatus: "loading" });
+  const input = screen.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+
+  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+  expect(placeSearch.search).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Address and place search is waiting for stop locations. Try again in a moment."
+  );
+});
+
+test("exact local stop still works while stop coordinates are unavailable", () => {
+  const props = renderSearch({ coordinatesStatus: "unavailable" });
+  const input = screen.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+
+  fireEvent.change(input, { target: { value: "Turun linna" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search" }));
+
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
+  expect(placeSearch.search).not.toHaveBeenCalled();
+});
