@@ -104,3 +104,36 @@ test("hook does no work without a destination and resolves when one is supplied"
   await waitFor(() => expect(result.current.state).toBe("ready"));
   expect(result.current.fitsByRowKey["row-good"].status).toBe("compatible");
 });
+
+
+test("uses the same ride-plus-walk alighting stop for geocoded places", async () => {
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:10:00"),
+    stopTime("901", 3, "10:12:00"),
+  ]);
+
+  const fits = await loadDestinationBoardFits({
+    stopId: "100",
+    arrivals: [{ tripref: "good", aimeddeparturetime: 1_500 }],
+    rowKeys: ["row-place"],
+    destination: {
+      id: "geo:osm:node:1",
+      kind: "geocoded-place",
+      label: "Prisma",
+      primaryStopId: "900",
+      acceptableStopIds: ["900", "901"],
+      destinationStopDistances: {
+        "900": 900,
+        "901": 80,
+      },
+      placeProvider: "nominatim",
+    },
+  });
+
+  expect(fits["row-place"]).toMatchObject({
+    status: "compatible",
+    destinationStopId: "901",
+    destinationStopSequence: 3,
+  });
+});
