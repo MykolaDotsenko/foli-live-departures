@@ -418,3 +418,307 @@ test("caps dense-hub trip-detail lookups and samples every stop fairly", async (
     expect(fetchedTripIds.has(`${stop.id}-trip-8`)).toBe(false);
   }
 });
+
+
+test("prefers a later bus when its shorter final walk reaches the place earlier", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => {
+    if (stopId === "100") {
+      return {
+        stopName: "",
+        arrivals: [
+          arrival("t-long-walk", 1_600, { lineref: "1" }),
+          arrival("t-short-walk", 1_700, { lineref: "2" }),
+        ],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+
+    return {
+      stopName: "",
+      arrivals: [],
+      serverTime: 1_000,
+      realtimeAvailable: true,
+      scheduleAvailable: false,
+      scheduleFailed: false,
+      scheduleIncomplete: false,
+    };
+  });
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "t-long-walk") {
+      return [
+        stopTime("100", 1, "10:00:00"),
+        stopTime("900", 2, "10:10:00"),
+      ];
+    }
+    return [
+      stopTime("100", 1, "10:00:00"),
+      stopTime("901", 2, "10:15:00"),
+    ];
+  });
+
+  const externalDestination = {
+    id: "external:nominatim:node:123",
+    kind: "external-place",
+    label: "Prisma Itäharju",
+    primaryStopId: "901",
+    acceptableStopIds: ["900", "901"],
+    lat: 60.45,
+    lon: 22.30,
+    finalWalkDistanceByStop: {
+      "900": 900,
+      "901": 50,
+    },
+    source: "osm-nominatim",
+  };
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: externalDestination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best).toMatchObject({
+    tripRef: "t-short-walk",
+    destinationStopId: "901",
+    destinationArrivalAt: 2_600,
+    finalWalkDistanceM: 50,
+    finalWalkSecEstimate: 53,
+    journeyArrivalAt: 2_653,
+  });
+
+  const longWalk = fits["100"].departures.find(
+    (candidate) => candidate.tripRef === "t-long-walk"
+  );
+  expect(longWalk?.destinationArrivalAt).toBe(2_200);
+  expect(longWalk?.journeyArrivalAt).toBeGreaterThan(3_100);
+});
+
+
+test("chooses the best alighting stop within one trip for an external place", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? [arrival("same-trip", 1_600, { lineref: "5" })]
+        : [],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:08:00"),
+    stopTime("901", 3, "10:12:00"),
+  ]);
+
+  const externalDestination = {
+    id: "external:nominatim:node:456",
+    kind: "external-place",
+    label: "Destination",
+    primaryStopId: "901",
+    acceptableStopIds: ["900", "901"],
+    lat: 60.45,
+    lon: 22.30,
+    finalWalkDistanceByStop: {
+      "900": 960,
+      "901": 30,
+    },
+    source: "osm-nominatim",
+  };
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: externalDestination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best).toMatchObject({
+    tripRef: "same-trip",
+    destinationStopId: "901",
+    rideDurationSec: 12 * 60,
+    finalWalkDistanceM: 30,
+  });
+});
+
+
+test("caps realtime destination-stop enrichment while keeping all candidates eligible", async () => {
+  const destinationIds = Array.from({ length: 12 }, (_, index) =>
+    String(900 + index)
+  );
+
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? destinationIds.map((destinationId, index) =>
+            arrival(`target-trip-${index}`, 1_400 + index * 30)
+          )
+        : [],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    const index = Number(String(tripId).split("-").at(-1));
+    return [
+      stopTime("100", 1, "10:00:00"),
+      stopTime(
+        String(900 + index),
+        2,
+        `10:${String(10 + index).padStart(2, "0")}:00`
+      ),
+    ];
+  });
+
+  const finalWalkDistanceByStop = Object.fromEntries(
+    destinationIds.map((id, index) => [id, 50 + index * 20])
+  );
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: {
+      id: "external:nominatim:dense",
+      kind: "external-place",
+      label: "Dense destination",
+      primaryStopId: "900",
+      acceptableStopIds: destinationIds,
+      lat: 60.45,
+      lon: 22.26,
+      finalWalkDistanceByStop,
+      source: "osm-nominatim",
+    },
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].departures).toHaveLength(12);
+
+  const targetMonitorCalls = api.fetchStopMonitor.mock.calls
+    .map(([stopId]) => String(stopId))
+    .filter((stopId) => stopId !== "100");
+
+  expect(new Set(targetMonitorCalls).size).toBe(8);
+  expect(targetMonitorCalls).toHaveLength(8);
+});
+
+test("does not use a different loop visit as destination realtime", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => {
+    if (stopId === "100") {
+      return {
+        stopName: "",
+        arrivals: [
+          arrival("loop-trip", 1_600, {
+            aimeddeparturetime: 1_600,
+            originaimeddeparturetime: 1_200,
+          }),
+        ],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+
+    if (stopId === "900") {
+      return {
+        stopName: "",
+        arrivals: [
+          arrival("loop-trip", 2_200, {
+            aimedarrivaltime: 2_200,
+            expectedarrivaltime: 2_050,
+            originaimeddeparturetime: 1_200,
+            recordedattime: 990,
+          }),
+          arrival("loop-trip", 3_400, {
+            aimedarrivaltime: 3_400,
+            expectedarrivaltime: 3_050,
+            originaimeddeparturetime: 1_200,
+            recordedattime: 990,
+          }),
+        ],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+
+    return {
+      stopName: "",
+      arrivals: [],
+      serverTime: 1_000,
+      realtimeAvailable: true,
+      scheduleAvailable: false,
+      scheduleFailed: false,
+      scheduleIncomplete: false,
+    };
+  });
+
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:10:00"),
+    stopTime("777", 3, "10:20:00"),
+    stopTime("900", 4, "10:30:00"),
+  ]);
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best?.destinationArrivalAt).toBe(2_050);
+});
+
+test("ambiguous duplicate target rows fail closed to schedule propagation", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? [arrival("loop-trip", 1_600)]
+        : [
+            arrival("loop-trip", 2_500, {
+              aimedarrivaltime: null,
+              aimeddeparturetime: null,
+              expectedarrivaltime: 2_300,
+              recordedattime: 990,
+            }),
+            arrival("loop-trip", 2_700, {
+              aimedarrivaltime: null,
+              aimeddeparturetime: null,
+              expectedarrivaltime: 2_400,
+              recordedattime: 990,
+            }),
+          ],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best?.destinationArrivalAt).toBe(2_800);
+});

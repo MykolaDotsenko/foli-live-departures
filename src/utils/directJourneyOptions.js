@@ -21,13 +21,32 @@ function catchabilityRank(departure) {
 }
 
 /**
+ * @param {{ distanceMeters: number, departure: NearbyDepartureFit }} candidate
+ * @returns {number}
+ */
+function totalApproxWalkingMeters(candidate) {
+  const boarding = Number(candidate.distanceMeters);
+  const finalWalk = Number(candidate.departure?.finalWalkDistanceM);
+  const boardingMeters =
+    Number.isFinite(boarding) && boarding >= 0 ? boarding : 0;
+  const finalMeters =
+    Number.isFinite(finalWalk) && finalWalk >= 0 ? finalWalk : 0;
+  return boardingMeters + finalMeters;
+}
+
+/**
  * @param {NearbyDepartureFit} departure
  * @returns {number}
  */
 function arrivalRank(departure) {
-  const arrival = Number(departure.destinationArrivalAt);
-  return Number.isFinite(arrival) && arrival > 0
-    ? arrival
+  const journeyArrival = Number(departure.journeyArrivalAt);
+  if (Number.isFinite(journeyArrival) && journeyArrival > 0) {
+    return journeyArrival;
+  }
+
+  const stopArrival = Number(departure.destinationArrivalAt);
+  return Number.isFinite(stopArrival) && stopArrival > 0
+    ? stopArrival
     : Number.POSITIVE_INFINITY;
 }
 
@@ -133,7 +152,8 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
       const arrivalDelay =
         arrivalRank(candidate.departure) - fastestArrival;
       const walkingSaving =
-        fastest.distanceMeters - candidate.distanceMeters;
+        totalApproxWalkingMeters(fastest) -
+        totalApproxWalkingMeters(candidate);
 
       return (
         arrivalDelay >= 0 &&
@@ -143,7 +163,8 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     })
     .sort(
       (left, right) =>
-        left.distanceMeters - right.distanceMeters ||
+        totalApproxWalkingMeters(left) -
+          totalApproxWalkingMeters(right) ||
         arrivalRank(left.departure) - arrivalRank(right.departure)
     )[0];
 
@@ -159,7 +180,8 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
       arrivalDeltaSec:
         arrivalRank(lessWalking.departure) - fastestArrival,
       walkingDeltaMeters:
-        lessWalking.distanceMeters - fastest.distanceMeters,
+        totalApproxWalkingMeters(lessWalking) -
+        totalApproxWalkingMeters(fastest),
     };
     selected.push(item);
     selectedIds.add(item.id);
@@ -199,7 +221,8 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
       arrivalDeltaSec:
         arrivalRank(easier.departure) - fastestArrival,
       walkingDeltaMeters:
-        easier.distanceMeters - fastest.distanceMeters,
+        totalApproxWalkingMeters(easier) -
+        totalApproxWalkingMeters(fastest),
     });
   }
 

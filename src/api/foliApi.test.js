@@ -4,7 +4,7 @@ const mocks = vi.hoisted(() => ({
   get: vi.fn(),
 }));
 
-vi.mock("axios", () => ({
+vi.mock("./httpClient", () => ({
   default: {
     create: () => ({
       get: mocks.get,

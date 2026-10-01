@@ -9,7 +9,33 @@ function labelText(label) {
   return t("Fastest");
 }
 
-function estimateSourceText(liveState) {
+function displayedArrivalAt(departure) {
+  const journeyArrival = Number(departure?.journeyArrivalAt);
+  if (Number.isFinite(journeyArrival) && journeyArrival > 0) {
+    return journeyArrival;
+  }
+  return departure?.destinationArrivalAt;
+}
+
+function hasFinalWalk(departure) {
+  const raw = departure?.finalWalkDistanceM;
+  if (raw === null || raw === undefined || raw === "") return false;
+  const distance = Number(raw);
+  return Number.isFinite(distance) && distance >= 0;
+}
+
+function estimateSourceText(liveState, includesFinalWalk = false) {
+  if (includesFinalWalk) {
+    if (liveState === "live") return t("Live transit + approximate walk");
+    if (liveState === "schedule") {
+      return t("Timetable + approximate walk");
+    }
+    if (liveState === "delayed") {
+      return t("Realtime uncertain + approximate walk");
+    }
+    return t("Transit + approximate walk");
+  }
+
   if (liveState === "live") return t("Live estimate");
   if (liveState === "schedule") return t("Timetable estimate");
   if (liveState === "delayed") return t("Realtime uncertain");
@@ -94,9 +120,13 @@ export default function JourneyOptions({
             <span className={styles.badge}>{labelText(option.label)}</span>
 
             <span className={styles.arrival}>
-              {t("Arrive about {time}", {
-                time: formatClock(option.departure.destinationArrivalAt),
-              })}
+              {hasFinalWalk(option.departure)
+                ? t("Reach destination about {time}", {
+                    time: formatClock(displayedArrivalAt(option.departure)),
+                  })
+                : t("Arrive about {time}", {
+                    time: formatClock(displayedArrivalAt(option.departure)),
+                  })}
             </span>
 
             <span className={styles.route}>
@@ -112,7 +142,20 @@ export default function JourneyOptions({
             <span className={styles.meta}>
               {formatDistance(option.distanceMeters)} {t("to stop")} ·{" "}
               {formatDue(option.departure.departureAt)} ·{" "}
-              {estimateSourceText(option.departure.liveState)}
+              {estimateSourceText(
+                option.departure.liveState,
+                hasFinalWalk(option.departure)
+              )}
+              {hasFinalWalk(option.departure) && (
+                <>
+                  {" · "}
+                  {t("final walk ≈ {distance}", {
+                    distance: formatDistance(
+                      Number(option.departure.finalWalkDistanceM)
+                    ),
+                  })}
+                </>
+              )}
             </span>
 
             <span className={styles.tradeoff}>{tradeoffText(option)}</span>
@@ -121,9 +164,13 @@ export default function JourneyOptions({
       </div>
 
       <p className={styles.note}>
-        {t(
-          "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
-        )}
+        {options.some((option) => hasFinalWalk(option.departure))
+          ? t(
+              "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer."
+            )
+          : t(
+              "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
+            )}
       </p>
     </section>
   );

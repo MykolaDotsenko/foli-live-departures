@@ -388,3 +388,88 @@ describe("active journey transitions", () => {
     });
   });
 });
+
+
+test("carries external-place door arrival into the selected journey", () => {
+  const externalDestination = {
+    id: "external:nominatim:node:123",
+    kind: "external-place",
+    label: "Prisma Itäharju",
+    primaryStopId: "900",
+    acceptableStopIds: ["900"],
+    lat: 60.45,
+    lon: 22.30,
+    finalWalkDistanceByStop: { "900": 240 },
+    source: "osm-nominatim",
+  };
+
+  const externalOption = option({
+    departure: {
+      ...option().departure,
+      destinationArrivalAt: 2_100,
+      journeyArrivalAt: 2_350,
+      finalWalkDistanceM: 240,
+      finalWalkSecEstimate: 250,
+    },
+  });
+
+  const journey = activeJourneyFromOption(
+    externalOption,
+    externalDestination,
+    1_000_000
+  );
+
+  expect(journey).toMatchObject({
+    destinationKind: "external-place",
+    destinationArrivalAt: 2_100,
+    journeyArrivalAt: 2_350,
+    finalWalkDistanceM: 240,
+    finalWalkSecEstimate: 250,
+  });
+});
+
+test("shifts stop and door arrival with a boarding delay", () => {
+  const externalDestination = {
+    id: "external:nominatim:node:123",
+    kind: "external-place",
+    label: "Prisma Itäharju",
+    primaryStopId: "900",
+    acceptableStopIds: ["900"],
+  };
+
+  const journey = activeJourneyFromOption(
+    option({
+      departure: {
+        ...option().departure,
+        destinationArrivalAt: 2_100,
+        journeyArrivalAt: 2_350,
+        finalWalkDistanceM: 240,
+        finalWalkSecEstimate: 250,
+      },
+    }),
+    externalDestination,
+    1_000_000
+  );
+
+  const updated = observeActiveJourney(journey, {
+    stopId: "100",
+    arrival: {
+      tripref: "trip-1",
+      lineref: "18",
+      aimeddeparturetime: 1_480,
+      originaimeddeparturetime: 900,
+      expecteddeparturetime: 1_620,
+    },
+    referenceTimeSec: 1_400,
+    receivedAtMs: 1_040_000,
+    feedError: false,
+    cancelled: false,
+  });
+
+  // Boarding moved +120 s, so both downstream estimates move +120 s.
+  expect(updated).toMatchObject({
+    departureAt: 1_620,
+    destinationArrivalAt: 2_220,
+    journeyArrivalAt: 2_470,
+  });
+});

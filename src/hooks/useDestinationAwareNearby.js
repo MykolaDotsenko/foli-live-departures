@@ -3,12 +3,14 @@ import { fetchStopMonitor, fetchTripStopTimes } from "../api/foliApi";
 import { classifyCatchability } from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
 import { getDepartureTime } from "../utils/time";
+import { estimateFinalWalkSeconds } from "../utils/placeDestination";
 
 /** @import { DestinationIntent, NearbyFitMap, NearbyDepartureFit, LiveState } from "../types/journey" */
 
 const REFRESH_MS = 30_000;
 const MAX_DEPARTURES_PER_STOP = 16;
 const MAX_TRIP_LOOKUPS = 96;
+const MAX_TARGET_MONITOR_LOOKUPS = 8;
 const TRIP_BATCH_SIZE = 8;
 
 /** @param {AbortSignal | undefined} signal */
@@ -39,16 +41,113 @@ function liveState(arrival, serverTime) {
  * @param {string} tripRef
  * @returns {number | null}
  */
-function freshTargetArrival(monitor, tripRef) {
+/**
+ * @param {NearbyDepartureFit} candidate
+ * @returns {number}
+ */
+function journeyArrivalRank(candidate) {
+  const journeyArrival = Number(candidate.journeyArrivalAt);
+  if (Number.isFinite(journeyArrival) && journeyArrival > 0) {
+    return journeyArrival;
+  }
+
+  const stopArrival = Number(candidate.destinationArrivalAt);
+  return Number.isFinite(stopArrival) && stopArrival > 0
+    ? stopArrival
+    : Number.POSITIVE_INFINITY;
+}
+
+/**
+ * @param {NearbyDepartureFit} candidate
+ * @param {DestinationIntent} destination
+ */
+function applyFinalWalk(candidate, destination) {
+  const rawDistance =
+    destination.finalWalkDistanceByStop?.[candidate.destinationStopId];
+  const distance = Number(rawDistance);
+  const walkSeconds = estimateFinalWalkSeconds(rawDistance);
+
+  candidate.finalWalkDistanceM =
+    Number.isFinite(distance) && distance >= 0 ? distance : null;
+  candidate.finalWalkSecEstimate = walkSeconds;
+
+  const stopArrival = Number(candidate.destinationArrivalAt);
+  candidate.journeyArrivalAt =
+    Number.isFinite(stopArrival) && stopArrival > 0
+      ? stopArrival + (walkSeconds || 0)
+      : null;
+}
+
+function freshTargetArrival(monitor, candidate) {
   const serverTime = Number(monitor?.serverTime);
   if (!Number.isFinite(serverTime) || serverTime <= 0) return null;
 
-  const row = (Array.isArray(monitor?.arrivals) ? monitor.arrivals : []).find(
-    (arrival) =>
-      String(arrival?.tripref || "") === String(tripRef) &&
-      arrival?.monitored === true
-  );
-  if (!row) return null;
+  const plannedTarget =
+    Number.isFinite(Number(candidate?.aimedDepartureAt)) &&
+    Number.isFinite(Number(candidate?.rideDurationSec))
+      ? Number(candidate.aimedDepartureAt) + Number(candidate.rideDurationSec)
+      : null;
+  const plannedOrigin = Number(candidate?.originAimedDepartureAt);
+
+  const matches = (Array.isArray(monitor?.arrivals) ? monitor.arrivals : [])
+    .filter(
+      (row) =>
+        String(row?.tripref || "") === String(candidate?.tripRef || "") &&
+        row?.monitored === true
+    )
+    .filter((row) => {
+      const rowOrigin = Number(row?.originaimeddeparturetime);
+      if (
+        Number.isFinite(plannedOrigin) &&
+        plannedOrigin > 0 &&
+        Number.isFinite(rowOrigin) &&
+        rowOrigin > 0 &&
+        Math.abs(rowOrigin - plannedOrigin) > 60
+      ) {
+        return false;
+      }
+
+      const rowTarget = Number(
+        row?.aimedarrivaltime ?? row?.aimeddeparturetime
+      );
+      return !(
+        plannedTarget !== null &&
+        Number.isFinite(rowTarget) &&
+        rowTarget > 0 &&
+        Math.abs(rowTarget - plannedTarget) > 10 * 60
+      );
+    });
+
+  if (matches.length === 0) return null;
+
+  let row = matches[0];
+  if (matches.length > 1) {
+    if (plannedTarget === null) return null;
+
+    const ranked = matches
+      .map((item) => {
+        const aimed = Number(
+          item?.aimedarrivaltime ?? item?.aimeddeparturetime
+        );
+        return {
+          item,
+          delta:
+            Number.isFinite(aimed) && aimed > 0
+              ? Math.abs(aimed - plannedTarget)
+              : Number.POSITIVE_INFINITY,
+        };
+      })
+      .sort((left, right) => left.delta - right.delta);
+
+    if (
+      !Number.isFinite(ranked[0].delta) ||
+      ranked[0].delta > 10 * 60 ||
+      ranked[1]?.delta === ranked[0].delta
+    ) {
+      return null;
+    }
+    row = ranked[0].item;
+  }
 
   const recordedAt = Number(row.recordedattime);
   if (
@@ -78,12 +177,8 @@ function chooseBestDeparture(candidates) {
   const usable = candidates
     .filter((candidate) => candidate.catchability !== "too-late")
     .sort((a, b) => {
-      const left = Number.isFinite(a.destinationArrivalAt)
-        ? Number(a.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
-      const right = Number.isFinite(b.destinationArrivalAt)
-        ? Number(b.destinationArrivalAt)
-        : Number.POSITIVE_INFINITY;
+      const left = journeyArrivalRank(a);
+      const right = journeyArrivalRank(b);
       return left - right || a.departureAt - b.departureAt;
     });
 
@@ -98,10 +193,10 @@ function chooseBestDeparture(candidates) {
     (candidate) =>
       candidate.catchability !== "tight" &&
       candidate.catchability !== "unknown" &&
-      Number.isFinite(candidate.destinationArrivalAt) &&
-      Number.isFinite(first.destinationArrivalAt) &&
-      Number(candidate.destinationArrivalAt) -
-        Number(first.destinationArrivalAt) <=
+      Number.isFinite(journeyArrivalRank(candidate)) &&
+      Number.isFinite(journeyArrivalRank(first)) &&
+      journeyArrivalRank(candidate) -
+        journeyArrivalRank(first) <=
         5 * 60
   );
 
@@ -125,6 +220,20 @@ export async function loadDestinationAwareNearby({
 }) {
   const candidates = Array.isArray(stops) ? stops : [];
   if (!destination || candidates.length === 0) return {};
+
+  /** @type {Record<string, number> | null} */
+  const destinationExtraSecByStop =
+    destination.kind === "external-place"
+      ? Object.fromEntries(
+          Object.entries(destination.finalWalkDistanceByStop || {})
+            .map(([stopId, distanceM]) => [
+              stopId,
+              estimateFinalWalkSeconds(distanceM),
+            ])
+            .filter(([, seconds]) => Number.isFinite(Number(seconds)))
+            .map(([stopId, seconds]) => [stopId, Number(seconds)])
+        )
+      : null;
 
   const monitorResults = await Promise.allSettled(
     candidates.map((stop) => fetchStopMonitor(String(stop.id), signal))
@@ -246,6 +355,7 @@ export async function loadDestinationAwareNearby({
         boardingSequence: null,
         boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
         destinationStopIds: destination.acceptableStopIds,
+        destinationExtraSecByStop,
       });
 
       if (!fit.compatible) {
@@ -287,8 +397,32 @@ export async function loadDestinationAwareNearby({
       });
     }
 
+    compatible.forEach((candidate) =>
+      applyFinalWalk(candidate, destination)
+    );
+
+    // External-place planning may consider many destination platforms, but
+    // realtime target polling must stay bounded. Keep every candidate
+    // eligible with schedule/propagated timing and enrich only the strongest
+    // unique alighting stops.
+    const targetIdsToEnrich = new Set();
+    for (const candidate of compatible
+      .slice()
+      .sort(
+        (left, right) =>
+          journeyArrivalRank(left) - journeyArrivalRank(right) ||
+          left.departureAt - right.departureAt
+      )) {
+      if (targetIdsToEnrich.size >= MAX_TARGET_MONITOR_LOOKUPS) break;
+      if (candidate.destinationStopId) {
+        targetIdsToEnrich.add(candidate.destinationStopId);
+      }
+    }
+
     await Promise.all(
       compatible.map(async (candidate) => {
+        if (!targetIdsToEnrich.has(candidate.destinationStopId)) return;
+
         const destinationMonitor = await targetMonitor(
           candidate.destinationStopId
         );
@@ -296,7 +430,7 @@ export async function loadDestinationAwareNearby({
 
         const liveArrival = freshTargetArrival(
           destinationMonitor,
-          candidate.tripRef
+          candidate
         );
         if (
           liveArrival !== null &&
@@ -305,6 +439,7 @@ export async function loadDestinationAwareNearby({
           candidate.destinationArrivalAt = liveArrival;
           candidate.liveState = "live";
         }
+        applyFinalWalk(candidate, destination);
       })
     );
 
@@ -336,8 +471,8 @@ export async function loadDestinationAwareNearby({
         .slice()
         .sort(
           (left, right) =>
-            (Number(left.destinationArrivalAt) || Number.POSITIVE_INFINITY) -
-              (Number(right.destinationArrivalAt) || Number.POSITIVE_INFINITY) ||
+            journeyArrivalRank(left) -
+              journeyArrivalRank(right) ||
             left.departureAt - right.departureAt
         ),
       additionalCount: Math.max(

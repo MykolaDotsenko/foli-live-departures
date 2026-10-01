@@ -200,3 +200,127 @@ test("withholds an option when catchability is unknown", () => {
 
   expect(options).toEqual([]);
 });
+
+
+test("ranks an external place by full door-arrival rather than bus-stop arrival", () => {
+  const earlyBusLongWalk = {
+    ...departure({ tripRef: "early-bus", arrival: 2_000 }),
+    finalWalkDistanceM: 900,
+    journeyArrivalAt: 2_950,
+  };
+  const laterBusShortWalk = {
+    ...departure({ tripRef: "later-bus", arrival: 2_150 }),
+    finalWalkDistanceM: 80,
+    journeyArrivalAt: 2_240,
+  };
+
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "a", name: "Board A", distanceMeters: 120 },
+      { id: "b", name: "Board B", distanceMeters: 180 },
+    ],
+    fitsByStop: {
+      a: {
+        status: "good",
+        best: earlyBusLongWalk,
+        departures: [earlyBusLongWalk],
+      },
+      b: {
+        status: "good",
+        best: laterBusShortWalk,
+        departures: [laterBusShortWalk],
+      },
+    },
+  });
+
+  expect(options[0].label).toBe("fastest");
+  expect(options[0].departure.tripRef).toBe("later-bus");
+});
+
+
+test("uses boarding plus final walk when labelling a place option as less walking", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "fast", distanceMeters: 50 },
+      { id: "balanced", distanceMeters: 300 },
+    ],
+    fitsByStop: {
+      fast: {
+        status: "good",
+        best: departure({ tripRef: "fast", arrival: 2_000 }),
+        departures: [
+          {
+            ...departure({ tripRef: "fast", arrival: 2_000 }),
+            finalWalkDistanceM: 600,
+            journeyArrivalAt: 2_400,
+          },
+        ],
+      },
+      balanced: {
+        status: "good",
+        best: departure({ tripRef: "balanced", arrival: 2_200 }),
+        departures: [
+          {
+            ...departure({ tripRef: "balanced", arrival: 2_200 }),
+            finalWalkDistanceM: 50,
+            journeyArrivalAt: 2_500,
+          },
+        ],
+      },
+    },
+  });
+
+  // Fastest: 50 + 600 = 650 m total approximate walking.
+  // Balanced: 300 + 50 = 350 m, arrives only 100 s later.
+  expect(options[0].stopId).toBe("fast");
+  const lessWalking = options.find((item) => item.label === "less-walking");
+  expect(lessWalking?.stopId).toBe("balanced");
+  expect(lessWalking?.walkingDeltaMeters).toBe(-300);
+});
+
+
+test("chooses the smallest total walking, not merely the closest boarding stop", () => {
+  const fastest = departure({ tripRef: "fast", arrival: 2_000 });
+  fastest.finalWalkDistanceM = 400;
+  fastest.journeyArrivalAt = 2_400;
+
+  const closeBoard = departure({ tripRef: "close-board", arrival: 2_100 });
+  closeBoard.finalWalkDistanceM = 300;
+  closeBoard.journeyArrivalAt = 2_500;
+
+  const betterTotal = departure({ tripRef: "better-total", arrival: 2_150 });
+  betterTotal.finalWalkDistanceM = 40;
+  betterTotal.journeyArrivalAt = 2_520;
+
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "fast", distanceMeters: 350 },
+      { id: "close", distanceMeters: 40 },
+      { id: "balanced", distanceMeters: 120 },
+    ],
+    fitsByStop: {
+      fast: {
+        status: "good",
+        best: fastest,
+        departures: [fastest],
+      },
+      close: {
+        status: "good",
+        best: closeBoard,
+        departures: [closeBoard],
+      },
+      balanced: {
+        status: "good",
+        best: betterTotal,
+        departures: [betterTotal],
+      },
+    },
+  });
+
+  const lessWalking = options.find(
+    (item) => item.label === "less-walking"
+  );
+
+  expect(lessWalking?.stopId).toBe("balanced");
+  expect(lessWalking?.walkingDeltaMeters).toBe(-590);
+});

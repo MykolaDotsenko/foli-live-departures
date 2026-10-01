@@ -32,7 +32,12 @@ async function listFiles(directory) {
 
 // Fetched by link previews and by the install sheet, never by the app:
 // precaching them would add their weight to every install for nothing.
-const NOT_PRECACHED = new Set(["social-card.jpg"]);
+const NOT_PRECACHED = new Set([
+  "social-card.jpg",
+  // Runtime provider switch: this must be fetched from the network so the
+  // public geocoder can be disabled/repointed without changing the JS bundle.
+  "place-search-config.json",
+]);
 const NOT_PRECACHED_DIRS = ["screenshots/"];
 
 const allFiles = (await listFiles(DIST_DIR))

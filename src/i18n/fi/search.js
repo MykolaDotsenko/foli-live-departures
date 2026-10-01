@@ -95,18 +95,8 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-  "Choose destination stop": "Valitse määränpääpysäkki",
-  "e.g. Turun linna": "esim. Turun linna",
-  "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
-  "Use destination": "Käytä määränpäätä",
-  "Choose Home, Work, School or a Föli stop.":
-    "Valitse Koti, Työ, Koulu tai Fölin pysäkki.",
-  "Enter a stop name or number.": "Kirjoita pysäkin nimi tai numero.",
-  "More than one stop has this name. Choose one from the suggestions.":
-    "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
-  "Choose a destination stop from the suggestions.":
-    "Valitse määränpääpysäkki ehdotuksista.",
-  "Nearby stops for {destination}":
+      "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
+            "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
     "Valitse sopivin vaihtoehto tai vaihda takaisin etäisyysjärjestykseen.",
@@ -187,5 +177,62 @@ export default {
   "Show selected departure": "Näytä valittu lähtö",
   "Find another option": "Etsi toinen vaihtoehto",
   "View selected stop": "Näytä valittu pysäkki",
+
+
+  // Address / place destination search
+  "Stop, address or place": "Pysäkki, osoite tai paikka",
+  "e.g. Prisma Itäharju or Kauppatori":
+    "esim. Prisma Itäharju tai Kauppatori",
+  "Searching…": "Haetaan…",
+  "Search destination": "Hae määränpää",
+  "Choose Home, Work, School, a Föli stop, address or place.":
+    "Valitse Koti, Työ, Koulu, Fölin pysäkki, osoite tai paikka.",
+  "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
+    "Pysäkkiehdotukset pysyvät tällä laitteella. Paikka- tai osoiteteksti lähetetään OpenStreetMapille vasta, kun painat Hae; toistuvat haut välimuistitetaan vain tämän selainistunnon ajaksi.",
+  "Places & addresses": "Paikat ja osoitteet",
+  "Choose one": "Valitse yksi",
+  "Place search data": "Paikkahaun tiedot",
+  "© OpenStreetMap contributors": "© OpenStreetMapin tekijät",
+  "Place search is temporarily unavailable. Föli stop search still works.":
+    "Paikkahaku ei ole tilapäisesti käytettävissä. Fölin pysäkkihaku toimii edelleen.",
+  "Enter a stop, address or place.":
+    "Kirjoita pysäkki, osoite tai paikka.",
+  "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
+    "Paikkahaku tarvitsee verkkoyhteyden. Voit silti valita Fölin pysäkin ehdotuksista.",
+  "Place search needs a connection. Search by Föli stop name or number while offline.":
+    "Paikkahaku tarvitsee verkkoyhteyden. Offline-tilassa hae Fölin pysäkin nimellä tai numerolla.",
+  "Enter at least 3 characters to search places and addresses.":
+    "Kirjoita vähintään 3 merkkiä paikkojen ja osoitteiden hakua varten.",
+  "No matching place or address was found. You can still choose a Föli stop from the suggestions.":
+    "Vastaavaa paikkaa tai osoitetta ei löytynyt. Voit silti valita Fölin pysäkin ehdotuksista.",
+  "No matching stop, place or address was found. Try a more specific destination.":
+    "Vastaavaa pysäkkiä, paikkaa tai osoitetta ei löytynyt. Kokeile tarkempaa määränpäätä.",
+  "No Föli stop close enough to this place could be resolved. Try another destination.":
+    "Tämän paikan läheltä ei löytynyt riittävän lähellä olevaa Fölin pysäkkiä. Kokeile toista määränpäätä.",
+  "Reach destination about {time}": "Perillä määränpäässä noin {time}",
+  "final walk ≈ {distance}": "loppukävely ≈ {distance}",
+  "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer.":
+    "Saapumisaika sisältää likimääräisen loppukävelyn linnuntie-etäisyyden perusteella; todellinen kävelyreitti voi olla pidempi.",
+  "Live transit + approximate walk":
+    "Live-joukkoliikenne + likimääräinen kävely",
+  "Timetable + approximate walk":
+    "Aikataulu + likimääräinen kävely",
+  "Realtime uncertain + approximate walk":
+    "Reaaliaika epävarma + likimääräinen kävely",
+  "Transit + approximate walk":
+    "Joukkoliikenne + likimääräinen kävely",
+  "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
+    "Loppukävely on linnuntie-etäisyyteen perustuva likimääräinen arvio. Todellinen kävelyreitti voi olla pidempi.",
+  "This place appears outside Föli’s service area. Choose a destination inside the Föli area.":
+    "Paikka näyttää olevan Fölin liikennöintialueen ulkopuolella. Valitse määränpää Fölin alueelta.",
+  "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
+    "Paikkahakua on tilapäisesti rajoitettu. Odota hetki ja yritä uudelleen; Fölin pysäkkihaku toimii edelleen.",
+  "Final walk": "Loppukävely",
+  "Walk to {destination}": "Kävele määränpäähän {destination}",
+  "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
+    "Kävelyetäisyys on likimääräinen linnuntiearvio. Todellinen kävelyreitti voi olla pidempi.",
+  "Walking link unavailable offline.":
+    "Kävelyreittilinkki ei ole käytettävissä offline-tilassa.",
+  Done: "Valmis",
 
 };

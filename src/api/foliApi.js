@@ -1,4 +1,4 @@
-import axios from "axios";
+import httpClient from "./httpClient";
 import createBoundedCache from "../utils/boundedCache";
 import { timestampIsFresh } from "../utils/cacheTime";
 import {
@@ -51,7 +51,7 @@ const SERVICE_BOUNDARY_URL =
   import.meta.env.VITE_FOLI_BOUNDARY_URL ||
   "https://data.foli.fi/geojson/bounds/compact";
 
-const client = axios.create({
+const client = httpClient.create({
   timeout: 8000,
   headers: { Accept: "application/json" },
 });

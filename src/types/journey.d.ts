@@ -1,9 +1,25 @@
 export interface DestinationIntent {
   id: string;
-  kind: "saved-place" | "public-stop";
+  kind: "saved-place" | "public-stop" | "external-place";
   label: string;
   primaryStopId: string;
   acceptableStopIds: string[];
+  lat?: number;
+  lon?: number;
+  finalWalkDistanceByStop?: Record<string, number>;
+  source?: "osm-nominatim";
+}
+
+export interface PlaceSearchResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  lat: number;
+  lon: number;
+  category: string;
+  type: string;
+  provider: "nominatim";
+  licence: string;
 }
 
 export type Catchability =
@@ -24,6 +40,9 @@ export interface NearbyDepartureFit {
   aimedDepartureAt?: number | null;
   originAimedDepartureAt?: number | null;
   destinationArrivalAt: number | null;
+  finalWalkDistanceM?: number | null;
+  finalWalkSecEstimate?: number | null;
+  journeyArrivalAt?: number | null;
   catchability: Catchability;
   liveState: LiveState;
   rideDurationSec: number | null;
@@ -89,6 +108,9 @@ export interface ActiveDirectJourney {
   aimedDepartureAt: number | null;
   originAimedDepartureAt: number | null;
   destinationArrivalAt: number | null;
+  journeyArrivalAt: number | null;
+  finalWalkDistanceM: number | null;
+  finalWalkSecEstimate: number | null;
   liveState: LiveState;
   phase: ActiveJourneyPhase;
   recoveryReason: ActiveJourneyRecoveryReason;
@@ -98,3 +120,14 @@ export interface ActiveDirectJourney {
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;
+
+
+export interface FinalWalkIntent {
+  destinationId: string;
+  destinationLabel: string;
+  lat: number;
+  lon: number;
+  fromStopId: string;
+  fromStopName: string;
+  distanceMeters: number | null;
+}

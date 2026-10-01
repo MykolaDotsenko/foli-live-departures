@@ -64,3 +64,52 @@ test("lets the passenger choose and clear destination explicitly", () => {
   act(() => result.current.clearDestination());
   expect(result.current.destination).toBeNull();
 });
+
+
+test("selects an external place only when nearby Föli stops can be resolved", () => {
+  const { result } = renderHook(() => useDestinationIntent());
+  const external = {
+    id: "node:123",
+    title: "Prisma Itäharju",
+    subtitle: "Turku, Finland",
+    lat: 60.45,
+    lon: 22.30,
+    category: "shop",
+    type: "supermarket",
+    provider: "nominatim",
+    licence: "OpenStreetMap",
+  };
+
+  let prepared = null;
+  act(() => {
+    prepared = result.current.chooseExternalPlace(external, [
+      { id: "100", name: "Near", lat: 60.4502, lon: 22.30 },
+      { id: "200", name: "Backup", lat: 60.452, lon: 22.30 },
+    ]);
+  });
+
+  expect(prepared).toMatchObject({ ok: true, reason: "ready" });
+  expect(result.current.destination).toMatchObject({
+    id: "external:nominatim:node:123",
+    kind: "external-place",
+    label: "Prisma Itäharju",
+    primaryStopId: "100",
+    acceptableStopIds: ["100", "200"],
+    source: "osm-nominatim",
+  });
+
+  act(() => result.current.clearDestination());
+
+  act(() => {
+    prepared = result.current.chooseExternalPlace(external, [
+      { id: "900", name: "Too far", lat: 60.48, lon: 22.30 },
+    ]);
+  });
+
+  expect(prepared).toEqual({
+    ok: false,
+    reason: "no-nearby-stops",
+    destination: null,
+  });
+  expect(result.current.destination).toBeNull();
+});
