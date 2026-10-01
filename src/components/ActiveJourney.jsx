@@ -20,9 +20,33 @@ function destinationText(journey) {
 }
 
 function recoveryText(journey) {
-  return journey.recoveryReason === "cancelled"
-    ? t("Your selected bus was cancelled.")
-    : t("Your selected bus is no longer a reliable option.");
+  if (journey.recoveryReason === "cancelled") {
+    return t("Your selected bus was cancelled.");
+  }
+  if (journey.recoveryReason === "transfer-missed") {
+    return t("The second bus has probably been missed. Choose a fresh option.");
+  }
+  if (journey.recoveryReason === "transfer-risk") {
+    return t(
+      "The selected transfer can no longer be continued safely. Choose a fresh option."
+    );
+  }
+  return t("Your selected bus is no longer a reliable option.");
+}
+
+function transferPlanText(journey) {
+  if (!journey.transferPlan) return "";
+  if (journey.transferLeg === 1) {
+    return t("Leg 1 of 2 · change at {stop} to line {line}", {
+      stop:
+        journey.transferPlan.transfer?.boardStopName ||
+        journey.transferPlan.transfer?.boardStopId,
+      line: journey.transferPlan.second?.lineRef || "—",
+    });
+  }
+  return t("Leg 2 of 2 · continue on line {line}", {
+    line: journey.lineRef || journey.transferPlan.second?.lineRef || "—",
+  });
 }
 
 export default function ActiveJourney({
@@ -61,6 +85,10 @@ export default function ActiveJourney({
           })}
         </span>
       </div>
+
+      {journey.transferPlan && (
+        <p className={styles.transferPlan}>{transferPlanText(journey)}</p>
+      )}
 
       <div className={styles.summary}>
         <strong>
@@ -124,9 +152,13 @@ export default function ActiveJourney({
             {t("Your selected bus is pinned first in the departure board.")}
           </p>
           <p className={styles.note}>
-            {t(
-              "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-            )}
+            {journey.transferPlan && journey.transferLeg === 1
+              ? t(
+                  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
+                )
+              : t(
+                  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+                )}
           </p>
         </>
       )}

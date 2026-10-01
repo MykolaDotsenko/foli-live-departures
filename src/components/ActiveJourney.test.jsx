@@ -233,3 +233,120 @@ test("shows door arrival instead of alighting-stop arrival for an external place
     screen.getByText(/real walking route can be longer/i)
   ).toBeInTheDocument();
 });
+
+
+test("renders transfer leg 1 handoff and does not use the direct-journey Ride Mode copy", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        phase: "waiting",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: {
+            boardStopId: "501",
+            boardStopName: "Kauppatori platform B",
+          },
+          second: { lineRef: "7" },
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText("Leg 1 of 2 · change at Kauppatori platform B to line 7")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Journey Assistant resumes with leg 2/i)
+  ).toBeInTheDocument();
+});
+
+test("renders transfer leg 2 and both transfer recovery reasons truthfully", () => {
+  const common = {
+    stop: { id: "501", lat: 60.4518, lon: 22.2666 },
+    online: true,
+    onConfirmAtStop: () => {},
+    onShowDeparture: () => {},
+    onChooseAnother: () => {},
+    onOpenStop: () => {},
+  };
+
+  const { rerender } = render(
+    <ActiveJourney
+      {...common}
+      journey={journey({
+        transferLeg: 2,
+        lineRef: "7",
+        transferPlan: {
+          transfer: { boardStopId: "501" },
+          second: { lineRef: "7" },
+        },
+      })}
+    />
+  );
+  expect(
+    screen.getByText("Leg 2 of 2 · continue on line 7")
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      {...common}
+      journey={journey({
+        phase: "recovery",
+        recoveryReason: "transfer-missed",
+        transferLeg: 2,
+        lineRef: "7",
+        transferPlan: {
+          transfer: { boardStopId: "501" },
+          second: { lineRef: "7" },
+        },
+      })}
+    />
+  );
+  expect(
+    screen.getByText("The second bus has probably been missed. Choose a fresh option.")
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      {...common}
+      journey={journey({
+        phase: "recovery",
+        recoveryReason: "transfer-risk",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: { boardStopId: "501" },
+          second: {},
+        },
+      })}
+    />
+  );
+  expect(
+    screen.getByText(
+      "The selected transfer can no longer be continued safely. Choose a fresh option."
+    )
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Leg 1 of 2 · change at 501 to line —")
+  ).toBeInTheDocument();
+});
+
+test("returns nothing without an active journey", () => {
+  const { container } = render(
+    <ActiveJourney
+      journey={null}
+      stop={null}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+  expect(container).toBeEmptyDOMElement();
+});

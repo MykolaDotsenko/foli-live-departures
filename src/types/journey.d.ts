@@ -32,6 +32,63 @@ export type Catchability =
 
 export type LiveState = "live" | "delayed" | "schedule" | "unknown";
 
+export type TransferRiskState =
+  | "comfortable"
+  | "acceptable"
+  | "tight"
+  | "unlikely"
+  | "broken"
+  | "unknown";
+
+export interface TransferFeasibility {
+  state: TransferRiskState;
+  recommendable: boolean;
+  incomingArrivalAt: number | null;
+  outgoingDepartureAt: number | null;
+  walkingDistanceM: number | null;
+  requiredSec: number | null;
+  availableSec: number | null;
+  slackSec: number | null;
+}
+
+export interface TransferTransitLeg {
+  tripRef: string;
+  lineRef: string;
+  boardStopId: string;
+  boardStopSequence: number | null;
+  exitStopId: string;
+  exitStopSequence: number | null;
+  departureAt: number;
+  arrivalAt: number;
+  aimedDepartureAt: number | null;
+  originAimedDepartureAt: number | null;
+  liveState: LiveState;
+}
+
+export interface TransferJourneyOption {
+  id: string;
+  originStopId: string;
+  originStopName: string;
+  originDistanceMeters: number;
+  first: TransferTransitLeg;
+  transfer: {
+    alightStopId: string;
+    alightStopSequence: number;
+    boardStopId: string;
+    boardStopName: string;
+    walkingDistanceM: number;
+    feasibility: TransferFeasibility;
+  };
+  second: TransferTransitLeg;
+  destinationStopId: string;
+  destinationArrivalAt: number;
+  finalWalkDistanceM: number | null;
+  finalWalkSecEstimate: number | null;
+  journeyArrivalAt: number;
+  totalWalkingDistanceM: number;
+  reliability: "medium" | "low";
+}
+
 export interface NearbyDepartureFit {
   tripRef: string;
   lineRef: string;
@@ -90,6 +147,8 @@ export type ActiveJourneyPhase =
 export type ActiveJourneyRecoveryReason =
   | "cancelled"
   | "departed"
+  | "transfer-risk"
+  | "transfer-missed"
   | null;
 
 export interface ActiveDirectJourney {
@@ -97,13 +156,14 @@ export interface ActiveDirectJourney {
   destinationId: string;
   destinationKind: DestinationIntent["kind"];
   destinationLabel: string;
-  optionLabel: DirectJourneyLabel;
+  optionLabel: DirectJourneyLabel | "transfer";
   stopId: string;
   stopName: string;
   distanceMeters: number;
   tripRef: string;
   lineRef: string;
   destinationStopId: string;
+  destinationStopSequence: number | null;
   departureAt: number;
   aimedDepartureAt: number | null;
   originAimedDepartureAt: number | null;
@@ -117,6 +177,8 @@ export interface ActiveDirectJourney {
   selectedAt: number;
   atStopConfirmedAt: number | null;
   lastSeenAt: number;
+  transferPlan: TransferJourneyOption | null;
+  transferLeg: 1 | 2 | null;
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;

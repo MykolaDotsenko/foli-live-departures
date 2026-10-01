@@ -200,6 +200,37 @@ export default {
   "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
     "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
+  "No direct trip found nearby. Checking one-transfer options…":
+    "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan yhden vaihdon vaihtoehtoja…",
+  "No reliable one-transfer option was found from the nearby stops.":
+    "Lähipysäkeiltä ei löytynyt luotettavaa yhden vaihdon vaihtoehtoa.",
+  "Transfer search is temporarily unavailable. Nearby stops remain available.":
+    "Vaihtoyhteyksien haku ei ole tilapäisesti käytettävissä. Lähipysäkit ovat edelleen käytettävissä.",
+  "One-transfer options": "Yhden vaihdon vaihtoehdot",
+  "Ways to {destination} with one change": "Reitit kohteeseen {destination} yhdellä vaihdolla",
+  "1 transfer": "1 vaihto",
+  "Line {first} → line {second}": "Linja {first} → linja {second}",
+  "Change at {stop} · same stop": "Vaihda pysäkillä {stop} · sama pysäkki",
+  "Change at {stop} · transfer walk ≈ {distance}":
+    "Vaihda pysäkillä {stop} · kävely vaihdossa ≈ {distance}",
+  "total walking ≈ {distance}": "kävelyä yhteensä ≈ {distance}",
+  "to first stop": "ensimmäiselle pysäkille",
+  "Comfortable transfer": "Hyvin aikaa vaihtoon",
+  "Reasonable transfer": "Riittävästi aikaa vaihtoon",
+  "Tight transfer": "Tiukka vaihto",
+  "about {minutes} min transfer margin": "noin {minutes} min vaihtoaikaa",
+  "The second bus is based on timetable data. Live changes can reduce the transfer margin, so the app only recommends connections with conservative walking and uncertainty allowance.":
+    "Toinen bussi perustuu aikataulutietoon. Reaaliaikaiset muutokset voivat lyhentää vaihtoaikaa, joten sovellus suosittelee vain yhteyksiä, joissa kävelyyn ja epävarmuuteen on jätetty varovainen marginaali.",
+  "Leg 1 of 2 · change at {stop} to line {line}":
+    "Osuus 1/2 · vaihda pysäkillä {stop} linjalle {line}",
+  "Leg 2 of 2 · continue on line {line}":
+    "Osuus 2/2 · jatka linjalla {line}",
+  "The second bus has probably been missed. Choose a fresh option.":
+    "Toinen bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
+  "The selected transfer can no longer be continued safely. Choose a fresh option.":
+    "Valittua vaihtoyhteyttä ei voi enää jatkaa luotettavasti. Valitse uusi vaihtoehto.",
+  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
+    "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":

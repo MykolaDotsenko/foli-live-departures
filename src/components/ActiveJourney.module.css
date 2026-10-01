@@ -59,6 +59,7 @@
   color: #173b34;
 }
 
+.transferPlan,
 .primaryStatus,
 .note,
 .recovery,
@@ -66,6 +67,17 @@
 .monitoringNotice {
   margin: 0;
   line-height: 1.45;
+}
+
+.transferPlan {
+  margin: 0;
+  padding: 7px 9px;
+  border: 1px solid #c9d9e7;
+  border-radius: 9px;
+  background: #f5f9fc;
+  color: #315f87;
+  font-size: 0.76rem;
+  font-weight: 850;
 }
 
 .primaryStatus {
@@ -214,6 +226,12 @@
   :root[data-theme="dark"] .note,
   :root[data-theme="dark"] .offline {
     color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .transferPlan {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-sunken);
+    color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .recovery {

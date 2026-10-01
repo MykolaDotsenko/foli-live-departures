@@ -66,3 +66,156 @@ test("selects, advances, observes and clears an active journey", () => {
   act(() => result.current.clearJourney());
   expect(result.current.journey).toBeNull();
 });
+
+
+function transferOption() {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id: "transfer:100:first:500:second:900",
+    originStopId: "100",
+    originStopName: "Origin",
+    originDistanceMeters: 80,
+    first: {
+      tripRef: "first",
+      lineRef: "1",
+      boardStopId: "100",
+      boardStopSequence: 1,
+      exitStopId: "500",
+      exitStopSequence: 8,
+      departureAt: now + 300,
+      arrivalAt: now + 900,
+      aimedDepartureAt: now + 280,
+      originAimedDepartureAt: now,
+      liveState: "live",
+    },
+    transfer: {
+      alightStopId: "500",
+      alightStopSequence: 8,
+      boardStopId: "501",
+      boardStopName: "Transfer platform",
+      walkingDistanceM: 70,
+      feasibility: {
+        state: "comfortable",
+        recommendable: true,
+        incomingArrivalAt: now + 900,
+        outgoingDepartureAt: now + 1_500,
+        walkingDistanceM: 70,
+        requiredSec: 175,
+        availableSec: 600,
+        slackSec: 425,
+      },
+    },
+    second: {
+      tripRef: "second",
+      lineRef: "7",
+      boardStopId: "501",
+      boardStopSequence: 3,
+      exitStopId: "900",
+      exitStopSequence: 14,
+      departureAt: now + 1_500,
+      arrivalAt: now + 2_400,
+      aimedDepartureAt: now + 1_500,
+      originAimedDepartureAt: now + 1_200,
+      liveState: "schedule",
+    },
+    destinationStopId: "900",
+    destinationArrivalAt: now + 2_400,
+    finalWalkDistanceM: null,
+    finalWalkSecEstimate: null,
+    journeyArrivalAt: now + 2_400,
+    totalWalkingDistanceM: 150,
+    reliability: "medium",
+  };
+}
+
+test("commits and continues a concrete transfer journey through the public hook API", () => {
+  const { result } = renderHook(() => useActiveJourney());
+  const transfer = transferOption();
+
+  act(() => {
+    expect(
+      result.current.selectTransferJourney(transfer, destination)
+    ).toBe(true);
+  });
+  expect(result.current.journey).toMatchObject({
+    transferLeg: 1,
+    tripRef: "first",
+    destinationStopId: "500",
+  });
+
+  const pending = result.current.journey;
+  let continued;
+  act(() => {
+    continued = result.current.continueTransferAfterRide(pending, {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    });
+  });
+
+  expect(continued).toMatchObject({
+    transferLeg: 2,
+    tripRef: "second",
+    stopId: "501",
+  });
+  expect(result.current.journey).toMatchObject({
+    transferLeg: 2,
+    tripRef: "second",
+  });
+});
+
+test("transfer hook fails closed for invalid selections and premature Ride Mode completion", () => {
+  const { result } = renderHook(() => useActiveJourney());
+
+  act(() => {
+    expect(result.current.selectTransferJourney({}, destination)).toBe(false);
+    expect(result.current.selectDirectJourney({}, destination)).toBe(false);
+  });
+  expect(result.current.journey).toBeNull();
+
+  const transfer = transferOption();
+  act(() => {
+    result.current.selectTransferJourney(transfer, destination);
+  });
+  const pending = result.current.journey;
+
+  act(() => {
+    expect(
+      result.current.continueTransferAfterRide(pending, {
+        tripRef: "first",
+        stage: "next",
+        targetStop: { id: "500", stopSequence: 8 },
+      })
+    ).toBeNull();
+  });
+
+  let recovered;
+  act(() => {
+    recovered = result.current.recoverTransferAfterRide(pending, {
+      tripRef: "first",
+      stage: "next",
+      targetStop: { id: "500", stopSequence: 8 },
+    });
+  });
+  expect(recovered).toMatchObject({
+    transferLeg: 1,
+    phase: "recovery",
+    recoveryReason: "transfer-risk",
+  });
+  expect(result.current.journey?.phase).toBe("recovery");
+
+  act(() => {
+    expect(result.current.recoverTransferAfterRide(null, null)).toBeNull();
+    result.current.clearJourney();
+    result.current.confirmAtStop();
+    result.current.observeStopFeed({
+      stopId: "100",
+      arrival: null,
+      referenceTimeSec: null,
+      receivedAtMs: null,
+      feedError: true,
+      cancelled: false,
+    });
+  });
+  expect(result.current.journey).toBeNull();
+});

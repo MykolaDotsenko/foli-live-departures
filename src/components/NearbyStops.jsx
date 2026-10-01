@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
+import useTransferJourneyOptions from "../hooks/useTransferJourneyOptions";
 import {
   distanceInMeters,
   findNearestStops,
@@ -25,6 +26,7 @@ import styles from "./NearbyStops.module.css";
 import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
+import TransferJourneyOptions from "./TransferJourneyOptions";
 
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
@@ -166,6 +168,7 @@ function NearbyStops({
   destination = null,
   excludedJourney = null,
   onSelectJourney = null,
+  onSelectTransferJourney = null,
   onSelect,
 }) {
   useLanguage();
@@ -271,6 +274,24 @@ function NearbyStops({
     fitsByStop,
     nearbyStops,
   ]);
+
+  const directSearchComplete =
+    Boolean(destination) &&
+    Boolean(position) &&
+    fitState === "ready" &&
+    directJourneyOptions.length === 0 &&
+    (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
+
+  const { options: transferJourneyOptions, state: transferState } =
+    useTransferJourneyOptions({
+      enabled:
+        Boolean(onSelectTransferJourney) &&
+        directSearchComplete,
+      originStops: nearbyStops,
+      allStops: stops,
+      destination,
+      positionAccuracy: position?.accuracy ?? null,
+    });
 
   const destinationSortedStops = useMemo(() => {
     const previousOrder =
@@ -526,6 +547,42 @@ function NearbyStops({
               onOpenStop={onSelect}
             />
           )}
+
+          {destination &&
+            directSearchComplete &&
+            transferState === "loading" && (
+              <p className={styles.notice} role="status">
+                {t("No direct trip found nearby. Checking one-transfer options…")}
+              </p>
+            )}
+
+          {destination &&
+            directSearchComplete &&
+            transferState === "ready" &&
+            transferJourneyOptions.length > 0 && (
+              <TransferJourneyOptions
+                options={transferJourneyOptions}
+                destinationLabel={destinationLabel}
+                onSelectJourney={onSelectTransferJourney}
+              />
+            )}
+
+          {destination &&
+            directSearchComplete &&
+            transferState === "ready" &&
+            transferJourneyOptions.length === 0 && (
+              <p className={styles.notice} role="status">
+                {t("No reliable one-transfer option was found from the nearby stops.")}
+              </p>
+            )}
+
+          {destination &&
+            directSearchComplete &&
+            transferState === "error" && (
+              <p className={styles.notice} role="status">
+                {t("Transfer search is temporarily unavailable. Nearby stops remain available.")}
+              </p>
+            )}
 
           {destination && (
             <div

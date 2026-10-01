@@ -1,11 +1,14 @@
 import { useCallback, useRef, useState } from "react";
 import {
   activeJourneyFromOption,
+  activeJourneyFromTransferOption,
+  completedTransferJourney,
   confirmActiveJourneyAtStop,
   observeActiveJourney,
+  recoverTransferJourneyAfterRide,
 } from "../utils/activeJourney";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, TransferJourneyOption } from "../types/journey" */
 
 export default function useActiveJourney() {
   /** @type {[ActiveDirectJourney | null, import("react").Dispatch<import("react").SetStateAction<ActiveDirectJourney | null>>]} */
@@ -41,6 +44,48 @@ export default function useActiveJourney() {
     [commit]
   );
 
+  /**
+   * @param {TransferJourneyOption} option
+   * @param {DestinationIntent} destination
+   */
+  const selectTransferJourney = useCallback(
+    (option, destination) => {
+      const next = activeJourneyFromTransferOption(option, destination);
+      if (!next) return false;
+      commit(next);
+      return true;
+    },
+    [commit]
+  );
+
+  /**
+   * @param {ActiveDirectJourney | null | undefined} pending
+   * @param {any} rideSession
+   */
+  const continueTransferAfterRide = useCallback(
+    (pending, rideSession) => {
+      const next = completedTransferJourney(pending, rideSession);
+      if (!next) return null;
+      commit(next);
+      return next;
+    },
+    [commit]
+  );
+
+  /**
+   * @param {ActiveDirectJourney | null | undefined} pending
+   * @param {any} rideSession
+   */
+  const recoverTransferAfterRide = useCallback(
+    (pending, rideSession) => {
+      const next = recoverTransferJourneyAfterRide(pending, rideSession);
+      if (!next) return null;
+      commit(next);
+      return next;
+    },
+    [commit]
+  );
+
   const confirmAtStop = useCallback(() => {
     commit((current) => confirmActiveJourneyAtStop(current));
   }, [commit]);
@@ -69,6 +114,9 @@ export default function useActiveJourney() {
   return {
     journey,
     selectDirectJourney,
+    selectTransferJourney,
+    continueTransferAfterRide,
+    recoverTransferAfterRide,
     confirmAtStop,
     clearJourney,
     observeStopFeed,

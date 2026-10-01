@@ -158,3 +158,21 @@ test("rejects invalid final destination coordinates", () => {
     })
   ).toBeNull();
 });
+
+
+test("never creates final walking guidance from transfer leg 1", () => {
+  expect(
+    finalWalkFromRideSelection({
+      journey: {
+        ...journey,
+        optionLabel: "transfer",
+        transferLeg: 1,
+        transferPlan: {
+          second: { tripRef: "trip-2" },
+        },
+      },
+      destination,
+      rideConfig: rideConfig(),
+    })
+  ).toBeNull();
+});
