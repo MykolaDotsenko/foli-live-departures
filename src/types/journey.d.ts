@@ -1,9 +1,25 @@
 export interface DestinationIntent {
   id: string;
-  kind: "saved-place" | "public-stop";
+  kind: "saved-place" | "public-stop" | "external-place";
   label: string;
   primaryStopId: string;
   acceptableStopIds: string[];
+  lat?: number;
+  lon?: number;
+  finalWalkDistanceByStop?: Record<string, number>;
+  source?: "osm-nominatim";
+}
+
+export interface PlaceSearchResult {
+  id: string;
+  title: string;
+  subtitle: string;
+  lat: number;
+  lon: number;
+  category: string;
+  type: string;
+  provider: "nominatim";
+  licence: string;
 }
 
 export type Catchability =
