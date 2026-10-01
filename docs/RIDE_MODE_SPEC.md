@@ -34,14 +34,14 @@ A missed stop is the primary failure. The design therefore optimizes for early, 
 
 ## Why the state machine is asymmetric
 
-Stages are monotonic:
+Stages are monotonic during an active warning:
 
 ```text
 BOARDED → SOON → NEXT → NOW
                     ↘ MISSED
 ```
 
-A stage never rolls backwards because GPS jitter or provider corrections should not retract a warning the passenger has already acted on.
+GPS jitter, timetable drift and ordinary provider corrections never retract a warning the passenger has already acted on. There is one deliberately narrow exception: **MISSED may be corrected** when a distinct, matched SIRI observation for the same concrete ride arrives *after* MISSED was entered and proves the bus is still at the target or has a non-negative live ETA to it. The old snapshot, schedule-only evidence and GPS alone cannot reopen MISSED.
 
 The important distinction is **strong vs weak evidence**:
 
@@ -190,6 +190,15 @@ After NOW, the bus leaving and the phone moving away is exactly what a successfu
 
 Message: **It looks like your stop is behind you. Get off at the next stop.**
 
+MISSED is fail-closed, not blindly permanent. A correction requires all of the following:
+
+- the target-stop row still matches the committed concrete ride identity;
+- the provider observation is distinct and was received after MISSED began;
+- the row is live/monitored and still places the bus at the target or in the future of the target;
+- the pass latch is no longer confirmed.
+
+A repeated pre-miss snapshot, timetable fallback, a network recovery without new transit evidence, or location alone cannot retract MISSED. When those conditions are met, the normal stage thresholds run again (BOARDED/SOON/NEXT/NOW) and any renewed actionable warning is announced normally.
+
 ## Browser reliability boundary
 
 The client MVP deliberately does **not** promise guaranteed lock-screen/background tracking.
@@ -241,10 +250,11 @@ The persisted ride contains public transit identifiers, target stop identity, ro
 
 - trip matcher priority
 - schedule anchoring
-- stage monotonicity
+- active-warning stage monotonicity
 - SOON/NEXT schedule fallback
 - NOW strong-evidence requirement
 - MISSED strong-evidence requirement, and no MISSED for someone walking on after NOW
+- false-MISSED correction only from a newer matched live target observation; stale live, schedule and GPS evidence cannot reopen it
 
 ### Hook/component tests
 

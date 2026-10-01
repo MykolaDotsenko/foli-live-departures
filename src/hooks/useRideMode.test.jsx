@@ -1198,6 +1198,62 @@ function startTimedRide(result, nowSec, stopOffsets) {
   });
 }
 
+test("a newer live sighting of the same concrete run corrects a false MISSED state", async () => {
+  const nowMs = Date.now();
+  localStorage.setItem(
+    "foli-active-ride-v1",
+    JSON.stringify({
+      id: "ride-false-miss",
+      ...rideConfig,
+      options: { locationBackup: false, notifications: false },
+      stage: "missed",
+      stageReason: "gps-route-passed",
+      stageConfidence: "location",
+      underway: true,
+      previousLeft: true,
+      startedAt: nowMs - 120_000,
+      stageChangedAt: nowMs - 10_000,
+      expiresAt: nowMs + 60 * 60_000,
+    })
+  );
+
+  mocks.fetchStopMonitor.mockImplementation((stopId) => {
+    const serverTime = Math.floor(Date.now() / 1000);
+    return Promise.resolve({
+      serverTime,
+      arrivals:
+        String(stopId) === "32"
+          ? [
+              liveExitRow(serverTime, {
+                expectedarrivaltime: serverTime + 60,
+                expecteddeparturetime: serverTime + 75,
+              }),
+            ]
+          : [],
+    });
+  });
+
+  const { result, unmount } = renderHook(() => useRideMode());
+
+  await waitFor(() => expect(result.current.session?.stage).toBe("next"));
+  expect(result.current.session?.stageReason).toBe("live-eta");
+  expect(result.current.session?.stageConfidence).toBe("live");
+  expect(localStorage.getItem("foli-active-ride-v1")).toContain(
+    '"stage":"next"'
+  );
+  expect(mocks.announceRideStage).toHaveBeenCalledWith(
+    "next",
+    expect.objectContaining({ id: "32" }),
+    false,
+    3,
+    expect.any(Object)
+  );
+
+  act(() => result.current.endRide());
+  unmount();
+  mocks.fetchStopMonitor.mockImplementation(() => new Promise(() => {}));
+});
+
 async function advance(ms) {
   await act(async () => {
     await vi.advanceTimersByTimeAsync(ms);

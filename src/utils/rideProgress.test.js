@@ -569,13 +569,89 @@ describe("ride progress", () => {
     expect(evaluated.reason).toBe("gps-route-passed");
   });
 
-  it("never rolls a stage backwards", () => {
+  it("never rolls an active warning stage backwards", () => {
     expect(
       evaluateRideStage(RIDE_STAGE.NEXT, {
         scheduleEtaSec: 900,
         remainingStops: 8,
       }).stage
     ).toBe(RIDE_STAGE.NEXT);
+  });
+
+  it("keeps MISSED fail-closed without a newer matched live observation", () => {
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        scheduleEtaSec: 240,
+        remainingStops: 2,
+      })
+    ).toMatchObject({
+      stage: RIDE_STAGE.MISSED,
+      reason: "already-missed",
+    });
+
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        liveEtaSec: 60,
+        liveTargetObservedAfterMiss: false,
+      }).stage
+    ).toBe(RIDE_STAGE.MISSED);
+
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        gpsShapeAvailable: true,
+        gpsShapeUsable: true,
+        gpsOnRoute: true,
+        gpsRouteDistanceM: 500,
+        gpsAccuracyM: 15,
+        gpsAgeSec: 2,
+        liveTargetObservedAfterMiss: false,
+      }).stage
+    ).toBe(RIDE_STAGE.MISSED);
+  });
+
+  it("reopens a false MISSED only from newer contradictory live evidence", () => {
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        liveEtaSec: 60,
+        liveTargetObservedAfterMiss: true,
+      })
+    ).toMatchObject({
+      stage: RIDE_STAGE.NEXT,
+      reason: "live-eta",
+      confidence: "live",
+    });
+
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        liveEtaSec: 240,
+        liveTargetObservedAfterMiss: true,
+      })
+    ).toMatchObject({
+      stage: RIDE_STAGE.SOON,
+      reason: "live-eta",
+      confidence: "live",
+    });
+
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        targetAtStop: true,
+        liveTargetObservedAfterMiss: true,
+      })
+    ).toMatchObject({
+      stage: RIDE_STAGE.NOW,
+      reason: "target-at-stop",
+      confidence: "live",
+    });
+  });
+
+  it("does not reopen MISSED when live evidence still confirms the pass", () => {
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        liveEtaSec: 45,
+        targetPassedConfirmed: true,
+        liveTargetObservedAfterMiss: true,
+      }).stage
+    ).toBe(RIDE_STAGE.MISSED);
   });
 
   it("only marks missed after post-target evidence", () => {

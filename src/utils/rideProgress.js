@@ -869,15 +869,31 @@ function candidateStage(signals) {
 /**
  * @param {RideStage} currentStage
  * @param {RideSignals} [signals]
- * @returns {RideStageDecision} Never a lower stage than `currentStage`.
+ * @returns {RideStageDecision} Monotonic except when a distinct fresh live
+ *   observation for the same concrete ride arrives after MISSED and proves
+ *   the bus is still at or approaching the target.
  */
 export function evaluateRideStage(currentStage, signals = {}) {
   if (currentStage === RIDE_STAGE.MISSED) {
-    return {
-      stage: currentStage,
-      reason: "already-missed",
-      confidence: "live",
-    };
+    const liveEta = finiteNumber(signals.liveEtaSec);
+    const freshLiveContradiction =
+      signals.liveTargetObservedAfterMiss === true &&
+      signals.targetPassedConfirmed !== true &&
+      (signals.targetAtStop === true || (liveEta !== null && liveEta >= 0));
+
+    // MISSED is deliberately fail-closed. Timetable drift, GPS jitter, a
+    // provider outage, or even the same old SIRI snapshot can never retract
+    // it. Only a newer matched live target observation may correct a false
+    // miss; candidateStage then resumes the ordinary safety thresholds.
+    if (!freshLiveContradiction) {
+      return {
+        stage: currentStage,
+        reason: "already-missed",
+        confidence: "live",
+      };
+    }
+
+    return candidateStage({ ...signals, currentAtLeastNext: false });
   }
 
   // Before the get-off alert has fired, the vehicle leaving the target means
