@@ -89,6 +89,8 @@ export async function loadDestinationBoardFits({
       boardingSequence: null,
       boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
       destinationStopIds: destination.acceptableStopIds,
+      destinationStopDistances:
+        destination.destinationStopDistances || null,
     });
 
     if (fit.compatible && fit.destination) {
