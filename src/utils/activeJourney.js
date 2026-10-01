@@ -54,6 +54,7 @@ export function activeJourneyFromOption(
   return {
     id: String(option.id || [stopId, tripRef, departureAt].join(":")),
     destinationId,
+    destinationKind: destination.kind,
     destinationLabel: label,
     optionLabel: option.label,
     stopId,
