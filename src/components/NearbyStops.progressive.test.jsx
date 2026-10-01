@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const nearbyHook = vi.hoisted(() => ({
   useDestinationAwareNearby: vi.fn(),
@@ -9,6 +9,7 @@ vi.mock("../hooks/useDestinationAwareNearby", () => ({
   default: nearbyHook.useDestinationAwareNearby,
 }));
 
+import { resetLanguageForTests } from "../i18n";
 import NearbyStops from "./NearbyStops";
 
 const destination = {
@@ -31,7 +32,12 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
   "geolocation"
 );
 
+beforeEach(() => {
+  resetLanguageForTests("en");
+});
+
 afterEach(() => {
+  resetLanguageForTests("en");
   vi.restoreAllMocks();
   if (originalGeolocation) {
     Object.defineProperty(navigator, "geolocation", originalGeolocation);
