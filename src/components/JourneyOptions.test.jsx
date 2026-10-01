@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetLanguageForTests } from "../i18n";
+import { formatClock } from "../utils/time";
 import JourneyOptions from "./JourneyOptions";
 
 beforeEach(() => {
@@ -118,4 +119,46 @@ test("selects the concrete journey when orchestration is available", () => {
 
   expect(onSelectJourney).toHaveBeenCalledWith(selected);
   expect(onOpenStop).not.toHaveBeenCalled();
+});
+
+
+test("shows door-to-destination arrival and final walk for a place", () => {
+  const placeDeparture = {
+    ...baseDeparture,
+    destinationArrivalAt: 2_000_001_200,
+    finalWalkDistanceM: 240,
+    finalWalkDurationSec: 250,
+    finalArrivalAt: 2_000_001_450,
+  };
+
+  render(
+    <JourneyOptions
+      destinationLabel="Prisma"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "place",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Platform A",
+          distanceMeters: 120,
+          departure: placeDeparture,
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      `Arrive about ${formatClock(placeDeparture.finalArrivalAt)}`
+    )
+  ).toBeInTheDocument();
+  expect(screen.getByText("Final walk ≈ 240 m")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Direct options use current Föli data. Walking distances are approximate straight-line estimates."
+    )
+  ).toBeInTheDocument();
 });
