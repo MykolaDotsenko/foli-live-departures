@@ -497,3 +497,53 @@ test("prefers a later bus when its shorter final walk reaches the place earlier"
   expect(longWalk?.destinationArrivalAt).toBe(2_200);
   expect(longWalk?.journeyArrivalAt).toBeGreaterThan(3_100);
 });
+
+
+test("chooses the best alighting stop within one trip for an external place", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    stopName: "",
+    arrivals:
+      stopId === "100"
+        ? [arrival("same-trip", 1_600, { lineref: "5" })]
+        : [],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:08:00"),
+    stopTime("901", 3, "10:12:00"),
+  ]);
+
+  const externalDestination = {
+    id: "external:nominatim:node:456",
+    kind: "external-place",
+    label: "Destination",
+    primaryStopId: "901",
+    acceptableStopIds: ["900", "901"],
+    lat: 60.45,
+    lon: 22.30,
+    finalWalkDistanceByStop: {
+      "900": 960,
+      "901": 30,
+    },
+    source: "osm-nominatim",
+  };
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: externalDestination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best).toMatchObject({
+    tripRef: "same-trip",
+    destinationStopId: "901",
+    rideDurationSec: 12 * 60,
+    finalWalkDistanceM: 30,
+  });
+});
