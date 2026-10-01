@@ -122,7 +122,7 @@ export default function JourneyOptions({
             {Number.isFinite(option.departure.finalWalkDistanceM) &&
               option.departure.finalWalkDistanceM > 0 && (
                 <span className={styles.finalWalk}>
-                  {t("Final walk ≈ {distance}", {
+                  {t("Walk ≈ {distance}", {
                     distance: formatDistance(
                       option.departure.finalWalkDistanceM
                     ),
