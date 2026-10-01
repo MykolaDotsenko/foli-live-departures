@@ -94,7 +94,7 @@ test("typing shows local stop suggestions without calling the external provider"
 
   expect(
     screen.getByRole("listbox", {
-      name: "Destination stop suggestions",
+      name: "Journey destination",
     })
   ).toBeInTheDocument();
   expect(api.searchPlaces).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ test("renders provider results and selects one as a geocoded destination", async
   await searchFor("Prisma Itäharju");
 
   const listbox = await screen.findByRole("listbox", {
-    name: "Places and addresses",
+    name: "Journey destination",
   });
   expect(within(listbox).getByText("Prisma Itäharju")).toBeInTheDocument();
   expect(
@@ -185,7 +185,7 @@ test("does not call external place search while offline", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Offline: place search unavailable. Stop search still works."
+    "Place search unavailable. Stop search still works."
   );
 });
 
@@ -196,7 +196,7 @@ test("does not guess between duplicate stop names", async () => {
 
   await waitFor(() =>
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "More than one stop has this name. Choose one from the suggestions."
+      "More than one stop has this name. Choose the correct stop number from the suggestions."
     )
   );
   expect(
@@ -216,7 +216,7 @@ test("keeps current UI open when a provider result cannot be used", async () => 
 
   await searchFor("Prisma Itäharju");
   const listbox = await screen.findByRole("listbox", {
-    name: "Places and addresses",
+    name: "Journey destination",
   });
   fireEvent.click(
     within(listbox).getByRole("option", {
@@ -289,7 +289,7 @@ test("waits for stop coordinates before external place search", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Waiting for stop locations."
+    "Stop locations are still loading. Try again in a moment."
   );
 });
 
