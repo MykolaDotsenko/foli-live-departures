@@ -381,3 +381,33 @@ test("disabling alert monitoring clears the previous payload before another tran
   expect(result.current.receivedAtMs).toBeNull();
   expect(result.current.error).toBe(false);
 });
+
+
+test("supports a bounded faster refresh cadence for an active committed transfer", async () => {
+  vi.useFakeTimers();
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 60_000,
+    })
+  );
+
+  expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
+
+  vi.useRealTimers();
+});
+
+test("never allows alert polling faster than the 30-second safety floor", () => {
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 1_000,
+    })
+  );
+
+  expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
+});

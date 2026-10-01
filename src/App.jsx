@@ -297,7 +297,13 @@ function App() {
     transferWatchStopId,
     transferWatchLineRefs,
     routesById,
-    { enabled: Boolean(transferWatchJourney) }
+    {
+      enabled: Boolean(transferWatchJourney),
+      // A five-minute service-alert cadence is fine for a normal stop board,
+      // but too slow for a committed connection that may disappear while the
+      // passenger is already on leg 1.
+      refreshIntervalMs: 60_000,
+    }
   );
   const transferCancellations = useMemo(
     () =>

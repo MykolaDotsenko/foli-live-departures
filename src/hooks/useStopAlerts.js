@@ -12,7 +12,10 @@ export default function useStopAlerts(
   stopId,
   lineRefs,
   routesById,
-  { enabled = true } = {}
+  {
+    enabled = true,
+    refreshIntervalMs = ALERT_REFRESH_INTERVAL_MS,
+  } = {}
 ) {
   const [payload, setPayload] = useState(null);
   const [receivedAtMs, setReceivedAtMs] = useState(null);
@@ -114,6 +117,11 @@ export default function useStopAlerts(
     return () => controller.abort();
   }, [enabled, lineRefs, payload, routesById, stopId]);
 
+  const normalizedRefreshIntervalMs = Math.max(
+    30_000,
+    Number(refreshIntervalMs) || ALERT_REFRESH_INTERVAL_MS
+  );
+
   useEffect(() => {
     if (!enabled) {
       abortRef.current?.abort();
@@ -130,7 +138,7 @@ export default function useStopAlerts(
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === "visible") refresh();
-    }, ALERT_REFRESH_INTERVAL_MS);
+    }, normalizedRefreshIntervalMs);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") refresh();
@@ -159,7 +167,7 @@ export default function useStopAlerts(
       abortRef.current?.abort();
       membershipAbortRef.current?.abort();
     };
-  }, [enabled, refresh]);
+  }, [enabled, normalizedRefreshIntervalMs, refresh]);
 
   const alerts = useMemo(
     () =>
