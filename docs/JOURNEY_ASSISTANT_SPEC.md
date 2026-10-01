@@ -1642,7 +1642,7 @@ The final experience should feel simpler to the passenger than the current produ
 
 ## P2 — Transfer journeys
 
-**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation implemented in PR #118.**
+**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation implemented in PR #118; automatic direct replacement recovery is implemented in PR #119.**
 
 Direct options remain preferred. If none are found after progressive nearby expansion, Journey Assistant may search for one conservative transfer using bounded client-side Föli SIRI/GTFS lookups. Ride Mode remains authoritative on each boarded leg; premature leg-1 termination fails closed into recovery and can never create final-walk guidance.
 
@@ -1655,7 +1655,17 @@ Live second-leg revalidation contract:
 - cancellation is strong failure evidence even if the departure row has disappeared;
 - provider failure or stale data degrades to unknown and must not create false missed/unsafe recovery;
 - disappearance becomes missed only after the planned departure grace window plus repeated successful absence;
-- once live evidence has put the committed transfer into recovery, Ride Mode completion cannot silently restore or advance that old plan;
-- no automatic replacement itinerary is selected in this slice.
+- once live evidence has put the committed transfer into recovery, Ride Mode completion cannot silently restore or advance that old plan.
 
-Out of scope for this release: automatic transfer alternative selection, 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
+Automatic recovery contract:
+- recovery search may start only after Ride Mode authoritatively establishes the passenger at the selected transfer occurrence, or after leg 2 itself later fails;
+- keep the original destination selected; never ask the passenger to re-enter it;
+- derive recovery origins from the authoritative transfer stop and a bounded set of nearby platforms using static stop geometry; do not invent a new GPS position;
+- if the passenger explicitly confirmed a later boarding stop before leg-2 failure, that confirmed stop becomes the recovery anchor;
+- exclude the failed concrete second run before ranking while still allowing another run of the same line;
+- search only bounded direct replacements in this release;
+- never auto-commit or silently switch to a replacement: the passenger must explicitly choose one;
+- hidden-tab / resumed recovery options fail closed until a fresh provider response refreshes them;
+- board-refresh metadata changes that do not alter recovery identity must not clear already verified replacement cards.
+
+Out of scope for this release: replacement journeys requiring another transfer, 2+ transfer routing, arrive-by/leave-at controls and full pedestrian street routing.
