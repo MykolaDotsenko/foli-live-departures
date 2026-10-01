@@ -13,6 +13,9 @@ export default function useActiveJourney() {
   const journeyRef = useRef(journey);
   journeyRef.current = journey;
 
+  /**
+   * @param {ActiveDirectJourney | null | ((current: ActiveDirectJourney | null) => ActiveDirectJourney | null)} nextOrUpdater
+   */
   const commit = useCallback((nextOrUpdater) => {
     setJourneyState((current) => {
       const next =
@@ -47,6 +50,16 @@ export default function useActiveJourney() {
   }, [commit]);
 
   const observeStopFeed = useCallback(
+    /**
+     * @param {{
+     *   stopId: string,
+     *   arrival: any | null,
+     *   referenceTimeSec: number | null,
+     *   receivedAtMs: number | null,
+     *   feedError?: boolean,
+     *   cancelled?: boolean,
+     * }} observation
+     */
     (observation) => {
       commit((current) => observeActiveJourney(current, observation));
     },
