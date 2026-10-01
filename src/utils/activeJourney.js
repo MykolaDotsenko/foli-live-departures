@@ -13,6 +13,23 @@ function finitePositive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/**
+ * Once a trip is selected, the open boarding-stop feed is the live source we
+ * already monitor. If its departure prediction moves, shift the committed
+ * downstream estimate by the same delta instead of leaving a frozen
+ * door-to-door ETA. This is still an approximation, not a second routing
+ * provider call.
+ *
+ * @param {number | null} value
+ * @param {number} deltaSec
+ * @returns {number | null}
+ */
+function shiftArrivalEstimate(value, deltaSec) {
+  const arrival = finitePositive(value);
+  if (arrival === null || !Number.isFinite(deltaSec)) return value;
+  return Math.max(1, arrival + deltaSec);
+}
+
 /** @param {DestinationIntent | null | undefined} destination */
 function destinationLabel(destination) {
   return String(destination?.label || "").trim();
@@ -290,6 +307,15 @@ export function observeActiveJourney(journey, observation) {
       finitePositive(arrival.aimedarrivaltime) ??
       journey.aimedDepartureAt;
 
+    const departureDeltaSec = updatedDeparture - journey.departureAt;
+    const updatedDestinationArrivalAt = shiftArrivalEstimate(
+      journey.destinationArrivalAt,
+      departureDeltaSec
+    );
+    const updatedFinalArrivalAt = shiftArrivalEstimate(
+      journey.finalArrivalAt,
+      departureDeltaSec
+    );
     const nextLastSeenAt = Math.max(journey.lastSeenAt, receivedAtMs);
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
@@ -301,6 +327,8 @@ export function observeActiveJourney(journey, observation) {
     if (
       journey.departureAt === updatedDeparture &&
       journey.aimedDepartureAt === observedPlanned &&
+      journey.destinationArrivalAt === updatedDestinationArrivalAt &&
+      journey.finalArrivalAt === updatedFinalArrivalAt &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
       journey.recoveryReason === null &&
@@ -313,6 +341,8 @@ export function observeActiveJourney(journey, observation) {
       ...journey,
       departureAt: updatedDeparture,
       aimedDepartureAt: observedPlanned,
+      destinationArrivalAt: updatedDestinationArrivalAt,
+      finalArrivalAt: updatedFinalArrivalAt,
       lineRef: nextLineRef,
       phase: nextPhase,
       recoveryReason: null,
