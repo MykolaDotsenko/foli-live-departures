@@ -17,6 +17,9 @@ const FINAL_WALK_SPEED_MPS = 1.2;
  * @returns {number | null}
  */
 export function estimateFinalWalkSeconds(distanceM) {
+  if (distanceM === null || distanceM === undefined || distanceM === "") {
+    return null;
+  }
   const distance = Number(distanceM);
   if (!Number.isFinite(distance) || distance < 0) return null;
   return Math.ceil(
