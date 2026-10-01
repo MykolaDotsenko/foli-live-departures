@@ -81,7 +81,6 @@ export function documentPolicy(html) {
 export const FOLI_CONNECT_SOURCES = ["https://data.foli.fi", "https://*.foli.fi"];
 export const PLACE_SEARCH_CONNECT_SOURCES = [
   "https://photon.komoot.io",
-  "https://nominatim.openstreetmap.org",
 ];
 
 /**
