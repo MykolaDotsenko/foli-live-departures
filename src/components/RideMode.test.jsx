@@ -1270,3 +1270,39 @@ test("missing cross-platform identity fails closed before the transfer stop too"
   ).toBeInTheDocument();
   expect(screen.queryByText(/Change at .* line 7/i)).not.toBeInTheDocument();
 });
+
+
+test("unknown cross-platform walking distance names the concrete stop without inventing metres", () => {
+  render(
+    <RideMode
+      session={session("now")}
+      runtime={{ trackingHealth: "live", etaSec: 0, remainingStops: 0 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+      transferJourney={transferJourney({
+        transferPlan: {
+          transfer: {
+            alightStopId: "32",
+            boardStopId: "501",
+            boardStopName: "Kauppatori D4",
+            walkingDistanceM: null,
+          },
+          second: {
+            tripRef: "trip-2",
+            lineRef: "7",
+            boardStopId: "501",
+          },
+        },
+      })}
+      transferRevalidation={{ providerState: "live", decision: "good" }}
+    />
+  );
+
+  expect(
+    screen.getByText("Go to Kauppatori D4 for line 7.")
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Walk ≈/i)).not.toBeInTheDocument();
+});
