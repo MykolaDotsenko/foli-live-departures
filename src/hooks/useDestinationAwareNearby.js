@@ -267,6 +267,11 @@ export async function loadDestinationAwareNearby({
         lineRef: String(arrival?.lineref || ""),
         destinationStopId: String(fit.destination?.stopId || ""),
         departureAt: Number(departureAt),
+        aimedDepartureAt:
+          Number.isFinite(Number(arrival?.aimeddeparturetime)) &&
+          Number(arrival.aimeddeparturetime) > 0
+            ? Number(arrival.aimeddeparturetime)
+            : null,
         destinationArrivalAt:
           fit.rideDurationSec === null
             ? null
