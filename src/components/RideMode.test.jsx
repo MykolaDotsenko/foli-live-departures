@@ -1200,3 +1200,73 @@ test("missing cross-platform stop identity fails closed instead of inventing dir
   ).toBeInTheDocument();
   expect(screen.queryByText(/Walk ≈/i)).not.toBeInTheDocument();
 });
+
+
+test("shows committed transfer next-action guidance in Finnish", () => {
+  resetLanguageForTests("fi");
+  render(
+    <RideMode
+      session={session("soon")}
+      runtime={{ trackingHealth: "live", etaSec: 240, remainingStops: 2 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+      transferJourney={transferJourney()}
+      transferRevalidation={{
+        providerState: "live",
+        decision: "good",
+        feasibility: { slackSec: 310 },
+      }}
+    />
+  );
+
+  expect(
+    screen.getByText("Seuraavaksi tämän bussin jälkeen")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Vaihda pysäkillä Puistokatu linjalle 7.")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Reaaliaikaista vaihtoaikaa noin 5 min.")
+  ).toBeInTheDocument();
+});
+
+test("missing cross-platform identity fails closed before the transfer stop too", () => {
+  render(
+    <RideMode
+      session={session("soon")}
+      runtime={{ trackingHealth: "live", etaSec: 240, remainingStops: 2 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+      transferJourney={transferJourney({
+        transferPlan: {
+          transfer: {
+            alightStopId: "32",
+            boardStopId: "",
+            boardStopName: "",
+            walkingDistanceM: 90,
+          },
+          second: {
+            tripRef: "trip-2",
+            lineRef: "7",
+            boardStopId: "",
+          },
+        },
+      })}
+      transferRevalidation={{ providerState: "live", decision: "good" }}
+    />
+  );
+
+  expect(screen.getByText("Connection needs a new plan")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Get off at Puistokatu; Journey Assistant will check fresh options there."
+    )
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Change at .* line 7/i)).not.toBeInTheDocument();
+});

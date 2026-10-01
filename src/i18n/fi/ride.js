@@ -220,6 +220,21 @@ export default {
   "The next stop is yours.": "Pysäkkisi on seuraavana.",
   "Press the stop button now.": "Paina stop-nappia nyt.",
   "This is your stop.": "Tämä on pysäkkisi.",
+  "Next after this bus": "Seuraavaksi tämän bussin jälkeen",
+  "After you get off": "Kun olet jäänyt pois",
+  "Connection needs a new plan": "Vaihtoyhteys tarvitsee uuden suunnitelman",
+  "Journey Assistant will check fresh options from this transfer area.":
+    "Matka-avustaja tarkistaa uudet vaihtoehdot tältä vaihtoalueelta.",
+  "Get off at {stop}; Journey Assistant will check fresh options there.":
+    "Jää pois pysäkillä {stop}; Matka-avustaja tarkistaa siellä uudet vaihtoehdot.",
+  "Wait here for line {line}.": "Odota tässä linjaa {line}.",
+  "Go to {stop} for line {line}.": "Siirry pysäkille {stop} linjaa {line} varten.",
+  "Walk ≈{distance} to {stop} for line {line}.":
+    "Kävele ≈{distance} pysäkille {stop} linjaa {line} varten.",
+  "Change at {stop} to line {line}.": "Vaihda pysäkillä {stop} linjalle {line}.",
+  "Live transfer margin: less than 1 min.": "Reaaliaikaista vaihtoaikaa alle 1 min.",
+  "Live transfer margin: about {minutes} min.":
+    "Reaaliaikaista vaihtoaikaa noin {minutes} min.",
   "Get off now.": "Jää pois nyt.",
   "It looks like your stop is behind you. Get off at the next stop.":
     "Näyttää siltä, että pysäkkisi jäi taakse. Jää pois seuraavalla pysäkillä.",
