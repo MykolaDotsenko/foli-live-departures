@@ -95,18 +95,8 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-  "Choose destination stop": "Valitse määränpääpysäkki",
-  "e.g. Turun linna": "esim. Turun linna",
-  "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
-  "Use destination": "Käytä määränpäätä",
-  "Choose Home, Work, School or a Föli stop.":
-    "Valitse Koti, Työ, Koulu tai Fölin pysäkki.",
-  "Enter a stop name or number.": "Kirjoita pysäkin nimi tai numero.",
-  "More than one stop has this name. Choose one from the suggestions.":
-    "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
-  "Choose a destination stop from the suggestions.":
-    "Valitse määränpääpysäkki ehdotuksista.",
-  "Nearby stops for {destination}":
+      "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
+            "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
     "Valitse sopivin vaihtoehto tai vaihda takaisin etäisyysjärjestykseen.",
@@ -202,6 +192,7 @@ export default {
   "Places & addresses": "Paikat ja osoitteet",
   "Choose one": "Valitse yksi",
   "Place search data": "Paikkahaun tiedot",
+  "© OpenStreetMap contributors": "© OpenStreetMapin tekijät",
   "Place search is temporarily unavailable. Föli stop search still works.":
     "Paikkahaku ei ole tilapäisesti käytettävissä. Fölin pysäkkihaku toimii edelleen.",
   "Enter a stop, address or place.":
