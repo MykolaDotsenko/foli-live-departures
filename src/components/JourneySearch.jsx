@@ -319,7 +319,7 @@ export default function JourneySearch({
         </div>
         <p className={styles.help}>
           {t(
-            "Stops are searched locally. Address and place search runs only when you press Search."
+            "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
           )}
         </p>
 
