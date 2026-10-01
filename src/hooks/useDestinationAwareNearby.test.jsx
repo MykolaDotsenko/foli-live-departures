@@ -59,7 +59,11 @@ beforeEach(() => {
   api.fetchStopMonitor.mockImplementation(async (stopId) => {
     if (stopId === "400") throw new Error("provider down");
     const byStop = {
-      "100": [arrival("t-good", 1_600)],
+      "100": [
+        arrival("t-good", 1_600, {
+          originaimeddeparturetime: 1_200,
+        }),
+      ],
       "200": [arrival("t-behind", 1_700)],
       "300": [arrival("t-none", 1_800)],
       "500": [arrival("t-late", 1_100)],
@@ -119,6 +123,7 @@ test("classifies useful, wrong-direction, no-direct, unavailable and too-late st
     best: {
       tripRef: "t-good",
       destinationStopId: "900",
+      originAimedDepartureAt: 1_200,
       destinationArrivalAt: 2_800,
       catchability: "comfortable",
       liveState: "live",
