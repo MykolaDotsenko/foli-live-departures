@@ -90,3 +90,42 @@ describe("destination trip fit", () => {
     ).toBe(false);
   });
 });
+
+
+test("chooses the alighting stop with the best ride plus final walk time", () => {
+  const fit = analyzeTripFit({
+    stopTimes: [
+      row("100", 1, "10:00:00", "10:00:00"),
+      row("800", 2, "10:10:00", "10:10:00"),
+      row("900", 3, "10:13:00", "10:13:00"),
+    ],
+    boardingStopId: "100",
+    destinationStopIds: ["800", "900"],
+    destinationStopAccess: {
+      "800": { distanceMeters: 900, walkDurationSec: 900 },
+      "900": { distanceMeters: 120, walkDurationSec: 120 },
+    },
+  });
+
+  expect(fit.compatible).toBe(true);
+  expect(fit.destination.stopId).toBe("900");
+  expect(fit.rideDurationSec).toBe(13 * 60);
+  expect(fit.finalWalkDurationSec).toBe(120);
+  expect(fit.totalDurationSec).toBe(15 * 60);
+});
+
+test("keeps legacy stop destinations equivalent when there is no final-walk cost", () => {
+  const fit = analyzeTripFit({
+    stopTimes: [
+      row("100", 1, "10:00:00", "10:00:00"),
+      row("800", 2, "10:10:00", "10:10:00"),
+      row("900", 3, "10:13:00", "10:13:00"),
+    ],
+    boardingStopId: "100",
+    destinationStopIds: ["800", "900"],
+  });
+
+  expect(fit.destination.stopId).toBe("800");
+  expect(fit.finalWalkDurationSec).toBe(0);
+  expect(fit.totalDurationSec).toBe(10 * 60);
+});
