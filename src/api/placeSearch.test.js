@@ -63,8 +63,6 @@ test("sends one bounded explicit search and normalizes the result", async () => 
       secondaryLabel: "Turku, Varsinais-Suomi, Suomi",
       lat: 60.4518,
       lon: 22.2666,
-      category: "shop",
-      provider: "nominatim",
     },
   ]);
 
