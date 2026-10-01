@@ -912,7 +912,7 @@ function App() {
             </dd>
             <dd>
               {t(
-                "Stops stay on-device. Place search is sent only after you press Search. It uses the OpenStreetMap-based Photon service first and may fall back to OpenStreetMap Nominatim if needed."
+                "Stops stay on-device. Place search is sent to the OpenStreetMap-based Photon service only after you press Search."
               )}
             </dd>
             <dd>
