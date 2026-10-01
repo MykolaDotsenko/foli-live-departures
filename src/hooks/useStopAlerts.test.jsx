@@ -327,3 +327,15 @@ test("a realtime line match does not wait for static membership enrichment", asy
 
   unmount();
 });
+
+
+test("disabled alert monitoring makes no provider request", async () => {
+  const { result } = renderHook(() =>
+    useStopAlerts("501", ["7"], routesById, { enabled: false })
+  );
+
+  expect(result.current.alerts).toEqual([]);
+  expect(result.current.error).toBe(false);
+  expect(mocks.fetchAlerts).not.toHaveBeenCalled();
+  expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
+});

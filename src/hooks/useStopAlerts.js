@@ -8,7 +8,12 @@ const ALERT_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 // Reused so "no served routes" never produces a fresh identity on every run.
 const EMPTY_ROUTE_IDS = new Set();
 
-export default function useStopAlerts(stopId, lineRefs, routesById) {
+export default function useStopAlerts(
+  stopId,
+  lineRefs,
+  routesById,
+  { enabled = true } = {}
+) {
   const [payload, setPayload] = useState(null);
   const [receivedAtMs, setReceivedAtMs] = useState(null);
   const [error, setError] = useState(false);
@@ -31,6 +36,8 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
   );
 
   const refresh = useCallback(async () => {
+    if (!enabled) return null;
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -54,7 +61,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
         // Keep the last successful payload, but expose its age to the UI.
       }
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     membershipAbortRef.current?.abort();
@@ -88,7 +95,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       ),
     ];
 
-    if (!stopId || candidateRouteIds.length === 0) {
+    if (!enabled || !stopId || candidateRouteIds.length === 0) {
       setServed({ stopId, ids: EMPTY_ROUTE_IDS });
       return () => controller.abort();
     }
@@ -105,9 +112,17 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       });
 
     return () => controller.abort();
-  }, [lineRefs, payload, routesById, stopId]);
+  }, [enabled, lineRefs, payload, routesById, stopId]);
 
   useEffect(() => {
+    if (!enabled) {
+      abortRef.current?.abort();
+      membershipAbortRef.current?.abort();
+      failedRef.current = false;
+      setError(false);
+      return undefined;
+    }
+
     refresh();
 
     const intervalId = window.setInterval(() => {
@@ -141,7 +156,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       abortRef.current?.abort();
       membershipAbortRef.current?.abort();
     };
-  }, [refresh]);
+  }, [enabled, refresh]);
 
   const alerts = useMemo(
     () =>
