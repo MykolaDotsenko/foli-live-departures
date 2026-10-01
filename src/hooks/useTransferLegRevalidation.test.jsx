@@ -228,10 +228,22 @@ test("the 30-second poll skips hidden tabs and online wake-up refreshes immediat
   expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(1);
 
   visibility.mockReturnValue("visible");
+  const visiblePoll = timeoutSpy.mock.calls
+    .filter(([callback, delay]) =>
+      typeof callback === "function" && delay === 30_000
+    )
+    .at(-1)?.[0];
+  expect(visiblePoll).toEqual(expect.any(Function));
+
+  await act(async () => {
+    await visiblePoll();
+  });
+  await waitFor(() => expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(2));
+
   act(() => {
     window.dispatchEvent(new globalThis.Event("online"));
   });
-  await waitFor(() => expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(3));
 
   unmount();
   visibility.mockRestore();

@@ -429,3 +429,29 @@ test("tolerates unstable inline line arrays without entering a render loop", asy
   expect(result.current.error).toBe(false);
   expect(result.current.alerts).toEqual([]);
 });
+
+
+test("failed static route-membership enrichment fails closed without breaking realtime alert polling", async () => {
+  mocks.fetchStopServedRouteIds.mockRejectedValue(
+    new Error("GTFS membership temporarily unavailable")
+  );
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(mocks.fetchStopServedRouteIds).toHaveBeenCalledWith(
+      "164",
+      ["50"],
+      expect.any(globalThis.AbortSignal)
+    )
+  );
+
+  // The provider alert request itself succeeded, so the hook is healthy.
+  // Without static membership proof, the route-only notice is conservatively
+  // withheld rather than shown under the wrong stop.
+  await waitFor(() => expect(result.current.error).toBe(false));
+  expect(result.current.alerts).toEqual([]);
+  expect(mocks.fetchAlerts).toHaveBeenCalled();
+});
