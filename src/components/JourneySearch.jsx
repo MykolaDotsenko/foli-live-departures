@@ -43,14 +43,14 @@ export default function JourneySearch({
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
   const [placeResults, setPlaceResults] = useState([]);
-  const [placeState, setPlaceState] = useState("idle");
+  const [placeLoading, setPlaceLoading] = useState(false);
   const requestRef = useRef(null);
 
   const clearPlaceSearch = () => {
     requestRef.current?.abort();
     requestRef.current = null;
     setPlaceResults([]);
-    setPlaceState("idle");
+    setPlaceLoading(false);
   };
 
   useEffect(
@@ -64,8 +64,7 @@ export default function JourneySearch({
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
-  const showPlaceResults =
-    placeState === "ready" && placeResults.length > 0;
+  const showPlaceResults = placeResults.length > 0;
   const showSuggestions =
     showPlaceResults ||
     (focused && value.trim() && matches.length > 0);
@@ -105,7 +104,7 @@ export default function JourneySearch({
     requestRef.current?.abort();
     const controller = new AbortController();
     requestRef.current = controller;
-    setPlaceState("loading");
+    setPlaceLoading(true);
 
     try {
       const results = await searchPlaces(value, {
@@ -114,7 +113,7 @@ export default function JourneySearch({
       });
       if (controller.signal.aborted) return [];
       setPlaceResults(results);
-      setPlaceState("ready");
+      if (requestRef.current === controller) setPlaceLoading(false);
       return results;
     } catch (searchError) {
       if (
@@ -125,7 +124,7 @@ export default function JourneySearch({
         return [];
       }
       setPlaceResults([]);
-      setPlaceState("error");
+      if (requestRef.current === controller) setPlaceLoading(false);
       return null;
     }
   };
@@ -301,10 +300,10 @@ export default function JourneySearch({
             <button
               type="submit"
               className={styles.button}
-              disabled={placeState === "loading"}
-              aria-busy={placeState === "loading"}
+              disabled={placeLoading}
+              aria-busy={placeLoading}
             >
-              {placeState === "loading" ? t("Searching…") : t("Search")}
+              {placeLoading ? t("Searching…") : t("Search")}
             </button>
           </div>
 
