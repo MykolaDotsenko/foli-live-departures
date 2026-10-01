@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { destinationFromExternalPlace } from "../utils/placeDestination";
 
 /** @import { DestinationIntent } from "../types/journey" */
 
@@ -66,12 +67,20 @@ export default function useDestinationIntent() {
     if (next) setDestination(next);
   }, []);
 
+  const chooseExternalPlace = useCallback((place, stops) => {
+    const next = destinationFromExternalPlace(place, stops);
+    if (!next) return false;
+    setDestination(next);
+    return true;
+  }, []);
+
   const clearDestination = useCallback(() => setDestination(null), []);
 
   return {
     destination,
     chooseStop,
     choosePlace,
+    chooseExternalPlace,
     clearDestination,
   };
 }
