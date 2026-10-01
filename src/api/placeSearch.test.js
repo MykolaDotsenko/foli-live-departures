@@ -80,6 +80,7 @@ test("sends one bounded explicit search and normalizes the result", async () => 
   expect(url.searchParams.get("viewbox")).toBe("22,61,23,60");
   expect(url.searchParams.get("accept-language")).toBe("fi,en");
   expect(options.headers).toEqual({ Accept: "application/json" });
+  expect(options.referrerPolicy).toBe("strict-origin-when-cross-origin");
 });
 
 test("caches identical searches for the current session", async () => {
@@ -146,4 +147,33 @@ test("surfaces provider HTTP failure without falling back to a fake result", asy
   await expect(searchPlaces("Busy place")).rejects.toThrow(
     "Place search failed (429)."
   );
+});
+
+
+test("serializes concurrent uncached searches to stay within public rate limits", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-01T12:00:00Z"));
+
+  const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => [],
+  });
+
+  const first = searchPlaces("First concurrent", {
+    viewbox: "22,61,23,60",
+  });
+  const second = searchPlaces("Second concurrent", {
+    viewbox: "22,61,23,60",
+  });
+
+  await vi.advanceTimersByTimeAsync(0);
+  await first;
+  expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+  await vi.advanceTimersByTimeAsync(1_099);
+  expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+  await vi.advanceTimersByTimeAsync(1);
+  await second;
+  expect(fetchSpy).toHaveBeenCalledTimes(2);
 });
