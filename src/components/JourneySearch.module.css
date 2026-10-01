@@ -468,3 +468,43 @@
     outline: 2px solid Highlight;
   }
 }
+
+
+.destinationAttribution,
+.compactAttribution {
+  color: #526d72;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.destinationAttribution {
+  margin-left: auto;
+}
+
+.compactAttribution {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .destination {
+    flex-wrap: wrap;
+  }
+
+  .destinationAttribution {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .compactAttribution {
+    display: none;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .destinationAttribution,
+  :root[data-theme="dark"] .compactAttribution {
+    color: var(--dm-muted);
+  }
+}
