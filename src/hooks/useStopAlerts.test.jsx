@@ -455,3 +455,64 @@ test("failed static route-membership enrichment fails closed without breaking re
   expect(result.current.alerts).toEqual([]);
   expect(mocks.fetchAlerts).toHaveBeenCalled();
 });
+
+
+test("membership lookup failure keeps a safe empty fallback", async () => {
+  mocks.fetchStopServedRouteIds.mockRejectedValue(
+    new Error("GTFS membership unavailable")
+  );
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(mocks.fetchStopServedRouteIds).toHaveBeenCalledTimes(1)
+  );
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(result.current.error).toBe(false);
+  expect(result.current.alerts).toEqual([]);
+});
+
+test("scheduled alert polling is visibility-aware and resumes immediately", async () => {
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set(["50"]));
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockReturnValue("visible");
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  const { unmount } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1));
+  const intervalCallback = intervalSpy.mock.calls.find(
+    ([callback, delay]) =>
+      typeof callback === "function" && delay === 5 * 60 * 1000
+  )?.[0];
+  expect(intervalCallback).toEqual(expect.any(Function));
+
+  visibility.mockReturnValue("hidden");
+  act(() => intervalCallback());
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1);
+
+  act(() => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1);
+
+  visibility.mockReturnValue("visible");
+  act(() => intervalCallback());
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2));
+
+  act(() => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(3));
+
+  unmount();
+  visibility.mockRestore();
+});

@@ -340,3 +340,67 @@ test("sparse optional occurrence anchors still form an active watcher identity",
   await waitFor(() => expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(1));
   expect(result.current.providerState).not.toBe("idle");
 });
+
+
+test("a superseded second-leg response cannot overwrite the newer refresh", async () => {
+  let resolveFirst;
+  const first = new Promise((resolve) => {
+    resolveFirst = resolve;
+  });
+  const fresh = {
+    arrivals: [
+      {
+        tripref: "second",
+        lineref: "7",
+        monitored: true,
+        vehicleatstop: false,
+        recordedattime: 1_720,
+        originaimeddeparturetime: 1_800,
+        aimeddeparturetime: 2_000,
+        expecteddeparturetime: 2_090,
+      },
+    ],
+    serverTime: 1_730,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  };
+
+  mocks.fetchStopMonitor
+    .mockImplementationOnce(() => first)
+    .mockResolvedValueOnce(fresh);
+
+  const { result } = renderHook(() =>
+    useTransferLegRevalidation({
+      enabled: true,
+      journey,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    })
+  );
+
+  await waitFor(() => expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(1));
+
+  let manualResult;
+  await act(async () => {
+    manualResult = await result.current.refresh();
+  });
+  expect(manualResult).toBe(true);
+
+  await act(async () => {
+    resolveFirst({
+      ...fresh,
+      arrivals: [
+        {
+          ...fresh.arrivals[0],
+          expecteddeparturetime: 2_300,
+        },
+      ],
+    });
+    await Promise.resolve();
+  });
+
+  await waitFor(() => expect(result.current.departureAt).toBe(2_090));
+  expect(mocks.fetchStopMonitor).toHaveBeenCalledTimes(2);
+});
