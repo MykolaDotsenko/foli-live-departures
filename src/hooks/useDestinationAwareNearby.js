@@ -187,6 +187,7 @@ export async function loadDestinationAwareNearby({
         stopId: String(stop.id),
         status: "unavailable",
         best: null,
+        departures: [],
         additionalCount: 0,
         checkedAt: Date.now(),
       };
@@ -308,6 +309,14 @@ export async function loadDestinationAwareNearby({
       stopId: String(stop.id),
       status,
       best,
+      departures: compatible
+        .slice()
+        .sort(
+          (left, right) =>
+            (Number(left.destinationArrivalAt) || Number.POSITIVE_INFINITY) -
+              (Number(right.destinationArrivalAt) || Number.POSITIVE_INFINITY) ||
+            left.departureAt - right.departureAt
+        ),
       additionalCount: Math.max(
         0,
         compatible.filter((candidate) => candidate !== best).length
