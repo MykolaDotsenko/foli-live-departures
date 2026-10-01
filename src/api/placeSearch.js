@@ -4,6 +4,7 @@ const SEARCH_URL =
   import.meta.env.VITE_PLACE_SEARCH_URL ||
   "https://nominatim.openstreetmap.org/search";
 const MIN_REQUEST_INTERVAL_MS = 1_100;
+const REQUEST_TIMEOUT_MS = 7_000;
 const MAX_CACHE_ENTRIES = 20;
 // Broad Southwest Finland bias. A selected result still has to pass the
 // current Föli service-boundary and nearby-stop checks before it can be used.
@@ -38,6 +39,41 @@ async function reserveRequest(signal) {
     );
   }
   if (signal?.aborted) throw new globalThis.DOMException("Aborted", "AbortError");
+}
+
+/**
+ * Bound provider latency without turning a caller cancellation into a user
+ * facing provider error. The external signal owns lifecycle cancellation;
+ * this controller adds only the provider timeout.
+ *
+ * @param {AbortSignal | undefined} externalSignal
+ */
+function fetchSignalScope(externalSignal) {
+  const controller = new AbortController();
+  let timedOut = false;
+
+  const onExternalAbort = () => controller.abort();
+  if (externalSignal?.aborted) {
+    controller.abort();
+  } else {
+    externalSignal?.addEventListener("abort", onExternalAbort, {
+      once: true,
+    });
+  }
+
+  const timeoutId = globalThis.setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+
+  return {
+    signal: controller.signal,
+    didTimeOut: () => timedOut,
+    dispose() {
+      globalThis.clearTimeout(timeoutId);
+      externalSignal?.removeEventListener("abort", onExternalAbort);
+    },
+  };
 }
 
 /** @param {string} key @param {PlaceSearchResult[]} results */
@@ -122,26 +158,44 @@ export async function searchPlaces(
   url.searchParams.set("viewbox", SEARCH_VIEWBOX);
   url.searchParams.set("bounded", "1");
 
-  const response = await globalThis.fetch(url, {
-    signal,
-    referrerPolicy: "strict-origin-when-cross-origin",
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new Error(`Place search failed (${response.status}).`);
-  }
+  const scope = fetchSignalScope(signal);
 
-  const payload = await response.json();
-  /** @type {PlaceSearchResult[]} */
-  const results = [];
-  for (const raw of Array.isArray(payload) ? payload : []) {
-    const item = normalizeResult(raw);
-    if (item) results.push(item);
-    if (results.length >= 5) break;
-  }
+  try {
+    const response = await globalThis.fetch(url, {
+      signal: scope.signal,
+      referrerPolicy: "strict-origin-when-cross-origin",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      throw new Error(`Place search failed (${response.status}).`);
+    }
 
-  cacheSet(key, results);
-  return results;
+    const payload = await response.json();
+    /** @type {PlaceSearchResult[]} */
+    const results = [];
+    for (const raw of Array.isArray(payload) ? payload : []) {
+      const item = normalizeResult(raw);
+      if (item) results.push(item);
+      if (results.length >= 5) break;
+    }
+
+    cacheSet(key, results);
+    return results;
+  } catch (error) {
+    if (signal?.aborted) {
+      const aborted = new Error("Place search cancelled.");
+      aborted.name = "AbortError";
+      throw aborted;
+    }
+    if (scope.didTimeOut()) {
+      const timeout = new Error("Place search timed out.");
+      timeout.name = "PlaceSearchTimeoutError";
+      throw timeout;
+    }
+    throw error;
+  } finally {
+    scope.dispose();
+  }
 }
 
 export function resetPlaceSearchForTests() {
