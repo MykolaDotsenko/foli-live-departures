@@ -147,3 +147,14 @@ test("falls back to destination stop distance when selected journey lacks it", (
 
   expect(pending?.distanceMeters).toBe(180);
 });
+
+
+test("rejects invalid final destination coordinates", () => {
+  expect(
+    finalWalkFromRideSelection({
+      journey,
+      destination: { ...destination, lat: 999 },
+      rideConfig: rideConfig(),
+    })
+  ).toBeNull();
+});
