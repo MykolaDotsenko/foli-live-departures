@@ -70,7 +70,7 @@ test("sends one bounded explicit search and normalizes the result", async () => 
 
   expect(fetchSpy).toHaveBeenCalledTimes(1);
   const [requestUrl, options] = fetchSpy.mock.calls[0];
-  const url = new URL(String(requestUrl));
+  const url = new globalThis.URL(String(requestUrl));
 
   expect(url.origin).toBe("https://nominatim.openstreetmap.org");
   expect(url.searchParams.get("q")).toBe("Prisma Turku");
