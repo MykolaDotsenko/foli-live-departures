@@ -2,9 +2,12 @@ import { findNearestStops, hasCoordinates, isInsideMultiPolygon } from "./geo";
 
 /** @import { DestinationIntent, PlaceSearchResult } from "../types/journey" */
 
-const MAX_DESTINATION_STOPS = 8;
-const MIN_SEARCH_RADIUS_M = 500;
-const EXTRA_RADIUS_M = 400;
+// Dense hubs can have many platforms around the same destination. Keeping
+// only eight can discard the only platform served by the useful concrete
+// trip, even though matching these stop IDs against GTFS is local and cheap.
+const MAX_DESTINATION_STOPS = 24;
+const MIN_SEARCH_RADIUS_M = 700;
+const EXTRA_RADIUS_M = 500;
 const MAX_SEARCH_RADIUS_M = 1_600;
 
 /**
