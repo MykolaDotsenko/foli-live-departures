@@ -9,6 +9,7 @@ import { getDepartureTime } from "../utils/time";
 const REFRESH_MS = 30_000;
 const MAX_DEPARTURES_PER_STOP = 16;
 const MAX_TRIP_LOOKUPS = 96;
+const MAX_TARGET_MONITOR_LOOKUPS = 8;
 const TRIP_BATCH_SIZE = 8;
 
 /** @param {AbortSignal | undefined} signal */
@@ -306,8 +307,29 @@ export async function loadDestinationAwareNearby({
       });
     }
 
+    // Final-walk planning may consider many local destination platforms,
+    // but realtime enrichment must stay bounded. Rank concrete departures
+    // using the schedule/live-at-origin estimate, then enrich only the most
+    // promising unique alighting stops. The remaining candidates still stay
+    // eligible with their conservative propagated estimate.
+    const targetIdsToEnrich = new Set();
+    for (const candidate of compatible
+      .slice()
+      .sort(
+        (left, right) =>
+          effectiveArrivalAt(left) - effectiveArrivalAt(right) ||
+          left.departureAt - right.departureAt
+      )) {
+      if (targetIdsToEnrich.size >= MAX_TARGET_MONITOR_LOOKUPS) break;
+      if (candidate.destinationStopId) {
+        targetIdsToEnrich.add(candidate.destinationStopId);
+      }
+    }
+
     await Promise.all(
       compatible.map(async (candidate) => {
+        if (!targetIdsToEnrich.has(candidate.destinationStopId)) return;
+
         const destinationMonitor = await targetMonitor(
           candidate.destinationStopId
         );
