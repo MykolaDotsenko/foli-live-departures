@@ -96,9 +96,7 @@ test("enforces at least one second between uncached provider requests", async ()
 
   await searchPlaces("First place");
 
-  const second = searchPlaces("Second place", {
-    viewbox: "22,61,23,60",
-  });
+  const second = searchPlaces("Second place");
 
   expect(fetchSpy).toHaveBeenCalledTimes(1);
 
@@ -143,12 +141,8 @@ test("serializes concurrent uncached searches to stay within public rate limits"
     json: async () => [],
   });
 
-  const first = searchPlaces("First concurrent", {
-    viewbox: "22,61,23,60",
-  });
-  const second = searchPlaces("Second concurrent", {
-    viewbox: "22,61,23,60",
-  });
+  const first = searchPlaces("First concurrent");
+  const second = searchPlaces("Second concurrent");
 
   await vi.advanceTimersByTimeAsync(0);
   await first;
