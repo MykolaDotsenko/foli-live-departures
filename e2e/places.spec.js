@@ -28,13 +28,10 @@ test("saves Home as a privacy-first safe arrival zone", async ({
   await expect(page.getByText(/Location accuracy/)).toBeVisible();
 
   const saveHome = page.getByRole("button", { name: "Save Home" });
-  await expect(saveHome).toBeDisabled();
-  await page
-    .getByRole("checkbox", {
-      name: /Yes, this is the right stop for Home/i,
-    })
-    .check();
   await expect(saveHome).toBeEnabled();
+  await expect(
+    page.getByText("Yes, this is the right stop for Home.")
+  ).toBeVisible();
   await saveHome.click();
 
   // The place card names its actions as the Get me Home card above does.

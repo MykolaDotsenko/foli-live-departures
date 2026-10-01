@@ -85,14 +85,10 @@ test("sets up Home from one-time location and saves only public safe stops", asy
   expect(safeStopChoices[2]).not.toBeChecked();
 
   const saveHome = screen.getByRole("button", { name: "Save Home" });
-  expect(saveHome).toBeDisabled();
-
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: /Yes, this is the right stop for Home/i,
-    })
-  );
   expect(saveHome).toBeEnabled();
+  expect(
+    screen.getByText("Yes, this is the right stop for Home.")
+  ).toBeInTheDocument();
   fireEvent.click(saveHome);
 
   await waitFor(() => expect(onSavePlace).toHaveBeenCalledTimes(1));
@@ -214,13 +210,7 @@ test("reviews and confirms the selected public stop when location is unavailable
   expect(screen.getByText("Using the stop you selected manually")).toBeInTheDocument();
 
   const saveHome = screen.getByRole("button", { name: "Save Home" });
-  expect(saveHome).toBeDisabled();
-
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: /Yes, this is the right stop for Home/i,
-    })
-  );
+  expect(saveHome).toBeEnabled();
   fireEvent.click(saveHome);
 
   expect(onSavePlace).toHaveBeenCalledWith({
@@ -401,22 +391,14 @@ test("adds backup stops to a place only after explicit opt-in", async () => {
 
   const choices = screen.getAllByRole("checkbox");
   const saveHome = screen.getByRole("button", { name: "Save Home" });
-
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: /Yes, this is the right stop for Home/i,
-    })
-  );
   expect(saveHome).toBeEnabled();
 
   fireEvent.click(choices[1]);
-  expect(saveHome).toBeDisabled();
-
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: /Yes, these are the right stops for Home/i,
-    })
-  );
+  expect(saveHome).toBeEnabled();
+  expect(
+    screen.getByText("Yes, these are the right stops for Home.")
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("radio", { name: /Main stop/i })).toHaveLength(2);
   fireEvent.click(saveHome);
 
   await waitFor(() => expect(onSavePlace).toHaveBeenCalledTimes(1));
@@ -499,9 +481,7 @@ test("does not preselect a place's stop when location accuracy is poor", async (
     screen.getByText(/no stop was preselected/i)
   ).toBeInTheDocument();
 
-  const stopChoices = screen
-    .getAllByRole("checkbox")
-    .filter((element) => !/right stop/.test(element.getAttribute("aria-label") || ""));
+  const stopChoices = screen.getAllByRole("checkbox");
 
   expect(stopChoices[0]).not.toBeChecked();
   expect(stopChoices[1]).not.toBeChecked();
@@ -563,44 +543,6 @@ test("does not create a location-based place outside the Föli boundary", async 
   ).not.toBeInTheDocument();
   expect(onSavePlace).not.toHaveBeenCalled();
 });
-// Ticking the confirmation for Home and then starting School kept the tick:
-// "Save School" was enabled for a stop nobody had confirmed for School.
-test("starts each place's setup with its own, unticked confirmation", () => {
-  render(
-    <MyPlaces
-      stops={stops}
-      coordinatesStatus="unavailable"
-      activeStopId="32"
-      placesById={new Map()}
-      onSavePlace={vi.fn()}
-      onRemovePlace={vi.fn()}
-      onSetPrimaryStop={vi.fn()}
-      onOpenStop={vi.fn()}
-    />
-  );
-
-  fireEvent.click(
-    screen.getByRole("button", { name: "Use Puistokatu for Home" })
-  );
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: /Yes, this is the right stop for Home/i,
-    })
-  );
-  expect(screen.getByRole("button", { name: "Save Home" })).toBeEnabled();
-
-  fireEvent.click(
-    screen.getByRole("button", { name: "Use Puistokatu for School" })
-  );
-
-  expect(
-    screen.getByRole("checkbox", {
-      name: /Yes, this is the right stop for School/i,
-    })
-  ).not.toBeChecked();
-  expect(screen.getByRole("button", { name: "Save School" })).toBeDisabled();
-});
-
 // Saved places keep the English label they were stored with ("Home"); the
 // screen names each by its id, so a place saved in one language reads
 // correctly in the other.
@@ -679,13 +621,10 @@ test("sets up a place in Finnish, confirming it in the place's own words", () =>
     screen.getByRole("heading", { name: "Valitse koulun pysäkit" })
   ).toBeInTheDocument();
   const save = screen.getByRole("button", { name: "Tallenna koulu" });
-  expect(save).toBeDisabled();
-
-  fireEvent.click(
-    screen.getByRole("checkbox", {
-      name: "Kyllä, tämä on oikea pysäkki kouluun.",
-    })
-  );
+  expect(save).toBeEnabled();
+  expect(
+    screen.getByText("Kyllä, tämä on oikea pysäkki kouluun.")
+  ).toBeInTheDocument();
   fireEvent.click(save);
 
   // What is saved is the place's id and its public stops, never words.
