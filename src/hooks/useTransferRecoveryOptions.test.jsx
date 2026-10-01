@@ -332,9 +332,9 @@ test("returning to a visible tab clears stale recovery cards until fresh evidenc
   );
 
   visibilityState = "hidden";
-  document.dispatchEvent(new Event("visibilitychange"));
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
   visibilityState = "visible";
-  document.dispatchEvent(new Event("visibilitychange"));
+  document.dispatchEvent(new globalThis.Event("visibilitychange"));
 
   await waitFor(() => expect(result.current.state).toBe("loading"));
   expect(result.current.options).toEqual([]);
