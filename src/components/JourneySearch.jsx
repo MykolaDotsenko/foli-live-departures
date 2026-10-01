@@ -350,7 +350,7 @@ export default function JourneySearch({
 
         <p className={styles.help}>
           {t(
-            "Stops stay on-device. Places use OpenStreetMap Nominatim after Search."
+            "Stops stay on-device. Place search uses OpenStreetMap only after Search."
           )}
         </p>
 
