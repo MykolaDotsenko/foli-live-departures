@@ -132,9 +132,15 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
       second.boardStopId ||
       ""
   ).trim();
-  const rawWalk = Number(transfer.walkingDistanceM);
+  const rawWalk = transfer.walkingDistanceM;
   const walkingDistanceM =
-    Number.isFinite(rawWalk) && rawWalk >= 0 ? rawWalk : null;
+    rawWalk !== null &&
+    rawWalk !== undefined &&
+    rawWalk !== "" &&
+    Number.isFinite(Number(rawWalk)) &&
+    Number(rawWalk) >= 0
+      ? Number(rawWalk)
+      : null;
 
   // Cross-platform guidance needs a concrete boarding stop. A generic
   // placeholder can send a passenger in the wrong direction at a busy hub,
@@ -144,12 +150,12 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
       state: "recovery",
       title:
         stage === RIDE_STAGE.NOW
-          ? "After you get off"
-          : "Connection needs a new plan",
+          ? msg("After you get off")
+          : msg("Connection needs a new plan"),
       text:
         stage === RIDE_STAGE.NOW
-          ? "Journey Assistant will check fresh options from this transfer area."
-          : "Get off at {stop}; Journey Assistant will check fresh options there.",
+          ? msg("Journey Assistant will check fresh options from this transfer area.")
+          : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
       params: { stop: stopLabel(targetStop) },
       meta: "",
       metaParams: {},
