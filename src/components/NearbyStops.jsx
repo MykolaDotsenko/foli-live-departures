@@ -163,6 +163,7 @@ function NearbyStops({
   online = true,
   searchEdits = () => 0,
   destination = null,
+  onSelectJourney = null,
   onSelect,
 }) {
   useLanguage();
@@ -504,6 +505,7 @@ function NearbyStops({
             <JourneyOptions
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
+              onSelectJourney={onSelectJourney}
               onOpenStop={onSelect}
             />
           )}
