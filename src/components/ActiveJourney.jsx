@@ -85,7 +85,7 @@ export default function ActiveJourney({
             {Number.isFinite(journey.finalWalkDistanceM) &&
               journey.finalWalkDistanceM > 0 && (
                 <span>
-                  {t("Final walk ≈ {distance}", {
+                  {t("Walk ≈ {distance}", {
                     distance: formatDistance(journey.finalWalkDistanceM),
                   })}
                 </span>
@@ -102,9 +102,7 @@ export default function ActiveJourney({
             })}
           </p>
           <p className={styles.note}>
-            {t(
-              "At the stop? Confirm here. We don’t infer your location."
-            )}
+            {t("At the stop? Confirm here.")}
           </p>
         </>
       )}
@@ -112,12 +110,10 @@ export default function ActiveJourney({
       {journey.phase === "waiting" && (
         <>
           <p className={styles.primaryStatus}>
-            {t("Selected bus is pinned first below.")}
+            {t("Selected bus is first below.")}
           </p>
           <p className={styles.note}>
-            {t(
-              "After boarding, start Get-off alert. Ride Mode takes over."
-            )}
+            {t("Boarded? Start Get-off alert.")}
           </p>
         </>
       )}
@@ -130,7 +126,7 @@ export default function ActiveJourney({
 
       {!online && journey.phase !== "recovery" && (
         <p className={styles.offline}>
-          {t("Offline: selected plan may be stale.")}
+          {t("Offline: plan may be stale.")}
         </p>
       )}
 
@@ -138,9 +134,7 @@ export default function ActiveJourney({
         journey.phase !== "recovery" &&
         monitoringState === "paused" && (
           <p className={styles.monitoringNotice} role="status">
-            {t(
-              "Live monitoring paused while another stop is open. Return to resume."
-            )}
+            {t("Monitoring paused. Return to selected stop.")}
           </p>
         )}
 
@@ -148,9 +142,7 @@ export default function ActiveJourney({
         journey.phase !== "recovery" &&
         monitoringState === "degraded" && (
           <p className={styles.monitoringNotice} role="status">
-            {t(
-              "Live monitoring unavailable. Selected time may be stale."
-            )}
+            {t("Live unavailable. Time may be stale.")}
           </p>
         )}
 
