@@ -92,7 +92,7 @@ test("waiting state points to the pinned selected departure", () => {
     screen.getByRole("heading", { name: "Wait for line 18" })
   ).toBeInTheDocument();
   expect(
-    screen.getByText("Selected bus is pinned first below.")
+    screen.getByText("Selected bus is first below.")
   ).toBeInTheDocument();
 
   fireEvent.click(
@@ -146,7 +146,7 @@ test("offline state does not pretend the selected plan is current", () => {
   );
 
   expect(
-    screen.getByText("Offline: selected plan may be stale.")
+    screen.getByText("Offline: plan may be stale.")
   ).toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
 });
@@ -171,7 +171,7 @@ test("paused monitoring makes returning to the selected stop the primary action"
 
   expect(
     screen.getByText(
-      "Live monitoring paused while another stop is open. Return to resume."
+      "Monitoring paused. Return to selected stop."
     )
   ).toBeInTheDocument();
 
@@ -202,7 +202,7 @@ test("degraded monitoring never implies the live departure is current", () => {
 
   expect(
     screen.getByText(
-      "Live monitoring unavailable. Selected time may be stale."
+      "Live unavailable. Time may be stale."
     )
   ).toBeInTheDocument();
 });
@@ -230,7 +230,7 @@ test("shows door-to-door arrival and final walk for a geocoded place", () => {
     />
   );
 
-  expect(screen.getByText("Final walk ≈ 320 m")).toBeInTheDocument();
+  expect(screen.getByText("Walk ≈ 320 m")).toBeInTheDocument();
   expect(
     screen.getByText(
       `Arrive about ${formatClock(2_000_001_330)}`
@@ -274,5 +274,5 @@ test("recovery hides stale departure and arrival timing", () => {
   expect(
     screen.queryByText(`Arrive about ${formatClock(staleArrival)}`)
   ).not.toBeInTheDocument();
-  expect(screen.queryByText("Final walk ≈ 320 m")).not.toBeInTheDocument();
+  expect(screen.queryByText("Walk ≈ 320 m")).not.toBeInTheDocument();
 });
