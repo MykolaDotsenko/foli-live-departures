@@ -333,6 +333,7 @@ function BusStopDisplay({
         scheduleIncomplete)) ||
     (visibleArrivals.length === 0 &&
       followedLines.length > 0 &&
+      lineTimetable.status !== "loading" &&
       (error || lineTimetable.status === "error"));
   const toggleRideSetup = (rideKey) =>
     setRideCandidateKey((current) => (current === rideKey ? "" : rideKey));

@@ -1,6 +1,25 @@
-import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import BusStopDisplay from "./BusStopDisplay";
+
+const timetableApi = vi.hoisted(() => ({
+  fetchScheduledLineDepartures: vi.fn(() => new Promise(() => {})),
+}));
+
+vi.mock("../api/foliApi", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    fetchScheduledLineDepartures: timetableApi.fetchScheduledLineDepartures,
+  };
+});
+
+afterEach(() => {
+  localStorage.removeItem("foli-line-filter-v1");
+  timetableApi.fetchScheduledLineDepartures
+    .mockReset()
+    .mockImplementation(() => new Promise(() => {}));
+});
 
 const NOW = Math.floor(Date.now() / 1000);
 
@@ -250,7 +269,10 @@ test("going offline rewords the board's status in place", () => {
 });
 
 
-test("a filtered-line failure shows Try again without a competing header Refresh", () => {
+test("a filtered-line failure shows Try again without a competing header Refresh", async () => {
+  timetableApi.fetchScheduledLineDepartures.mockRejectedValueOnce(
+    new Error("timetable unavailable")
+  );
   localStorage.setItem(
     "foli-line-filter-v1",
     JSON.stringify({
@@ -267,11 +289,11 @@ test("a filtered-line failure shows Try again without a competing header Refresh
     })
   );
 
-  expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument()
+  );
   expect(screen.getByRole("button", { name: "Show all lines" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
-
-  localStorage.removeItem("foli-line-filter-v1");
 });
 
 test("a healthy board keeps one explicit Refresh action", () => {
