@@ -350,3 +350,144 @@
     color: var(--dm-danger-text);
   }
 }
+
+
+/* Shared Journey destination search: keep one search visual language. */
+.journeyHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.journeyHeading h2 {
+  margin: 0;
+  color: #20343b;
+  font-size: 1rem;
+}
+
+.journeyTextButton,
+.journeyActions button {
+  min-height: 40px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.journeyStatus {
+  margin: 0 0 8px;
+  color: #425961;
+  font-size: 0.8rem;
+}
+
+.journeyQuick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.journeyQuick button {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid #a9c9cd;
+  border-radius: 999px;
+  background: #f9fcfc;
+  color: #23464e;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+}
+
+.journeyQuick button[aria-pressed="true"] {
+  border-color: #007985;
+  background: #dff4f2;
+  color: #005e67;
+}
+
+.journeyControls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.journeyCompact {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 5px 8px 5px 12px;
+  border: 1px solid #c9dde0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.journeyCompactText {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 6px;
+  color: #425961;
+  font-size: 0.78rem;
+}
+
+.journeyCompactText strong {
+  overflow: hidden;
+  color: #20343b;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journeyActions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+}
+
+.journeyTextButton:hover,
+.journeyActions button:hover {
+  background: #edf8f8;
+}
+
+@media screen {
+  :root[data-theme="dark"] .journeyHeading h2,
+  :root[data-theme="dark"] .journeyCompactText strong,
+  :root[data-theme="dark"] .journeyTextButton,
+  :root[data-theme="dark"] .journeyActions button {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .journeyStatus,
+  :root[data-theme="dark"] .journeyCompactText {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .journeyQuick button,
+  :root[data-theme="dark"] .journeyCompact {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .journeyQuick button[aria-pressed="true"],
+  :root[data-theme="dark"] .journeyTextButton:hover,
+  :root[data-theme="dark"] .journeyActions button:hover {
+    background: var(--dm-accent-surface);
+  }
+}
+
+@media (max-width: 520px) {
+  .journeyControls {
+    grid-template-columns: 1fr;
+  }
+}
