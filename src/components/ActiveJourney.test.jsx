@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetLanguageForTests } from "../i18n";
+import { formatClock } from "../utils/time";
 import ActiveJourney from "./ActiveJourney";
 
 function journey(overrides = {}) {
@@ -204,4 +205,40 @@ test("degraded monitoring never implies the live departure is current", () => {
       "Live monitoring is temporarily unavailable. The selected departure may be out of date."
     )
   ).toBeInTheDocument();
+});
+
+
+test("shows door-to-door arrival and final walk for a geocoded place", () => {
+  const base = journey();
+  render(
+    <ActiveJourney
+      journey={{
+        ...base,
+        destinationKind: "geocoded-place",
+        destinationLabel: "Prisma Itäharju",
+        destinationArrivalAt: 2_000_001_000,
+        finalWalkDistanceM: 320,
+        finalWalkDurationSec: 330,
+        finalArrivalAt: 2_000_001_330,
+      }}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(screen.getByText("Final walk ≈ 320 m")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      `Arrive about ${formatClock(2_000_001_330)}`
+    )
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      `Arrive about ${formatClock(2_000_001_000)}`
+    )
+  ).not.toBeInTheDocument();
 });
