@@ -101,8 +101,8 @@ export default {
   "Enter a destination.": "Kirjoita määränpää.",
   "Stops stay local. Places use Photon after Search.":
     "Pysäkit pysyvät laitteella. Paikat haetaan Photonista vasta Hae-painikkeen jälkeen.",
-  "Stops stay on-device. Place search is sent to the OpenStreetMap-based Photon service only after you press Search.":
-    "Pysäkit pysyvät laitteella. Paikkahaku lähetetään OpenStreetMap-pohjaiseen Photon-palveluun vasta, kun painat Hae.",
+  "Place queries go to Photon only after Search. GPS is not sent.":
+    "Paikkahaku lähetetään Photoniin vasta Hae-painikkeesta. GPS-sijaintia ei lähetetä.",
   "Place search data": "Paikkahaun tiedot",
   "Place search unavailable. Use a stop.":
     "Paikkahaku ei ole käytettävissä. Käytä pysäkkiä.",
