@@ -6,6 +6,7 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_LIMIT = 20;
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 const DEFAULT_RATE_LIMIT_COOLDOWN_MS = 60_000;
+const PUBLIC_PROVIDER_ORIGIN = "https://nominatim.openstreetmap.org";
 
 /** @type {Promise<PlaceSearchConfig> | null} */
 let configPromise = null;
@@ -38,6 +39,23 @@ function normalizedQuery(value) {
 }
 
 /** @returns {PlaceSearchConfig} */
+/**
+ * Public Nominatim is intentionally web-only in this project. A packaged
+ * WebView cannot guarantee the provider-identification and no-software-update
+ * switching requirements of the public service. Native builds therefore
+ * fail closed and hand address/POI search to the official journey planner.
+ */
+export function directPlaceSearchSupported() {
+  try {
+    if (globalThis.Capacitor?.isNativePlatform?.()) return false;
+  } catch {
+    return false;
+  }
+
+  const origin = String(globalThis.location?.origin || "").toLowerCase();
+  return origin !== "https://localhost" && origin !== "capacitor://localhost";
+}
+
 function disabledConfig() {
   return {
     enabled: false,
@@ -64,7 +82,9 @@ function normalizeConfig(raw) {
     return disabledConfig();
   }
 
-  if (url.protocol !== "https:") return disabledConfig();
+  if (url.protocol !== "https:" || url.origin !== PUBLIC_PROVIDER_ORIGIN) {
+    return disabledConfig();
+  }
 
   const rawViewbox = Array.isArray(config.viewbox)
     ? /** @type {unknown[]} */ (config.viewbox)
@@ -335,6 +355,14 @@ function normalizeResult(row) {
 export async function searchPlaces(value, options = {}) {
   const query = normalizedQuery(value);
   if (query.length < 3) return [];
+
+  if (!directPlaceSearchSupported()) {
+    const error = new Error(
+      "Direct public place search is disabled in packaged app runtimes."
+    );
+    error.name = "PlaceSearchPolicyError";
+    throw error;
+  }
 
   const languageKey = String(options.language || "").trim().toLowerCase();
   const cacheKey = `${query.toLowerCase()}|${languageKey}`;
