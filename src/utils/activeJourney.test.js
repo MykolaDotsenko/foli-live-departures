@@ -3,6 +3,7 @@ import {
   activeJourneyFromOption,
   arrivalMatchesActiveJourney,
   confirmActiveJourneyAtStop,
+  directOptionMatchesActiveJourney,
   observeActiveJourney,
 } from "./activeJourney";
 
@@ -62,6 +63,29 @@ describe("active journey transitions", () => {
         1_000_000
       )
     ).toBeNull();
+  });
+
+  test("matches the selected option occurrence for recovery exclusion", () => {
+    const journey = activeJourneyFromOption(option(), destination, 1_000_000);
+
+    expect(directOptionMatchesActiveJourney(option(), journey)).toBe(true);
+    expect(
+      directOptionMatchesActiveJourney(
+        option({
+          departure: {
+            ...option().departure,
+            aimedDepartureAt: 2_000,
+          },
+        }),
+        journey
+      )
+    ).toBe(false);
+    expect(
+      directOptionMatchesActiveJourney(
+        option({ stopId: "200" }),
+        journey
+      )
+    ).toBe(false);
   });
 
   test("uses planned boarding time to distinguish repeated trip visits", () => {
