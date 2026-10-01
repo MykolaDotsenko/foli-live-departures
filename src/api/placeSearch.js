@@ -10,10 +10,12 @@ const MAX_CACHE_ENTRIES = 20;
 const cache = new Map();
 let nextAllowedRequestAt = 0;
 
+/** @param {unknown} value */
 function cleanQuery(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
+/** @param {unknown} value */
 function coordinate(value) {
   if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
@@ -45,6 +47,7 @@ function wait(ms, signal) {
 }
 
 /** Public Nominatim allows at most one request per second. */
+/** @param {AbortSignal | undefined} signal */
 async function reserveRequest(signal) {
   const now = Date.now();
   const at = Math.max(now, nextAllowedRequestAt);
@@ -52,11 +55,13 @@ async function reserveRequest(signal) {
   await wait(at - now, signal);
 }
 
+/** @param {string} key @param {PlaceSearchResult[]} results */
 function cacheSet(key, results) {
   cache.delete(key);
   cache.set(key, results);
   if (cache.size > MAX_CACHE_ENTRIES) {
-    cache.delete(cache.keys().next().value);
+    const oldest = cache.keys().next().value;
+    if (oldest) cache.delete(oldest);
   }
 }
 
@@ -133,6 +138,7 @@ export function placeSearchViewbox(stops) {
 
   if (count < 2) return "";
 
+  /** @param {number} value */
   const compact = (value) => String(Number(value.toFixed(6)));
   return [
     Math.max(-180, minLon - 0.02),
