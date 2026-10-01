@@ -1,6 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { resetLanguageForTests } from "../i18n";
 import JourneyOptions from "./JourneyOptions";
+
+beforeEach(() => {
+  resetLanguageForTests("en");
+});
+
+afterEach(() => {
+  resetLanguageForTests("en");
+});
 
 const baseDeparture = {
   tripRef: "trip-18",
