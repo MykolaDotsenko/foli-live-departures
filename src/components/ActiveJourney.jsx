@@ -71,14 +71,37 @@ export default function ActiveJourney({
             due: formatDue(journey.departureAt, nowMs),
           })}
         </span>
-        {journey.destinationArrivalAt && (
+        {journey.destinationKind === "external-place" &&
+        journey.journeyArrivalAt ? (
+          <span>
+            {t("Reach destination about {time}", {
+              time: formatClock(journey.journeyArrivalAt),
+            })}
+          </span>
+        ) : journey.destinationArrivalAt ? (
           <span>
             {t("Arrive about {time}", {
               time: formatClock(journey.destinationArrivalAt),
             })}
           </span>
-        )}
+        ) : null}
+        {journey.destinationKind === "external-place" &&
+          journey.finalWalkDistanceM !== null && (
+            <span>
+              {t("final walk ≈ {distance}", {
+                distance: formatDistance(journey.finalWalkDistanceM),
+              })}
+            </span>
+          )}
       </div>
+
+      {journey.destinationKind === "external-place" && (
+        <p className={styles.note}>
+          {t(
+            "Final walk is approximate straight-line based guidance. The real walking route can be longer."
+          )}
+        </p>
+      )}
 
       {journey.phase === "walking-to-stop" && (
         <>
