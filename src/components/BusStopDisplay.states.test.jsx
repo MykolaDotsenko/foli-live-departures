@@ -48,6 +48,7 @@ test("a first load that failed says so instead of claiming there are no departur
 
   expect(screen.getByText("Couldn’t load departures.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
 
@@ -105,6 +106,7 @@ test("an empty live answer with an unchecked timetable does not claim the day is
     screen.getByText(/timetable could not be checked/i)
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
 
@@ -245,4 +247,18 @@ test("going offline rewords the board's status in place", () => {
   rerender(board({ ...failed, online: false }));
 
   expect(screen.getByText(/^Offline · last updated/)).toBe(status);
+});
+
+
+test("a healthy board keeps one explicit Refresh action", () => {
+  render(
+    board({
+      arrivals: [departure],
+      serverTime: NOW,
+      receivedAtMs: Date.now(),
+    })
+  );
+
+  expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
 });

@@ -25,6 +25,7 @@ function BoardHeader({
   onToggleLineFilter,
   onRefresh,
   unknownStop = false,
+  showRefresh = true,
 }) {
   return (
     <header
@@ -92,7 +93,7 @@ function BoardHeader({
         {/* Busy rather than disabled: a disabled button drops keyboard
             focus to the page, and this one is busy every half minute. */}
         {/* A number Föli does not have gets nothing new from asking again. */}
-        {!unknownStop && (
+        {!unknownStop && showRefresh && (
           <button
             type="button"
             className={styles.refreshButton}
