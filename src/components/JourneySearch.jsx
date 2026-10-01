@@ -190,7 +190,7 @@ export default function JourneySearch({
             )
           : matches.length > 0
             ? t(
-                "Choose a stop from the suggestions, or try a more specific address or place."
+                "Choose a stop suggestion or refine the place search."
               )
             : t("No matching destination found.")
       );
