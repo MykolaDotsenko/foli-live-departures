@@ -1,9 +1,13 @@
 export interface DestinationIntent {
   id: string;
-  kind: "saved-place" | "public-stop";
+  kind: "saved-place" | "public-stop" | "geocoded-place";
   label: string;
   primaryStopId: string;
   acceptableStopIds: string[];
+  lat?: number;
+  lon?: number;
+  destinationStopDistances?: Record<string, number>;
+  placeProvider?: "nominatim";
 }
 
 export type Catchability =
@@ -24,6 +28,9 @@ export interface NearbyDepartureFit {
   aimedDepartureAt?: number | null;
   originAimedDepartureAt?: number | null;
   destinationArrivalAt: number | null;
+  finalWalkDistanceM?: number | null;
+  finalWalkDurationSec?: number | null;
+  finalArrivalAt?: number | null;
   catchability: Catchability;
   liveState: LiveState;
   rideDurationSec: number | null;
@@ -98,3 +105,14 @@ export interface ActiveDirectJourney {
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;
+
+
+export interface PlaceSearchResult {
+  id: string;
+  label: string;
+  secondaryLabel: string;
+  lat: number;
+  lon: number;
+  category: string;
+  provider: "nominatim";
+}
