@@ -72,7 +72,11 @@ function renderSearch(overrides = {}) {
     online: true,
     onChoosePlace: vi.fn(),
     onChooseStop: vi.fn(),
-    onChooseExternalPlace: vi.fn(() => true),
+    onChooseExternalPlace: vi.fn(() => ({
+      ok: true,
+      reason: "ready",
+      destination: {},
+    })),
     onClear: vi.fn(),
     ...overrides,
   };
@@ -211,7 +215,11 @@ test("shows a truthful error when a place cannot map to nearby Föli stops", () 
   });
 
   renderSearch({
-    onChooseExternalPlace: vi.fn(() => false),
+    onChooseExternalPlace: vi.fn(() => ({
+      ok: false,
+      reason: "no-nearby-stops",
+      destination: null,
+    })),
   });
 
   fireEvent.click(
@@ -220,6 +228,32 @@ test("shows a truthful error when a place cannot map to nearby Föli stops", () 
 
   expect(screen.getByRole("alert")).toHaveTextContent(
     "No Föli stop close enough to this place could be resolved."
+  );
+});
+
+test("shows a specific error for a place outside the Föli service area", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [prisma],
+    status: "ready",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+  });
+
+  renderSearch({
+    onChooseExternalPlace: vi.fn(() => ({
+      ok: false,
+      reason: "outside-service-area",
+      destination: null,
+    })),
+  });
+
+  fireEvent.click(
+    screen.getByRole("button", { name: /Prisma Itäharju.*Turku, Finland/i })
+  );
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This place appears outside Föli’s service area."
   );
 });
 
