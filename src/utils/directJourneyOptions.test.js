@@ -7,6 +7,7 @@ function departure({
   catchability = "comfortable",
   lineRef = "18",
   departureAt = 1_500,
+  ...extra
 }) {
   return {
     tripRef,
@@ -17,6 +18,7 @@ function departure({
     catchability,
     liveState: "live",
     rideDurationSec: 600,
+    ...extra,
   };
 }
 
