@@ -4,7 +4,12 @@ import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
 import { atMorningCommute, gtfsClockAt } from "./support/clock.js";
 import { mockFoli, monitorPayload } from "./support/foli.js";
-import { routeTargetStop, turnOffNotifications, startRide } from "./support/ride.js";
+import {
+  rideArrival,
+  routeTargetStop,
+  turnOffNotifications,
+  startRide,
+} from "./support/ride.js";
 
 test("Ride Mode warns before the selected get-off stop", async ({ page }) => {
   await page.route(
@@ -392,6 +397,81 @@ test("Ride Mode offers recovery after the passenger rides past the stop", async 
 
   await page.getByRole("button", { name: "Open next stop" }).click();
   await expect(page).toHaveURL(/stop=4/);
+});
+
+test("Ride Mode reopens a false miss only after newer live evidence for the same run", async ({
+  page,
+  context,
+}) => {
+  const firstSnapshotSec = Math.floor(Date.now() / 1000);
+  let recoverySnapshot = false;
+
+  await page.route("https://data.foli.fi/siri/sm/32", async (route) => {
+    const now = Math.floor(Date.now() / 1000);
+    const observedAt = recoverySnapshot ? now : firstSnapshotSec;
+    const expectedAt = recoverySnapshot ? now + 70 : firstSnapshotSec + 70;
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        status: "OK",
+        stopname: "Puistokatu",
+        servertime: now,
+        result: [
+          rideArrival(now, {
+            recordedattime: observedAt,
+            expectedarrivaltime: expectedAt,
+            expecteddeparturetime: expectedAt + 15,
+            aimedarrivaltime: expectedAt + 20,
+          }),
+        ],
+      }),
+    });
+  });
+
+  await page.route(
+    /https:\/\/data\.foli\.fi\/gtfs\/v0\/[^/]+\/shapes\/.*/,
+    async (route) => {
+      await route.fulfill({ contentType: "application/json", body: "[]" });
+    }
+  );
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({
+    latitude: 60.4518,
+    longitude: 22.2666,
+    accuracy: 25,
+  });
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: true });
+  await expect(page.locator('[data-stage="next"]')).toBeVisible();
+
+  await context.setGeolocation({
+    latitude: 60.44945,
+    longitude: 22.255,
+    accuracy: 25,
+  });
+  await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
+
+  await context.setGeolocation({
+    latitude: 60.4533,
+    longitude: 22.255,
+    accuracy: 25,
+  });
+  await expect(page.locator('[data-stage="missed"]')).toBeVisible();
+
+  // Repeated pre-miss transit data is not enough. Release one distinct SIRI
+  // observation only after MISSED; it still matches the committed dated
+  // journey and puts the target about a minute ahead.
+  recoverySnapshot = true;
+  await page.evaluate(() =>
+    document.dispatchEvent(new globalThis.Event("visibilitychange"))
+  );
+
+  await expect(page.locator('[data-stage="next"]')).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Get ready to press STOP" })
+  ).toBeVisible();
 });
 
 test("Ride Mode does not mistake an untracked timetable row for the bus", async ({
