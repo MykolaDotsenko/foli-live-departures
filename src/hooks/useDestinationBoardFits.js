@@ -145,6 +145,11 @@ export default function useDestinationBoardFits({
             destination.id,
             destination.primaryStopId,
             ...destination.acceptableStopIds,
+            ...Object.entries(
+              destination.destinationStopDistances || {}
+            )
+              .sort(([left], [right]) => left.localeCompare(right))
+              .map(([id, distance]) => `${id}:${Math.round(Number(distance) || 0)}`),
             stopId,
             ...arrivals.map(
               (arrival, index) =>
