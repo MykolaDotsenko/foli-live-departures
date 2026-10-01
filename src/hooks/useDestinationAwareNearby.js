@@ -399,6 +399,11 @@ export default function useDestinationAwareNearby({
             destination.id,
             destination.primaryStopId,
             ...destination.acceptableStopIds,
+            ...Object.entries(
+              destination.destinationStopDistances || {}
+            )
+              .sort(([left], [right]) => left.localeCompare(right))
+              .map(([id, distance]) => `${id}:${Math.round(Number(distance) || 0)}`),
             stops.map((stop) => stop.id).join(","),
             Math.round(Number(positionAccuracy) || 0),
           ].join("|")
