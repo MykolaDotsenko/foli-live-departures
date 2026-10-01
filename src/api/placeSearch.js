@@ -38,13 +38,13 @@ function normalizedQuery(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
-/** @returns {PlaceSearchConfig} */
 /**
  * Public Nominatim is intentionally web-only in this project. A packaged
  * WebView cannot guarantee the provider-identification and no-software-update
  * switching requirements of the public service. Native builds therefore
  * fail closed and hand address/POI search to the official journey planner.
  */
+/** @returns {boolean} */
 export function directPlaceSearchSupported() {
   try {
     if (globalThis.Capacitor?.isNativePlatform?.()) return false;
@@ -56,6 +56,7 @@ export function directPlaceSearchSupported() {
   return origin !== "https://localhost" && origin !== "capacitor://localhost";
 }
 
+/** @returns {PlaceSearchConfig} */
 function disabledConfig() {
   return {
     enabled: false,
