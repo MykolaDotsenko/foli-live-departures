@@ -38,13 +38,15 @@ export default {
   "Föli open data at data.foli.fi, under CC BY 4.0, as processed by this app. Live times are estimates from the buses and can change.":
     "Fölin avoimesta datasta osoitteessa data.foli.fi, lisenssillä CC BY 4.0, tämän sovelluksen käsittelemänä. Reaaliaikaiset ajat ovat busseista saatuja arvioita ja voivat muuttua.",
   "What stays on this phone": "Mitä tähän puhelimeen jää",
-  "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, and a ride in progress for up to six hours. Clearing this site’s data removes all of it.":
-    "Suosikit, viimeksi käytetyt pysäkit ja milloin katsoit niitä, kunkin pysäkin linjasuodatus, Omat paikat (julkisten pysäkkien numerot ja nimet, ei koskaan osoitetta), muutama viimeisin lähtötaulu enintään 15 minuutin ajan ja käynnissä oleva matka enintään kuuden tunnin ajan. Kaikki poistuu, kun tyhjennät tämän sivuston tiedot.",
+  "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, a ride in progress for up to six hours, and recent place-search results for this browser session only. Clearing this site’s data removes all of it.":
+    "Suosikit, viimeksi käytetyt pysäkit ja milloin katsoit niitä, kunkin pysäkin linjasuodatus, Omat paikat (julkisten pysäkkien numerot ja nimet, ei koskaan osoitetta), muutama viimeisin lähtötaulu enintään 15 minuutin ajan, käynnissä oleva matka enintään kuuden tunnin ajan sekä viimeisimmät paikkahaun tulokset vain tämän selainistunnon ajan. Kaikki poistuu, kun tyhjennät tämän sivuston tiedot.",
   "What leaves the phone": "Mitä puhelimesta lähtee",
   "The app is loaded from GitHub Pages, which sees your IP address. The stops you look up and the buses whose stops you open are fetched from data.foli.fi, which sees your IP address and what was asked for. During a ride, so are your exit stop and the one before it.":
     "Sovellus ladataan GitHub Pagesista, joka näkee IP-osoitteesi. Hakemasi pysäkit ja bussit, joiden pysäkit avaat, haetaan osoitteesta data.foli.fi, joka näkee IP-osoitteesi ja sen, mitä haettiin. Matkan aikana sieltä haetaan myös pysäkki, jolla jäät pois, ja sitä edeltävä pysäkki.",
   "Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved.":
     "Sijaintiasi käytetään pysäkin etsimiseen, kun pyydät, ja matkan aikana, kun Seuraa sijaintiani on päällä. Se pysyy puhelimessa, eikä sitä tallenneta.",
+  "If you press Search destination for an address or place, that text is sent to OpenStreetMap Nominatim, which sees your IP address and the search text. Nothing is sent there while you are only typing or choosing a Föli stop.":
+    "Jos painat Hae määränpää -painiketta osoitetta tai paikkaa varten, hakuteksti lähetetään OpenStreetMap Nominatim -palveluun, joka näkee IP-osoitteesi ja hakutekstin. Sinne ei lähetetä mitään, kun vain kirjoitat tai valitset Föli-pysäkin.",
   "Google Maps opens only when you tap a route link. It gets the stop you chose and may then use your location to plan the route.":
     "Google Maps avautuu vain, kun napautat reittilinkkiä. Se saa valitsemasi pysäkin ja voi sitten käyttää sijaintiasi reitin laskemiseen.",
   "What it doesn’t have": "Mitä sovelluksessa ei ole",
