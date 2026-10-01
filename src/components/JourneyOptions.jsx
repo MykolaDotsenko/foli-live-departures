@@ -51,7 +51,8 @@ function tradeoffText(option) {
 export default function JourneyOptions({
   options,
   destinationLabel,
-  onOpenStop,
+  onSelectJourney = null,
+  onOpenStop = null,
 }) {
   useLanguage();
 
@@ -85,7 +86,10 @@ export default function JourneyOptions({
             type="button"
             className={styles.card}
             data-primary={option.label === "fastest" ? "true" : undefined}
-            onClick={() => onOpenStop(option.stopId)}
+            onClick={() => {
+              if (onSelectJourney) onSelectJourney(option);
+              else onOpenStop?.(option.stopId);
+            }}
           >
             <span className={styles.badge}>{labelText(option.label)}</span>
 

@@ -136,4 +136,6 @@ export default {
   "Other direction for {destination}":
     "Toinen suunta määränpäähän {destination}",
 
+  "Your bus": "Sinun bussisi",
+
 };

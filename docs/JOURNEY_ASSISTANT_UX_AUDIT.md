@@ -619,10 +619,17 @@ then:
 
 ### Acceptance criteria
 
-- selected option is pinned;
+- selected concrete trip is pinned;
+- saved line filters cannot hide the selected trip;
 - small ranking changes do not redirect the user;
-- material better option is opt-in;
-- selected departure leaving triggers recovery.
+- no silent switch to a materially better option;
+- **I’m at the stop** is an explicit passenger confirmation, not inferred physical-location truth;
+- opening another stop pauses selected-trip live monitoring and offers return to the selected stop;
+- provider failure degrades confidence rather than producing false “departed” recovery;
+- cancellation triggers recovery even if the departure row has already disappeared;
+- confirmed disappearance after the departure grace window triggers recovery;
+- recovery alternatives exclude the failed concrete trip while preserving the full Nearby list and departure board;
+- starting Ride Mode clears the pre-boarding journey so stale state cannot return when the ride ends.
 
 ---
 

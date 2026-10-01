@@ -21,6 +21,8 @@ export interface NearbyDepartureFit {
   lineRef: string;
   destinationStopId: string;
   departureAt: number;
+  aimedDepartureAt?: number | null;
+  originAimedDepartureAt?: number | null;
   destinationArrivalAt: number | null;
   catchability: Catchability;
   liveState: LiveState;
@@ -59,6 +61,40 @@ export interface DirectJourneyOption {
   departure: NearbyDepartureFit;
   arrivalDeltaSec: number;
   walkingDeltaMeters: number;
+}
+
+export type ActiveJourneyPhase =
+  | "walking-to-stop"
+  | "waiting"
+  | "recovery";
+
+export type ActiveJourneyRecoveryReason =
+  | "cancelled"
+  | "departed"
+  | null;
+
+export interface ActiveDirectJourney {
+  id: string;
+  destinationId: string;
+  destinationKind: DestinationIntent["kind"];
+  destinationLabel: string;
+  optionLabel: DirectJourneyLabel;
+  stopId: string;
+  stopName: string;
+  distanceMeters: number;
+  tripRef: string;
+  lineRef: string;
+  destinationStopId: string;
+  departureAt: number;
+  aimedDepartureAt: number | null;
+  originAimedDepartureAt: number | null;
+  destinationArrivalAt: number | null;
+  liveState: LiveState;
+  phase: ActiveJourneyPhase;
+  recoveryReason: ActiveJourneyRecoveryReason;
+  selectedAt: number;
+  atStopConfirmedAt: number | null;
+  lastSeenAt: number;
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;

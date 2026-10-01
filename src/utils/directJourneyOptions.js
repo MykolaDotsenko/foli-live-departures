@@ -51,7 +51,7 @@ function optionId(stopId, departure) {
   return [
     stopId,
     departure.tripRef,
-    departure.departureAt,
+    departure.aimedDepartureAt || departure.departureAt,
     departure.destinationStopId,
   ].join(":");
 }

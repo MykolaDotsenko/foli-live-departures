@@ -20,6 +20,7 @@ import {
 } from "./departureBoard/departures";
 import useClockTick from "../hooks/useClockTick";
 import useDestinationBoardFits from "../hooks/useDestinationBoardFits";
+import { arrivalMatchesActiveJourney } from "../utils/activeJourney";
 import useLineFilter from "../hooks/useLineFilter";
 import useLineTimetable from "../hooks/useLineTimetable";
 import useTripEnrichment from "../hooks/useTripEnrichment";
@@ -63,6 +64,7 @@ function BusStopDisplay({
   onToggleFavorite,
   placesById,
   destination = null,
+  selectedJourney = null,
   onStartRide,
   activeRideTripRef = "",
   cancellations = [],
@@ -205,15 +207,44 @@ function BusStopDisplay({
     Boolean(heldArrival) &&
     (followedLines.length === 0 ||
       followedLines.includes(String(heldArrival.lineref || "")));
-  const visibleArrivals = holdsSetupRow
-    ? // Gone by the clock, so it sorts first and the cut keeps it.
-      [heldArrival, ...listedArrivals]
-        .sort(byDepartureTime(referenceTime))
-        .slice(0, MAX_VISIBLE_DEPARTURES)
-    : listedArrivals;
-  // The held row counts as one to come, or the board put "No upcoming
-  // departures" in place of the list and its setup.
-  const upcomingCount = upcomingArrivals.length + (holdsSetupRow ? 1 : 0);
+
+  // A saved line filter is a convenience, never stronger than an explicit
+  // journey choice. Keep the selected concrete trip visible even when the
+  // passenger's old filter would otherwise hide its line. This exception is
+  // one row only; all other departures still obey the filter.
+  const selectedJourneyFeedArrival =
+    selectedJourney?.stopId === stopId
+      ? arrivals.find((arrival) =>
+          arrivalMatchesActiveJourney(arrival, selectedJourney)
+        ) || null
+      : null;
+  const forcedArrivals = [];
+  if (holdsSetupRow && heldArrival) forcedArrivals.push(heldArrival);
+  if (
+    selectedJourneyFeedArrival &&
+    !listedArrivals.includes(selectedJourneyFeedArrival) &&
+    !forcedArrivals.includes(selectedJourneyFeedArrival)
+  ) {
+    forcedArrivals.push(selectedJourneyFeedArrival);
+  }
+
+  const visibleArrivals =
+    forcedArrivals.length > 0
+      ? [
+          ...forcedArrivals,
+          ...listedArrivals.filter(
+            (arrival) => !forcedArrivals.includes(arrival)
+          ),
+        ].slice(0, MAX_VISIBLE_DEPARTURES)
+      : listedArrivals;
+  // A forced row still belongs to the passenger's immediate decision even
+  // when it has just crossed the generic 30-second upcoming cutoff. Count each
+  // distinct forced-past row once so DepartureStates keeps the table visible
+  // during setup/selected-journey grace without redefining normal departures.
+  const forcedPastCount = forcedArrivals.filter(
+    (arrival) => !upcomingArrivals.includes(arrival)
+  ).length;
+  const upcomingCount = upcomingArrivals.length + forcedPastCount;
   // Only an answer that itself listed nothing says nothing is coming. One
   // whose buses have all left since says nothing about what comes after
   // them: the timetable was never asked, because they were still ahead.
@@ -260,13 +291,27 @@ function BusStopDisplay({
     arrival,
     rowKey: rowKeys[index],
     fit: destinationFitsByKey[rowKeys[index]] || null,
+    selected:
+      selectedJourney?.stopId === stopId &&
+      arrivalMatchesActiveJourney(arrival, selectedJourney),
     originalIndex: index,
   }));
 
-  if (destination && destinationFitState === "ready") {
+  if (
+    selectedJourney?.stopId === stopId ||
+    (destination && destinationFitState === "ready")
+  ) {
     destinationRows.sort((left, right) => {
-      const leftRank = left.fit?.status === "compatible" ? 0 : 1;
-      const rightRank = right.fit?.status === "compatible" ? 0 : 1;
+      const leftRank = left.selected
+        ? 0
+        : left.fit?.status === "compatible"
+          ? 1
+          : 2;
+      const rightRank = right.selected
+        ? 0
+        : right.fit?.status === "compatible"
+          ? 1
+          : 2;
       return leftRank - rightRank || left.originalIndex - right.originalIndex;
     });
   }
@@ -370,6 +415,7 @@ function BusStopDisplay({
           arrivals={displayedArrivals}
           rowKeys={displayedRowKeys}
           destination={destination}
+          selectedJourney={selectedJourney}
           destinationFitsByKey={destinationFitsByKey}
           referenceTime={referenceTime}
           effectiveServerTime={effectiveServerTime}

@@ -85,3 +85,37 @@ test("renders nothing when there are no trustworthy direct options", () => {
 
   expect(container).toBeEmptyDOMElement();
 });
+
+
+test("selects the concrete journey when orchestration is available", () => {
+  const onSelectJourney = vi.fn();
+  const onOpenStop = vi.fn();
+  const selected = {
+    id: "fast",
+    label: "fastest",
+    stopId: "100",
+    stopName: "Kauppatori D2",
+    distanceMeters: 280,
+    departure: baseDeparture,
+    arrivalDeltaSec: 0,
+    walkingDeltaMeters: 0,
+  };
+
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onSelectJourney={onSelectJourney}
+      onOpenStop={onOpenStop}
+      options={[selected]}
+    />
+  );
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: /Fastest.*Line 18.*Kauppatori D2/i,
+    })
+  );
+
+  expect(onSelectJourney).toHaveBeenCalledWith(selected);
+  expect(onOpenStop).not.toHaveBeenCalled();
+});

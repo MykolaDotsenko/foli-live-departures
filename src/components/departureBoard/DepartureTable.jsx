@@ -13,6 +13,7 @@ function DepartureTable({
   rowKeys,
   timesAreOld = false,
   destination = null,
+  selectedJourney = null,
   destinationFitsByKey = {},
   ...rowProps
 }) {
@@ -44,6 +45,7 @@ function DepartureTable({
               arrival={arrival}
               rowKey={rowKeys[index]}
               journeyDestination={destination}
+              selectedJourney={selectedJourney}
               destinationFit={destinationFitsByKey[rowKeys[index]] || null}
               {...rowProps}
             />

@@ -1,0 +1,246 @@
+.wrapper {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 10px;
+  padding: 13px 14px;
+  border: 1px solid #bad8d2;
+  border-radius: 15px;
+  background: #f5fbf9;
+  box-shadow: 0 8px 22px rgba(28, 91, 79, 0.07);
+}
+
+.wrapper[data-phase="recovery"] {
+  border-color: #e6c3a5;
+  background: #fff8f2;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.kicker {
+  margin: 0 0 2px;
+  color: #0b7463;
+  font-size: 0.67rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 0;
+  color: #1e3935;
+  font-size: clamp(1rem, 4vw, 1.12rem);
+  line-height: 1.25;
+}
+
+.destination {
+  max-width: 42%;
+  overflow: hidden;
+  color: #5a6d69;
+  font-size: 0.74rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: #3d5752;
+  font-size: 0.79rem;
+}
+
+.summary strong {
+  color: #173b34;
+}
+
+.primaryStatus,
+.note,
+.recovery,
+.offline,
+.monitoringNotice {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.primaryStatus {
+  color: #274b44;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.note {
+  color: #60736f;
+  font-size: 0.74rem;
+}
+
+.recovery {
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #fff0e4;
+  color: #7c3f10;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.offline {
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: #eef1f2;
+  color: #53656a;
+  font-size: 0.74rem;
+  font-weight: 750;
+}
+
+.monitoringNotice {
+  padding: 8px 9px;
+  border: 1px solid #d8c9a6;
+  border-radius: 9px;
+  background: #fffaf0;
+  color: #6d5425;
+  font-size: 0.74rem;
+  font-weight: 780;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.primaryButton,
+.ghostButton,
+.secondaryLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 13px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 850;
+}
+
+.primaryButton {
+  border: 1px solid #007985;
+  background: #007985;
+  color: #fff;
+  cursor: pointer;
+}
+
+.ghostButton,
+.secondaryLink {
+  border: 1px solid #b8ced0;
+  background: #fff;
+  color: #31565a;
+}
+
+.ghostButton {
+  cursor: pointer;
+}
+
+.secondaryLink {
+  text-decoration: none;
+}
+
+.primaryButton:hover {
+  background: #006b75;
+}
+
+.ghostButton:hover,
+.secondaryLink:hover {
+  border-color: #7fa9ad;
+  background: #f9fdfd;
+}
+
+.primaryButton:focus-visible,
+.ghostButton:focus-visible,
+.secondaryLink:focus-visible {
+  outline: 3px solid #007985;
+  outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+  .header {
+    display: grid;
+  }
+
+  .destination {
+    max-width: 100%;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .primaryButton,
+  .ghostButton,
+  .secondaryLink {
+    width: 100%;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .wrapper {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+    box-shadow: none;
+  }
+
+  :root[data-theme="dark"] .wrapper[data-phase="recovery"] {
+    border-color: #795338;
+    background: var(--dm-surface);
+  }
+
+  :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .summary strong {
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .header h2,
+  :root[data-theme="dark"] .primaryStatus {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .destination,
+  :root[data-theme="dark"] .summary,
+  :root[data-theme="dark"] .note,
+  :root[data-theme="dark"] .offline {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .recovery {
+    background: #3a2b21;
+    color: #f4caa8;
+  }
+
+  :root[data-theme="dark"] .offline {
+    background: var(--dm-sunken);
+  }
+
+  :root[data-theme="dark"] .monitoringNotice {
+    border-color: #705f3d;
+    background: #332f25;
+    color: #f0dcae;
+  }
+
+  :root[data-theme="dark"] .ghostButton,
+  :root[data-theme="dark"] .secondaryLink {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+    color: var(--dm-text);
+  }
+}
+
+@media (forced-colors: active) {
+  .wrapper[data-phase="recovery"] {
+    border: 2px solid CanvasText;
+  }
+}
