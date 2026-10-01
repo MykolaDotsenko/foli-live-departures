@@ -9,6 +9,7 @@ import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import LanguageSwitch from "./components/LanguageSwitch";
 import JourneySearch from "./components/JourneySearch";
+import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
 import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
@@ -28,6 +29,7 @@ import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
 import useTransferLegRevalidation from "./hooks/useTransferLegRevalidation";
+import useTransferRecoveryOptions from "./hooks/useTransferRecoveryOptions";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
@@ -78,7 +80,7 @@ function selectedJourneyDepartureAction() {
 
 function firstJourneyOption() {
   const element = document.querySelector(
-    '[aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
   );
   return element instanceof globalThis.HTMLElement ? element : null;
 }
@@ -197,6 +199,12 @@ function App() {
     () => buildRouteIndexes(routes),
     [routes]
   );
+  const transferRecovery = useTransferRecoveryOptions({
+    enabled: online && !ride.session,
+    journey: selectedJourney,
+    destination: journey.destination,
+    allStops: stops,
+  });
   const {
     favorites,
     recents,
@@ -892,6 +900,17 @@ function App() {
             onOpenStop={openSelectedJourneyStop}
           />
         )}
+
+        {!ride.session &&
+          selectedJourney?.phase === "recovery" &&
+          selectedJourney?.transferPlan && (
+            <TransferRecoveryPanel
+              state={online ? transferRecovery.state : "offline"}
+              options={transferRecovery.options}
+              destination={journey.destination}
+              onSelectJourney={selectJourneyOption}
+            />
+          )}
 
         {/* One column on a phone. On a wide screen, Get me Home takes the
             left and search, saved stops and service updates the right, so

@@ -200,6 +200,20 @@ export default {
   "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
     "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
+  "Fresh transfer options": "Uudet vaihtovaihtoehdot",
+  "Continue to {destination}": "Jatka kohteeseen {destination}",
+  "Checking fresh buses from this transfer area…":
+    "Tarkistetaan uusia busseja tältä vaihtoalueelta…",
+  "Recovery search will resume when you’re online.":
+    "Korvaavan yhteyden haku jatkuu, kun verkkoyhteys palaa.",
+  "Recovery search is temporarily unavailable. Your destination is kept.":
+    "Korvaavan yhteyden haku ei ole tilapäisesti käytettävissä. Kohde säilyy valittuna.",
+  "No reliable direct replacement is available from this transfer area right now.":
+    "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa suoraa korvaavaa yhteyttä.",
+  "These options start from the transfer area. Your journey changes only after you choose one.":
+    "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
+  "The failed bus is excluded. Nothing changes until you choose a new option.":
+    "Epäonnistunut bussivuoro on suljettu pois. Mikään ei muutu ennen kuin valitset uuden vaihtoehdon.",
   "No direct trip found nearby. Checking one-transfer options…":
     "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan yhden vaihdon vaihtoehtoja…",
   "No reliable one-transfer option was found from the nearby stops.":
