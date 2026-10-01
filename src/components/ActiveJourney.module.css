@@ -134,6 +134,10 @@
   cursor: pointer;
 }
 
+.primaryButton[href] {
+  text-decoration: none;
+}
+
 .ghostButton,
 .secondaryLink {
   border: 1px solid #b8ced0;
