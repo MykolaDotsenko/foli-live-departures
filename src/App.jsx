@@ -470,6 +470,12 @@ function App() {
     journey.chooseStop(stop);
   };
 
+  const chooseJourneyExternalPlace = (place) => {
+    const selected = journey.chooseExternalPlace(place, stops);
+    if (selected) clearJourney();
+    return selected;
+  };
+
   const clearJourneyDestination = () => {
     clearJourney();
     journey.clearDestination();
@@ -647,8 +653,11 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
+            coordinatesStatus={coordinatesStatus}
+            online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
+            onChooseExternalPlace={chooseJourneyExternalPlace}
             onClear={clearJourneyDestination}
           />
         )}
