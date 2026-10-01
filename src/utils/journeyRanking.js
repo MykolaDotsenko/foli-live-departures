@@ -20,7 +20,9 @@ export function destinationFitRank(fit) {
  * @returns {number | null}
  */
 function destinationArrival(fit) {
-  const value = Number(fit?.best?.destinationArrivalAt);
+  const value = Number(
+    fit?.best?.finalArrivalAt ?? fit?.best?.destinationArrivalAt
+  );
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
