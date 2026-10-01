@@ -65,7 +65,9 @@ export default function JourneyOptions({
           </h3>
         </div>
         <span className={styles.count}>
-          {t("{count} options", { count: options.length })}
+          {options.length === 1
+            ? t("1 option")
+            : t("{count} options", { count: options.length })}
         </span>
       </div>
 
