@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { placeSearchViewbox, searchPlaces } from "../api/placeSearch";
+import { searchPlaces } from "../api/placeSearch";
 import { placeLabel } from "../hooks/useSavedPlaces";
 import { t, useLanguage } from "../i18n";
 import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
@@ -110,7 +110,6 @@ export default function JourneySearch({
     try {
       const results = await searchPlaces(value, {
         language,
-        viewbox: placeSearchViewbox(stops),
         signal: controller.signal,
       });
       if (controller.signal.aborted) return [];
