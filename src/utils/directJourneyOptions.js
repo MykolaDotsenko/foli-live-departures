@@ -38,6 +38,7 @@ function arrivalRank(departure) {
 function usable(departure) {
   return (
     departure.catchability !== "too-late" &&
+    departure.catchability !== "unknown" &&
     Number.isFinite(Number(departure.destinationArrivalAt))
   );
 }
