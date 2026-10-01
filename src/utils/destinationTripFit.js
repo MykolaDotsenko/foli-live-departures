@@ -164,23 +164,32 @@ export function analyzeTripFit({
   let selected = candidates[0];
 
   if (destinationStopDistances) {
-    const scored = candidates
-      .filter(
-        (candidate) =>
-          candidate.rideDurationSec !== null &&
-          candidate.finalWalkDurationSec !== null
-      )
-      .sort(
-        (left, right) =>
-          left.rideDurationSec +
-            left.finalWalkDurationSec -
-            (right.rideDurationSec + right.finalWalkDurationSec) ||
-          left.rideDurationSec - right.rideDurationSec ||
-          Number(left.destination.stopSequence) -
-            Number(right.destination.stopSequence)
-      );
+    /** @type {{ candidate: (typeof candidates)[number], totalSec: number, rideSec: number }[]} */
+    const scored = [];
+    for (const candidate of candidates) {
+      if (
+        candidate.rideDurationSec === null ||
+        candidate.finalWalkDurationSec === null
+      ) {
+        continue;
+      }
+      scored.push({
+        candidate,
+        totalSec:
+          candidate.rideDurationSec + candidate.finalWalkDurationSec,
+        rideSec: candidate.rideDurationSec,
+      });
+    }
 
-    if (scored.length > 0) selected = scored[0];
+    scored.sort(
+      (left, right) =>
+        left.totalSec - right.totalSec ||
+        left.rideSec - right.rideSec ||
+        Number(left.candidate.destination.stopSequence) -
+          Number(right.candidate.destination.stopSequence)
+    );
+
+    if (scored.length > 0) selected = scored[0].candidate;
   }
 
   return {
