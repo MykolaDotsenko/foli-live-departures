@@ -8,6 +8,7 @@ const MIN_REQUEST_INTERVAL_MS = 1_100;
 
 let configPromise = null;
 let lastNetworkStartedAt = 0;
+/** @type {Promise<unknown>} */
 let networkTail = Promise.resolve();
 /** @type {Map<string, Promise<PlaceSearchResult[]>>} */
 const inFlight = new Map();
