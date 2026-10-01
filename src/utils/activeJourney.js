@@ -5,6 +5,7 @@ import { getDepartureTime } from "./time";
 const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
 const PLANNED_MATCH_TOLERANCE_SECONDS = 90;
+const ORIGIN_MATCH_TOLERANCE_SECONDS = 30;
 
 /** @param {unknown} value */
 function finitePositive(value) {
@@ -106,7 +107,10 @@ export function directOptionMatchesActiveJourney(option, journey) {
   );
 
   if (selectedOrigin !== null && optionOrigin !== null) {
-    return Math.abs(selectedOrigin - optionOrigin) <= 30;
+    return (
+      Math.abs(selectedOrigin - optionOrigin) <=
+      ORIGIN_MATCH_TOLERANCE_SECONDS
+    );
   }
 
   const selectedPlanned = finitePositive(journey.aimedDepartureAt);
@@ -133,6 +137,22 @@ export function directOptionMatchesActiveJourney(option, journey) {
  */
 export function arrivalMatchesActiveJourney(arrival, journey) {
   if (!journey || String(arrival?.tripref || "") !== journey.tripRef) {
+    return false;
+  }
+
+  const selectedOrigin = finitePositive(
+    journey.originAimedDepartureAt
+  );
+  const observedOrigin = finitePositive(
+    arrival?.originaimeddeparturetime
+  );
+
+  if (
+    selectedOrigin !== null &&
+    observedOrigin !== null &&
+    Math.abs(selectedOrigin - observedOrigin) >
+      ORIGIN_MATCH_TOLERANCE_SECONDS
+  ) {
     return false;
   }
 
