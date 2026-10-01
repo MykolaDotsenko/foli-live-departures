@@ -90,3 +90,39 @@ describe("destination trip fit", () => {
     ).toBe(false);
   });
 });
+
+
+test("chooses a later downstream stop when final-walk cost makes it better", () => {
+  const fit = analyzeTripFit({
+    stopTimes: [
+      row("100", 1, "10:00:00", "10:00:00"),
+      row("900", 2, "10:08:00", "10:08:00"),
+      row("901", 3, "10:12:00", "10:12:00"),
+    ],
+    boardingStopId: "100",
+    destinationStopIds: ["900", "901"],
+    destinationExtraSecByStop: {
+      "900": 10 * 60,
+      "901": 30,
+    },
+  });
+
+  expect(fit.compatible).toBe(true);
+  expect(fit.destination.stopId).toBe("901");
+  expect(fit.rideDurationSec).toBe(12 * 60);
+});
+
+test("keeps first downstream semantics when no destination cost map is supplied", () => {
+  const fit = analyzeTripFit({
+    stopTimes: [
+      row("100", 1, "10:00:00", "10:00:00"),
+      row("900", 2, "10:08:00", "10:08:00"),
+      row("901", 3, "10:12:00", "10:12:00"),
+    ],
+    boardingStopId: "100",
+    destinationStopIds: ["900", "901"],
+  });
+
+  expect(fit.destination.stopId).toBe("900");
+  expect(fit.rideDurationSec).toBe(8 * 60);
+});
