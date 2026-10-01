@@ -113,6 +113,10 @@ export default {
   "Place search data": "Paikkahaun tiedot",
   "Place search needs an internet connection. Stop search still works.":
     "Paikkahaku tarvitsee internetyhteyden. Pysäkkihaku toimii edelleen.",
+  "Address and place search is waiting for stop locations. Try again in a moment.":
+    "Osoite- ja paikkahaku odottaa pysäkkien sijaintitietoja. Yritä hetken kuluttua uudelleen.",
+  "Address and place search is temporarily unavailable. Stop search still works.":
+    "Osoite- ja paikkahaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii edelleen.",
   "Place search is temporarily unavailable. Stop search still works.":
     "Paikkahaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii edelleen.",
   "Choose a stop from the suggestions, or try a more specific address or place.":
