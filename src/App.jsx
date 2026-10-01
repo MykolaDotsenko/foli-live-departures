@@ -497,7 +497,16 @@ function App() {
   };
 
   const chooseAnotherJourney = () => {
-    requestFocus(firstJourneyOption);
+    // In recovery the alternative cards are already on this page, so move
+    // focus immediately when possible. A pending request remains useful when
+    // the replacement options are still loading.
+    const visibleOption =
+      selectedJourney?.phase === "recovery"
+        ? firstJourneyOption()
+        : null;
+    if (visibleOption) visibleOption.focus();
+    else requestFocus(firstJourneyOption);
+
     // Keep recovery context until another concrete trip is selected. This
     // prevents the cancelled/departed trip from immediately returning as a
     // recommendation while the passenger is choosing a replacement.
