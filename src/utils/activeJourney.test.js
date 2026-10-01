@@ -57,6 +57,35 @@ describe("active journey transitions", () => {
     });
   });
 
+  test("retains final place arrival metadata", () => {
+    const journey = activeJourneyFromOption(
+      option({
+        departure: {
+          ...option().departure,
+          finalWalkDistanceM: 240,
+          finalWalkDurationSec: 250,
+          finalArrivalAt: 2_350,
+        },
+      }),
+      {
+        ...destination,
+        id: "geo:osm:node:1",
+        kind: "geocoded-place",
+        label: "Prisma",
+      },
+      1_000_000
+    );
+
+    expect(journey).toMatchObject({
+      destinationKind: "geocoded-place",
+      destinationLabel: "Prisma",
+      destinationArrivalAt: 2_100,
+      finalWalkDistanceM: 240,
+      finalWalkDurationSec: 250,
+      finalArrivalAt: 2_350,
+    });
+  });
+
   test("rejects malformed journey selections", () => {
     expect(
       activeJourneyFromOption(
