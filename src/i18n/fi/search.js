@@ -179,6 +179,10 @@ export default {
   Estimate: "Arvio",
   "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
     "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja ja likimääräistä linnuntie-etäisyyttä lähtöpysäkille.",
+  "Direct options use current Föli data. Walking distances are approximate straight-line estimates.":
+    "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja. Kävelyetäisyydet ovat likimääräisiä linnuntie-arvioita.",
+  "Final walk ≈ {distance}": "Loppukävely ≈ {distance}",
+  "final walk ≈ {distance}": "loppukävely ≈ {distance}",
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
   "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
 
