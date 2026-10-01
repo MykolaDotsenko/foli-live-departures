@@ -449,6 +449,7 @@ describe("transfer revalidation fallback and branch safety", () => {
       journey: sameStop,
       arrivals: [
         liveArrival({
+          aimeddeparturetime: 1_800,
           expecteddeparturetime: 1_800,
         }),
       ],
