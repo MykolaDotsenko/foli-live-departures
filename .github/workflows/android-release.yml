@@ -82,7 +82,12 @@ jobs:
         run: |
           set -euo pipefail
           match="$(
-            gh api               -H "Accept: application/vnd.github+json"               "/repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=master&event=push&status=success&per_page=20"               --jq '.workflow_runs[] | select(.head_sha == env.GITHUB_SHA) | .id'               | head -n 1
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              "/repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=master&event=push&status=success&per_page=20" \
+              | jq -r --arg sha "$GITHUB_SHA" \
+                  '.workflow_runs[] | select(.head_sha == $sha) | .id' \
+              | head -n 1
           )"
           test -n "$match" || {
             echo "No successful master CI run exists for exact commit $GITHUB_SHA."
