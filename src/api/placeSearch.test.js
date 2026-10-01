@@ -158,3 +158,110 @@ test("filters malformed coordinates and respects a disabled runtime provider", a
 
   await expect(searchPlaces("Bad place")).resolves.toEqual([]);
 });
+
+
+test("serializes different explicit searches instead of starting them in parallel", async () => {
+  let resolveFirstSearch;
+  const firstSearchResponse = new Promise((resolve) => {
+    resolveFirstSearch = resolve;
+  });
+
+  const timeoutSpy = vi
+    .spyOn(globalThis, "setTimeout")
+    .mockImplementation((callback) => {
+      callback();
+      return 1;
+    });
+
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockImplementationOnce(() => firstSearchResponse)
+    .mockResolvedValueOnce(response([]));
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  const first = searchPlaces("First place");
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+  const second = searchPlaces("Second place");
+  await Promise.resolve();
+  await Promise.resolve();
+
+  // Config + first search only. The second query waits behind the first
+  // network task instead of opening a parallel Nominatim request.
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+
+  resolveFirstSearch(response([]));
+  await first;
+  await second;
+
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+  expect(timeoutSpy).toHaveBeenCalledWith(
+    expect.any(Function),
+    expect.any(Number)
+  );
+  expect(
+    timeoutSpy.mock.calls.some(([, delay]) => Number(delay) >= 1_000)
+  ).toBe(true);
+});
+
+test("keeps cached place labels language-specific", async () => {
+  vi.spyOn(globalThis, "setTimeout").mockImplementation((callback) => {
+    callback();
+    return 1;
+  });
+
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response([
+        {
+          osm_type: "node",
+          osm_id: 1,
+          lat: "60.45",
+          lon: "22.30",
+          display_name: "Library, Turku, Finland",
+          namedetails: { name: "Library" },
+        },
+      ])
+    )
+    .mockResolvedValueOnce(
+      response([
+        {
+          osm_type: "node",
+          osm_id: 1,
+          lat: "60.45",
+          lon: "22.30",
+          display_name: "Kirjasto, Turku, Suomi",
+          namedetails: { name: "Kirjasto" },
+        },
+      ])
+    );
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  const english = await searchPlaces("library", { language: "en" });
+  const englishCached = await searchPlaces("LIBRARY", { language: "en" });
+  const finnish = await searchPlaces("library", { language: "fi" });
+
+  expect(englishCached).toEqual(english);
+  expect(english[0]?.title).toBe("Library");
+  expect(finnish[0]?.title).toBe("Kirjasto");
+  expect(fetchMock).toHaveBeenCalledTimes(3);
+});
