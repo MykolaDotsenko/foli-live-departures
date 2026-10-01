@@ -172,6 +172,27 @@ describe("active journey transitions", () => {
     });
   });
 
+  test("cancellation enters recovery even after the departure row disappears", () => {
+    const journey = confirmActiveJourneyAtStop(
+      activeJourneyFromOption(option(), destination, 1_000_000),
+      1_010_000
+    );
+
+    const updated = observeActiveJourney(journey, {
+      stopId: "100",
+      arrival: null,
+      referenceTimeSec: 1_500,
+      receivedAtMs: 1_050_000,
+      feedError: false,
+      cancelled: true,
+    });
+
+    expect(updated).toMatchObject({
+      phase: "recovery",
+      recoveryReason: "cancelled",
+    });
+  });
+
   test("provider failure never becomes a false departed recovery", () => {
     const journey = activeJourneyFromOption(option(), destination, 1_000_000);
 
@@ -185,6 +206,52 @@ describe("active journey transitions", () => {
 
     expect(updated.phase).toBe("walking-to-stop");
     expect(updated.recoveryReason).toBeNull();
+  });
+
+  test("a pre-selection cached arrival cannot overwrite selected timing", () => {
+    const journey = activeJourneyFromOption(option(), destination, 1_000_000);
+
+    const updated = observeActiveJourney(journey, {
+      stopId: "100",
+      arrival: {
+        tripref: "trip-1",
+        lineref: "18",
+        aimeddeparturetime: 1_480,
+        expecteddeparturetime: 1_300,
+      },
+      referenceTimeSec: 1_250,
+      receivedAtMs: 990_000,
+      feedError: false,
+      cancelled: false,
+    });
+
+    expect(updated).toBe(journey);
+    expect(updated.departureAt).toBe(1_500);
+  });
+
+  test("a stale cached arrival cannot undo recovery", () => {
+    const journey = {
+      ...activeJourneyFromOption(option(), destination, 1_000_000),
+      phase: "recovery",
+      recoveryReason: "departed",
+    };
+
+    const updated = observeActiveJourney(journey, {
+      stopId: "100",
+      arrival: {
+        tripref: "trip-1",
+        lineref: "18",
+        aimeddeparturetime: 1_480,
+        expecteddeparturetime: 1_600,
+      },
+      referenceTimeSec: 1_500,
+      receivedAtMs: 990_000,
+      feedError: false,
+      cancelled: false,
+    });
+
+    expect(updated).toBe(journey);
+    expect(updated.phase).toBe("recovery");
   });
 
   test("a cached board from before selection cannot prove the bus departed", () => {
