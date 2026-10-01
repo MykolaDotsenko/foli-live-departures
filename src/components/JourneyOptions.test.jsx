@@ -151,6 +151,9 @@ test("shows final-walk distance and door-arrival wording for external places", (
   ).toBeInTheDocument();
   expect(screen.getByText(/final walk ≈ 240 m/i)).toBeInTheDocument();
   expect(
+    screen.getByText(/Live transit \+ approximate walk/i)
+  ).toBeInTheDocument();
+  expect(
     screen.getByText(/real walking route can be longer/i)
   ).toBeInTheDocument();
 });
