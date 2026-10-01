@@ -955,58 +955,50 @@ A route number alone must never receive the “For Home” marker.
 
 ## 18. Selected journey state
 
-Once the passenger taps **Walk there** / chooses an option, stop treating ranking as an unconstrained recommendation list.
+Once the passenger chooses a concrete option, stop treating ranking as an unconstrained recommendation list.
 
-Create a selected pre-boarding journey state.
+Create a selected, session-only pre-boarding journey state.
 
 Example:
 
-> **Going to Kauppatori D2**
+> **Walk to Kauppatori D2**
 >
-> 130 m away  
+> 130 m to the selected boarding stop  
 > 18 → Runosmäki  
-> ~6 min · Live
->
-> ✓ Direct to Home
+> leaves in ~6 min · Live
 >
 > Walking directions  
-> Change option
+> Choose another route
 
-The selected option remains stable.
+The selected concrete trip remains stable. Small ranking changes never replace it automatically.
 
-A better alternative may be surfaced non-disruptively:
+The identity of a selected journey is the concrete trip plus boarding occurrence. The trip reference is primary; planned boarding time is an additional occurrence anchor for loop routes and repeated stop visits.
 
-> **Faster option available**
->
-> A1 · saves about 7 min
->
-> Switch
+The selected trip is pinned above other destination-compatible departures. A saved line filter must not hide it, but the filter still applies normally to every other departure.
 
-Never switch automatically after commitment unless the selected option becomes invalid and the UI clearly asks the passenger to choose a recovery option.
+If the passenger opens another stop board, do not start a second background poll. Keep the journey, mark live monitoring as paused, and offer **Return to selected stop**. If the selected stop feed fails, mark monitoring as degraded rather than implying that the countdown is current.
+
+Only a board response received after selection may refresh the active journey. A cached pre-selection snapshot may be displayed by the normal board, but it must not overwrite selected timing or undo recovery.
+
+Never silently switch the selected journey. If it becomes invalid, keep the destination stable and enter recovery so the passenger explicitly chooses a replacement.
 
 ---
 
 ## 19. Arrival at boarding stop
 
-When location evidence is strong enough:
+The app does **not** infer “you are at the stop” merely because the stop board is open.
 
-> **✓ You’re at the right stop**
->
-> 18 → Runosmäki  
-> ~3 min · Live
->
-> Goes to Home
+In the current backendless/privacy-first implementation there is no continuous pre-boarding GPS tracking. The passenger explicitly confirms:
 
-Do not show “Walk there” once effectively at the stop.
+> **I’m at the stop**
 
-If location is uncertain, use:
+Only then does the state move from WALKING_TO_BOARDING_STOP to WAITING_FOR_SELECTED_TRIP.
 
-> **You appear to be near the stop**
+This confirmation is UI guidance, not proof of physical location. It must never be used as safety evidence for Ride Mode.
 
-rather than false certainty.
+If a future version adds optional live pre-boarding location, it may prefill or suggest this transition only with fresh, high-quality evidence and must still fail closed when location is stale or uncertain.
 
 ---
-
 ## 20. Missed departure recovery
 
 If the chosen bus departs before boarding:
