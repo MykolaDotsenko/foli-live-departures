@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "endpoint": "https://nominatim.openstreetmap.org/search",
+  "countrycodes": "fi",
+  "viewbox": [21.4, 60.8, 23.2, 60.15],
+  "limit": 5
+}
