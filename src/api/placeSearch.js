@@ -8,6 +8,7 @@ const MIN_REQUEST_INTERVAL_MS = 1_100;
 
 let configPromise = null;
 let lastNetworkStartedAt = 0;
+let networkTail = Promise.resolve();
 /** @type {Map<string, Promise<PlaceSearchResult[]>>} */
 const inFlight = new Map();
 
@@ -167,12 +168,51 @@ function cachedResults(query) {
  */
 async function wait(ms, signal) {
   if (ms <= 0) return;
-  await new Promise((resolve) => window.setTimeout(resolve, ms));
+  await new Promise((resolve) => globalThis.setTimeout(resolve, ms));
   if (signal?.aborted) {
     const error = new Error("The request was cancelled.");
     error.name = "AbortError";
     throw error;
   }
+}
+
+/**
+ * Public Nominatim requires single-threaded use and an absolute maximum of
+ * one request per second. Serializing the whole network task prevents two
+ * different explicit searches from waking from the same delay and starting
+ * together.
+ *
+ * @template T
+ * @param {() => Promise<T>} task
+ * @param {AbortSignal | undefined} signal
+ * @returns {Promise<T>}
+ */
+async function runSerializedNetwork(task, signal) {
+  const run = networkTail
+    .catch(() => undefined)
+    .then(async () => {
+      if (signal?.aborted) {
+        const error = new Error("The request was cancelled.");
+        error.name = "AbortError";
+        throw error;
+      }
+
+      const waitMs =
+        lastNetworkStartedAt + MIN_REQUEST_INTERVAL_MS - Date.now();
+      await wait(waitMs, signal);
+
+      if (signal?.aborted) {
+        const error = new Error("The request was cancelled.");
+        error.name = "AbortError";
+        throw error;
+      }
+
+      lastNetworkStartedAt = Date.now();
+      return task();
+    });
+
+  networkTail = run.catch(() => undefined);
+  return run;
 }
 
 /**
@@ -254,7 +294,8 @@ export async function searchPlaces(value, options = {}) {
   const query = normalizedQuery(value);
   if (query.length < 3) return [];
 
-  const cacheKey = query.toLocaleLowerCase();
+  const languageKey = String(options.language || "").trim().toLowerCase();
+  const cacheKey = `${query.toLowerCase()}|${languageKey}`;
   const cached = cachedResults(cacheKey);
   if (cached) return cached;
 
@@ -263,10 +304,6 @@ export async function searchPlaces(value, options = {}) {
   const promise = (async () => {
     const config = await loadPlaceSearchConfig(options.signal);
     if (!config.enabled || !config.endpoint) return [];
-
-    const waitMs =
-      lastNetworkStartedAt + MIN_REQUEST_INTERVAL_MS - Date.now();
-    await wait(waitMs, options.signal);
 
     const params = new URLSearchParams({
       q: query,
@@ -292,28 +329,31 @@ export async function searchPlaces(value, options = {}) {
     const requestUrl = new globalThis.URL(config.endpoint);
     requestUrl.search = params.toString();
 
-    lastNetworkStartedAt = Date.now();
-    const response = await globalThis.fetch(requestUrl.href, {
-      method: "GET",
-      mode: "cors",
-      credentials: "omit",
-      signal: options.signal,
-      referrerPolicy: "strict-origin-when-cross-origin",
-      headers: {
-        Accept: "application/json",
-      },
-    });
+    const results = await runSerializedNetwork(async () => {
+      const response = await globalThis.fetch(requestUrl.href, {
+        method: "GET",
+        mode: "cors",
+        credentials: "omit",
+        signal: options.signal,
+        referrerPolicy: "strict-origin-when-cross-origin",
+        headers: {
+          Accept: "application/json",
+        },
+      });
 
-    if (!response.ok) {
-      throw new Error(`Place search failed with HTTP ${response.status}.`);
-    }
+      if (!response.ok) {
+        throw new Error(
+          `Place search failed with HTTP ${response.status}.`
+        );
+      }
 
-    const payload = await response.json();
-    const rows = Array.isArray(payload) ? payload : [];
-    const results = rows
-      .map(normalizeResult)
-      .filter(Boolean)
-      .slice(0, config.limit);
+      const payload = await response.json();
+      const rows = Array.isArray(payload) ? payload : [];
+      return rows
+        .map(normalizeResult)
+        .filter(Boolean)
+        .slice(0, config.limit);
+    }, options.signal);
 
     writeCache(cacheKey, results);
     return results;
@@ -331,6 +371,7 @@ export async function searchPlaces(value, options = {}) {
 export function resetPlaceSearchForTests() {
   configPromise = null;
   lastNetworkStartedAt = 0;
+  networkTail = Promise.resolve();
   inFlight.clear();
   try {
     globalThis.sessionStorage?.removeItem(CACHE_KEY);
