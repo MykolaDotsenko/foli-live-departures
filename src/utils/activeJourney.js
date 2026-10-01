@@ -158,36 +158,58 @@ export function observeActiveJourney(journey, observation) {
       finitePositive(arrival.aimedarrivaltime) ??
       journey.aimedDepartureAt;
 
+    const nextLastSeenAt =
+      receivedAtMs === null
+        ? journey.lastSeenAt
+        : Math.max(journey.lastSeenAt, receivedAtMs);
+
     if (observation.cancelled === true) {
+      if (
+        journey.departureAt === updatedDeparture &&
+        journey.aimedDepartureAt === observedPlanned &&
+        journey.phase === "recovery" &&
+        journey.recoveryReason === "cancelled" &&
+        journey.lastSeenAt === nextLastSeenAt
+      ) {
+        return journey;
+      }
+
       return {
         ...journey,
         departureAt: updatedDeparture,
         aimedDepartureAt: observedPlanned,
         phase: "recovery",
         recoveryReason: "cancelled",
-        lastSeenAt:
-          receivedAtMs === null
-            ? journey.lastSeenAt
-            : Math.max(journey.lastSeenAt, receivedAtMs),
+        lastSeenAt: nextLastSeenAt,
       };
     }
 
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
       : "walking-to-stop";
+    const nextPhase =
+      journey.phase === "recovery" ? recoveredPhase : journey.phase;
+    const nextLineRef = String(arrival.lineref || journey.lineRef);
+
+    if (
+      journey.departureAt === updatedDeparture &&
+      journey.aimedDepartureAt === observedPlanned &&
+      journey.lineRef === nextLineRef &&
+      journey.phase === nextPhase &&
+      journey.recoveryReason === null &&
+      journey.lastSeenAt === nextLastSeenAt
+    ) {
+      return journey;
+    }
 
     return {
       ...journey,
       departureAt: updatedDeparture,
       aimedDepartureAt: observedPlanned,
-      lineRef: String(arrival.lineref || journey.lineRef),
-      phase:
-        journey.phase === "recovery" ? recoveredPhase : journey.phase,
+      lineRef: nextLineRef,
+      phase: nextPhase,
       recoveryReason: null,
-      lastSeenAt:
-        receivedAtMs === null
-          ? journey.lastSeenAt
-          : Math.max(journey.lastSeenAt, receivedAtMs),
+      lastSeenAt: nextLastSeenAt,
     };
   }
 
@@ -198,6 +220,13 @@ export function observeActiveJourney(journey, observation) {
     receivedAtMs <= journey.selectedAt ||
     referenceTimeSec <= journey.departureAt + DEPARTED_GRACE_SECONDS ||
     receivedAtMs - journey.lastSeenAt < MISSING_CONFIRMATION_MS
+  ) {
+    return journey;
+  }
+
+  if (
+    journey.phase === "recovery" &&
+    journey.recoveryReason === "departed"
   ) {
     return journey;
   }
