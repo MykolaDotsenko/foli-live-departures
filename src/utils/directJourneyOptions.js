@@ -45,6 +45,14 @@ function usable(departure) {
   );
 }
 
+function totalWalkingM(candidate) {
+  const finalWalk = Number(candidate.departure.finalWalkDistanceM);
+  return (
+    candidate.distanceMeters +
+    (Number.isFinite(finalWalk) && finalWalk > 0 ? finalWalk : 0)
+  );
+}
+
 /**
  * @param {string} stopId
  * @param {NearbyDepartureFit} departure
@@ -135,7 +143,7 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
       const arrivalDelay =
         arrivalRank(candidate.departure) - fastestArrival;
       const walkingSaving =
-        fastest.distanceMeters - candidate.distanceMeters;
+        totalWalkingM(fastest) - totalWalkingM(candidate);
 
       return (
         arrivalDelay >= 0 &&
@@ -145,7 +153,7 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     })
     .sort(
       (left, right) =>
-        left.distanceMeters - right.distanceMeters ||
+        totalWalkingM(left) - totalWalkingM(right) ||
         arrivalRank(left.departure) - arrivalRank(right.departure)
     )[0];
 
@@ -161,7 +169,7 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
       arrivalDeltaSec:
         arrivalRank(lessWalking.departure) - fastestArrival,
       walkingDeltaMeters:
-        lessWalking.distanceMeters - fastest.distanceMeters,
+        totalWalkingM(lessWalking) - totalWalkingM(fastest),
     };
     selected.push(item);
     selectedIds.add(item.id);
