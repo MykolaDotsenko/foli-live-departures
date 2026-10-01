@@ -169,9 +169,7 @@ export default function JourneySearch({
           ? t(
               "More than one stop has this name. Choose the correct stop number from the suggestions."
             )
-          : t(
-              "Place search unavailable. Stop search still works."
-            )
+          : t("Place search unavailable. Use a stop.")
       );
       return;
     }
