@@ -6,6 +6,7 @@ const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CACHE_LIMIT = 20;
 const MIN_REQUEST_INTERVAL_MS = 1_100;
 
+/** @type {Promise<PlaceSearchConfig> | null} */
 let configPromise = null;
 let lastNetworkStartedAt = 0;
 /** @type {Promise<unknown>} */
@@ -51,8 +52,9 @@ function disabledConfig() {
  */
 function normalizeConfig(raw) {
   if (!raw || typeof raw !== "object") return disabledConfig();
+  const config = /** @type {Record<string, unknown>} */ (raw);
 
-  const endpoint = String(raw.endpoint || "").trim();
+  const endpoint = String(config.endpoint || "").trim();
   let url;
   try {
     url = new globalThis.URL(endpoint);
@@ -62,7 +64,9 @@ function normalizeConfig(raw) {
 
   if (url.protocol !== "https:") return disabledConfig();
 
-  const rawViewbox = Array.isArray(raw.viewbox) ? raw.viewbox : [];
+  const rawViewbox = Array.isArray(config.viewbox)
+    ? /** @type {unknown[]} */ (config.viewbox)
+    : [];
   const viewbox =
     rawViewbox.length === 4 &&
     rawViewbox.every((value) => finite(value) !== null)
@@ -71,15 +75,15 @@ function normalizeConfig(raw) {
         )
       : null;
 
-  const requestedLimit = Number(raw.limit);
+  const requestedLimit = Number(config.limit);
   const limit = Number.isInteger(requestedLimit)
     ? Math.min(5, Math.max(1, requestedLimit))
     : 5;
 
   return {
-    enabled: raw.enabled === true,
+    enabled: config.enabled === true,
     endpoint: url.href,
-    countrycodes: String(raw.countrycodes || "fi")
+    countrycodes: String(config.countrycodes || "fi")
       .trim()
       .toLowerCase(),
     viewbox,
@@ -300,7 +304,8 @@ export async function searchPlaces(value, options = {}) {
   const cached = cachedResults(cacheKey);
   if (cached) return cached;
 
-  if (inFlight.has(cacheKey)) return inFlight.get(cacheKey);
+  const existing = inFlight.get(cacheKey);
+  if (existing) return existing;
 
   const promise = (async () => {
     const config = await loadPlaceSearchConfig(options.signal);
@@ -352,7 +357,10 @@ export async function searchPlaces(value, options = {}) {
       const rows = Array.isArray(payload) ? payload : [];
       return rows
         .map(normalizeResult)
-        .filter(Boolean)
+        .filter(
+          /** @returns {value is PlaceSearchResult} */
+          (value) => value !== null
+        )
         .slice(0, config.limit);
     }, options.signal);
 
