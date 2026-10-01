@@ -127,7 +127,10 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
     String(transfer.alightStopId || "") ===
     String(transfer.boardStopId || "");
   const boardStop = String(
-    transfer.boardStopName || transfer.boardStopId || ""
+    transfer.boardStopName ||
+      transfer.boardStopId ||
+      second.boardStopId ||
+      ""
   ).trim();
   const rawWalk = Number(transfer.walkingDistanceM);
   const walkingDistanceM =
@@ -145,6 +148,17 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
       };
     }
 
+    if (!boardStop) {
+      return {
+        state: "recovery",
+        title: "After you get off",
+        text: "Journey Assistant will check fresh options from this transfer area.",
+        params: {},
+        meta: "",
+        metaParams: {},
+      };
+    }
+
     return {
       state: "next",
       title: "After you get off",
@@ -155,7 +169,7 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
       params: {
         distance:
           walkingDistanceM === null ? "" : formatDistance(walkingDistanceM),
-        stop: boardStop || t("the transfer stop"),
+        stop: boardStop,
         line,
       },
       meta: "",

@@ -618,4 +618,5 @@ test("same-stop transfer leg 2 says stay instead of pretending there is a walk",
     screen.getByText(/You are at the transfer stop/i)
   ).toBeInTheDocument();
   expect(screen.queryByText(/About 0 m to the boarding stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
 });

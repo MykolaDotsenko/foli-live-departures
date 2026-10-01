@@ -138,7 +138,6 @@ export default {
     "Matka-avustaja tarkistaa uudet vaihtoehdot tältä vaihtoalueelta.",
   "Live transfer margin: less than 1 min.": "Reaaliaikaista vaihtoaikaa: alle 1 min.",
   "Live transfer margin: about {minutes} min.": "Reaaliaikaista vaihtoaikaa: noin {minutes} min.",
-  "the transfer stop": "vaihtopysäkille",
   "I'm getting off": "Jään pois",
   "Test alert": "Testaa hälytys",
   "Turn off alert": "Lopeta hälytys",

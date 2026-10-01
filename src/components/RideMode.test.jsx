@@ -1162,3 +1162,41 @@ test("sub-minute live transfer margin is never rounded up", () => {
     screen.getByText("Live transfer margin: less than 1 min.")
   ).toBeInTheDocument();
 });
+
+
+test("missing cross-platform stop identity fails closed instead of inventing directions", () => {
+  render(
+    <RideMode
+      session={session("now")}
+      runtime={{ trackingHealth: "live", etaSec: 0, remainingStops: 0 }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+      transferJourney={transferJourney({
+        transferPlan: {
+          transfer: {
+            alightStopId: "32",
+            boardStopId: "",
+            boardStopName: "",
+            walkingDistanceM: 90,
+          },
+          second: {
+            tripRef: "trip-2",
+            lineRef: "7",
+            boardStopId: "",
+          },
+        },
+      })}
+      transferRevalidation={{ providerState: "live", decision: "good" }}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Journey Assistant will check fresh options from this transfer area."
+    )
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Walk ≈/i)).not.toBeInTheDocument();
+});

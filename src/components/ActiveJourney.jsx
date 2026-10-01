@@ -139,10 +139,11 @@ export default function ActiveJourney({
 
   if (!journey) return null;
 
-  const walkingUrl = online ? buildWalkingDirectionsUrl(stop) : "";
   const transferLiveStatus = transferLiveStatusText(journey);
   const secondTransferLeg = isSecondTransferLeg(journey);
   const sameTransferStop = secondLegUsesSameStop(journey);
+  const walkingUrl =
+    online && !sameTransferStop ? buildWalkingDirectionsUrl(stop) : "";
 
   return (
     <section
