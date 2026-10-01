@@ -847,3 +847,47 @@ test("live transfer recovery cannot be undone by Ride Mode completion", () => {
     recoveryReason: "transfer-cancelled",
   });
 });
+
+
+test("first-leg live delay shifts transfer arrival but not the committed second-leg final ETA", () => {
+  const selected = activeJourneyFromTransferOption(
+    transferOption(),
+    destination,
+    1_000_000
+  );
+
+  const updated = observeActiveJourney(selected, {
+    stopId: "100",
+    arrival: {
+      tripref: "first",
+      lineref: "1",
+      monitored: true,
+      aimeddeparturetime: 1_480,
+      originaimeddeparturetime: 900,
+      expecteddeparturetime: 1_620,
+    },
+    referenceTimeSec: 1_400,
+    receivedAtMs: 1_040_000,
+    feedError: false,
+    cancelled: false,
+  });
+
+  expect(updated).toMatchObject({
+    departureAt: 1_620,
+    // Bus 1 moved +120 s.
+    transferPlan: {
+      first: {
+        departureAt: 1_620,
+        arrivalAt: 2_220,
+        liveState: "live",
+      },
+      second: {
+        departureAt: 2_700,
+        arrivalAt: 3_600,
+      },
+    },
+    // Bus 2 has not moved, so final arrival must not be fabricated as +120 s.
+    destinationArrivalAt: 3_600,
+    journeyArrivalAt: 3_600,
+  });
+});
