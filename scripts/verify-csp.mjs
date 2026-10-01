@@ -38,6 +38,18 @@ for (const [name, sources] of Object.entries(required)) {
   }
 }
 
+const requiredConnectSources = [
+  "https://data.foli.fi",
+  "https://photon.komoot.io",
+  "https://nominatim.openstreetmap.org",
+];
+const connectSources = directives.get("connect-src") || [];
+for (const source of requiredConnectSources) {
+  if (!connectSources.includes(source)) {
+    failures.push(`connect-src lacks ${source}.`);
+  }
+}
+
 for (const [name, sources] of directives) {
   for (const unsafe of ["'unsafe-inline'", "'unsafe-eval'", "*"]) {
     if (sources.includes(unsafe)) failures.push(`${name} allows ${unsafe}.`);
