@@ -205,3 +205,31 @@ test("degraded monitoring never implies the live departure is current", () => {
     )
   ).toBeInTheDocument();
 });
+
+
+test("shows door arrival instead of alighting-stop arrival for an external place", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        destinationKind: "external-place",
+        destinationLabel: "Prisma Itäharju",
+        destinationArrivalAt: 2_000_001_200,
+        journeyArrivalAt: 2_000_001_500,
+        finalWalkDistanceM: 240,
+        finalWalkSecEstimate: 250,
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(screen.getByText(/Reach destination about/i)).toBeInTheDocument();
+  expect(screen.getByText(/final walk ≈ 240 m/i)).toBeInTheDocument();
+  expect(
+    screen.getByText(/real walking route can be longer/i)
+  ).toBeInTheDocument();
+});
