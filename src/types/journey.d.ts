@@ -96,6 +96,9 @@ export interface ActiveDirectJourney {
   aimedDepartureAt: number | null;
   originAimedDepartureAt: number | null;
   destinationArrivalAt: number | null;
+  finalWalkDistanceM: number | null;
+  finalWalkDurationSec: number | null;
+  finalArrivalAt: number | null;
   liveState: LiveState;
   phase: ActiveJourneyPhase;
   recoveryReason: ActiveJourneyRecoveryReason;
