@@ -1,0 +1,12 @@
+{
+  "geocoder": {
+    "enabled": true,
+    "provider": "nominatim",
+    "baseUrl": "https://nominatim.openstreetmap.org",
+    "countryCodes": [
+      "fi"
+    ],
+    "viewbox": "21.95,60.65,22.65,60.20",
+    "resultLimit": 6
+  }
+}
