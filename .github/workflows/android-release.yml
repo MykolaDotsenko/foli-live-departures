@@ -19,7 +19,7 @@ on:
 
 permissions:
   actions: read
-  contents: write
+  contents: read
 
 concurrency:
   group: android-production-release
@@ -263,7 +263,7 @@ jobs:
             -signedjar "$aab" \
             "$unsigned_aab" \
             "$ANDROID_KEY_ALIAS"
-          jarsigner -verify -strict "$aab"
+          jarsigner -verify -verbose "$aab"
 
           sha256sum "$apk" "$aab" > "Turku-Departures-v$VERSION_NAME.sha256"
 
@@ -299,10 +299,33 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  publish:
+    if: inputs.publish
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Download verified production artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: Turku-Departures-v${{ inputs.version_name }}
+          path: release-assets
+
+      - name: Verify downloaded production checksums
+        working-directory: release-assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum -c "Turku-Departures-v${{ inputs.version_name }}.sha256"
+
       - name: Publish verified immutable-version release
-        if: inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ inputs.version_name }}
         shell: bash
         run: |
           set -euo pipefail
@@ -312,9 +335,9 @@ jobs:
             exit 1
           fi
           gh release create "$tag" \
-            "Turku-Departures-v$VERSION_NAME.apk" \
-            "Turku-Departures-v$VERSION_NAME.aab" \
-            "Turku-Departures-v$VERSION_NAME.sha256" \
+            "release-assets/Turku-Departures-v$VERSION_NAME.apk" \
+            "release-assets/Turku-Departures-v$VERSION_NAME.aab" \
+            "release-assets/Turku-Departures-v$VERSION_NAME.sha256" \
             --target "$GITHUB_SHA" \
             --title "Turku Departures v$VERSION_NAME" \
             --notes "Production-signed Android release from verified master commit \`$GITHUB_SHA\`. APK and AAB were signed with the persistent production key; the exact APK was installed and launch-smoke-tested on Android API 35 before publication."

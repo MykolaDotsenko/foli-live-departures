@@ -42,6 +42,7 @@ const requiredReleaseEvidence = [
   "assembleRelease bundleRelease",
   "apksigner",
   "jarsigner",
+  'jarsigner -verify -verbose "$aab"',
   "sha256sum",
   "ANDROID_KEYSTORE_BASE64",
   "ANDROID_KEYSTORE_PASSWORD",
@@ -54,6 +55,12 @@ const requiredReleaseEvidence = [
   "select(.head_sha == $sha)",
   "adb install -r",
   'PACKAGE_ID: io.github.mykoladotsenko.turkudepartures',
+  "permissions:\n  actions: read\n  contents: read",
+  "publish:",
+  "needs: release",
+  "contents: write",
+  "actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c",
+  "sha256sum -c",
   'if: inputs.publish',
   'gh release create "$tag"',
 ];
@@ -83,3 +90,23 @@ if (failures.length > 0) {
 console.log(
   "Android release contract verified: independent app identity, persistent signing inputs, exact signed-APK emulator verification and immutable version publishing are enforced."
 );
+
+
+if (releaseWorkflow.includes("jarsigner -verify -strict")) {
+  failures.push(
+    "AAB verification must not use jarsigner --strict because Android release certificates are normally self-signed."
+  );
+}
+
+const releaseJobStart = releaseWorkflow.indexOf("jobs:\n  release:");
+const publishJobStart = releaseWorkflow.indexOf("\n  publish:");
+if (releaseJobStart < 0 || publishJobStart < 0) {
+  failures.push("Production signing and publication must be separate jobs.");
+} else {
+  const signingJob = releaseWorkflow.slice(releaseJobStart, publishJobStart);
+  if (/contents:\s*write/.test(signingJob)) {
+    failures.push(
+      "Production signing/verification job must not receive contents:write."
+    );
+  }
+}
