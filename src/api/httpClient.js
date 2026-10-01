@@ -61,11 +61,13 @@ export function createHttpClient(options = {}) {
 
         return { data: await response.json() };
       } catch (error) {
-        if (
-          timedOut &&
-          error instanceof Error &&
-          error.name === "AbortError"
-        ) {
+        const errorName =
+          error &&
+          typeof error === "object" &&
+          "name" in error
+            ? String(error.name)
+            : "";
+        if (timedOut && errorName === "AbortError") {
           const timeoutError = new Error(
             `Request timed out after ${timeoutMs} ms.`
           );
