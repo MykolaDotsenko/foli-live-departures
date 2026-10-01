@@ -195,7 +195,13 @@ export function activeJourneyFromTransferOption(
  * @returns {ActiveDirectJourney | null}
  */
 export function transferJourneyForRideSelection(journey, rideConfig) {
-  if (!journey?.transferPlan || journey.transferLeg !== 1) return null;
+  if (
+    !journey?.transferPlan ||
+    journey.transferLeg !== 1 ||
+    journey.phase === "recovery"
+  ) {
+    return null;
+  }
   if (String(rideConfig?.tripRef || "") !== journey.tripRef) return null;
   if (
     String(rideConfig?.targetStop?.id || "") !== journey.destinationStopId
@@ -235,6 +241,7 @@ export function completedTransferJourney(
   if (
     !pending?.transferPlan ||
     pending.transferLeg !== 1 ||
+    pending.phase === "recovery" ||
     rideSession?.stage !== "now" ||
     String(rideSession?.tripRef || "") !== pending.tripRef ||
     String(rideSession?.targetStop?.id || "") !== pending.destinationStopId
@@ -336,6 +343,19 @@ export function recoverTransferJourneyAfterRide(
 
   const selectedAt = Number(nowMs);
   if (!Number.isFinite(selectedAt) || selectedAt <= 0) return null;
+
+  if (
+    pending.phase === "recovery" &&
+    ["transfer-cancelled", "transfer-risk", "transfer-missed"].includes(
+      String(pending.recoveryReason || "")
+    )
+  ) {
+    return {
+      ...pending,
+      selectedAt,
+      lastSeenAt: Math.max(Number(pending.lastSeenAt) || 0, selectedAt),
+    };
+  }
 
   const secondDepartureAt = finitePositive(
     pending.transferPlan?.second?.departureAt
@@ -548,21 +568,61 @@ export function observeActiveJourney(journey, observation) {
       journey.aimedDepartureAt;
 
     const departureShift = updatedDeparture - journey.departureAt;
+    const firstTransferLeg =
+      journey.transferPlan && journey.transferLeg === 1
+        ? journey.transferPlan.first
+        : null;
+    // On a direct journey, a boarding delay shifts the downstream arrival.
+    // On transfer leg 1 it only shifts the first bus's transfer arrival:
+    // the committed second bus keeps its own timetable/live prediction.
     const shiftedDestinationArrival =
-      journey.destinationArrivalAt === null
-        ? null
-        : journey.destinationArrivalAt + departureShift;
+      firstTransferLeg
+        ? journey.destinationArrivalAt
+        : journey.destinationArrivalAt === null
+          ? null
+          : journey.destinationArrivalAt + departureShift;
     const shiftedJourneyArrival =
-      journey.journeyArrivalAt === null
-        ? shiftedDestinationArrival
-        : journey.journeyArrivalAt + departureShift;
+      firstTransferLeg
+        ? journey.journeyArrivalAt
+        : journey.journeyArrivalAt === null
+          ? shiftedDestinationArrival
+          : journey.journeyArrivalAt + departureShift;
+    const shiftedFirstArrival =
+      firstTransferLeg && finitePositive(firstTransferLeg.arrivalAt) !== null
+        ? Number(firstTransferLeg.arrivalAt) + departureShift
+        : null;
+    /** @type {import("../types/journey").LiveState} */
+    const firstLegLiveState =
+      arrival.monitored === true ? "live" : "schedule";
+    /** @type {import("../types/journey").TransferJourneyOption | null} */
+    const nextTransferPlan =
+      firstTransferLeg && journey.transferPlan
+        ? {
+            ...journey.transferPlan,
+            first: {
+              ...firstTransferLeg,
+              departureAt: updatedDeparture,
+              aimedDepartureAt: observedPlanned,
+              arrivalAt:
+                shiftedFirstArrival ?? firstTransferLeg.arrivalAt,
+              liveState: firstLegLiveState,
+            },
+          }
+        : journey.transferPlan;
 
     const nextLastSeenAt = Math.max(journey.lastSeenAt, receivedAtMs);
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
       : "walking-to-stop";
-    const nextPhase =
-      journey.phase === "recovery" ? recoveredPhase : journey.phase;
+    const canRecoverFromDeparture =
+      journey.phase === "recovery" &&
+      journey.recoveryReason === "departed";
+    const nextPhase = canRecoverFromDeparture
+      ? recoveredPhase
+      : journey.phase;
+    const nextRecoveryReason = canRecoverFromDeparture
+      ? null
+      : journey.recoveryReason;
     const nextLineRef = String(arrival.lineref || journey.lineRef);
 
     if (
@@ -570,9 +630,10 @@ export function observeActiveJourney(journey, observation) {
       journey.aimedDepartureAt === observedPlanned &&
       journey.destinationArrivalAt === shiftedDestinationArrival &&
       journey.journeyArrivalAt === shiftedJourneyArrival &&
+      journey.transferPlan === nextTransferPlan &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
-      journey.recoveryReason === null &&
+      journey.recoveryReason === nextRecoveryReason &&
       journey.lastSeenAt === nextLastSeenAt
     ) {
       return journey;
@@ -584,9 +645,10 @@ export function observeActiveJourney(journey, observation) {
       aimedDepartureAt: observedPlanned,
       destinationArrivalAt: shiftedDestinationArrival,
       journeyArrivalAt: shiftedJourneyArrival,
+      transferPlan: nextTransferPlan,
       lineRef: nextLineRef,
       phase: nextPhase,
-      recoveryReason: null,
+      recoveryReason: nextRecoveryReason,
       lastSeenAt: nextLastSeenAt,
     };
   }

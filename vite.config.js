@@ -46,6 +46,21 @@ function connectSources(env) {
 
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
+  build: {
+    // The app has no dynamic imports, so the modulepreload compatibility
+    // polyfill has no runtime work to do. All supported release browsers also
+    // have native module support.
+    modulePreload: { polyfill: false },
+  },
+  css: {
+    modules: {
+      // Default CSS-module identifiers repeat file/local names in both the
+      // stylesheet and JS class map. A six-character content hash keeps
+      // module isolation while materially reducing the executable/style
+      // payload. Global class names are unaffected.
+      generateScopedName: "[hash:base64:6]",
+    },
+  },
   plugins: [
     react(),
     contentSecurityPolicyPlugin({

@@ -807,3 +807,143 @@ describe("active journey idempotence and fail-closed edge branches", () => {
     ).toBe(true);
   });
 });
+
+
+test("live transfer recovery cannot be undone by Ride Mode completion", () => {
+  const pending = {
+    ...activeJourneyFromTransferOption(
+      transferOption(),
+      destination,
+      1_000_000
+    ),
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  };
+
+  expect(
+    completedTransferJourney(
+      pending,
+      {
+        tripRef: "first",
+        stage: "now",
+        targetStop: { id: "500", stopSequence: 8 },
+      },
+      2_150_000
+    )
+  ).toBeNull();
+
+  const recovered = recoverTransferJourneyAfterRide(
+    pending,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    2_150_000
+  );
+
+  expect(recovered).toMatchObject({
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+});
+
+
+test("first-leg live delay shifts transfer arrival but not the committed second-leg final ETA", () => {
+  const selected = activeJourneyFromTransferOption(
+    transferOption(),
+    destination,
+    1_000_000
+  );
+
+  const updated = observeActiveJourney(selected, {
+    stopId: "100",
+    arrival: {
+      tripref: "first",
+      lineref: "1",
+      monitored: true,
+      aimeddeparturetime: 1_480,
+      originaimeddeparturetime: 900,
+      expecteddeparturetime: 1_620,
+    },
+    referenceTimeSec: 1_400,
+    receivedAtMs: 1_040_000,
+    feedError: false,
+    cancelled: false,
+  });
+
+  expect(updated).toMatchObject({
+    departureAt: 1_620,
+    // Bus 1 moved +120 s.
+    transferPlan: {
+      first: {
+        departureAt: 1_620,
+        arrivalAt: 2_220,
+        liveState: "live",
+      },
+      second: {
+        departureAt: 2_700,
+        arrivalAt: 3_600,
+      },
+    },
+    // Bus 2 has not moved, so final arrival must not be fabricated as +120 s.
+    destinationArrivalAt: 3_600,
+    journeyArrivalAt: 3_600,
+  });
+});
+
+
+test.each(["transfer-cancelled", "transfer-risk", "transfer-missed"])(
+  "fresh first-leg feed cannot undo %s recovery",
+  (recoveryReason) => {
+    const selected = {
+      ...activeJourneyFromTransferOption(
+        transferOption(),
+        destination,
+        1_000_000
+      ),
+      phase: "recovery",
+      recoveryReason,
+    };
+
+    const updated = observeActiveJourney(selected, {
+      stopId: "100",
+      arrival: {
+        tripref: "first",
+        lineref: "1",
+        monitored: true,
+        aimeddeparturetime: 1_480,
+        originaimeddeparturetime: 900,
+        expecteddeparturetime: 1_620,
+      },
+      referenceTimeSec: 1_400,
+      receivedAtMs: 1_040_000,
+      feedError: false,
+      cancelled: false,
+    });
+
+    expect(updated).toMatchObject({
+      phase: "recovery",
+      recoveryReason,
+    });
+  }
+);
+
+test("a recovered transfer plan is never carried into a new Ride Mode session", () => {
+  const selected = {
+    ...activeJourneyFromTransferOption(
+      transferOption(),
+      destination,
+      1_000_000
+    ),
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  };
+
+  expect(
+    transferJourneyForRideSelection(selected, {
+      tripRef: "first",
+      targetStop: { id: "500", stopSequence: 8 },
+    })
+  ).toBeNull();
+});

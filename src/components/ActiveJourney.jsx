@@ -23,6 +23,9 @@ function recoveryText(journey) {
   if (journey.recoveryReason === "cancelled") {
     return t("Your selected bus was cancelled.");
   }
+  if (journey.recoveryReason === "transfer-cancelled") {
+    return t("Your second bus was cancelled. Choose a fresh option.");
+  }
   if (journey.recoveryReason === "transfer-missed") {
     return t("The second bus has probably been missed. Choose a fresh option.");
   }
@@ -49,6 +52,63 @@ function transferPlanText(journey) {
   });
 }
 
+function transferLiveStatusText(journey) {
+  const state = journey.transferRevalidation;
+  if (
+    !journey.transferPlan ||
+    journey.transferLeg !== 1 ||
+    journey.phase === "recovery" ||
+    !state
+  ) {
+    return "";
+  }
+
+  const line = journey.transferPlan.second?.lineRef || "—";
+  const slackSec = Number(state.feasibility?.slackSec);
+  const marginMinutes =
+    Number.isFinite(slackSec) && slackSec >= 0
+      ? Math.floor(slackSec / 60)
+      : null;
+
+  if (state.providerState === "live" && state.decision === "good") {
+    return marginMinutes === null
+      ? t("Live check: line {line} still looks catchable.", { line })
+      : t(
+          "Live check: line {line} still looks catchable · about {minutes} min transfer margin.",
+          { line, minutes: marginMinutes }
+        );
+  }
+
+  if (state.providerState === "live" && state.decision === "tight") {
+    if (marginMinutes === null) {
+      return t("Live check: the transfer to line {line} is tight.", { line });
+    }
+    if (marginMinutes < 1) {
+      return t(
+        "Live check: the transfer to line {line} is tight · less than 1 min margin.",
+        { line }
+      );
+    }
+    return t(
+      "Live check: the transfer to line {line} is tight · about {minutes} min margin.",
+      { line, minutes: marginMinutes }
+    );
+  }
+
+  if (
+    state.providerState === "degraded" ||
+    state.providerState === "stale" ||
+    state.providerState === "missing"
+  ) {
+    return t(
+      "Live check for line {line} is uncertain. Keeping the selected connection until stronger evidence.",
+      { line }
+    );
+  }
+
+  return "";
+}
+
 export default function ActiveJourney({
   journey,
   stop,
@@ -65,6 +125,7 @@ export default function ActiveJourney({
   if (!journey) return null;
 
   const walkingUrl = online ? buildWalkingDirectionsUrl(stop) : "";
+  const transferLiveStatus = transferLiveStatusText(journey);
 
   return (
     <section
@@ -88,6 +149,12 @@ export default function ActiveJourney({
 
       {journey.transferPlan && (
         <p className={styles.transferPlan}>{transferPlanText(journey)}</p>
+      )}
+
+      {transferLiveStatus && (
+        <p className={styles.monitoringNotice} aria-live="polite">
+          {transferLiveStatus}
+        </p>
       )}
 
       <div className={styles.summary}>

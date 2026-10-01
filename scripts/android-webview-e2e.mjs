@@ -208,25 +208,6 @@ const nativeJourneyInput = await retry("native journey destination input", async
 );
 record("Journey Assistant destination input is present", nativeJourneyInput === true);
 
-await evaluate(`(() => {
-  const input = document.querySelector("#journey-destination");
-  const form = input?.closest("form");
-  if (!input || !form) return false;
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value"
-  )?.set;
-  setter.call(input, "Prisma Itäharju");
-  input.dispatchEvent(new InputEvent("input", {
-    bubbles: true,
-    inputType: "insertText",
-    data: "Prisma Itäharju"
-  }));
-  input.dispatchEvent(new Event("change", { bubbles: true }));
-  form.requestSubmit();
-  return true;
-})()`);
-
 const nativePlaceHandoff = await retry("native place-search handoff", async () =>
   evaluate(`(() => {
     const link = [...document.querySelectorAll("a")].find((node) =>
@@ -247,6 +228,41 @@ record(
   nativePlaceHandoff?.href === "https://turku.digitransit.fi/",
   nativePlaceHandoff || {}
 );
+
+const nativeJourneyFilled = await evaluate(`(() => {
+  const input = document.querySelector("#journey-destination");
+  if (!input) return false;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  )?.set;
+  setter.call(input, "Prisma Itäharju");
+  input.dispatchEvent(new InputEvent("input", {
+    bubbles: true,
+    inputType: "insertText",
+    data: "Prisma Itäharju"
+  }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  return input.value === "Prisma Itäharju";
+})()`);
+record("native journey destination can be entered", nativeJourneyFilled === true);
+
+// React may batch the synthetic input update until this JS task returns.
+// Submitting in the same Runtime.evaluate call can therefore race the state
+// commit and make the form see the old empty query on a cold WebView.
+await sleep(100);
+const nativeJourneySubmitted = await evaluate(`(() => {
+  const input = document.querySelector("#journey-destination");
+  const form = input?.closest("form");
+  if (!input || !form) return false;
+  form.requestSubmit();
+  return true;
+})()`);
+record(
+  "native journey destination form can be submitted",
+  nativeJourneySubmitted === true
+);
+
 record(
   "packaged Android makes no direct public Nominatim request",
   results.placeProviderRequests.length === 0,

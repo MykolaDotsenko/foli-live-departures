@@ -124,7 +124,7 @@ These came out of the verification round and are not yet re-scored.
 These are stated, not hidden.
 
 - **A browser can pause the get-off alert.** A page in the background or on a locked phone may stop running. The panel says so, asks the passenger to keep it open, and plays a test alert first. Guaranteed lock-screen alerts need a small backend with Web Push; that is Phase 2 in [Ride Mode design](RIDE_MODE_SPEC.md).
-- **Direct and bounded one-transfer journeys are planned in-app.** Journey Assistant can rank concrete direct Föli trips and conservative one-transfer alternatives to stop/address/POI destinations, with approximate final walking. It still does not provide 2+ transfer routing or turn-by-turn pedestrian routing; walking can hand off externally.
+- **Direct and bounded one-transfer journeys are planned in-app.** Journey Assistant can rank concrete direct Föli trips and conservative one-transfer alternatives to stop/address/POI destinations, with approximate final walking. The committed second transfer leg is revalidated against live-only SIRI so fresh delay/early-running/cancellation evidence can invalidate the old connection without stale/provider-failure data creating a false miss. Automatic replacement routing from a broken transfer is still a separate follow-up. It still does not provide 2+ transfer routing or turn-by-turn pedestrian routing; walking can hand off externally.
 - **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
 - **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
 - **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.
@@ -136,7 +136,7 @@ These are stated, not hidden.
 Every pull request to `master` runs:
 
 1. ESLint, including the rule that JSX text must go through the translator
-2. Vitest and Testing Library (512 tests, coverage ratchet 82 / 75 / 85 / 86), with a test that every phrase has a Finnish translation and every translation is still used
+2. Vitest and Testing Library (900+ tests, coverage ratchet 82 / 75 / 85 / 86), with a test that every phrase has a Finnish translation and every translation is still used
 3. production build, PWA precache and install-sheet checks, and the bundle budget (600 KB)
 4. the Föli API reference drift check
 5. Playwright on Chromium, Firefox, mobile WebKit and Chromium mobile, with axe WCAG A/AA checks, a Finnish phone and worst-case mobile overflow

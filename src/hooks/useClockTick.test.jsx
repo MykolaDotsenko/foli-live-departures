@@ -68,3 +68,31 @@ test("removes timers and visibility listeners on unmount", () => {
   );
   expect(clear).toHaveBeenCalledTimes(1);
 });
+
+
+test("does not schedule ticks while a feature disables the clock and catches up when enabled", () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-10-01T12:00:00Z"));
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  const { result, rerender } = renderHook(
+    ({ enabled }) => useClockTick(10_000, enabled),
+    { initialProps: { enabled: false } }
+  );
+
+  const initial = result.current;
+  expect(intervalSpy).not.toHaveBeenCalled();
+
+  vi.setSystemTime(new Date("2026-10-01T12:05:00Z"));
+  rerender({ enabled: true });
+
+  expect(result.current).toBeGreaterThan(initial);
+  expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 10_000);
+
+  act(() => {
+    vi.advanceTimersByTime(10_000);
+  });
+  expect(result.current).toBe(
+    new Date("2026-10-01T12:05:10Z").getTime()
+  );
+});

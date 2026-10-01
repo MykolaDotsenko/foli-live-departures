@@ -14,6 +14,8 @@ enable_emulator_location() {
   # Compatibility fallback for emulator images where the cmd subcommand is
   # temporarily unavailable during early boot.
   adb shell settings put secure location_mode 3 >/dev/null 2>&1 || true
+  adb shell settings put secure location_providers_allowed +gps,+network \
+    >/dev/null 2>&1 || true
 }
 
 inject_turku_fix() {
@@ -27,6 +29,10 @@ adb shell pm path "$PACKAGE" | tee artifacts/android-e2e/package-path.txt
 
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_COARSE_LOCATION
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_FINE_LOCATION
+adb shell appops set "$PACKAGE" android:coarse_location allow \
+  >/dev/null 2>&1 || true
+adb shell appops set "$PACKAGE" android:fine_location allow \
+  >/dev/null 2>&1 || true
 enable_emulator_location
 inject_turku_fix
 
@@ -115,10 +121,40 @@ cat artifacts/android-e2e/cdp-targets.json
 ) &
 GEO_KEEPALIVE_PID=$!
 
+run_webview_e2e() {
+  local attempt="$1"
+  node scripts/android-webview-e2e.mjs 2>&1 \
+    | tee "artifacts/android-e2e/webview-e2e-attempt-${attempt}.log"
+}
+
 E2E_STATUS=0
-node scripts/android-webview-e2e.mjs \
-  | tee artifacts/android-e2e/webview-e2e.log \
-  || E2E_STATUS=$?
+run_webview_e2e 1 || E2E_STATUS=$?
+
+# Retry only the known emulator-provider readiness failure. This does not
+# hide product regressions: wrong coordinates, privacy/network assertions,
+# UI failures and every other error remain fatal after the first attempt.
+if [[ "$E2E_STATUS" -ne 0 ]] \
+  && grep -q "Android fallback geolocation timed out" \
+    artifacts/android-e2e/webview-e2e-attempt-1.log; then
+  echo "Android location provider was not ready; reasserting deterministic Turku fix once."
+  enable_emulator_location
+  adb shell appops set "$PACKAGE" android:coarse_location allow \
+    >/dev/null 2>&1 || true
+  adb shell appops set "$PACKAGE" android:fine_location allow \
+    >/dev/null 2>&1 || true
+  for _ in $(seq 1 10); do
+    inject_turku_fix || true
+    sleep 1
+  done
+  adb shell dumpsys location \
+    > artifacts/android-e2e/location-before-retry.txt || true
+
+  E2E_STATUS=0
+  run_webview_e2e 2 || E2E_STATUS=$?
+fi
+
+cat artifacts/android-e2e/webview-e2e-attempt-*.log \
+  > artifacts/android-e2e/webview-e2e.log
 
 kill "$GEO_KEEPALIVE_PID" >/dev/null 2>&1 || true
 wait "$GEO_KEEPALIVE_PID" >/dev/null 2>&1 || true

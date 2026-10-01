@@ -8,7 +8,15 @@ const ALERT_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 // Reused so "no served routes" never produces a fresh identity on every run.
 const EMPTY_ROUTE_IDS = new Set();
 
-export default function useStopAlerts(stopId, lineRefs, routesById) {
+export default function useStopAlerts(
+  stopId,
+  lineRefs,
+  routesById,
+  {
+    enabled = true,
+    refreshIntervalMs = ALERT_REFRESH_INTERVAL_MS,
+  } = {}
+) {
   const [payload, setPayload] = useState(null);
   const [receivedAtMs, setReceivedAtMs] = useState(null);
   const [error, setError] = useState(false);
@@ -31,6 +39,8 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
   );
 
   const refresh = useCallback(async () => {
+    if (!enabled) return null;
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -54,7 +64,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
         // Keep the last successful payload, but expose its age to the UI.
       }
     }
-  }, []);
+  }, [enabled]);
 
   useEffect(() => {
     membershipAbortRef.current?.abort();
@@ -88,31 +98,65 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       ),
     ];
 
-    if (!stopId || candidateRouteIds.length === 0) {
-      setServed({ stopId, ids: EMPTY_ROUTE_IDS });
+    if (!enabled || !stopId || candidateRouteIds.length === 0) {
+      setServed((current) =>
+        current.stopId === stopId && current.ids === EMPTY_ROUTE_IDS
+          ? current
+          : { stopId, ids: EMPTY_ROUTE_IDS }
+      );
       return () => controller.abort();
     }
 
     fetchStopServedRouteIds(stopId, candidateRouteIds, controller.signal)
       .then((routeIds) => {
-        if (!controller.signal.aborted) setServed({ stopId, ids: routeIds });
+        if (!controller.signal.aborted) {
+          setServed((current) =>
+            current.stopId === stopId && current.ids === routeIds
+              ? current
+              : { stopId, ids: routeIds }
+          );
+        }
       })
       .catch(() => {
         if (!controller.signal.aborted) {
           // Realtime line matching still provides a safe partial fallback.
-          setServed({ stopId, ids: EMPTY_ROUTE_IDS });
+          setServed((current) =>
+            current.stopId === stopId && current.ids === EMPTY_ROUTE_IDS
+              ? current
+              : { stopId, ids: EMPTY_ROUTE_IDS }
+          );
         }
       });
 
     return () => controller.abort();
-  }, [lineRefs, payload, routesById, stopId]);
+  }, [enabled, lineRefs, payload, routesById, stopId]);
+
+  const normalizedRefreshIntervalMs = Math.max(
+    30_000,
+    Number(refreshIntervalMs) || ALERT_REFRESH_INTERVAL_MS
+  );
 
   useEffect(() => {
+    if (!enabled) {
+      abortRef.current?.abort();
+      membershipAbortRef.current?.abort();
+      failedRef.current = false;
+      setPayload(null);
+      setReceivedAtMs(null);
+      setServed((current) =>
+        current.stopId === "" && current.ids === EMPTY_ROUTE_IDS
+          ? current
+          : { stopId: "", ids: EMPTY_ROUTE_IDS }
+      );
+      setError(false);
+      return undefined;
+    }
+
     refresh();
 
     const intervalId = window.setInterval(() => {
       if (document.visibilityState === "visible") refresh();
-    }, ALERT_REFRESH_INTERVAL_MS);
+    }, normalizedRefreshIntervalMs);
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") refresh();
@@ -141,7 +185,7 @@ export default function useStopAlerts(stopId, lineRefs, routesById) {
       abortRef.current?.abort();
       membershipAbortRef.current?.abort();
     };
-  }, [refresh]);
+  }, [enabled, normalizedRefreshIntervalMs, refresh]);
 
   const alerts = useMemo(
     () =>

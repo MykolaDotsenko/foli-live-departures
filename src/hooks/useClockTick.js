@@ -8,10 +8,12 @@ import { useEffect, useState } from "react";
  * The tick pauses while the tab is hidden and catches up as soon as it is
  * visible again.
  */
-export default function useClockTick(intervalMs = 10_000) {
+export default function useClockTick(intervalMs = 10_000, enabled = true) {
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
+    if (!enabled) return undefined;
+
     const interval = Math.max(1_000, Number(intervalMs) || 0);
 
     const tick = () => {
@@ -19,6 +21,9 @@ export default function useClockTick(intervalMs = 10_000) {
       setNowMs(Date.now());
     };
 
+    // A clock that was disabled for minutes must catch up immediately when
+    // its feature becomes active rather than waiting one full interval.
+    tick();
     const intervalId = window.setInterval(tick, interval);
     document.addEventListener("visibilitychange", tick);
 
@@ -26,7 +31,7 @@ export default function useClockTick(intervalMs = 10_000) {
       window.clearInterval(intervalId);
       document.removeEventListener("visibilitychange", tick);
     };
-  }, [intervalMs]);
+  }, [enabled, intervalMs]);
 
   return nowMs;
 }

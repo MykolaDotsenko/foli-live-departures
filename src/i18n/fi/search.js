@@ -225,6 +225,20 @@ export default {
     "Osuus 1/2 · vaihda pysäkillä {stop} linjalle {line}",
   "Leg 2 of 2 · continue on line {line}":
     "Osuus 2/2 · jatka linjalla {line}",
+  "Your second bus was cancelled. Choose a fresh option.":
+    "Toinen bussisi peruttiin. Valitse uusi vaihtoehto.",
+  "Live check: line {line} still looks catchable.":
+    "Reaaliaikainen tarkistus: linja {line} vaikuttaa edelleen saavutettavalta.",
+  "Live check: line {line} still looks catchable · about {minutes} min transfer margin.":
+    "Reaaliaikainen tarkistus: linja {line} vaikuttaa edelleen saavutettavalta · vaihtoaikaa noin {minutes} min.",
+  "Live check: the transfer to line {line} is tight.":
+    "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka.",
+  "Live check: the transfer to line {line} is tight · about {minutes} min margin.":
+    "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka · aikaa noin {minutes} min.",
+  "Live check: the transfer to line {line} is tight · less than 1 min margin.":
+    "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka · aikaa alle 1 min.",
+  "Live check for line {line} is uncertain. Keeping the selected connection until stronger evidence.":
+    "Linjan {line} reaaliaikainen tarkistus on epävarma. Valittu yhteys pidetään, kunnes saadaan vahvempaa tietoa.",
   "The second bus has probably been missed. Choose a fresh option.":
     "Toinen bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":

@@ -722,17 +722,27 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-Only after direct journeys are trustworthy.
+**Status (2026-10-01): bounded one-transfer routing and live revalidation of the committed second leg are implemented through PR #118. Automatic replacement routing remains the next hardening slice.**
 
-Requires:
-
+Implemented:
 - transfer topology;
 - transfer walking;
-- buffers;
-- incoming/outgoing live;
-- missed-connection recovery.
+- conservative buffers;
+- concrete trip commitment for both legs;
+- Ride Mode handoff between legs;
+- fail-closed premature/missed-transfer recovery.
 
-Do not ship weak transfer logic merely to claim feature completeness.
+Live revalidation acceptance criteria:
+- only the selected second trip is monitored;
+- fresh SIRI may improve or reduce the transfer margin;
+- a cancelled second leg enters recovery even when its row disappeared;
+- stale repeated SIRI cannot remain “live” forever;
+- a failed provider check is degraded/unknown, never false missed;
+- one missing response is insufficient to declare a miss;
+- committed recovery cannot be undone by later Ride Mode completion;
+- this PR does not auto-switch to another connection.
+
+Next after this: fresh alternative search from the transfer point without asking the passenger to re-enter the destination.
 
 ---
 

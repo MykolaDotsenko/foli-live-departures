@@ -149,7 +149,32 @@ export type ActiveJourneyRecoveryReason =
   | "departed"
   | "transfer-risk"
   | "transfer-missed"
+  | "transfer-cancelled"
   | null;
+
+export type TransferProviderState =
+  | "idle"
+  | "live"
+  | "stale"
+  | "missing"
+  | "degraded"
+  | "cancelled";
+
+export type TransferRevalidationDecision =
+  | "unknown"
+  | "good"
+  | "tight"
+  | "unsafe"
+  | "missed"
+  | "cancelled";
+
+export interface TransferRevalidationState {
+  providerState: TransferProviderState;
+  decision: TransferRevalidationDecision;
+  departureAt: number | null;
+  feasibility: TransferFeasibility | null;
+  missingSinceMs: number | null;
+}
 
 export interface ActiveDirectJourney {
   id: string;
@@ -179,6 +204,7 @@ export interface ActiveDirectJourney {
   lastSeenAt: number;
   transferPlan: TransferJourneyOption | null;
   transferLeg: 1 | 2 | null;
+  transferRevalidation?: TransferRevalidationState | null;
 }
 
 export type NearbyFitMap = Record<string, NearbyStopFit>;

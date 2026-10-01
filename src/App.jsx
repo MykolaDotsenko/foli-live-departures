@@ -27,12 +27,14 @@ import useServiceBoundary from "./hooks/useServiceBoundary";
 import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
+import useTransferLegRevalidation from "./hooks/useTransferLegRevalidation";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
   arrivalMatchesActiveJourney,
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
+import { applyTransferRevalidation } from "./utils/transferRevalidation";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
@@ -168,6 +170,7 @@ function App() {
     selectTransferJourney,
     continueTransferAfterRide,
     recoverTransferAfterRide,
+    revalidateTransfer,
     confirmAtStop,
     clearJourney,
     observeStopFeed,
@@ -269,6 +272,118 @@ function App() {
     () => serviceAlerts.filter((alert) => alert.type === "cancellation"),
     [serviceAlerts]
   );
+
+  const transferWatchJourney =
+    selectedJourney?.transferPlan &&
+    selectedJourney.transferLeg === 1 &&
+    selectedJourney.phase !== "recovery"
+      ? selectedJourney
+      : ride.session &&
+          pendingTransferJourneyRef.current?.transferPlan &&
+          pendingTransferJourneyRef.current.transferLeg === 1 &&
+          pendingTransferJourneyRef.current.phase !== "recovery"
+        ? pendingTransferJourneyRef.current
+        : null;
+  const transferSecondLeg = transferWatchJourney?.transferPlan?.second || null;
+  const transferWatchStopId = String(transferSecondLeg?.boardStopId || "");
+  const transferWatchLineRefs = useMemo(
+    () =>
+      transferSecondLeg?.lineRef
+        ? [String(transferSecondLeg.lineRef)]
+        : [],
+    [transferSecondLeg?.lineRef]
+  );
+  const { alerts: transferServiceAlerts } = useStopAlerts(
+    transferWatchStopId,
+    transferWatchLineRefs,
+    routesById,
+    {
+      enabled: Boolean(transferWatchJourney),
+      // A five-minute service-alert cadence is fine for a normal stop board,
+      // but too slow for a committed connection that may disappear while the
+      // passenger is already on leg 1.
+      refreshIntervalMs: 60_000,
+    }
+  );
+  const transferCancellations = useMemo(
+    () =>
+      transferServiceAlerts.filter(
+        (alert) => alert.type === "cancellation"
+      ),
+    [transferServiceAlerts]
+  );
+  const transferCancellationProbe = transferSecondLeg
+    ? {
+        lineref: transferSecondLeg.lineRef,
+        aimeddeparturetime:
+          transferSecondLeg.aimedDepartureAt ||
+          transferSecondLeg.departureAt,
+        originaimeddeparturetime:
+          transferSecondLeg.originAimedDepartureAt || undefined,
+      }
+    : null;
+  const transferSecondCancelled =
+    transferCancellationProbe &&
+    isCancelledHere(transferCancellationProbe, transferCancellations);
+
+  const ridingSelectedTransfer =
+    Boolean(ride.session) &&
+    Boolean(transferWatchJourney) &&
+    pendingTransferJourneyRef.current?.id === transferWatchJourney?.id;
+  const rideEtaSec = Number(ride.runtime?.etaSec);
+  const transferIncomingArrivalAt =
+    ridingSelectedTransfer &&
+    Number.isFinite(rideEtaSec) &&
+    rideEtaSec >= 0
+      ? Math.floor(Date.now() / 1000 + rideEtaSec)
+      : transferWatchJourney?.transferPlan?.first?.arrivalAt || null;
+  const transferIncomingLiveState = ridingSelectedTransfer
+    ? ride.runtime?.etaSource === "live"
+      ? "live"
+      : ride.runtime?.etaSource === "location"
+        ? "delayed"
+        : "schedule"
+    : transferWatchJourney?.transferPlan?.first?.liveState || "unknown";
+
+  const transferRevalidation = useTransferLegRevalidation({
+    enabled: Boolean(transferWatchJourney),
+    journey: transferWatchJourney,
+    incomingArrivalAt: transferIncomingArrivalAt,
+    incomingLiveState: transferIncomingLiveState,
+    cancelled: transferSecondCancelled === true,
+  });
+
+  useEffect(() => {
+    if (
+      !transferWatchJourney ||
+      transferRevalidation.providerState === "idle"
+    ) {
+      return;
+    }
+
+    if (
+      selectedJourney?.id === transferWatchJourney.id &&
+      selectedJourney.transferLeg === 1
+    ) {
+      revalidateTransfer(transferRevalidation);
+    }
+
+    if (
+      ride.session &&
+      pendingTransferJourneyRef.current?.id === transferWatchJourney.id
+    ) {
+      pendingTransferJourneyRef.current = applyTransferRevalidation(
+        pendingTransferJourneyRef.current,
+        transferRevalidation
+      );
+    }
+  }, [
+    revalidateTransfer,
+    ride.session,
+    selectedJourney,
+    transferRevalidation,
+    transferWatchJourney,
+  ]);
 
   const selectedJourneyArrival = useMemo(() => {
     if (!selectedJourney || selectedJourney.stopId !== stopId) return null;

@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   fetchAlerts: vi.fn(),
@@ -33,6 +33,11 @@ beforeEach(() => {
       },
     ],
   });
+});
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 // The routes found to serve one stop were kept while the next stop's lookup
@@ -326,4 +331,188 @@ test("a realtime line match does not wait for static membership enrichment", asy
   expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
 
   unmount();
+});
+
+
+test("disabled alert monitoring makes no provider request", async () => {
+  const { result } = renderHook(() =>
+    useStopAlerts("501", ["7"], routesById, { enabled: false })
+  );
+
+  expect(result.current.alerts).toEqual([]);
+  expect(result.current.error).toBe(false);
+  expect(mocks.fetchAlerts).not.toHaveBeenCalled();
+  expect(mocks.fetchStopServedRouteIds).not.toHaveBeenCalled();
+});
+
+
+test("disabling alert monitoring clears the previous payload before another transfer can reuse the hook", async () => {
+  const cancellationPayload = {
+    cancellations: [
+      {
+        id: "cancel-old",
+        line: "50",
+        departure: 1_900_000_000,
+        stops: [
+          {
+            stop: "164",
+            arrival: 1_900_000_600,
+            isactive: true,
+          },
+        ],
+      },
+    ],
+    messages: [],
+  };
+
+  mocks.fetchAlerts.mockResolvedValue(cancellationPayload);
+
+  const { result, rerender } = renderHook(
+    ({ enabled }) =>
+      useStopAlerts("164", line50, routesById, { enabled }),
+    { initialProps: { enabled: true } }
+  );
+
+  await waitFor(() =>
+    expect(result.current.alerts).toEqual([
+      expect.objectContaining({ type: "cancellation", line: "50" }),
+    ])
+  );
+  expect(result.current.receivedAtMs).toEqual(expect.any(Number));
+
+  rerender({ enabled: false });
+
+  await waitFor(() => expect(result.current.alerts).toEqual([]));
+  expect(result.current.receivedAtMs).toBeNull();
+  expect(result.current.error).toBe(false);
+});
+
+
+test("supports a bounded faster refresh cadence for an active committed transfer", () => {
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 60_000,
+    })
+  );
+
+  expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
+});
+
+test("never allows alert polling faster than the 30-second safety floor", () => {
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 1_000,
+    })
+  );
+
+  expect(intervalSpy).toHaveBeenCalledWith(expect.any(Function), 30_000);
+});
+
+
+test("tolerates unstable inline line arrays without entering a render loop", async () => {
+  mocks.fetchAlerts.mockResolvedValue({ messages: [] });
+
+  const { result } = renderHook(() =>
+    useStopAlerts("501", ["50"], routesById, {
+      enabled: true,
+      refreshIntervalMs: 60_000,
+    })
+  );
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1));
+  expect(result.current.error).toBe(false);
+  expect(result.current.alerts).toEqual([]);
+});
+
+
+test("failed static route-membership enrichment fails closed without breaking realtime alert polling", async () => {
+  mocks.fetchStopServedRouteIds.mockRejectedValue(
+    new Error("GTFS membership temporarily unavailable")
+  );
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(mocks.fetchStopServedRouteIds).toHaveBeenCalledWith(
+      "164",
+      ["50"],
+      expect.any(globalThis.AbortSignal)
+    )
+  );
+
+  // The provider alert request itself succeeded, so the hook is healthy.
+  // Without static membership proof, the route-only notice is conservatively
+  // withheld rather than shown under the wrong stop.
+  await waitFor(() => expect(result.current.error).toBe(false));
+  expect(result.current.alerts).toEqual([]);
+  expect(mocks.fetchAlerts).toHaveBeenCalled();
+});
+
+
+test("membership lookup failure keeps a safe empty fallback", async () => {
+  mocks.fetchStopServedRouteIds.mockRejectedValue(
+    new Error("GTFS membership unavailable")
+  );
+
+  const { result } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() =>
+    expect(mocks.fetchStopServedRouteIds).toHaveBeenCalledTimes(1)
+  );
+  await act(async () => {
+    await Promise.resolve();
+  });
+
+  expect(result.current.error).toBe(false);
+  expect(result.current.alerts).toEqual([]);
+});
+
+test("scheduled alert polling is visibility-aware and resumes immediately", async () => {
+  mocks.fetchStopServedRouteIds.mockResolvedValue(new Set(["50"]));
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockReturnValue("visible");
+  const intervalSpy = vi.spyOn(window, "setInterval");
+
+  const { unmount } = renderHook(() =>
+    useStopAlerts("164", noLines, routesById)
+  );
+
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1));
+  const intervalCallback = intervalSpy.mock.calls.find(
+    ([callback, delay]) =>
+      typeof callback === "function" && delay === 5 * 60 * 1000
+  )?.[0];
+  expect(intervalCallback).toEqual(expect.any(Function));
+
+  visibility.mockReturnValue("hidden");
+  act(() => intervalCallback());
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1);
+
+  act(() => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  expect(mocks.fetchAlerts).toHaveBeenCalledTimes(1);
+
+  visibility.mockReturnValue("visible");
+  act(() => intervalCallback());
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(2));
+
+  act(() => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  await waitFor(() => expect(mocks.fetchAlerts).toHaveBeenCalledTimes(3));
+
+  unmount();
+  visibility.mockRestore();
 });

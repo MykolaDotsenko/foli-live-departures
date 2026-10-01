@@ -350,3 +350,163 @@ test("returns nothing without an active journey", () => {
   );
   expect(container).toBeEmptyDOMElement();
 });
+
+
+test("explains a cancelled second transfer leg explicitly", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        optionLabel: "transfer",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: {
+            boardStopId: "500",
+            boardStopName: "Kauppatori platform B",
+          },
+          second: { lineRef: "7" },
+        },
+        phase: "recovery",
+        recoveryReason: "transfer-cancelled",
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText("Your second bus was cancelled. Choose a fresh option.")
+  ).toBeInTheDocument();
+});
+
+
+test("shows live second-leg transfer evidence without changing the selected route", () => {
+  const common = {
+    optionLabel: "transfer",
+    transferLeg: 1,
+    transferPlan: {
+      transfer: {
+        boardStopId: "501",
+        boardStopName: "Kauppatori platform B",
+      },
+      second: { lineRef: "7" },
+    },
+    phase: "waiting",
+    atStopConfirmedAt: 1_900_000_010_000,
+  };
+
+  const { rerender } = render(
+    <ActiveJourney
+      journey={journey({
+        ...common,
+        transferRevalidation: {
+          providerState: "live",
+          decision: "good",
+          feasibility: { slackSec: 310 },
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live check: line 7 still looks catchable · about 5 min transfer margin."
+    )
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      journey={journey({
+        ...common,
+        transferRevalidation: {
+          providerState: "live",
+          decision: "tight",
+          feasibility: { slackSec: 95 },
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live check: the transfer to line 7 is tight · about 1 min margin."
+    )
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      journey={journey({
+        ...common,
+        transferRevalidation: {
+          providerState: "stale",
+          decision: "unknown",
+          feasibility: null,
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live check for line 7 is uncertain. Keeping the selected connection until stronger evidence."
+    )
+  ).toBeInTheDocument();
+});
+
+
+test("does not round a sub-minute tight transfer margin up to one minute", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        optionLabel: "transfer",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: {
+            boardStopId: "501",
+            boardStopName: "Kauppatori platform B",
+          },
+          second: { lineRef: "7" },
+        },
+        phase: "waiting",
+        transferRevalidation: {
+          providerState: "live",
+          decision: "tight",
+          feasibility: { slackSec: 40 },
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live check: the transfer to line 7 is tight · less than 1 min margin."
+    )
+  ).toBeInTheDocument();
+});
