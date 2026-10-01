@@ -74,7 +74,7 @@ function freshTargetArrival(monitor, candidate) {
         plannedTarget !== null &&
         Number.isFinite(rowTarget) &&
         rowTarget > 0 &&
-        Math.abs(rowTarget - plannedTarget) > 90
+        Math.abs(rowTarget - plannedTarget) > 10 * 60
       );
     });
 
@@ -97,7 +97,12 @@ function freshTargetArrival(monitor, candidate) {
         };
       })
       .sort((a, b) => a.delta - b.delta);
-    if (!Number.isFinite(ranked[0].delta) || ranked[0].delta > 90) return null;
+    if (
+      !Number.isFinite(ranked[0].delta) ||
+      ranked[0].delta > 10 * 60
+    ) {
+      return null;
+    }
     if (ranked[1]?.delta === ranked[0].delta) return null;
     row = ranked[0].item;
   }
