@@ -396,7 +396,9 @@ test("fails closed for malformed or non-HTTPS runtime provider config", async ()
 
   vi.stubGlobal("fetch", malformedFetch);
 
-  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  await expect(searchPlaces("Prisma")).rejects.toMatchObject({
+    name: "PlaceSearchPolicyError",
+  });
   expect(malformedFetch).toHaveBeenCalledTimes(1);
 
   resetPlaceSearchForTests();
@@ -412,7 +414,9 @@ test("fails closed for malformed or non-HTTPS runtime provider config", async ()
 
   vi.stubGlobal("fetch", insecureFetch);
 
-  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  await expect(searchPlaces("Prisma")).rejects.toMatchObject({
+    name: "PlaceSearchPolicyError",
+  });
   expect(insecureFetch).toHaveBeenCalledTimes(1);
 });
 
@@ -521,6 +525,8 @@ test("runtime config cannot expand the provider trust boundary to another origin
   );
   vi.stubGlobal("fetch", fetchMock);
 
-  await expect(searchPlaces("Prisma Itäharju")).resolves.toEqual([]);
+  await expect(searchPlaces("Prisma Itäharju")).rejects.toMatchObject({
+    name: "PlaceSearchPolicyError",
+  });
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
