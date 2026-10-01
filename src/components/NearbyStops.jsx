@@ -205,8 +205,21 @@ function NearbyStops({
     setSearchExpanded(false);
   }, [destination?.id]);
 
-  const hasViableBaseOption = baseNearbyStops.some((stop) =>
-    ["good", "tight"].includes(fitsByStop[stop.id]?.status)
+  const baseDirectJourneyOptions = useMemo(
+    () =>
+      destination && fitState === "ready" && !searchExpanded
+        ? selectDirectJourneyOptions({
+            stops: baseNearbyStops,
+            fitsByStop,
+          })
+        : [],
+    [
+      baseNearbyStops,
+      destination,
+      fitState,
+      fitsByStop,
+      searchExpanded,
+    ]
   );
 
   useEffect(() => {
@@ -216,18 +229,18 @@ function NearbyStops({
       searchExpanded ||
       fitState !== "ready" ||
       expandedNearbyStops.length <= baseNearbyStops.length ||
-      hasViableBaseOption
+      baseDirectJourneyOptions.length >= 2
     ) {
       return;
     }
 
     setSearchExpanded(true);
   }, [
+    baseDirectJourneyOptions.length,
     baseNearbyStops.length,
     destination,
     expandedNearbyStops.length,
     fitState,
-    hasViableBaseOption,
     position,
     searchExpanded,
   ]);
