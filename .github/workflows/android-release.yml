@@ -18,6 +18,7 @@ on:
         type: boolean
 
 permissions:
+  actions: read
   contents: write
 
 concurrency:
@@ -73,6 +74,21 @@ jobs:
           : "${ANDROID_KEYSTORE_PASSWORD:?ANDROID_KEYSTORE_PASSWORD is required}"
           : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
           : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD is required}"
+
+      - name: Require successful CI for this exact master commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          match="$(
+            gh api               -H "Accept: application/vnd.github+json"               "/repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?branch=master&event=push&status=success&per_page=20"               --jq '.workflow_runs[] | select(.head_sha == env.GITHUB_SHA) | .id'               | head -n 1
+          )"
+          test -n "$match" || {
+            echo "No successful master CI run exists for exact commit $GITHUB_SHA."
+            exit 1
+          }
+          echo "Verified successful CI run $match for $GITHUB_SHA."
 
       - name: Install web dependencies
         run: npm ci
