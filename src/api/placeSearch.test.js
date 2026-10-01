@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import {
-  placeSearchViewbox,
   resetPlaceSearchForTests,
   searchPlaces,
 } from "./placeSearch";
@@ -15,16 +14,6 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.useRealTimers();
   resetPlaceSearchForTests();
-});
-
-test("derives a padded Föli-area viewbox from stop coordinates", () => {
-  const viewbox = placeSearchViewbox([
-    { lat: 60.4, lon: 22.2 },
-    { lat: 60.5, lon: 22.4 },
-    { lat: null, lon: 99 },
-  ]);
-
-  expect(viewbox).toBe("22.16,60.52,22.44,60.38");
 });
 
 test("does not call the provider for a too-short explicit query", async () => {
@@ -53,7 +42,6 @@ test("sends one bounded explicit search and normalizes the result", async () => 
 
   const results = await searchPlaces("  Prisma   Turku  ", {
     language: "fi",
-    viewbox: "22,61,23,60",
   });
 
   expect(results).toEqual([
@@ -75,7 +63,7 @@ test("sends one bounded explicit search and normalizes the result", async () => 
   expect(url.searchParams.get("countrycodes")).toBe("fi");
   expect(url.searchParams.get("layer")).toBe("address,poi");
   expect(url.searchParams.get("bounded")).toBe("1");
-  expect(url.searchParams.get("viewbox")).toBe("22,61,23,60");
+  expect(url.searchParams.get("viewbox")).toBe("21.2,61,23.4,59.9");
   expect(url.searchParams.get("accept-language")).toBe("fi,en");
   expect(options.headers).toEqual({ Accept: "application/json" });
   expect(options.referrerPolicy).toBe("strict-origin-when-cross-origin");
@@ -89,11 +77,9 @@ test("caches identical searches for the current session", async () => {
 
   await searchPlaces("Turun linna", {
     language: "en",
-    viewbox: "22,61,23,60",
   });
   await searchPlaces("Turun   linna", {
     language: "en",
-    viewbox: "22,61,23,60",
   });
 
   expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -108,7 +94,7 @@ test("enforces at least one second between uncached provider requests", async ()
     json: async () => [],
   });
 
-  await searchPlaces("First place", { viewbox: "22,61,23,60" });
+  await searchPlaces("First place");
 
   const second = searchPlaces("Second place", {
     viewbox: "22,61,23,60",
