@@ -287,6 +287,14 @@ function App() {
     [selectedJourney, stops]
   );
 
+  const selectedJourneyMonitoringState = !selectedJourney
+    ? "active"
+    : selectedJourney.stopId !== stopId
+      ? "paused"
+      : error
+        ? "degraded"
+        : "active";
+
   useEffect(() => {
     if (!selectedJourney || selectedJourney.stopId !== stopId) return;
 
@@ -488,7 +496,12 @@ function App() {
 
   const chooseAnotherJourney = () => {
     requestFocus(firstJourneyOption);
-    clearJourney();
+    // Keep recovery context until another concrete trip is selected. This
+    // prevents the cancelled/departed trip from immediately returning as a
+    // recommendation while the passenger is choosing a replacement.
+    if (selectedJourney?.phase !== "recovery") {
+      clearJourney();
+    }
   };
 
   const openSelectedJourneyStop = () => {
@@ -632,6 +645,7 @@ function App() {
             journey={selectedJourney}
             stop={selectedJourneyStop}
             online={online}
+            monitoringState={selectedJourneyMonitoringState}
             onConfirmAtStop={confirmJourneyAtStop}
             onShowDeparture={showSelectedJourneyDeparture}
             onChooseAnother={chooseAnotherJourney}
@@ -739,6 +753,9 @@ function App() {
           online={online}
           searchEdits={readSearchEdits}
           destination={journey.destination}
+          excludedJourney={
+            selectedJourney?.phase === "recovery" ? selectedJourney : null
+          }
           onSelectJourney={selectJourneyOption}
           onSelect={selectStop}
         />
