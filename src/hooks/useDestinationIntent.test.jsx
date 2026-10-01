@@ -64,3 +64,82 @@ test("lets the passenger choose and clear destination explicitly", () => {
   act(() => result.current.clearDestination());
   expect(result.current.destination).toBeNull();
 });
+
+
+test("builds a geocoded destination without persisting it", () => {
+  const { result } = renderHook(() => useDestinationIntent());
+
+  let prepared;
+  act(() => {
+    prepared = result.current.chooseGeocodedPlace(
+      {
+        id: "osm:node:123",
+        label: "Prisma",
+        secondaryLabel: "Turku",
+        lat: 60.4518,
+        lon: 22.2666,
+        category: "shop",
+        provider: "nominatim",
+      },
+      [
+        { id: "100", name: "Near", lat: 60.4519, lon: 22.2666 },
+        { id: "200", name: "Backup", lat: 60.453, lon: 22.2666 },
+      ],
+      null
+    );
+  });
+
+  expect(prepared.ok).toBe(true);
+  expect(result.current.destination).toMatchObject({
+    id: "geo:osm:node:123",
+    kind: "geocoded-place",
+    label: "Prisma",
+    primaryStopId: "100",
+    acceptableStopIds: ["100", "200"],
+    placeProvider: "nominatim",
+  });
+});
+
+test("keeps the current destination when a geocoded place is unusable", () => {
+  const { result } = renderHook(() => useDestinationIntent());
+
+  act(() => {
+    result.current.chooseStop({ id: "4", name: "Turun linna" });
+  });
+
+  let prepared;
+  act(() => {
+    prepared = result.current.chooseGeocodedPlace(
+      {
+        id: "osm:node:999",
+        label: "Far away",
+        secondaryLabel: "",
+        lat: 62,
+        lon: 24,
+        category: "place",
+        provider: "nominatim",
+      },
+      [{ id: "4", name: "Turun linna", lat: 60.4355, lon: 22.2345 }],
+      {
+        type: "MultiPolygon",
+        coordinates: [
+          [
+            [
+              [22, 60],
+              [23, 60],
+              [23, 61],
+              [22, 61],
+              [22, 60],
+            ],
+          ],
+        ],
+      }
+    );
+  });
+
+  expect(prepared.reason).toBe("outside-service-area");
+  expect(result.current.destination).toMatchObject({
+    id: "stop:4",
+    kind: "public-stop",
+  });
+});
