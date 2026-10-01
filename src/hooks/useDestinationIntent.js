@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import { prepareGeocodedDestination } from "../utils/placeDestination";
 
 /** @import { DestinationIntent } from "../types/journey" */
 
@@ -66,12 +67,26 @@ export default function useDestinationIntent() {
     if (next) setDestination(next);
   }, []);
 
+  const chooseGeocodedPlace = useCallback(
+    (place, stops, serviceBoundary = null) => {
+      const prepared = prepareGeocodedDestination({
+        place,
+        stops,
+        serviceBoundary,
+      });
+      if (prepared.ok) setDestination(prepared.destination);
+      return prepared;
+    },
+    []
+  );
+
   const clearDestination = useCallback(() => setDestination(null), []);
 
   return {
     destination,
     chooseStop,
     choosePlace,
+    chooseGeocodedPlace,
     clearDestination,
   };
 }
