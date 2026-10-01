@@ -149,6 +149,10 @@ test("renders provider results and selects one as a geocoded destination", async
   const listbox = await screen.findByRole("listbox", {
     name: "Journey destination",
   });
+  const option = within(listbox).getByRole("option", {
+    name: /Prisma Itäharju.*Turku/i,
+  });
+  fireEvent.pointerDown(option);
   expect(within(listbox).getByText("Prisma Itäharju")).toBeInTheDocument();
   expect(
     within(listbox).getByText("Turku, Varsinais-Suomi, Suomi")
