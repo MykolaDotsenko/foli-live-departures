@@ -77,6 +77,44 @@ describe("destination trip fit", () => {
     expect(fit.destination.stopId).toBe("900");
   });
 
+  test("chooses the downstream stop with the earliest ride plus final walk", () => {
+    const fit = analyzeTripFit({
+      stopTimes: [
+        row("100", 1, "10:00:00", "10:00:00"),
+        row("900", 2, "10:10:00", "10:10:00"),
+        row("901", 3, "10:12:00", "10:12:00"),
+      ],
+      boardingStopId: "100",
+      destinationStopIds: ["900", "901"],
+      destinationStopDistances: {
+        "900": 900,
+        "901": 80,
+      },
+    });
+
+    expect(fit.compatible).toBe(true);
+    expect(fit.destination.stopId).toBe("901");
+    expect(fit.rideDurationSec).toBe(12 * 60);
+    expect(fit.finalWalkDistanceM).toBe(80);
+    expect(fit.finalWalkDurationSec).toBeGreaterThan(0);
+  });
+
+  test("keeps legacy first-downstream behaviour without place distances", () => {
+    const fit = analyzeTripFit({
+      stopTimes: [
+        row("100", 1, "10:00:00", "10:00:00"),
+        row("900", 2, "10:10:00", "10:10:00"),
+        row("901", 3, "10:12:00", "10:12:00"),
+      ],
+      boardingStopId: "100",
+      destinationStopIds: ["900", "901"],
+    });
+
+    expect(fit.destination.stopId).toBe("900");
+    expect(fit.finalWalkDistanceM).toBeNull();
+    expect(fit.finalWalkDurationSec).toBeNull();
+  });
+
   test("does not offer a stop where drop-off is prohibited", () => {
     expect(
       analyzeTripFit({
