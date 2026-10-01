@@ -81,7 +81,7 @@ test("loads runtime config then performs one explicit Nominatim search", async (
   ]);
 
   expect(fetchMock).toHaveBeenCalledTimes(2);
-  const searchUrl = new URL(fetchMock.mock.calls[1][0]);
+  const searchUrl = new globalThis.URL(fetchMock.mock.calls[1][0]);
   expect(searchUrl.origin).toBe("https://nominatim.openstreetmap.org");
   expect(searchUrl.searchParams.get("q")).toBe("Prisma Itäharju");
   expect(searchUrl.searchParams.get("countrycodes")).toBe("fi");
