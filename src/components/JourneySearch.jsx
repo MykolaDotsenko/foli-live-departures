@@ -150,7 +150,7 @@ export default function JourneySearch({
     if (!directPlaceSearchEnabled) {
       setError(
         t(
-          "Address and place search is available in the official Turku journey planner from the installed app. Föli stop search still works here."
+          "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
         )
       );
       return;
@@ -322,7 +322,7 @@ export default function JourneySearch({
           <div className={styles.handoff}>
             <p className={styles.privacyNote}>
               {t(
-                "The installed app keeps address and place text on this device. Use the official Turku journey planner for address and POI search."
+                "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
               )}
             </p>
             {online && (
@@ -385,7 +385,7 @@ export default function JourneySearch({
                 )
               : placeSearch.error === "external-handoff"
                 ? t(
-                    "Address and place search is available in the official Turku journey planner from the installed app. Föli stop search still works here."
+                    "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
                   )
                 : t(
                     "Place search is temporarily unavailable. Föli stop search still works."

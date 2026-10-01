@@ -338,7 +338,7 @@ test("packaged app keeps address text local and offers the official planner hand
 
   expect(placeSearch.search).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "official Turku journey planner"
+    "Direct address and place search is unavailable here"
   );
   expect(
     screen.getByRole("link", { name: "Open Turku journey planner" })

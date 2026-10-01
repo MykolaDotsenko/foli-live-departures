@@ -122,8 +122,8 @@ function normalizeConfig(raw) {
 
 /**
  * Runtime config is intentionally same-origin and not precached. It lets the
- * static site disable or repoint public place search without changing the JS
- * bundle.
+ * static site disable or tune public place search without changing the JS
+ * bundle. The direct-provider origin itself stays allowlisted in code.
  *
  * @param {AbortSignal | undefined} signal
  * @returns {Promise<PlaceSearchConfig>}
