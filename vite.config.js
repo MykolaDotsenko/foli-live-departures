@@ -57,6 +57,15 @@ export default defineConfig(({ mode }) => ({
       output: { legalComments: "none" },
     },
   },
+  css: {
+    modules: {
+      // Default CSS-module identifiers repeat file/local names in both the
+      // stylesheet and JS class map. A six-character content hash keeps
+      // module isolation while materially reducing the executable/style
+      // payload. Global class names are unaffected.
+      generateScopedName: "[hash:base64:6]",
+    },
+  },
   plugins: [
     react(),
     contentSecurityPolicyPlugin({
