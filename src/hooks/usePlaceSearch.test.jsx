@@ -38,8 +38,6 @@ test("passes language and stop-derived bounds to the provider", async () => {
       secondaryLabel: "Turku",
       lat: 60.45,
       lon: 22.26,
-      category: "shop",
-      provider: "nominatim",
     },
   ]);
 
