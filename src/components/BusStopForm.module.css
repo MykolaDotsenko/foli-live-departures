@@ -354,35 +354,39 @@
 .journeyHeading,
 .journeyCompact {
   justify-content: space-between;
+  gap: 8px;
 }
 
 .journeyHeading {
-  gap: 8px;
   margin-bottom: 8px;
 }
 
 .journeyHeading h2 {
   margin: 0;
-  color: #20343b;
   font-size: 1rem;
-}
-
-.journeyTextButton,
-.journeyActions button {
-  min-height: 40px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #00656f;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 850;
 }
 
 .journeyStatus {
   margin: 0 0 8px;
   font-size: 0.8rem;
+}
+
+.journeyTextButton,
+.journeyActions button,
+.journeyQuick button {
+  min-height: 40px;
+  font: inherit;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.journeyTextButton,
+.journeyActions button {
+  padding: 0 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #00656f;
 }
 
 .journeyQuick {
@@ -392,15 +396,11 @@
 }
 
 .journeyQuick button {
-  min-height: 40px;
   padding: 0 10px;
   border: 1px solid #a9c9cd;
   border-radius: 999px;
-  background: #f9fcfc;
-  color: #23464e;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
+  background: transparent;
+  color: inherit;
 }
 
 .journeyQuick button[aria-pressed="true"] {
@@ -416,7 +416,6 @@
 
 .journeyCompact {
   min-height: 44px;
-  gap: 8px;
   margin-bottom: 8px;
   padding: 5px 8px;
   border: 1px solid #c9dde0;
@@ -446,16 +445,6 @@
 }
 
 @media screen {
-  :root[data-theme="dark"] .journeyHeading h2,
-  :root[data-theme="dark"] .journeyCompactText strong {
-    color: var(--dm-text);
-  }
-
-  :root[data-theme="dark"] .journeyStatus,
-  :root[data-theme="dark"] .journeyCompactText {
-    color: var(--dm-muted);
-  }
-
   :root[data-theme="dark"] .journeyTextButton,
   :root[data-theme="dark"] .journeyActions button {
     color: var(--dm-accent);
@@ -464,8 +453,6 @@
   :root[data-theme="dark"] .journeyQuick button,
   :root[data-theme="dark"] .journeyCompact {
     border-color: var(--dm-line);
-    background: var(--dm-surface);
-    color: var(--dm-soft);
   }
 
   :root[data-theme="dark"] .journeyQuick button[aria-pressed="true"],
