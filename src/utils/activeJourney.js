@@ -55,6 +55,19 @@ export function activeJourneyFromOption(
     finitePositive(option?.departure?.originAimedDepartureAt) ?? null;
   const destinationArrivalAt =
     finitePositive(option?.departure?.destinationArrivalAt) ?? null;
+  const finalWalkDistanceM =
+    Number.isFinite(Number(option?.departure?.finalWalkDistanceM)) &&
+    Number(option.departure.finalWalkDistanceM) >= 0
+      ? Number(option.departure.finalWalkDistanceM)
+      : null;
+  const finalWalkDurationSec =
+    Number.isFinite(Number(option?.departure?.finalWalkDurationSec)) &&
+    Number(option.departure.finalWalkDurationSec) >= 0
+      ? Number(option.departure.finalWalkDurationSec)
+      : null;
+  const finalArrivalAt =
+    finitePositive(option?.departure?.finalArrivalAt) ??
+    destinationArrivalAt;
 
   return {
     id: String(option.id || [stopId, tripRef, departureAt].join(":")),
@@ -72,6 +85,9 @@ export function activeJourneyFromOption(
     aimedDepartureAt,
     originAimedDepartureAt,
     destinationArrivalAt,
+    finalWalkDistanceM,
+    finalWalkDurationSec,
+    finalArrivalAt,
     liveState: option.departure.liveState || "unknown",
     phase: "walking-to-stop",
     recoveryReason: null,
