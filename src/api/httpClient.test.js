@@ -101,11 +101,11 @@ test("hard timeout is reported as TimeoutError, not passenger cancellation", asy
 
   const client = createHttpClient({ timeout: 50 });
   const request = client.get("https://data.foli.fi/test");
-
-  await vi.advanceTimersByTimeAsync(50);
-
-  await expect(request).rejects.toMatchObject({
+  const rejection = expect(request).rejects.toMatchObject({
     name: "TimeoutError",
     message: "Request timed out after 50 ms.",
   });
+
+  await vi.advanceTimersByTimeAsync(50);
+  await rejection;
 });
