@@ -250,6 +250,30 @@ test("going offline rewords the board's status in place", () => {
 });
 
 
+test("a filtered-line failure shows Try again without a competing header Refresh", () => {
+  localStorage.setItem(
+    "foli-line-filter-v1",
+    JSON.stringify({
+      "164": { lines: ["32"], savedAt: Date.now() },
+    })
+  );
+
+  render(
+    board({
+      arrivals: [departure],
+      serverTime: NOW,
+      receivedAtMs: Date.now(),
+      error: true,
+    })
+  );
+
+  expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Show all lines" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
+
+  localStorage.removeItem("foli-line-filter-v1");
+});
+
 test("a healthy board keeps one explicit Refresh action", () => {
   render(
     board({
