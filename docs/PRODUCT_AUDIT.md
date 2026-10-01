@@ -103,7 +103,6 @@ These came out of the verification round and are not yet re-scored.
 
 **Found by the reviews, not done**
 - **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
-- **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
 - Public web address/POI lookup is intentionally policy-switchable and fails closed to the official Turku journey planner, but the public Nominatim service is not a city-wide scaling guarantee. A promoted launch needs either a provider arrangement suitable for the expected traffic or direct-search disabled by runtime policy.
 
