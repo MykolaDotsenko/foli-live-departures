@@ -139,7 +139,9 @@ test("filters malformed coordinates and respects a disabled runtime provider", a
     })
   );
   vi.stubGlobal("fetch", disabledFetch);
-  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  await expect(searchPlaces("Prisma")).rejects.toMatchObject({
+    name: "PlaceSearchPolicyError",
+  });
   expect(disabledFetch).toHaveBeenCalledTimes(1);
 
   resetPlaceSearchForTests();

@@ -7,7 +7,9 @@ import {
 /** @import { PlaceSearchResult } from "../types/journey" */
 
 export default function usePlaceSearch() {
-  const directEnabled = directPlaceSearchSupported();
+  const [directEnabled, setDirectEnabled] = useState(() =>
+    directPlaceSearchSupported()
+  );
   /** @type {[PlaceSearchResult[], import("react").Dispatch<import("react").SetStateAction<PlaceSearchResult[]>>]} */
   const [results, setResults] = useState([]);
   const [status, setStatus] = useState("idle");
@@ -59,12 +61,14 @@ export default function usePlaceSearch() {
       }
 
       if (requestIdRef.current === requestId) {
+        const policyHandoff = searchError?.name === "PlaceSearchPolicyError";
         setResults([]);
         setStatus("error");
+        if (policyHandoff) setDirectEnabled(false);
         setError(
           searchError?.name === "PlaceSearchCooldownError"
             ? "rate-limited"
-            : searchError?.name === "PlaceSearchPolicyError"
+            : policyHandoff
               ? "external-handoff"
               : "unavailable"
         );

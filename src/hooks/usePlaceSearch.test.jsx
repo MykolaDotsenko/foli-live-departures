@@ -186,13 +186,13 @@ test("unmount aborts the active provider request", () => {
 
 
 test("exposes packaged-app policy as a graceful external handoff", async () => {
-  api.directPlaceSearchSupported.mockReturnValue(false);
-  const policyError = new Error("native direct provider disabled");
+  api.directPlaceSearchSupported.mockReturnValue(true);
+  const policyError = new Error("runtime direct provider disabled");
   policyError.name = "PlaceSearchPolicyError";
   api.searchPlaces.mockRejectedValue(policyError);
 
   const { result: hook } = renderHook(() => usePlaceSearch());
-  expect(hook.current.directEnabled).toBe(false);
+  expect(hook.current.directEnabled).toBe(true);
 
   let returned;
   await act(async () => {
@@ -202,4 +202,5 @@ test("exposes packaged-app policy as a graceful external handoff", async () => {
   expect(returned).toBeNull();
   expect(hook.current.status).toBe("error");
   expect(hook.current.error).toBe("external-handoff");
+  expect(hook.current.directEnabled).toBe(false);
 });

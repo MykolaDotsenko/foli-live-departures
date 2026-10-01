@@ -375,7 +375,13 @@ export async function searchPlaces(value, options = {}) {
   const promise = (async () => {
     assertProviderAvailable();
     const config = await loadPlaceSearchConfig(options.signal);
-    if (!config.enabled || !config.endpoint) return [];
+    if (!config.enabled || !config.endpoint) {
+      const error = new Error(
+        "Direct public place search is disabled by runtime policy."
+      );
+      error.name = "PlaceSearchPolicyError";
+      throw error;
+    }
 
     const params = new URLSearchParams({
       q: query,
