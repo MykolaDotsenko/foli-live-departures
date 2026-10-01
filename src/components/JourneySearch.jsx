@@ -321,7 +321,7 @@ export default function JourneySearch({
                       key={place.id}
                       type="button"
                       role="option"
-                      className={styles.suggestionButton}
+                      className={styles.suggestion}
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => chooseGeocodedPlace(place)}
                     >
@@ -340,7 +340,7 @@ export default function JourneySearch({
                       key={stop.id}
                       type="button"
                       role="option"
-                      className={styles.suggestionButton}
+                      className={styles.suggestion}
                       onPointerDown={(event) => event.preventDefault()}
                       onClick={() => chooseStop(stop)}
                     >
