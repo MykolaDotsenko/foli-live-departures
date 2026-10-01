@@ -22,6 +22,7 @@ export interface NearbyDepartureFit {
   destinationStopId: string;
   departureAt: number;
   aimedDepartureAt?: number | null;
+  originAimedDepartureAt?: number | null;
   destinationArrivalAt: number | null;
   catchability: Catchability;
   liveState: LiveState;
@@ -86,6 +87,7 @@ export interface ActiveDirectJourney {
   destinationStopId: string;
   departureAt: number;
   aimedDepartureAt: number | null;
+  originAimedDepartureAt: number | null;
   destinationArrivalAt: number | null;
   liveState: LiveState;
   phase: ActiveJourneyPhase;
