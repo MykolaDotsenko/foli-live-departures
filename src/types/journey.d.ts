@@ -7,7 +7,6 @@ export interface DestinationIntent {
   lat?: number;
   lon?: number;
   destinationStopDistances?: Record<string, number>;
-  placeProvider?: "nominatim";
 }
 
 export type Catchability =
@@ -116,6 +115,4 @@ export interface PlaceSearchResult {
   secondaryLabel: string;
   lat: number;
   lon: number;
-  category: string;
-  provider: "nominatim";
 }
