@@ -32,6 +32,7 @@ export default function JourneySearch({
   places,
   destination,
   online = true,
+  coordinatesStatus = "ready",
   onChoosePlace,
   onChooseStop,
   onChooseGeocodedPlace = null,
@@ -105,6 +106,19 @@ export default function JourneySearch({
     }
 
     setFocused(matches.length > 0);
+
+    if (coordinatesStatus !== "ready") {
+      setError(
+        coordinatesStatus === "loading"
+          ? t(
+              "Address and place search is waiting for stop locations. Try again in a moment."
+            )
+          : t(
+              "Address and place search is temporarily unavailable. Stop search still works."
+            )
+      );
+      return;
+    }
 
     if (!online) {
       setError(
