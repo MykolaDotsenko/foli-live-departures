@@ -222,6 +222,49 @@ describe("active journey transitions", () => {
     });
   });
 
+  test("shifts selected door-to-door arrival with live boarding delay", () => {
+    const journey = activeJourneyFromOption(
+      option({
+        departure: {
+          ...option().departure,
+          finalWalkDistanceM: 240,
+          finalWalkDurationSec: 250,
+          finalArrivalAt: 2_350,
+        },
+      }),
+      {
+        ...destination,
+        id: "geo:osm:node:1",
+        kind: "geocoded-place",
+        label: "Prisma",
+      },
+      1_000_000
+    );
+
+    const updated = observeActiveJourney(journey, {
+      stopId: "100",
+      arrival: {
+        tripref: "trip-1",
+        lineref: "18",
+        monitored: true,
+        aimeddeparturetime: 1_480,
+        expecteddeparturetime: 1_620,
+      },
+      referenceTimeSec: 1_400,
+      receivedAtMs: 1_040_000,
+      feedError: false,
+      cancelled: false,
+    });
+
+    expect(updated).toMatchObject({
+      departureAt: 1_620,
+      destinationArrivalAt: 2_220,
+      finalArrivalAt: 2_470,
+      finalWalkDistanceM: 240,
+      finalWalkDurationSec: 250,
+    });
+  });
+
   test("updates a delayed selected trip from the existing board feed", () => {
     const journey = activeJourneyFromOption(option(), destination, 1_000_000);
 
