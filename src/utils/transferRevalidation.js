@@ -1,7 +1,7 @@
 import { getDepartureTime, dataAgeSeconds } from "./time";
 import { assessTransfer } from "./transferFeasibility";
 
-/** @import { ActiveDirectJourney, TransferRevalidationState } from "../types/journey" */
+/** @import { ActiveDirectJourney, TransferFeasibility, TransferRevalidationDecision, TransferRevalidationState } from "../types/journey" */
 
 export const TRANSFER_LIVE_MAX_AGE_SEC = 120;
 export const TRANSFER_MISSING_CONFIRMATION_MS = 30_000;
@@ -60,7 +60,7 @@ export function transferSecondArrivalMatches(arrival, journey) {
 
 /**
  * @param {{
- *   journey: ActiveDirectJourney | null | undefined,
+ *   journey?: ActiveDirectJourney | null,
  *   arrivals?: any[] | null,
  *   referenceTimeSec?: number | null,
  *   receivedAtMs?: number | null,
@@ -84,6 +84,7 @@ export function evaluateTransferRevalidation({
   previous = null,
 } = {}) {
   const second = secondLeg(journey);
+  /** @type {TransferRevalidationState} */
   const idle = {
     providerState: "idle",
     decision: "unknown",
@@ -96,24 +97,25 @@ export function evaluateTransferRevalidation({
     providerAgeSec: null,
   };
 
-  if (!second) return idle;
+  const plan = journey?.transferPlan;
+  if (!second || !journey || !plan) return idle;
 
   const plannedDepartureAt = positive(second.departureAt);
   const plannedAimedAt =
     positive(second.aimedDepartureAt) ?? plannedDepartureAt;
   const incomingAt =
     positive(incomingArrivalAt) ??
-    positive(journey?.transferPlan?.first?.arrivalAt);
+    positive(plan.first?.arrivalAt);
   const reference = positive(referenceTimeSec);
   const received = positive(receivedAtMs);
 
   const plannedFeasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: plannedDepartureAt,
-    walkingDistanceM: journey.transferPlan.transfer.walkingDistanceM,
+    walkingDistanceM: plan.transfer.walkingDistanceM,
     sameStop:
-      String(journey.transferPlan.transfer.alightStopId) ===
-      String(journey.transferPlan.transfer.boardStopId),
+      String(plan.transfer.alightStopId) ===
+      String(plan.transfer.boardStopId),
     incomingLiveState,
   });
 
@@ -212,10 +214,10 @@ export function evaluateTransferRevalidation({
   const feasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: liveDepartureAt,
-    walkingDistanceM: journey.transferPlan.transfer.walkingDistanceM,
+    walkingDistanceM: plan.transfer.walkingDistanceM,
     sameStop:
-      String(journey.transferPlan.transfer.alightStopId) ===
-      String(journey.transferPlan.transfer.boardStopId),
+      String(plan.transfer.alightStopId) ===
+      String(plan.transfer.boardStopId),
     incomingLiveState,
   });
 
@@ -225,6 +227,7 @@ export function evaluateTransferRevalidation({
     arrival.vehicleatstop !== true &&
     reference >= liveDepartureAt + 30;
 
+  /** @type {TransferRevalidationDecision} */
   let decision = "unknown";
   if (clearlyDeparted) decision = "missed";
   else if (!feasibility.recommendable) decision = "unsafe";
@@ -246,13 +249,8 @@ export function evaluateTransferRevalidation({
 }
 
 /**
- * Apply only evidence strong enough to change a committed transfer.
- * Degraded/stale/missing-unknown observations are recorded but cannot undo
- * or falsely fail a selected journey.
- *
- * @param {ActiveDirectJourney | null} journey
- * @param {TransferRevalidationState | null | undefined} revalidation
- * @returns {ActiveDirectJourney | null}
+ * @param {TransferFeasibility | null | undefined} left
+ * @param {TransferFeasibility | null | undefined} right
  */
 function sameFeasibility(left, right) {
   if (left === right) return true;
@@ -269,6 +267,10 @@ function sameFeasibility(left, right) {
   ].every((key) => left[key] === right[key]);
 }
 
+/**
+ * @param {TransferRevalidationState | null | undefined} left
+ * @param {TransferRevalidationState | null | undefined} right
+ */
 function sameRevalidation(left, right) {
   if (left === right) return true;
   if (!left || !right) return false;
@@ -286,6 +288,15 @@ function sameRevalidation(left, right) {
     sameFeasibility(left.feasibility, right.feasibility);
 }
 
+/**
+ * Apply only evidence strong enough to change a committed transfer.
+ * Degraded/stale/missing-unknown observations are recorded but cannot undo
+ * or falsely fail a selected journey.
+ *
+ * @param {ActiveDirectJourney | null} journey
+ * @param {TransferRevalidationState | null | undefined} revalidation
+ * @returns {ActiveDirectJourney | null}
+ */
 export function applyTransferRevalidation(journey, revalidation) {
   if (!journey?.transferPlan || journey.transferLeg !== 1 || !revalidation) {
     return journey;
@@ -306,9 +317,9 @@ export function applyTransferRevalidation(journey, revalidation) {
     next.transferPlan = {
       ...journey.transferPlan,
       transfer: {
-        ...journey.transferPlan.transfer,
+        ...plan.transfer,
         feasibility:
-          revalidation.feasibility ?? journey.transferPlan.transfer.feasibility,
+          revalidation.feasibility ?? plan.transfer.feasibility,
       },
       second: {
         ...journey.transferPlan.second,

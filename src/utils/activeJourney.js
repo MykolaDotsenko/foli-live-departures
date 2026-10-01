@@ -341,7 +341,7 @@ export function recoverTransferJourneyAfterRide(
   if (
     pending.phase === "recovery" &&
     ["transfer-cancelled", "transfer-risk", "transfer-missed"].includes(
-      pending.recoveryReason
+      String(pending.recoveryReason || "")
     )
   ) {
     return {
