@@ -79,23 +79,35 @@ export default function JourneyOptions({
   destinationLabel,
   onSelectJourney = null,
   onOpenStop = null,
+  mode = "default",
 }) {
   useLanguage();
 
   if (!Array.isArray(options) || options.length === 0) return null;
 
+  const recovery = mode === "recovery";
+  const titleId = recovery
+    ? "recovery-journey-options-title"
+    : "direct-journey-options-title";
+
   return (
     <section
       className={styles.wrapper}
-      aria-labelledby="direct-journey-options-title"
+      aria-labelledby={titleId}
     >
       <div className={styles.headingRow}>
         <div>
-          <p className={styles.kicker}>{t("Direct options")}</p>
-          <h3 id="direct-journey-options-title">
-            {t("Best ways to {destination}", {
-              destination: destinationLabel,
-            })}
+          <p className={styles.kicker}>
+            {recovery ? t("Fresh transfer options") : t("Direct options")}
+          </p>
+          <h3 id={titleId} tabIndex={recovery ? -1 : undefined}>
+            {recovery
+              ? t("Continue to {destination}", {
+                  destination: destinationLabel,
+                })
+              : t("Best ways to {destination}", {
+                  destination: destinationLabel,
+                })}
           </h3>
         </div>
         <span className={styles.count}>
@@ -164,13 +176,17 @@ export default function JourneyOptions({
       </div>
 
       <p className={styles.note}>
-        {options.some((option) => hasFinalWalk(option.departure))
+        {recovery
           ? t(
-              "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer."
+              "These options start from the transfer area. Your journey changes only after you choose one."
             )
-          : t(
-              "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
-            )}
+          : options.some((option) => hasFinalWalk(option.departure))
+            ? t(
+                "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer."
+              )
+            : t(
+                "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
+              )}
       </p>
     </section>
   );

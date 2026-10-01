@@ -722,7 +722,7 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-01): bounded one-transfer routing and live revalidation of the committed second leg are implemented through PR #118. Automatic replacement routing remains the next hardening slice.**
+**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation and explicit automatic direct-replacement recovery are implemented through PR #119.**
 
 Implemented:
 - transfer topology;
@@ -739,10 +739,17 @@ Live revalidation acceptance criteria:
 - stale repeated SIRI cannot remain “live” forever;
 - a failed provider check is degraded/unknown, never false missed;
 - one missing response is insufficient to declare a miss;
-- committed recovery cannot be undone by later Ride Mode completion;
-- this PR does not auto-switch to another connection.
+- committed recovery cannot be undone by later Ride Mode completion.
 
-Next after this: fresh alternative search from the transfer point without asking the passenger to re-enter the destination.
+Automatic recovery acceptance criteria:
+- recovery alternatives appear only after authoritative transfer-area evidence;
+- the destination stays selected;
+- the failed concrete second run is excluded before ranking;
+- nearby-platform distance is derived from stop geometry, not a fabricated device position;
+- stale cards are removed after returning from a hidden tab until fresh provider evidence arrives;
+- ordinary board refreshes do not flicker/reset verified recovery cards;
+- replacement choices are direct-only in this slice;
+- nothing changes until the passenger explicitly selects a replacement.
 
 ---
 

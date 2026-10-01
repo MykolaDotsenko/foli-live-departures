@@ -9,6 +9,7 @@ import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import LanguageSwitch from "./components/LanguageSwitch";
 import JourneySearch from "./components/JourneySearch";
+import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
 import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
@@ -28,6 +29,7 @@ import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
 import useTransferLegRevalidation from "./hooks/useTransferLegRevalidation";
+import useTransferRecoveryOptions from "./hooks/useTransferRecoveryOptions";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
@@ -35,6 +37,7 @@ import {
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
 import { applyTransferRevalidation } from "./utils/transferRevalidation";
+import { canSearchTransferRecovery } from "./utils/transferRecovery";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
@@ -69,6 +72,14 @@ function finalWalkHeading() {
   return document.getElementById("final-walk-title");
 }
 
+function recoveryJourneyTarget() {
+  const option = document.querySelector(
+    '[aria-labelledby="recovery-journey-options-title"] button'
+  );
+  if (option instanceof globalThis.HTMLElement) return option;
+  return document.getElementById("recovery-journey-options-title");
+}
+
 function selectedJourneyDepartureAction() {
   return (
     document.getElementById("selected-journey-departure-action") ||
@@ -78,7 +89,7 @@ function selectedJourneyDepartureAction() {
 
 function firstJourneyOption() {
   const element = document.querySelector(
-    '[aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
   );
   return element instanceof globalThis.HTMLElement ? element : null;
 }
@@ -197,6 +208,13 @@ function App() {
     () => buildRouteIndexes(routes),
     [routes]
   );
+  const transferRecovery = useTransferRecoveryOptions({
+    enabled: online && !ride.session,
+    journey: selectedJourney,
+    destination: journey.destination,
+    allStops: stops,
+  });
+  const transferRecoveryContext = canSearchTransferRecovery(selectedJourney);
   const {
     favorites,
     recents,
@@ -721,6 +739,7 @@ function App() {
         ? firstJourneyOption()
         : null;
     if (visibleOption) visibleOption.focus();
+    else if (transferRecoveryContext) requestFocus(recoveryJourneyTarget);
     else requestFocus(firstJourneyOption);
 
     // Keep recovery context until another concrete trip is selected. This
@@ -893,6 +912,17 @@ function App() {
           />
         )}
 
+        {!ride.session &&
+          selectedJourney?.phase === "recovery" &&
+          selectedJourney?.transferPlan && (
+            <TransferRecoveryPanel
+              state={online ? transferRecovery.state : "offline"}
+              options={transferRecovery.options}
+              destination={journey.destination}
+              onSelectJourney={selectJourneyOption}
+            />
+          )}
+
         {/* One column on a phone. On a wide screen, Get me Home takes the
             left and search, saved stops and service updates the right, so
             the board starts on the first screen (App.css). */}
@@ -985,7 +1015,8 @@ function App() {
             a second copy for first visits unmounted under the passenger's
             finger as they chose a stop, dropping keyboard focus to the page
             and the list they had just found. */}
-        <NearbyStops
+        {!transferRecoveryContext && (
+          <NearbyStops
           stops={stops}
           coordinatesStatus={coordinatesStatus}
           activeStopId={stopId || ""}
@@ -1000,6 +1031,7 @@ function App() {
           onSelectTransferJourney={selectTransferJourneyOption}
           onSelect={selectStop}
         />
+        )}
 
         {!sharedPlace && (
           <MyPlaces
