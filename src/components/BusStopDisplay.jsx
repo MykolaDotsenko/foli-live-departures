@@ -237,9 +237,14 @@ function BusStopDisplay({
           ),
         ].slice(0, MAX_VISIBLE_DEPARTURES)
       : listedArrivals;
-  // The held row counts as one to come, or the board put "No upcoming
-  // departures" in place of the list and its setup.
-  const upcomingCount = upcomingArrivals.length + (holdsSetupRow ? 1 : 0);
+  // A forced row still belongs to the passenger's immediate decision even
+  // when it has just crossed the generic 30-second upcoming cutoff. Count each
+  // distinct forced-past row once so DepartureStates keeps the table visible
+  // during setup/selected-journey grace without redefining normal departures.
+  const forcedPastCount = forcedArrivals.filter(
+    (arrival) => !upcomingArrivals.includes(arrival)
+  ).length;
+  const upcomingCount = upcomingArrivals.length + forcedPastCount;
   // Only an answer that itself listed nothing says nothing is coming. One
   // whose buses have all left since says nothing about what comes after
   // them: the timetable was never asked, because they were still ahead.
