@@ -310,7 +310,7 @@ export default function JourneySearch({
                 target="_blank"
                 rel="noreferrer"
               >
-                © OpenStreetMap contributors
+                {t("© OpenStreetMap contributors")}
               </a>
             </p>
           </section>
