@@ -49,9 +49,11 @@ export default function JourneySearch({
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
-  const showSuggestions = focused && value.trim() && matches.length > 0;
+  const showStopSuggestions =
+    focused && value.trim() && matches.length > 0;
   const showPlaceResults =
     placeSearch.state === "ready" && placeSearch.results.length > 0;
+  const showSuggestions = showStopSuggestions || showPlaceResults;
 
   const chooseStop = (stop) => {
     onChooseStop(stop);
@@ -264,23 +266,43 @@ export default function JourneySearch({
                 id="journey-destination-suggestions"
                 className={styles.suggestions}
                 role="listbox"
-                aria-label={t("Destination stop suggestions")}
+                aria-label={
+                  showPlaceResults
+                    ? t("Places and addresses")
+                    : t("Destination stop suggestions")
+                }
               >
-                {matches.map((stop) => (
-                  <button
-                    key={stop.id}
-                    type="button"
-                    role="option"
-                    className={styles.suggestion}
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => chooseStop(stop)}
-                  >
-                    <strong>
-                      <StopName stop={stop} />
-                    </strong>
-                    <span>{t("Stop {id}", { id: stop.id })}</span>
-                  </button>
-                ))}
+                {showPlaceResults
+                  ? placeSearch.results.map((place) => (
+                      <button
+                        key={place.id}
+                        type="button"
+                        role="option"
+                        className={styles.suggestion}
+                        onPointerDown={(event) => event.preventDefault()}
+                        onClick={() => chooseGeocodedPlace(place)}
+                      >
+                        <strong>{place.label}</strong>
+                        {place.secondaryLabel && (
+                          <span>{place.secondaryLabel}</span>
+                        )}
+                      </button>
+                    ))
+                  : matches.map((stop) => (
+                      <button
+                        key={stop.id}
+                        type="button"
+                        role="option"
+                        className={styles.suggestion}
+                        onPointerDown={(event) => event.preventDefault()}
+                        onClick={() => chooseStop(stop)}
+                      >
+                        <strong>
+                          <StopName stop={stop} />
+                        </strong>
+                        <span>{t("Stop {id}", { id: stop.id })}</span>
+                      </button>
+                    ))}
               </div>
             )}
           </div>
@@ -302,40 +324,16 @@ export default function JourneySearch({
         </p>
 
         {showPlaceResults && (
-          <div
-            className={styles.placeResults}
-            role="region"
-            aria-label={t("Places and addresses")}
-          >
-            <p className={styles.resultHeading}>
-              {t("Places and addresses")}
-            </p>
-            <div className={styles.placeList}>
-              {placeSearch.results.map((place) => (
-                <button
-                  key={place.id}
-                  type="button"
-                  className={styles.placeResult}
-                  onClick={() => chooseGeocodedPlace(place)}
-                >
-                  <strong>{place.label}</strong>
-                  {place.secondaryLabel && (
-                    <span>{place.secondaryLabel}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-            <p className={styles.attribution}>
-              {t("Place search data")}{" "}
-              <a
-                href="https://www.openstreetmap.org/copyright"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {OSM_ATTRIBUTION}
-              </a>
-            </p>
-          </div>
+          <p className={styles.help}>
+            {t("Place search data")}{" "}
+            <a
+              href="https://www.openstreetmap.org/copyright"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {OSM_ATTRIBUTION}
+            </a>
+          </p>
         )}
 
         {error && (
