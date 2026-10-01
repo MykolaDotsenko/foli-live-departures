@@ -470,6 +470,16 @@ function App() {
     journey.chooseStop(stop);
   };
 
+  const chooseJourneyGeocodedPlace = (place) => {
+    const prepared = journey.chooseGeocodedPlace(
+      place,
+      stops,
+      serviceBoundary
+    );
+    if (prepared.ok) clearJourney();
+    return prepared;
+  };
+
   const clearJourneyDestination = () => {
     clearJourney();
     journey.clearDestination();
@@ -647,8 +657,10 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
+            online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
+            onChooseGeocodedPlace={chooseJourneyGeocodedPlace}
             onClear={clearJourneyDestination}
           />
         )}
