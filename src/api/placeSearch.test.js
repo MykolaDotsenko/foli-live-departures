@@ -1,0 +1,160 @@
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import {
+  resetPlaceSearchForTests,
+  searchPlaces,
+} from "./placeSearch";
+
+function response(json, ok = true, status = 200) {
+  return {
+    ok,
+    status,
+    json: vi.fn().mockResolvedValue(json),
+  };
+}
+
+beforeEach(() => {
+  resetPlaceSearchForTests();
+  vi.restoreAllMocks();
+});
+
+afterEach(() => {
+  resetPlaceSearchForTests();
+  vi.restoreAllMocks();
+});
+
+test("does no network work for a too-short query", async () => {
+  const fetchMock = vi.fn();
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(searchPlaces("ab")).resolves.toEqual([]);
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+test("loads runtime config then performs one explicit Nominatim search", async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        viewbox: [21.4, 60.8, 23.2, 60.15],
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response([
+        {
+          osm_type: "node",
+          osm_id: 123,
+          place_id: 456,
+          lat: "60.45",
+          lon: "22.30",
+          display_name: "Prisma Itäharju, Turku, Finland",
+          namedetails: { name: "Prisma Itäharju" },
+          address: { shop: "Prisma Itäharju" },
+          category: "shop",
+          type: "supermarket",
+          addresstype: "shop",
+          licence: "Data © OpenStreetMap contributors",
+        },
+      ])
+    );
+  vi.stubGlobal("fetch", fetchMock);
+
+  const results = await searchPlaces("Prisma Itäharju", {
+    language: "en-GB",
+  });
+
+  expect(results).toEqual([
+    {
+      id: "node:123",
+      title: "Prisma Itäharju",
+      subtitle: "Turku, Finland",
+      lat: 60.45,
+      lon: 22.3,
+      category: "shop",
+      type: "shop",
+      provider: "nominatim",
+      licence: "Data © OpenStreetMap contributors",
+    },
+  ]);
+
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  const searchUrl = new URL(fetchMock.mock.calls[1][0]);
+  expect(searchUrl.origin).toBe("https://nominatim.openstreetmap.org");
+  expect(searchUrl.searchParams.get("q")).toBe("Prisma Itäharju");
+  expect(searchUrl.searchParams.get("countrycodes")).toBe("fi");
+  expect(searchUrl.searchParams.get("accept-language")).toBe("en-GB");
+  expect(searchUrl.searchParams.get("limit")).toBe("5");
+  expect(searchUrl.searchParams.get("bounded")).toBe("0");
+});
+
+test("reuses session cache instead of repeating the same place query", async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response([
+        {
+          osm_type: "way",
+          osm_id: 10,
+          place_id: 20,
+          lat: "60.45",
+          lon: "22.30",
+          display_name: "Place, Turku, Finland",
+          namedetails: { name: "Place" },
+          address: {},
+          category: "amenity",
+          type: "library",
+          addresstype: "amenity",
+        },
+      ])
+    );
+  vi.stubGlobal("fetch", fetchMock);
+
+  const first = await searchPlaces("Place");
+  const second = await searchPlaces("  place  ");
+
+  expect(second).toEqual(first);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
+
+test("filters malformed coordinates and respects a disabled runtime provider", async () => {
+  const disabledFetch = vi.fn().mockResolvedValueOnce(
+    response({
+      enabled: false,
+      endpoint: "https://nominatim.openstreetmap.org/search",
+    })
+  );
+  vi.stubGlobal("fetch", disabledFetch);
+  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  expect(disabledFetch).toHaveBeenCalledTimes(1);
+
+  resetPlaceSearchForTests();
+
+  const invalidFetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response([
+        { place_id: 1, lat: "999", lon: "22", display_name: "Bad" },
+      ])
+    );
+  vi.stubGlobal("fetch", invalidFetch);
+
+  await expect(searchPlaces("Bad place")).resolves.toEqual([]);
+});
