@@ -275,8 +275,7 @@ test("reports unavailable only after both providers fail", async () => {
 
   await expect(searchPlaces("Both providers down")).rejects.toMatchObject({
     name: "PlaceSearchUnavailableError",
-    message:
-      "Place search unavailable (primary: timeout; fallback: http-429).",
+    message: "Place search unavailable.",
   });
 
   expect(http.get).toHaveBeenCalledTimes(2);
