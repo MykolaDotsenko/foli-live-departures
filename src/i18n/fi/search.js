@@ -149,10 +149,12 @@ export default {
     "Enemmän aikaa ehtiä · noin {minutes} min myöhemmin",
   "More time to catch": "Enemmän aikaa ehtiä",
   "Earliest arrival we found": "Aikaisin löytämämme saapuminen",
+  "Live estimate": "Live-arvio",
+  "Timetable estimate": "Aikatauluarvio",
+  "Realtime uncertain": "Reaaliaikatieto epävarma",
+  Estimate: "Arvio",
   "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
     "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja ja likimääräistä linnuntie-etäisyyttä lähtöpysäkille.",
-  "{label}: line {line} from {stop}, arrive about {time}":
-    "{label}: linja {line} pysäkiltä {stop}, perillä noin {time}",
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
   "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
 
