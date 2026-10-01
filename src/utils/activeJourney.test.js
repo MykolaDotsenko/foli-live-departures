@@ -90,6 +90,36 @@ describe("active journey transitions", () => {
     ).toBe(false);
   });
 
+  test("uses trip-origin time to distinguish adjacent same-trip recovery options", () => {
+    const journey = activeJourneyFromOption(option(), destination, 1_000_000);
+
+    expect(
+      directOptionMatchesActiveJourney(
+        option({
+          departure: {
+            ...option().departure,
+            aimedDepartureAt: 1_485,
+            originAimedDepartureAt: 1_500,
+          },
+        }),
+        journey
+      )
+    ).toBe(false);
+
+    expect(
+      directOptionMatchesActiveJourney(
+        option({
+          departure: {
+            ...option().departure,
+            aimedDepartureAt: 2_000,
+            originAimedDepartureAt: 905,
+          },
+        }),
+        journey
+      )
+    ).toBe(true);
+  });
+
   test("uses planned boarding time to distinguish repeated trip visits", () => {
     const journey = activeJourneyFromOption(option(), destination, 1_000_000);
 
