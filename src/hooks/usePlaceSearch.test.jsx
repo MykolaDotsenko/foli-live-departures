@@ -3,11 +3,13 @@ import { beforeEach, expect, test, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
   directPlaceSearchSupported: vi.fn(),
+  loadPlaceSearchConfig: vi.fn(),
   searchPlaces: vi.fn(),
 }));
 
 vi.mock("../api/placeSearch", () => ({
   directPlaceSearchSupported: api.directPlaceSearchSupported,
+  loadPlaceSearchConfig: api.loadPlaceSearchConfig,
   searchPlaces: api.searchPlaces,
 }));
 
@@ -27,6 +29,9 @@ const result = {
 
 beforeEach(() => {
   api.directPlaceSearchSupported.mockReset().mockReturnValue(true);
+  api.loadPlaceSearchConfig
+    .mockReset()
+    .mockResolvedValue({ enabled: true });
   api.searchPlaces.mockReset();
 });
 
@@ -203,4 +208,39 @@ test("exposes packaged-app policy as a graceful external handoff", async () => {
   expect(hook.current.status).toBe("error");
   expect(hook.current.error).toBe("external-handoff");
   expect(hook.current.directEnabled).toBe(false);
+});
+
+
+test("runtime policy disables direct place search before any provider query", async () => {
+  api.loadPlaceSearchConfig.mockResolvedValue({ enabled: false });
+
+  const { result: hook } = renderHook(() => usePlaceSearch());
+
+  await waitFor(() => expect(hook.current.directEnabled).toBe(false));
+  expect(api.loadPlaceSearchConfig).toHaveBeenCalledWith(
+    expect.any(globalThis.AbortSignal)
+  );
+  expect(api.searchPlaces).not.toHaveBeenCalled();
+});
+
+test("runtime policy failure fails closed to external handoff", async () => {
+  api.loadPlaceSearchConfig.mockRejectedValue(
+    new Error("same-origin policy unavailable")
+  );
+
+  const { result: hook } = renderHook(() => usePlaceSearch());
+
+  await waitFor(() => expect(hook.current.directEnabled).toBe(false));
+  expect(api.searchPlaces).not.toHaveBeenCalled();
+});
+
+test("native runtime skips even the web place-search policy request", async () => {
+  api.directPlaceSearchSupported.mockReturnValue(false);
+
+  const { result: hook } = renderHook(() => usePlaceSearch());
+
+  expect(hook.current.directEnabled).toBe(false);
+  await Promise.resolve();
+  expect(api.loadPlaceSearchConfig).not.toHaveBeenCalled();
+  expect(api.searchPlaces).not.toHaveBeenCalled();
 });
