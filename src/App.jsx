@@ -291,7 +291,9 @@ function App() {
     ? "active"
     : selectedJourney.stopId !== stopId
       ? "paused"
-      : error
+      : error ||
+          !Number.isFinite(Number(receivedAtMs)) ||
+          Number(receivedAtMs) <= selectedJourney.selectedAt
         ? "degraded"
         : "active";
 
