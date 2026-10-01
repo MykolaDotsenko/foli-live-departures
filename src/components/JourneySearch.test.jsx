@@ -176,7 +176,7 @@ test("provider failure is explicit and local stop search remains available", asy
   expect(
     await screen.findByRole("alert")
   ).toHaveTextContent(
-    "Place search unavailable. Stop search still works."
+    "Place search unavailable. Use a stop."
   );
 });
 
@@ -189,7 +189,7 @@ test("does not call external place search while offline", () => {
 
   expect(api.searchPlaces).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Place search unavailable. Stop search still works."
+    "Place search unavailable. Use a stop."
   );
 });
 
@@ -229,7 +229,7 @@ test("keeps current UI open when a provider result cannot be used", async () => 
   );
 
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Outside Föli’s service area."
+    "Outside Föli area."
   );
 });
 
@@ -256,7 +256,7 @@ test("requires a destination value", () => {
   renderSearch();
   fireEvent.click(screen.getByRole("button", { name: "Search" }));
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Enter a stop, address or place."
+    "Enter a destination."
   );
 });
 
