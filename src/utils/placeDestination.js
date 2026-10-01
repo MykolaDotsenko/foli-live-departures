@@ -79,7 +79,6 @@ export function prepareGeocodedDestination({
     lat: Number(place.lat),
     lon: Number(place.lon),
     destinationStopDistances: distances,
-    placeProvider: "nominatim",
   };
 
   return { ok: true, reason: "ready", destination };
