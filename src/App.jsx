@@ -4,6 +4,7 @@ import ActiveJourney from "./components/ActiveJourney";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
+import FinalWalk from "./components/FinalWalk";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import LanguageSwitch from "./components/LanguageSwitch";
@@ -33,6 +34,10 @@ import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
 import { realStopName } from "./utils/stopNames";
+import {
+  completedFinalWalk,
+  finalWalkFromRideSelection,
+} from "./utils/finalWalk";
 
 const PRODUCT_NAME = "Turku Departures";
 const MAKER_NAME = "Mykola Dotsenko";
@@ -53,6 +58,10 @@ function rideHeading() {
 
 function activeJourneyHeading() {
   return document.getElementById("active-journey-title");
+}
+
+function finalWalkHeading() {
+  return document.getElementById("final-walk-title");
 }
 
 function selectedJourneyDepartureAction() {
@@ -147,6 +156,8 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const journey = useDestinationIntent();
+  const [finalWalk, setFinalWalk] = useState(null);
+  const pendingFinalWalkRef = useRef(null);
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -418,6 +429,7 @@ function App() {
 
   const selectStop = (nextStopId) => {
     if (!/^\d+$/.test(nextStopId || "")) return;
+    setFinalWalk(null);
 
     if (nextStopId === stopId) {
       refresh();
@@ -445,8 +457,15 @@ function App() {
   // top of the page. Focus goes to its heading, so a screen reader hears
   // "No need to watch for your stop" instead of nothing.
   const startRide = (config) => {
+    const nextFinalWalk = finalWalkFromRideSelection({
+      journey: selectedJourney,
+      destination: journey.destination,
+      rideConfig: config,
+    });
     const started = ride.startRide(config);
     if (started) {
+      pendingFinalWalkRef.current = nextFinalWalk;
+      setFinalWalk(null);
       clearJourney();
       requestFocus(rideHeading);
     }
@@ -456,16 +475,31 @@ function App() {
   // Turning the alert off, or getting off, takes the whole panel away with
   // the button in it. Focus goes back to the board, which is what is left.
   const endRide = () => {
-    requestFocus(pageHeading);
+    const completed = completedFinalWalk(
+      pendingFinalWalkRef.current,
+      ride.session
+    );
+    pendingFinalWalkRef.current = null;
     ride.endRide();
+
+    if (completed) {
+      selectStop(completed.fromStopId);
+      setFinalWalk(completed);
+      requestFocus(finalWalkHeading);
+      return;
+    }
+
+    requestFocus(pageHeading);
   };
 
   const chooseJourneyPlace = (place) => {
+    setFinalWalk(null);
     clearJourney();
     journey.choosePlace(place);
   };
 
   const chooseJourneyStop = (stop) => {
+    setFinalWalk(null);
     clearJourney();
     journey.chooseStop(stop);
   };
@@ -476,13 +510,23 @@ function App() {
       stops,
       serviceBoundary
     );
-    if (prepared.ok) clearJourney();
+    if (prepared.ok) {
+      setFinalWalk(null);
+      clearJourney();
+    }
     return prepared;
   };
 
   const clearJourneyDestination = () => {
+    setFinalWalk(null);
     clearJourney();
     journey.clearDestination();
+  };
+
+  const finishFinalWalk = () => {
+    setFinalWalk(null);
+    journey.clearDestination();
+    requestFocus(pageHeading);
   };
 
   const selectJourneyOption = (option) => {
@@ -633,6 +677,14 @@ function App() {
           />
         )}
 
+        {!ride.session && finalWalk && (
+          <FinalWalk
+            walk={finalWalk}
+            online={online}
+            onDone={finishFinalWalk}
+          />
+        )}
+
         {sharedPlace && (
           <MyPlaces
             stops={stops}
@@ -651,7 +703,9 @@ function App() {
           />
         )}
 
-        {!ride.session && (!stopId || journey.destination) && (
+        {!ride.session &&
+          !finalWalk &&
+          (!stopId || journey.destination) && (
           <JourneySearch
             compact={Boolean(stopId)}
             stops={stops}
