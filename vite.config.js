@@ -29,9 +29,16 @@ const FOLI_ENDPOINT_VARIABLES = [
   "VITE_FOLI_BOUNDARY_URL",
 ];
 
+// Explicit user-triggered place search only. Keep this origin narrow instead
+// of relaxing connect-src to arbitrary HTTPS.
+const PLACE_SEARCH_CONNECT_SOURCES = [
+  "https://nominatim.openstreetmap.org",
+];
+
 function connectSources(env) {
   return [
     ...FOLI_CONNECT_SOURCES,
+    ...PLACE_SEARCH_CONNECT_SOURCES,
     ...FOLI_ENDPOINT_VARIABLES.map((name) => originOf(env[name] || "")),
   ];
 }
