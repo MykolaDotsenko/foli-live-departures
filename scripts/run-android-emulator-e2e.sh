@@ -6,13 +6,29 @@ mkdir -p artifacts/android-e2e
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
 PACKAGE="fi.turku.folilivedepartures"
 
+# Android emulator cold boots occasionally accept `geo fix` while the system
+# location service is still disabled/not-ready. Make provider readiness an
+# explicit test precondition instead of weakening the WebView coordinate check.
+enable_emulator_location() {
+  adb shell cmd location set-location-enabled true >/dev/null 2>&1 || true
+  # Compatibility fallback for emulator images where the cmd subcommand is
+  # temporarily unavailable during early boot.
+  adb shell settings put secure location_mode 3 >/dev/null 2>&1 || true
+}
+
+inject_turku_fix() {
+  adb emu geo fix 22.2666 60.4518 >/dev/null 2>&1 || return 1
+}
+
 adb wait-for-device
+enable_emulator_location
 adb install -r "$APK"
 adb shell pm path "$PACKAGE" | tee artifacts/android-e2e/package-path.txt
 
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_COARSE_LOCATION
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_FINE_LOCATION
-adb emu geo fix 22.2666 60.4518
+enable_emulator_location
+inject_turku_fix
 
 adb logcat -c
 adb shell am force-stop "$PACKAGE"
@@ -23,10 +39,15 @@ adb shell am start -W -n "$PACKAGE/.MainActivity" \
 # can accept a geo fix before the activity starts but still leave the newly
 # created WebView waiting for its first provider update.
 sleep 2
-for _ in 1 2 3; do
-  adb emu geo fix 22.2666 60.4518
+enable_emulator_location
+for _ in 1 2 3 4 5 6; do
+  inject_turku_fix || true
   sleep 1
 done
+
+# Preserve diagnostics proving the OS location service was enabled before the
+# WebView assertion. This is evidence, not a substitute for the coordinate check.
+adb shell dumpsys location > artifacts/android-e2e/location-before-webview.txt || true
 sleep 1
 
 adb shell dumpsys activity activities \
@@ -82,8 +103,13 @@ cat artifacts/android-e2e/cdp-targets.json
 # to getCurrentPosition(). Re-injecting the same point does not weaken the
 # assertion; it only makes provider readiness deterministic.
 (
-  for _ in $(seq 1 45); do
-    adb emu geo fix 22.2666 60.4518 >/dev/null 2>&1 || exit 0
+  for tick in $(seq 1 60); do
+    # Reassert the OS setting periodically because some cold emulator boots
+    # finish location-service initialization after the activity is already up.
+    if (( tick == 1 || tick % 10 == 0 )); then
+      enable_emulator_location
+    fi
+    inject_turku_fix || exit 0
     sleep 1
   done
 ) &
