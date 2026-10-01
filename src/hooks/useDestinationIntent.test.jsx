@@ -64,3 +64,33 @@ test("lets the passenger choose and clear destination explicitly", () => {
   act(() => result.current.clearDestination());
   expect(result.current.destination).toBeNull();
 });
+
+
+test("lets the passenger choose an external place without saving it", () => {
+  const { result } = renderHook(() => useDestinationIntent());
+
+  let selected = null;
+  act(() => {
+    selected = result.current.chooseExternalPlace(
+      {
+        id: "nominatim:node:123",
+        label: "Prisma Test",
+        lat: 60.45,
+        lon: 22.26,
+        source: "nominatim",
+      },
+      [
+        { id: "100", name: "Near", lat: 60.451, lon: 22.26 },
+        { id: "200", name: "Second", lat: 60.454, lon: 22.26 },
+        { id: "300", name: "Third", lat: 60.457, lon: 22.26 },
+      ]
+    );
+  });
+
+  expect(selected).toMatchObject({
+    kind: "external-place",
+    label: "Prisma Test",
+    source: "nominatim",
+  });
+  expect(result.current.destination).toEqual(selected);
+});
