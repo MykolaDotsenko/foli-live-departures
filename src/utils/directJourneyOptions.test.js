@@ -286,11 +286,11 @@ test("chooses the smallest total walking, not merely the closest boarding stop",
 
   const closeBoard = departure({ tripRef: "close-board", arrival: 2_100 });
   closeBoard.finalWalkDistanceM = 300;
-  closeBoard.journeyArrivalAt = 2_400;
+  closeBoard.journeyArrivalAt = 2_500;
 
   const betterTotal = departure({ tripRef: "better-total", arrival: 2_150 });
   betterTotal.finalWalkDistanceM = 40;
-  betterTotal.journeyArrivalAt = 2_350;
+  betterTotal.journeyArrivalAt = 2_520;
 
   const options = selectDirectJourneyOptions({
     stops: [
