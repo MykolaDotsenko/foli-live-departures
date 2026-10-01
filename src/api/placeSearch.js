@@ -52,7 +52,7 @@ function providerLanguages(language) {
  */
 function readCache() {
   try {
-    const parsed = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+    const parsed = JSON.parse(globalThis.sessionStorage.getItem(CACHE_KEY));
     if (Array.isArray(parsed)) return parsed;
   } catch {
     // Cache is an optimization only.
@@ -65,7 +65,7 @@ function readCache() {
  */
 function writeCache(entries) {
   try {
-    sessionStorage.setItem(
+    globalThis.sessionStorage.setItem(
       CACHE_KEY,
       JSON.stringify(entries.slice(0, MAX_CACHE_ENTRIES))
     );
@@ -263,7 +263,7 @@ export async function searchPlaces(
 
   await waitForRateLimit(signal);
 
-  const url = new URL(SEARCH_URL);
+  const url = new globalThis.URL(SEARCH_URL);
   url.searchParams.set("q", cleanQuery);
   url.searchParams.set("format", "jsonv2");
   url.searchParams.set("limit", "5");
@@ -277,7 +277,7 @@ export async function searchPlaces(
     url.searchParams.set("bounded", "1");
   }
 
-  const response = await fetch(url, {
+  const response = await globalThis.fetch(url, {
     signal,
     referrerPolicy: "strict-origin-when-cross-origin",
     headers: {
@@ -302,7 +302,7 @@ export async function searchPlaces(
 export function resetPlaceSearchForTests() {
   nextAllowedRequestAt = 0;
   try {
-    sessionStorage.removeItem(CACHE_KEY);
+    globalThis.sessionStorage.removeItem(CACHE_KEY);
   } catch {
     // Test cleanup only.
   }
