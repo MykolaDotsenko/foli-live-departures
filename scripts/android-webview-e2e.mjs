@@ -208,6 +208,27 @@ const nativeJourneyInput = await retry("native journey destination input", async
 );
 record("Journey Assistant destination input is present", nativeJourneyInput === true);
 
+const nativePlaceHandoff = await retry("native place-search handoff", async () =>
+  evaluate(`(() => {
+    const link = [...document.querySelectorAll("a")].find((node) =>
+      node.href === "https://turku.digitransit.fi/"
+    );
+    return link
+      ? {
+          text: link.textContent?.trim() || "",
+          href: link.href,
+          language: document.documentElement.lang || ""
+        }
+      : null;
+  })()`),
+  { attempts: 20, delayMs: 250 }
+);
+record(
+  "packaged Android hands address/POI search to the official planner",
+  nativePlaceHandoff?.href === "https://turku.digitransit.fi/",
+  nativePlaceHandoff || {}
+);
+
 const nativeJourneyFilled = await evaluate(`(() => {
   const input = document.querySelector("#journey-destination");
   if (!input) return false;
@@ -242,26 +263,6 @@ record(
   nativeJourneySubmitted === true
 );
 
-const nativePlaceHandoff = await retry("native place-search handoff", async () =>
-  evaluate(`(() => {
-    const link = [...document.querySelectorAll("a")].find((node) =>
-      node.href === "https://turku.digitransit.fi/"
-    );
-    return link
-      ? {
-          text: link.textContent?.trim() || "",
-          href: link.href,
-          language: document.documentElement.lang || ""
-        }
-      : null;
-  })()`),
-  { attempts: 20, delayMs: 250 }
-);
-record(
-  "packaged Android hands address/POI search to the official planner",
-  nativePlaceHandoff?.href === "https://turku.digitransit.fi/",
-  nativePlaceHandoff || {}
-);
 record(
   "packaged Android makes no direct public Nominatim request",
   results.placeProviderRequests.length === 0,
