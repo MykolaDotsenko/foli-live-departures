@@ -133,9 +133,10 @@ function delay(ms, signal) {
  * @param {AbortSignal | undefined} signal
  */
 async function waitForRateLimit(signal) {
-  const waitMs = Math.max(0, nextAllowedRequestAt - Date.now());
-  await delay(waitMs, signal);
-  nextAllowedRequestAt = Date.now() + MIN_REQUEST_INTERVAL_MS;
+  const now = Date.now();
+  const reservedAt = Math.max(now, nextAllowedRequestAt);
+  nextAllowedRequestAt = reservedAt + MIN_REQUEST_INTERVAL_MS;
+  await delay(reservedAt - now, signal);
 }
 
 /**
@@ -278,6 +279,7 @@ export async function searchPlaces(
 
   const response = await fetch(url, {
     signal,
+    referrerPolicy: "strict-origin-when-cross-origin",
     headers: {
       Accept: "application/json",
     },
