@@ -418,3 +418,82 @@ test("caps dense-hub trip-detail lookups and samples every stop fairly", async (
     expect(fetchedTripIds.has(`${stop.id}-trip-8`)).toBe(false);
   }
 });
+
+
+test("prefers a later bus when its shorter final walk reaches the place earlier", async () => {
+  api.fetchStopMonitor.mockImplementation(async (stopId) => {
+    if (stopId === "100") {
+      return {
+        stopName: "",
+        arrivals: [
+          arrival("t-long-walk", 1_600, { lineref: "1" }),
+          arrival("t-short-walk", 1_700, { lineref: "2" }),
+        ],
+        serverTime: 1_000,
+        realtimeAvailable: true,
+        scheduleAvailable: false,
+        scheduleFailed: false,
+        scheduleIncomplete: false,
+      };
+    }
+
+    return {
+      stopName: "",
+      arrivals: [],
+      serverTime: 1_000,
+      realtimeAvailable: true,
+      scheduleAvailable: false,
+      scheduleFailed: false,
+      scheduleIncomplete: false,
+    };
+  });
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "t-long-walk") {
+      return [
+        stopTime("100", 1, "10:00:00"),
+        stopTime("900", 2, "10:10:00"),
+      ];
+    }
+    return [
+      stopTime("100", 1, "10:00:00"),
+      stopTime("901", 2, "10:15:00"),
+    ];
+  });
+
+  const externalDestination = {
+    id: "external:nominatim:node:123",
+    kind: "external-place",
+    label: "Prisma Itäharju",
+    primaryStopId: "901",
+    acceptableStopIds: ["900", "901"],
+    lat: 60.45,
+    lon: 22.30,
+    finalWalkDistanceByStop: {
+      "900": 900,
+      "901": 50,
+    },
+    source: "osm-nominatim",
+  };
+
+  const fits = await loadDestinationAwareNearby({
+    stops: [{ id: "100", distanceMeters: 100 }],
+    destination: externalDestination,
+    positionAccuracy: 20,
+  });
+
+  expect(fits["100"].best).toMatchObject({
+    tripRef: "t-short-walk",
+    destinationStopId: "901",
+    destinationArrivalAt: 2_600,
+    finalWalkDistanceM: 50,
+    finalWalkSecEstimate: 53,
+    journeyArrivalAt: 2_653,
+  });
+
+  const longWalk = fits["100"].departures.find(
+    (candidate) => candidate.tripRef === "t-long-walk"
+  );
+  expect(longWalk?.destinationArrivalAt).toBe(2_200);
+  expect(longWalk?.journeyArrivalAt).toBeGreaterThan(3_100);
+});
