@@ -6,11 +6,13 @@ const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
 const PLANNED_MATCH_TOLERANCE_SECONDS = 90;
 
+/** @param {unknown} value */
 function finitePositive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** @param {DestinationIntent | null | undefined} destination */
 function destinationLabel(destination) {
   return String(destination?.label || "").trim();
 }
