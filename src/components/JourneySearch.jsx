@@ -1,23 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { placeSearchViewbox, searchPlaces } from "../api/placeSearch";
 import { placeLabel } from "../hooks/useSavedPlaces";
-import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
 import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
-import styles from "./JourneySearch.module.css";
-import stopStyles from "./BusStopForm.module.css";
+import styles from "./BusStopForm.module.css";
 import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
 const OSM_ATTRIBUTION = "© OpenStreetMap contributors";
 
-function destinationLabel(destination) {
-  if (!destination) return "";
-  return destination.kind === "saved-place"
+function shownDestination(destination) {
+  return destination?.kind === "saved-place"
     ? t(destination.label)
-    : destination.label;
+    : destination?.label || "";
 }
 
-function geocodedSelectionError(reason) {
+function selectionError(reason) {
   if (reason === "outside-service-area") {
     return t("That place is outside Föli’s service area.");
   }
@@ -44,48 +42,93 @@ export default function JourneySearch({
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
-  const placeSearch = usePlaceSearch({ stops, language });
+  const [placeResults, setPlaceResults] = useState([]);
+  const [placeState, setPlaceState] = useState("idle");
+  const requestRef = useRef(null);
+
+  const clearPlaceSearch = () => {
+    requestRef.current?.abort();
+    requestRef.current = null;
+    setPlaceResults([]);
+    setPlaceState("idle");
+  };
+
+  useEffect(
+    () => () => {
+      requestRef.current?.abort();
+    },
+    []
+  );
 
   const matches = useMemo(
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
-  const showStopSuggestions =
-    focused && value.trim() && matches.length > 0;
   const showPlaceResults =
-    placeSearch.state === "ready" && placeSearch.results.length > 0;
-  const showSuggestions = showStopSuggestions || showPlaceResults;
+    placeState === "ready" && placeResults.length > 0;
+  const showSuggestions =
+    showPlaceResults ||
+    (focused && value.trim() && matches.length > 0);
 
   const chooseStop = (stop) => {
     onChooseStop(stop);
-    placeSearch.clear();
+    clearPlaceSearch();
     setValue(stop.name || String(stop.id));
     setFocused(false);
     setError("");
     if (compact) setExpanded(false);
   };
 
-  const choosePlace = (place) => {
+  const chooseSavedPlace = (place) => {
     onChoosePlace(place);
-    placeSearch.clear();
+    clearPlaceSearch();
     setError("");
     if (compact) setExpanded(false);
   };
 
   const chooseGeocodedPlace = (place) => {
     if (!onChooseGeocodedPlace) return;
-
     const prepared = onChooseGeocodedPlace(place);
     if (!prepared?.ok) {
-      setError(geocodedSelectionError(prepared?.reason));
+      setError(selectionError(prepared?.reason));
       return;
     }
 
-    placeSearch.clear();
+    clearPlaceSearch();
     setValue(place.label);
     setFocused(false);
     setError("");
     if (compact) setExpanded(false);
+  };
+
+  const runPlaceSearch = async () => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setPlaceState("loading");
+
+    try {
+      const results = await searchPlaces(value, {
+        language,
+        viewbox: placeSearchViewbox(stops),
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return [];
+      setPlaceResults(results);
+      setPlaceState("ready");
+      return results;
+    } catch (searchError) {
+      if (
+        controller.signal.aborted ||
+        searchError?.name === "AbortError" ||
+        searchError?.name === "CanceledError"
+      ) {
+        return [];
+      }
+      setPlaceResults([]);
+      setPlaceState("error");
+      return null;
+    }
   };
 
   const submit = async (event) => {
@@ -102,7 +145,6 @@ export default function JourneySearch({
         normalizeStopQuery(stop.name) === query
     );
 
-    // Preserve the old fast path for an unambiguous exact public stop.
     if (exact.length === 1) {
       chooseStop(exact[0]);
       return;
@@ -136,7 +178,7 @@ export default function JourneySearch({
       return;
     }
 
-    const results = await placeSearch.search(value);
+    const results = await runPlaceSearch();
 
     if (results === null) {
       setError(
@@ -144,42 +186,34 @@ export default function JourneySearch({
           "Place search is temporarily unavailable. Stop search still works."
         )
       );
-      return;
+    } else if (results.length === 0) {
+      setError(
+        exact.length > 1
+          ? t(
+              "More than one stop has this name. Choose one from the suggestions."
+            )
+          : matches.length > 0
+            ? t(
+                "Choose a stop from the suggestions, or try a more specific address or place."
+              )
+            : t("No matching stop, address or place was found.")
+      );
+    } else {
+      setError("");
     }
-
-    if (results.length === 0) {
-      if (exact.length > 1) {
-        setError(
-          t(
-            "More than one stop has this name. Choose one from the suggestions."
-          )
-        );
-      } else if (matches.length > 0) {
-        setError(
-          t(
-            "Choose a stop from the suggestions, or try a more specific address or place."
-          )
-        );
-      } else {
-        setError(t("No matching stop, address or place was found."));
-      }
-      return;
-    }
-
-    setError("");
   };
 
   if (compact && destination && !expanded) {
     return (
       <section
-        className={styles.compactWrapper}
+        className={styles.journeyCompact}
         aria-label={t("Journey destination")}
       >
-        <span className={styles.compactDestination}>
+        <span className={styles.journeyCompactText}>
           <span>{t("Going to")}</span>
-          <strong>{destinationLabel(destination)}</strong>
+          <strong>{shownDestination(destination)}</strong>
         </span>
-        <span className={styles.compactActions}>
+        <span className={styles.journeyActions}>
           <button type="button" onClick={() => setExpanded(true)}>
             {t("Change")}
           </button>
@@ -192,33 +226,29 @@ export default function JourneySearch({
   }
 
   return (
-    <section
-      className={styles.wrapper}
-      data-compact={compact ? "true" : undefined}
-      aria-labelledby="journey-search-title"
-    >
-      <div className={styles.headingRow}>
-        <div>
-          <p className={styles.kicker}>{t("Journey")}</p>
-          <h2 id="journey-search-title">{t("Where do you want to go?")}</h2>
-        </div>
+    <section className="search-panel" aria-labelledby="journey-search-title">
+      <div className={styles.journeyHeading}>
+        <h2 id="journey-search-title">{t("Where do you want to go?")}</h2>
         {destination && (
-          <button type="button" className={styles.clear} onClick={onClear}>
+          <button
+            type="button"
+            className={styles.journeyTextButton}
+            onClick={onClear}
+          >
             {t("Clear destination")}
           </button>
         )}
       </div>
 
       {destination && (
-        <div className={styles.destination} role="status">
-          <span>{t("Going to")}</span>
-          <strong>{destinationLabel(destination)}</strong>
-        </div>
+        <p className={styles.journeyStatus} role="status">
+          {t("Going to")} <strong>{shownDestination(destination)}</strong>
+        </p>
       )}
 
       {places.length > 0 && (
         <div
-          className={styles.quick}
+          className={styles.journeyQuick}
           role="group"
           aria-label={t("Saved destinations")}
         >
@@ -227,7 +257,7 @@ export default function JourneySearch({
               type="button"
               key={place.id}
               aria-pressed={destination?.id === `place:${place.id}`}
-              onClick={() => choosePlace(place)}
+              onClick={() => chooseSavedPlace(place)}
             >
               {placeLabel(place)}
             </button>
@@ -235,97 +265,105 @@ export default function JourneySearch({
         </div>
       )}
 
-      <form onSubmit={submit} noValidate>
-        <label htmlFor="journey-destination" className={stopStyles.label}>
+      <form onSubmit={submit} className={styles.form} noValidate>
+        <label htmlFor="journey-destination" className={styles.label}>
           {t("Stop, address or place")}
         </label>
-        <div className={styles.searchRow}>
-          <div className={styles.inputWrap}>
+
+        <div className={styles.searchWrap}>
+          <div className={styles.journeyControls}>
             <input
               id="journey-destination"
               value={value}
               onChange={(event) => {
-                placeSearch.clear();
+                clearPlaceSearch();
                 setValue(event.target.value);
                 setError("");
                 setFocused(true);
               }}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              className={stopStyles.input}
+              className={styles.input}
               placeholder={t("e.g. Prisma Itäharju or Turun linna")}
               autoComplete="off"
               inputMode="search"
+              enterKeyHint="search"
               role="combobox"
               aria-expanded={Boolean(showSuggestions)}
               aria-controls="journey-destination-suggestions"
               aria-autocomplete="list"
               aria-invalid={Boolean(error)}
             />
-            {showSuggestions && (
-              <div
-                id="journey-destination-suggestions"
-                className={stopStyles.suggestions}
-                role="listbox"
-                aria-label={
-                  showPlaceResults
-                    ? t("Places and addresses")
-                    : t("Destination stop suggestions")
-                }
-              >
-                {showPlaceResults
-                  ? placeSearch.results.map((place) => (
-                      <button
-                        key={place.id}
-                        type="button"
-                        role="option"
-                        className={stopStyles.suggestionButton}
-                        onPointerDown={(event) => event.preventDefault()}
-                        onClick={() => chooseGeocodedPlace(place)}
-                      >
-                        <strong className={stopStyles.suggestionName}>{place.label}</strong>
-                        {place.secondaryLabel && (
-                          <span className={stopStyles.suggestionId}>{place.secondaryLabel}</span>
-                        )}
-                      </button>
-                    ))
-                  : matches.map((stop) => (
-                      <button
-                        key={stop.id}
-                        type="button"
-                        role="option"
-                        className={stopStyles.suggestionButton}
-                        onPointerDown={(event) => event.preventDefault()}
-                        onClick={() => chooseStop(stop)}
-                      >
-                        <strong className={stopStyles.suggestionName}>
-                          <StopName stop={stop} />
-                        </strong>
-                        <span className={stopStyles.suggestionId}>{t("Stop {id}", { id: stop.id })}</span>
-                      </button>
-                    ))}
-              </div>
-            )}
+            <button
+              type="submit"
+              className={styles.button}
+              disabled={placeState === "loading"}
+              aria-busy={placeState === "loading"}
+            >
+              {placeState === "loading" ? t("Searching…") : t("Search")}
+            </button>
           </div>
-          <button
-            type="submit"
-            className={stopStyles.button}
-            disabled={placeSearch.state === "loading"}
-            aria-busy={placeSearch.state === "loading"}
-          >
-            {placeSearch.state === "loading"
-              ? t("Searching…")
-              : t("Search")}
-          </button>
+
+          {showSuggestions && (
+            <div
+              id="journey-destination-suggestions"
+              className={styles.suggestions}
+              role="listbox"
+              aria-label={
+                showPlaceResults
+                  ? t("Places and addresses")
+                  : t("Destination stop suggestions")
+              }
+            >
+              {showPlaceResults
+                ? placeResults.map((place) => (
+                    <button
+                      key={place.id}
+                      type="button"
+                      role="option"
+                      className={styles.suggestionButton}
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => chooseGeocodedPlace(place)}
+                    >
+                      <strong className={styles.suggestionName}>
+                        {place.label}
+                      </strong>
+                      {place.secondaryLabel && (
+                        <span className={styles.suggestionId}>
+                          {place.secondaryLabel}
+                        </span>
+                      )}
+                    </button>
+                  ))
+                : matches.map((stop) => (
+                    <button
+                      key={stop.id}
+                      type="button"
+                      role="option"
+                      className={styles.suggestionButton}
+                      onPointerDown={(event) => event.preventDefault()}
+                      onClick={() => chooseStop(stop)}
+                    >
+                      <strong className={styles.suggestionName}>
+                        <StopName stop={stop} />
+                      </strong>
+                      <span className={styles.suggestionId}>
+                        {t("Stop {id}", { id: stop.id })}
+                      </span>
+                    </button>
+                  ))}
+            </div>
+          )}
         </div>
-        <p className={stopStyles.help}>
+
+        <p className={styles.help}>
           {t(
             "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
           )}
         </p>
 
         {showPlaceResults && (
-          <p className={stopStyles.help}>
+          <p className={styles.help}>
             {t("Place search data")}{" "}
             <a
               href="https://www.openstreetmap.org/copyright"
@@ -338,7 +376,7 @@ export default function JourneySearch({
         )}
 
         {error && (
-          <p className={stopStyles.error} role="alert">
+          <p className={styles.error} role="alert">
             {error}
           </p>
         )}
