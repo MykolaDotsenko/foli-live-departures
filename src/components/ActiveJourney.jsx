@@ -66,28 +66,32 @@ export default function ActiveJourney({
         <strong>
           {t("Line {line}", { line: journey.lineRef || "—" })}
         </strong>
-        <span>
-          {t("Leaves {due}", {
-            due: formatDue(journey.departureAt, nowMs),
-          })}
-        </span>
-        {(journey.finalArrivalAt || journey.destinationArrivalAt) && (
-          <span>
-            {t("Arrive about {time}", {
-              time: formatClock(
-                journey.finalArrivalAt || journey.destinationArrivalAt
-              ),
-            })}
-          </span>
-        )}
-        {Number.isFinite(journey.finalWalkDistanceM) &&
-          journey.finalWalkDistanceM > 0 && (
+        {journey.phase !== "recovery" && (
+          <>
             <span>
-              {t("Final walk ≈ {distance}", {
-                distance: formatDistance(journey.finalWalkDistanceM),
+              {t("Leaves {due}", {
+                due: formatDue(journey.departureAt, nowMs),
               })}
             </span>
-          )}
+            {(journey.finalArrivalAt || journey.destinationArrivalAt) && (
+              <span>
+                {t("Arrive about {time}", {
+                  time: formatClock(
+                    journey.finalArrivalAt || journey.destinationArrivalAt
+                  ),
+                })}
+              </span>
+            )}
+            {Number.isFinite(journey.finalWalkDistanceM) &&
+              journey.finalWalkDistanceM > 0 && (
+                <span>
+                  {t("Final walk ≈ {distance}", {
+                    distance: formatDistance(journey.finalWalkDistanceM),
+                  })}
+                </span>
+              )}
+          </>
+        )}
       </div>
 
       {journey.phase === "walking-to-stop" && (
