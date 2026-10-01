@@ -55,6 +55,13 @@ export function activeJourneyFromOption(
     finitePositive(option?.departure?.originAimedDepartureAt) ?? null;
   const destinationArrivalAt =
     finitePositive(option?.departure?.destinationArrivalAt) ?? null;
+  const journeyArrivalAt =
+    finitePositive(option?.departure?.journeyArrivalAt) ??
+    destinationArrivalAt;
+  const finalWalkDistanceM = Number(option?.departure?.finalWalkDistanceM);
+  const finalWalkSecEstimate = Number(
+    option?.departure?.finalWalkSecEstimate
+  );
 
   return {
     id: String(option.id || [stopId, tripRef, departureAt].join(":")),
@@ -72,6 +79,16 @@ export function activeJourneyFromOption(
     aimedDepartureAt,
     originAimedDepartureAt,
     destinationArrivalAt,
+    journeyArrivalAt,
+    finalWalkDistanceM:
+      Number.isFinite(finalWalkDistanceM) && finalWalkDistanceM >= 0
+        ? finalWalkDistanceM
+        : null,
+    finalWalkSecEstimate:
+      Number.isFinite(finalWalkSecEstimate) &&
+      finalWalkSecEstimate >= 0
+        ? finalWalkSecEstimate
+        : null,
     liveState: option.departure.liveState || "unknown",
     phase: "walking-to-stop",
     recoveryReason: null,
@@ -274,6 +291,16 @@ export function observeActiveJourney(journey, observation) {
       finitePositive(arrival.aimedarrivaltime) ??
       journey.aimedDepartureAt;
 
+    const departureShift = updatedDeparture - journey.departureAt;
+    const shiftedDestinationArrival =
+      journey.destinationArrivalAt === null
+        ? null
+        : journey.destinationArrivalAt + departureShift;
+    const shiftedJourneyArrival =
+      journey.journeyArrivalAt === null
+        ? shiftedDestinationArrival
+        : journey.journeyArrivalAt + departureShift;
+
     const nextLastSeenAt = Math.max(journey.lastSeenAt, receivedAtMs);
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
@@ -285,6 +312,8 @@ export function observeActiveJourney(journey, observation) {
     if (
       journey.departureAt === updatedDeparture &&
       journey.aimedDepartureAt === observedPlanned &&
+      journey.destinationArrivalAt === shiftedDestinationArrival &&
+      journey.journeyArrivalAt === shiftedJourneyArrival &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
       journey.recoveryReason === null &&
@@ -297,6 +326,8 @@ export function observeActiveJourney(journey, observation) {
       ...journey,
       departureAt: updatedDeparture,
       aimedDepartureAt: observedPlanned,
+      destinationArrivalAt: shiftedDestinationArrival,
+      journeyArrivalAt: shiftedJourneyArrival,
       lineRef: nextLineRef,
       phase: nextPhase,
       recoveryReason: null,
