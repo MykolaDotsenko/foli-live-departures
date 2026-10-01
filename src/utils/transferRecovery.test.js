@@ -11,6 +11,8 @@ function journey(overrides = {}) {
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
     transferLeg: 2,
+    stopId: "501",
+    atStopConfirmedAt: null,
     transferPlan: {
       transfer: {
         alightStopId: "500",
@@ -62,6 +64,19 @@ describe("transfer recovery search boundary", () => {
         distanceMeters: 0,
       }),
     ]);
+  });
+
+  test("uses the explicitly confirmed boarding stop after the passenger has walked there", () => {
+    const origins = transferRecoveryOriginStops(
+      journey({ atStopConfirmedAt: 2_200_000 }),
+      stops
+    );
+
+    expect(origins[0]).toMatchObject({
+      id: "501",
+      name: "Hub B",
+      distanceMeters: 0,
+    });
   });
 });
 

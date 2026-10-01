@@ -57,7 +57,7 @@ export default function TransferRecoveryPanel({
       <div className={styles.headingRow}>
         <div>
           <p className={styles.kicker}>{t("Fresh transfer options")}</p>
-          <h3 id="recovery-journey-options-title">
+          <h3 id="recovery-journey-options-title" tabIndex={-1}>
             {t("Continue to {destination}", {
               destination: destinationLabel,
             })}

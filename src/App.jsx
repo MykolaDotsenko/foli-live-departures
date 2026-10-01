@@ -37,6 +37,7 @@ import {
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
 import { applyTransferRevalidation } from "./utils/transferRevalidation";
+import { canSearchTransferRecovery } from "./utils/transferRecovery";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
@@ -69,6 +70,14 @@ function activeJourneyHeading() {
 
 function finalWalkHeading() {
   return document.getElementById("final-walk-title");
+}
+
+function recoveryJourneyTarget() {
+  const option = document.querySelector(
+    '[aria-labelledby="recovery-journey-options-title"] button'
+  );
+  if (option instanceof globalThis.HTMLElement) return option;
+  return document.getElementById("recovery-journey-options-title");
 }
 
 function selectedJourneyDepartureAction() {
@@ -205,6 +214,7 @@ function App() {
     destination: journey.destination,
     allStops: stops,
   });
+  const transferRecoveryContext = canSearchTransferRecovery(selectedJourney);
   const {
     favorites,
     recents,
@@ -729,6 +739,7 @@ function App() {
         ? firstJourneyOption()
         : null;
     if (visibleOption) visibleOption.focus();
+    else if (transferRecoveryContext) requestFocus(recoveryJourneyTarget);
     else requestFocus(firstJourneyOption);
 
     // Keep recovery context until another concrete trip is selected. This
@@ -1004,7 +1015,8 @@ function App() {
             a second copy for first visits unmounted under the passenger's
             finger as they chose a stop, dropping keyboard focus to the page
             and the list they had just found. */}
-        <NearbyStops
+        {!transferRecoveryContext && (
+          <NearbyStops
           stops={stops}
           coordinatesStatus={coordinatesStatus}
           activeStopId={stopId || ""}
@@ -1019,6 +1031,7 @@ function App() {
           onSelectTransferJourney={selectTransferJourneyOption}
           onSelect={selectStop}
         />
+        )}
 
         {!sharedPlace && (
           <MyPlaces

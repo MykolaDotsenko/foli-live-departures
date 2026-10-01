@@ -100,7 +100,7 @@ export default function JourneyOptions({
           <p className={styles.kicker}>
             {recovery ? t("Fresh transfer options") : t("Direct options")}
           </p>
-          <h3 id={titleId}>
+          <h3 id={titleId} tabIndex={recovery ? -1 : undefined}>
             {recovery
               ? t("Continue to {destination}", {
                   destination: destinationLabel,

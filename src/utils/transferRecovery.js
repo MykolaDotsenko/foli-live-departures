@@ -40,13 +40,19 @@ export function transferRecoveryOriginStops(journey, allStops) {
   const alightStopId = String(
     journey.transferPlan.transfer?.alightStopId || ""
   );
-  if (!alightStopId) return [];
+  const confirmedBoardStopId =
+    journey.atStopConfirmedAt &&
+    /^\d+$/.test(String(journey.stopId || ""))
+      ? String(journey.stopId)
+      : "";
+  const recoveryAnchorStopId = confirmedBoardStopId || alightStopId;
+  if (!recoveryAnchorStopId) return [];
 
   const stops = Array.isArray(allStops) ? allStops : [];
   const byId = new Map(stops.map((stop) => [String(stop?.id || ""), stop]));
 
   return transferBoardingCandidates({
-    alightStopId,
+    alightStopId: recoveryAnchorStopId,
     stops,
     maxWalkM: 220,
     maxStops: 4,
