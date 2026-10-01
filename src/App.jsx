@@ -7,6 +7,7 @@ import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
+import IosInstallHint from "./components/IosInstallHint";
 import LanguageSwitch from "./components/LanguageSwitch";
 import JourneySearch from "./components/JourneySearch";
 import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
@@ -843,6 +844,7 @@ function App() {
 
       <main className="app-main">
         <ConnectivityStatus online={online} />
+        {!ride.session && <IosInstallHint />}
 
         {ride.session && (
           <RideMode

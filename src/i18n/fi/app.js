@@ -16,6 +16,10 @@ export default {
   "Use dark theme": "Käytä tummaa teemaa",
   "Use light theme": "Käytä vaaleaa teemaa",
   "Choose a bus stop": "Valitse bussipysäkki",
+  "Install on iPhone": "Asenna iPhoneen",
+  "For iPhone notifications, add Turku Departures to your Home Screen: Share → Add to Home Screen. Keep this app open during a get-off alert.":
+    "iPhone-ilmoituksia varten lisää Turku Departures Koti-valikkoon: Jaa → Lisää Koti-valikkoon. Pidä sovellus avoinna pysäkkihälytyksen aikana.",
+  Dismiss: "Sulje",
   "Stop {id}": "Pysäkki {id}",
   // Said to a screen reader when the stop changes. Undeclined, as a label,
   // so the stop's name stays as the pole spells it.
