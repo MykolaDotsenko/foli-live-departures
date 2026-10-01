@@ -436,3 +436,45 @@ test("surfaces non-rate-limit provider HTTP failures without retrying", async ()
 
   expect(fetchMock).toHaveBeenCalledTimes(2);
 });
+
+
+test("cancels a queued explicit search before it starts another provider request", async () => {
+  let resolveFirstSearch;
+  const firstSearchResponse = new Promise((resolve) => {
+    resolveFirstSearch = resolve;
+  });
+
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockImplementationOnce(() => firstSearchResponse);
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  const first = searchPlaces("First queued place");
+  await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+  const controller = new AbortController();
+  const second = searchPlaces("Second queued place", {
+    signal: controller.signal,
+  });
+  controller.abort();
+
+  resolveFirstSearch(response([]));
+  await first;
+
+  await expect(second).rejects.toMatchObject({
+    name: "AbortError",
+  });
+
+  // Config + first provider request only. The aborted queued search never
+  // starts a second provider request after the previous task finishes.
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
