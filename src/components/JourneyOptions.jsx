@@ -18,10 +18,10 @@ function displayedArrivalAt(departure) {
 }
 
 function hasFinalWalk(departure) {
-  return (
-    Number.isFinite(Number(departure?.finalWalkDistanceM)) &&
-    Number(departure.finalWalkDistanceM) >= 0
-  );
+  const raw = departure?.finalWalkDistanceM;
+  if (raw === null || raw === undefined || raw === "") return false;
+  const distance = Number(raw);
+  return Number.isFinite(distance) && distance >= 0;
 }
 
 function estimateSourceText(liveState) {
