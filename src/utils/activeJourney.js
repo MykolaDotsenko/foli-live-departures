@@ -235,6 +235,7 @@ export function completedTransferJourney(
   if (
     !pending?.transferPlan ||
     pending.transferLeg !== 1 ||
+    pending.phase === "recovery" ||
     rideSession?.stage !== "now" ||
     String(rideSession?.tripRef || "") !== pending.tripRef ||
     String(rideSession?.targetStop?.id || "") !== pending.destinationStopId
@@ -336,6 +337,19 @@ export function recoverTransferJourneyAfterRide(
 
   const selectedAt = Number(nowMs);
   if (!Number.isFinite(selectedAt) || selectedAt <= 0) return null;
+
+  if (
+    pending.phase === "recovery" &&
+    ["transfer-cancelled", "transfer-risk", "transfer-missed"].includes(
+      pending.recoveryReason
+    )
+  ) {
+    return {
+      ...pending,
+      selectedAt,
+      lastSeenAt: Math.max(Number(pending.lastSeenAt) || 0, selectedAt),
+    };
+  }
 
   const secondDepartureAt = finitePositive(
     pending.transferPlan?.second?.departureAt

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { applyTransferRevalidation } from "../utils/transferRevalidation";
 import {
   activeJourneyFromOption,
   activeJourneyFromTransferOption,
@@ -86,6 +87,16 @@ export default function useActiveJourney() {
     [commit]
   );
 
+  /**
+   * @param {import("../types/journey").TransferRevalidationState} revalidation
+   */
+  const revalidateTransfer = useCallback(
+    (revalidation) => {
+      commit((current) => applyTransferRevalidation(current, revalidation));
+    },
+    [commit]
+  );
+
   const confirmAtStop = useCallback(() => {
     commit((current) => confirmActiveJourneyAtStop(current));
   }, [commit]);
@@ -117,6 +128,7 @@ export default function useActiveJourney() {
     selectTransferJourney,
     continueTransferAfterRide,
     recoverTransferAfterRide,
+    revalidateTransfer,
     confirmAtStop,
     clearJourney,
     observeStopFeed,

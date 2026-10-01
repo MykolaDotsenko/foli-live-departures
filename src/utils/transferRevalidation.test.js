@@ -332,3 +332,19 @@ describe("applying revalidation to a committed journey", () => {
     expect(next.transferRevalidation.providerState).toBe("degraded");
   });
 });
+
+
+test("applying the same transfer observation is idempotent", () => {
+  const state = evaluateTransferRevalidation({
+    journey,
+    arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+    referenceTimeSec: 1_720,
+    receivedAtMs: 1_720_000,
+    incomingArrivalAt: 1_600,
+    incomingLiveState: "live",
+  });
+
+  const once = applyTransferRevalidation(journey, state);
+  const twice = applyTransferRevalidation(once, state);
+  expect(twice).toBe(once);
+});

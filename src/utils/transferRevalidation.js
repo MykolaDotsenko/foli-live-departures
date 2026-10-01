@@ -260,8 +260,43 @@ export function evaluateTransferRevalidation({
  * @param {TransferRevalidationState | null | undefined} revalidation
  * @returns {ActiveDirectJourney | null}
  */
+function sameFeasibility(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  return [
+    "state",
+    "recommendable",
+    "incomingArrivalAt",
+    "outgoingDepartureAt",
+    "walkingDistanceM",
+    "requiredSec",
+    "availableSec",
+    "slackSec",
+  ].every((key) => left[key] === right[key]);
+}
+
+function sameRevalidation(left, right) {
+  if (left === right) return true;
+  if (!left || !right) return false;
+  return [
+    "providerState",
+    "decision",
+    "departureAt",
+    "delaySec",
+    "receivedAtMs",
+    "missingSinceMs",
+    "matchedAtMs",
+    "providerAgeSec",
+    "liveState",
+  ].every((key) => left[key] === right[key]) &&
+    sameFeasibility(left.feasibility, right.feasibility);
+}
+
 export function applyTransferRevalidation(journey, revalidation) {
   if (!journey?.transferPlan || journey.transferLeg !== 1 || !revalidation) {
+    return journey;
+  }
+  if (sameRevalidation(journey.transferRevalidation, revalidation)) {
     return journey;
   }
 

@@ -219,3 +219,33 @@ test("transfer hook fails closed for invalid selections and premature Ride Mode 
   });
   expect(result.current.journey).toBeNull();
 });
+
+
+test("applies live second-leg revalidation through the public hook API", () => {
+  const { result } = renderHook(() => useActiveJourney());
+  const transfer = transferOption();
+
+  act(() => {
+    result.current.selectTransferJourney(transfer, destination);
+  });
+
+  act(() => {
+    result.current.revalidateTransfer({
+      providerState: "cancelled",
+      decision: "cancelled",
+      departureAt: transfer.second.departureAt,
+      delaySec: null,
+      feasibility: transfer.transfer.feasibility,
+      receivedAtMs: Date.now(),
+      missingSinceMs: null,
+      matchedAtMs: null,
+      providerAgeSec: null,
+    });
+  });
+
+  expect(result.current.journey).toMatchObject({
+    transferLeg: 1,
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+});

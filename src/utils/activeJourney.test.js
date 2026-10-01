@@ -807,3 +807,43 @@ describe("active journey idempotence and fail-closed edge branches", () => {
     ).toBe(true);
   });
 });
+
+
+test("live transfer recovery cannot be undone by Ride Mode completion", () => {
+  const pending = {
+    ...activeJourneyFromTransferOption(
+      transferOption(),
+      destination,
+      1_000_000
+    ),
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  };
+
+  expect(
+    completedTransferJourney(
+      pending,
+      {
+        tripRef: "first",
+        stage: "now",
+        targetStop: { id: "500", stopSequence: 8 },
+      },
+      2_150_000
+    )
+  ).toBeNull();
+
+  const recovered = recoverTransferJourneyAfterRide(
+    pending,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    2_150_000
+  );
+
+  expect(recovered).toMatchObject({
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+});
