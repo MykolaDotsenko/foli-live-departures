@@ -103,7 +103,7 @@ export default function ActiveJourney({
           </p>
           <p className={styles.note}>
             {t(
-              "When you reach the stop, confirm it here. The app will not assume your physical location."
+              "At the stop? Confirm here. We don’t infer your location."
             )}
           </p>
         </>
@@ -112,11 +112,11 @@ export default function ActiveJourney({
       {journey.phase === "waiting" && (
         <>
           <p className={styles.primaryStatus}>
-            {t("Your selected bus is pinned first in the departure board.")}
+            {t("Selected bus is pinned first below.")}
           </p>
           <p className={styles.note}>
             {t(
-              "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+              "After boarding, start Get-off alert. Ride Mode takes over."
             )}
           </p>
         </>
@@ -130,7 +130,7 @@ export default function ActiveJourney({
 
       {!online && journey.phase !== "recovery" && (
         <p className={styles.offline}>
-          {t("Offline: this selected plan may be out of date.")}
+          {t("Offline: selected plan may be stale.")}
         </p>
       )}
 
@@ -139,7 +139,7 @@ export default function ActiveJourney({
         monitoringState === "paused" && (
           <p className={styles.monitoringNotice} role="status">
             {t(
-              "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
+              "Live monitoring paused while another stop is open. Return to resume."
             )}
           </p>
         )}
@@ -149,7 +149,7 @@ export default function ActiveJourney({
         monitoringState === "degraded" && (
           <p className={styles.monitoringNotice} role="status">
             {t(
-              "Live monitoring is temporarily unavailable. The selected departure may be out of date."
+              "Live monitoring unavailable. Selected time may be stale."
             )}
           </p>
         )}
