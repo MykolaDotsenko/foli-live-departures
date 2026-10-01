@@ -35,6 +35,8 @@ function connectSources(env) {
     ...FOLI_CONNECT_SOURCES,
     ...PLACE_SEARCH_CONNECT_SOURCES,
     originOf(env.VITE_PLACE_SEARCH_URL || ""),
+    originOf(env.VITE_PHOTON_SEARCH_URL || ""),
+    originOf(env.VITE_NOMINATIM_SEARCH_URL || ""),
     ...FOLI_ENDPOINT_VARIABLES.map((name) => originOf(env[name] || "")),
   ];
 }
