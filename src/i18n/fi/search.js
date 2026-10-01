@@ -101,28 +101,22 @@ export default {
   Search: "Hae",
   "Searching…": "Haetaan…",
   "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
-  "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search.":
-    "Pysäkit haetaan tällä laitteella. Osoite- ja paikkahaku lähettää hakusi OpenStreetMap Nominatim -palveluun vain, kun painat Hae.",
+  "Stop search stays on this device. Place searches go to OpenStreetMap Nominatim only when you press Search.":
+    "Pysäkkihaku pysyy laitteella. Paikkahaku lähetetään OpenStreetMap Nominatimille vain, kun painat Hae.",
   "Places and addresses": "Paikat ja osoitteet",
   "Place search data": "Paikkahaun tiedot",
   "Place search needs an internet connection. Stop search still works.":
     "Paikkahaku tarvitsee internetyhteyden. Pysäkkihaku toimii edelleen.",
-  "Address and place search is waiting for stop locations. Try again in a moment.":
-    "Osoite- ja paikkahaku odottaa pysäkkien sijaintitietoja. Yritä hetken kuluttua uudelleen.",
-  "Address and place search is temporarily unavailable. Stop search still works.":
-    "Osoite- ja paikkahaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii edelleen.",
-  "Place search is temporarily unavailable. Stop search still works.":
-    "Paikkahaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii edelleen.",
-  "Choose a stop from the suggestions, or try a more specific address or place.":
-    "Valitse pysäkki ehdotuksista tai kokeile tarkempaa osoitetta tai paikkaa.",
-  "No matching stop, address or place was found.":
-    "Hakua vastaavaa pysäkkiä, osoitetta tai paikkaa ei löytynyt.",
-  "That place is outside Föli’s service area.":
-    "Paikka on Fölin palvelualueen ulkopuolella.",
-  "No Föli stop is close enough to use for that place.":
-    "Paikan lähellä ei ole riittävän lähellä olevaa Fölin pysäkkiä.",
-  "That place could not be used as a destination.":
-    "Paikkaa ei voitu käyttää määränpäänä.",
+  "Place search is waiting for stop locations.":
+    "Paikkahaku odottaa pysäkkien sijaintitietoja.",
+  "Place search is unavailable. Stop search still works.":
+    "Paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
+  "Choose a stop suggestion or refine the place search.":
+    "Valitse pysäkkiehdotus tai tarkenna paikkahakua.",
+  "No matching destination found.": "Sopivaa määränpäätä ei löytynyt.",
+  "Outside Föli’s service area.": "Fölin palvelualueen ulkopuolella.",
+  "No usable Föli stop is nearby.": "Lähistöllä ei ole sopivaa Fölin pysäkkiä.",
+  "That place cannot be used.": "Paikkaa ei voi käyttää määränpäänä.",
   "More than one stop has this name. Choose one from the suggestions.":
     "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
   "Nearby stops for {destination}":
