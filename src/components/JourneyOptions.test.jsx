@@ -63,7 +63,7 @@ test("renders only meaningful option cards and opens the chosen boarding stop", 
   expect(screen.getByText("Fastest")).toBeInTheDocument();
   expect(screen.getByText("Less walking")).toBeInTheDocument();
   expect(screen.getByText(/210 m less walking/i)).toBeInTheDocument();
-  expect(screen.getAllByText("Live estimate")).toHaveLength(2);
+  expect(screen.getAllByText(/Live estimate/)).toHaveLength(2);
 
   fireEvent.click(
     screen.getByRole("button", {
