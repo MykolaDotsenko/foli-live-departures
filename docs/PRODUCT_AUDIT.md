@@ -120,7 +120,7 @@ These came out of the verification round and are not yet re-scored.
 - **Repository metadata:** the public description and topics are set.
 - **Place setup interaction:** selecting one stop makes it the main stop automatically; a Main stop choice appears only when backups make that distinction meaningful, and Save is the explicit confirmation.
 - **Board retry actions:** failure states own the retry action instead of competing with a simultaneous header Refresh.
-- **iPhone install discovery:** uninstalled iOS browsers get a dismissible Home Screen installation hint; installed standalone PWAs and native Android do not.
+- **iPhone install discovery:** uninstalled iOS browsers get a dismissible Home Screen installation hint on the landing/search screen; it never sits above an active departure board or Ride Mode, and installed standalone PWAs/native Android do not show it.
 
 ## Known limitations
 

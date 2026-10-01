@@ -844,7 +844,11 @@ function App() {
 
       <main className="app-main">
         <ConnectivityStatus online={online} />
-        {!ride.session && <IosInstallHint />}
+        {/* Installation education must never push a live departure board or
+            Ride Mode below the first phone viewport. Offer it only before a
+            stop has been opened; returning/active journeys keep transit
+            information visually authoritative. */}
+        {!ride.session && !stopId && <IosInstallHint />}
 
         {ride.session && (
           <RideMode
