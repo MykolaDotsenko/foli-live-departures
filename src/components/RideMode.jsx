@@ -112,11 +112,11 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
     return {
       state: "recovery",
       title: stage === RIDE_STAGE.NOW
-        ? "After you get off"
-        : "Connection needs a new plan",
+        ? msg("After you get off")
+        : msg("Connection needs a new plan"),
       text: stage === RIDE_STAGE.NOW
-        ? "Journey Assistant will check fresh options from this transfer area."
-        : "Get off at {stop}; Journey Assistant will check fresh options there.",
+        ? msg("Journey Assistant will check fresh options from this transfer area.")
+        : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
       params: { stop: stopLabel(targetStop) },
       meta: "",
       metaParams: {},
@@ -160,8 +160,8 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
     if (sameStop) {
       return {
         state: "next",
-        title: "After you get off",
-        text: "Wait here for line {line}.",
+        title: msg("After you get off"),
+        text: msg("Wait here for line {line}."),
         params: { line },
         meta: "",
         metaParams: {},
@@ -171,8 +171,8 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
     if (!boardStop) {
       return {
         state: "recovery",
-        title: "After you get off",
-        text: "Journey Assistant will check fresh options from this transfer area.",
+        title: msg("After you get off"),
+        text: msg("Journey Assistant will check fresh options from this transfer area."),
         params: {},
         meta: "",
         metaParams: {},
@@ -181,11 +181,11 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
 
     return {
       state: "next",
-      title: "After you get off",
+      title: msg("After you get off"),
       text:
         walkingDistanceM === null
-          ? "Go to {stop} for line {line}."
-          : "Walk ≈{distance} to {stop} for line {line}.",
+          ? msg("Go to {stop} for line {line}.")
+          : msg("Walk ≈{distance} to {stop} for line {line}."),
       params: {
         distance:
           walkingDistanceM === null ? "" : formatDistance(walkingDistanceM),
@@ -207,15 +207,15 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
 
   return {
     state: decision === "tight" ? "tight" : "next",
-    title: "Next after this bus",
-    text: "Change at {stop} to line {line}.",
+    title: msg("Next after this bus"),
+    text: msg("Change at {stop} to line {line}."),
     params: { stop: stopLabel(targetStop), line },
     meta:
       liveMargin === null
         ? ""
         : liveMargin < 1
-          ? "Live transfer margin: less than 1 min."
-          : "Live transfer margin: about {minutes} min.",
+          ? msg("Live transfer margin: less than 1 min.")
+          : msg("Live transfer margin: about {minutes} min."),
     metaParams: { minutes: liveMargin },
   };
 }

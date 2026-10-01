@@ -1229,7 +1229,7 @@ test("shows committed transfer next-action guidance in Finnish", () => {
     screen.getByText("Vaihda pysäkillä Puistokatu linjalle 7.")
   ).toBeInTheDocument();
   expect(
-    screen.getByText("Reaaliaikaista vaihtoaikaa noin 5 min.")
+    screen.getByText("Reaaliaikaista vaihtoaikaa: noin 5 min.")
   ).toBeInTheDocument();
 });
 
