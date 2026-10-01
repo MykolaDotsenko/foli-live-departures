@@ -159,6 +159,7 @@ function App() {
   const journey = useDestinationIntent();
   /** @type {[import("./types/journey").FinalWalkIntent | null, import("react").Dispatch<import("react").SetStateAction<import("./types/journey").FinalWalkIntent | null>>]} */
   const [finalWalk, setFinalWalk] = useState(null);
+  /** @type {import("react").MutableRefObject<import("./types/journey").FinalWalkIntent | null>} */
   const pendingFinalWalkRef = useRef(null);
   const {
     journey: selectedJourney,
