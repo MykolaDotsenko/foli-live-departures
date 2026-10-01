@@ -69,7 +69,7 @@ test("caller AbortSignal cancels the underlying fetch", async () => {
   );
 
   const client = createHttpClient();
-  const controller = new AbortController();
+  const controller = new globalThis.AbortController();
   const request = client.get("https://data.foli.fi/test", {
     signal: controller.signal,
   });
@@ -91,7 +91,7 @@ test("hard timeout is reported as TimeoutError, not passenger cancellation", asy
         options.signal.addEventListener(
           "abort",
           () => reject(
-            new DOMException("The operation was aborted.", "AbortError")
+            new globalThis.DOMException("The operation was aborted.", "AbortError")
           ),
           { once: true }
         );
