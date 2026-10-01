@@ -95,12 +95,7 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-  "Choose destination stop": "Valitse määränpääpysäkki",
-  "e.g. Turun linna": "esim. Turun linna",
   "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
-  "Use destination": "Käytä määränpäätä",
-  "Choose Home, Work, School or a Föli stop.":
-    "Valitse Koti, Työ, Koulu tai Fölin pysäkki.",
   "Stop, address or place": "Pysäkki, osoite tai paikka",
   "e.g. Prisma Itäharju or Turun linna":
     "esim. Prisma Itäharju tai Turun linna",
@@ -129,11 +124,8 @@ export default {
     "Paikan lähellä ei ole riittävän lähellä olevaa Fölin pysäkkiä.",
   "That place could not be used as a destination.":
     "Paikkaa ei voitu käyttää määränpäänä.",
-  "Enter a stop name or number.": "Kirjoita pysäkin nimi tai numero.",
   "More than one stop has this name. Choose one from the suggestions.":
     "Tällä nimellä on useampi pysäkki. Valitse yksi ehdotuksista.",
-  "Choose a destination stop from the suggestions.":
-    "Valitse määränpääpysäkki ehdotuksista.",
   "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
@@ -181,8 +173,6 @@ export default {
   "Timetable estimate": "Aikatauluarvio",
   "Realtime uncertain": "Reaaliaikatieto epävarma",
   Estimate: "Arvio",
-  "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
-    "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja ja likimääräistä linnuntie-etäisyyttä lähtöpysäkille.",
   "Direct options use current Föli data. Walking distances are approximate straight-line estimates.":
     "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja. Kävelyetäisyydet ovat likimääräisiä linnuntie-arvioita.",
   "Final walk ≈ {distance}": "Loppukävely ≈ {distance}",
