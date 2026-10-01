@@ -441,6 +441,8 @@ describe("transfer revalidation fallback and branch safety", () => {
     const sameStop = JSON.parse(JSON.stringify(journey));
     sameStop.transferPlan.transfer.boardStopId = "500";
     sameStop.transferPlan.transfer.walkingDistanceM = null;
+    sameStop.transferPlan.second.departureAt = 1_800;
+    sameStop.transferPlan.second.aimedDepartureAt = 1_800;
 
     const state = evaluateTransferRevalidation({
       journey: sameStop,
