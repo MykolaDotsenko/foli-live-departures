@@ -134,6 +134,7 @@ export default {
   // Direct journey alternatives
   "Direct options": "Suorat vaihtoehdot",
   "Best ways to {destination}": "Parhaat tavat määränpäähän {destination}",
+  "1 option": "1 vaihtoehto",
   "{count} options": "{count} vaihtoehtoa",
   Fastest: "Nopein",
   "Less walking": "Vähemmän kävelyä",
