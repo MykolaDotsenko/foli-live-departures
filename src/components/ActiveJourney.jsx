@@ -23,6 +23,9 @@ function recoveryText(journey) {
   if (journey.recoveryReason === "cancelled") {
     return t("Your selected bus was cancelled.");
   }
+  if (journey.recoveryReason === "transfer-cancelled") {
+    return t("Your second bus was cancelled. Choose a fresh option.");
+  }
   if (journey.recoveryReason === "transfer-missed") {
     return t("The second bus has probably been missed. Choose a fresh option.");
   }

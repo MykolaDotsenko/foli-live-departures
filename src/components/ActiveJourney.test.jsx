@@ -350,3 +350,34 @@ test("returns nothing without an active journey", () => {
   );
   expect(container).toBeEmptyDOMElement();
 });
+
+
+test("explains a cancelled second transfer leg explicitly", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        optionLabel: "transfer",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: {
+            boardStopId: "500",
+            boardStopName: "Kauppatori platform B",
+          },
+          second: { lineRef: "7" },
+        },
+        phase: "recovery",
+        recoveryReason: "transfer-cancelled",
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText("Your second bus was cancelled. Choose a fresh option.")
+  ).toBeInTheDocument();
+});

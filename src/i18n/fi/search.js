@@ -225,6 +225,8 @@ export default {
     "Osuus 1/2 · vaihda pysäkillä {stop} linjalle {line}",
   "Leg 2 of 2 · continue on line {line}":
     "Osuus 2/2 · jatka linjalla {line}",
+  "Your second bus was cancelled. Choose a fresh option.":
+    "Toinen bussisi peruttiin. Valitse uusi vaihtoehto.",
   "The second bus has probably been missed. Choose a fresh option.":
     "Toinen bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
