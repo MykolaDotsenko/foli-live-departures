@@ -255,16 +255,16 @@ export function evaluateTransferRevalidation({
 function sameFeasibility(left, right) {
   if (left === right) return true;
   if (!left || !right) return false;
-  return [
-    "state",
-    "recommendable",
-    "incomingArrivalAt",
-    "outgoingDepartureAt",
-    "walkingDistanceM",
-    "requiredSec",
-    "availableSec",
-    "slackSec",
-  ].every((key) => left[key] === right[key]);
+  return (
+    left.state === right.state &&
+    left.recommendable === right.recommendable &&
+    left.incomingArrivalAt === right.incomingArrivalAt &&
+    left.outgoingDepartureAt === right.outgoingDepartureAt &&
+    left.walkingDistanceM === right.walkingDistanceM &&
+    left.requiredSec === right.requiredSec &&
+    left.availableSec === right.availableSec &&
+    left.slackSec === right.slackSec
+  );
 }
 
 /**
@@ -274,18 +274,18 @@ function sameFeasibility(left, right) {
 function sameRevalidation(left, right) {
   if (left === right) return true;
   if (!left || !right) return false;
-  return [
-    "providerState",
-    "decision",
-    "departureAt",
-    "delaySec",
-    "receivedAtMs",
-    "missingSinceMs",
-    "matchedAtMs",
-    "providerAgeSec",
-    "liveState",
-  ].every((key) => left[key] === right[key]) &&
-    sameFeasibility(left.feasibility, right.feasibility);
+  return (
+    left.providerState === right.providerState &&
+    left.decision === right.decision &&
+    left.departureAt === right.departureAt &&
+    left.delaySec === right.delaySec &&
+    left.receivedAtMs === right.receivedAtMs &&
+    left.missingSinceMs === right.missingSinceMs &&
+    left.matchedAtMs === right.matchedAtMs &&
+    left.providerAgeSec === right.providerAgeSec &&
+    left.liveState === right.liveState &&
+    sameFeasibility(left.feasibility, right.feasibility)
+  );
 }
 
 /**
