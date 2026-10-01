@@ -843,6 +843,38 @@ test("live transfer recovery cannot be undone by Ride Mode completion", () => {
   );
 
   expect(recovered).toMatchObject({
+    transferLeg: 2,
+    tripRef: "second",
+    stopId: "501",
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+});
+
+test("failed transfer recovery stays on leg 1 when Ride Mode did not reach the transfer occurrence", () => {
+  const pending = {
+    ...activeJourneyFromTransferOption(
+      transferOption(),
+      destination,
+      1_000_000
+    ),
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  };
+
+  const recovered = recoverTransferJourneyAfterRide(
+    pending,
+    {
+      tripRef: "first",
+      stage: "next",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    2_150_000
+  );
+
+  expect(recovered).toMatchObject({
+    transferLeg: 1,
+    tripRef: "first",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
   });
