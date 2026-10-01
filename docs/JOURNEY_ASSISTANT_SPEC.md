@@ -1642,7 +1642,7 @@ The final experience should feel simpler to the passenger than the current produ
 
 ## P2 — Transfer journeys
 
-**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation is the next release slice.**
+**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation implemented in PR #118.**
 
 Direct options remain preferred. If none are found after progressive nearby expansion, Journey Assistant may search for one conservative transfer using bounded client-side Föli SIRI/GTFS lookups. Ride Mode remains authoritative on each boarded leg; premature leg-1 termination fails closed into recovery and can never create final-walk guidance.
 

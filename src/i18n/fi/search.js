@@ -235,6 +235,8 @@ export default {
     "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka.",
   "Live check: the transfer to line {line} is tight · about {minutes} min margin.":
     "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka · aikaa noin {minutes} min.",
+  "Live check: the transfer to line {line} is tight · less than 1 min margin.":
+    "Reaaliaikainen tarkistus: vaihto linjalle {line} on tiukka · aikaa alle 1 min.",
   "Live check for line {line} is uncertain. Keeping the selected connection until stronger evidence.":
     "Linjan {line} reaaliaikainen tarkistus on epävarma. Valittu yhteys pidetään, kunnes saadaan vahvempaa tietoa.",
   "The second bus has probably been missed. Choose a fresh option.":

@@ -473,3 +473,40 @@ test("shows live second-leg transfer evidence without changing the selected rout
     )
   ).toBeInTheDocument();
 });
+
+
+test("does not round a sub-minute tight transfer margin up to one minute", () => {
+  render(
+    <ActiveJourney
+      journey={journey({
+        optionLabel: "transfer",
+        transferLeg: 1,
+        transferPlan: {
+          transfer: {
+            boardStopId: "501",
+            boardStopName: "Kauppatori platform B",
+          },
+          second: { lineRef: "7" },
+        },
+        phase: "waiting",
+        transferRevalidation: {
+          providerState: "live",
+          decision: "tight",
+          feasibility: { slackSec: 40 },
+        },
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "Live check: the transfer to line 7 is tight · less than 1 min margin."
+    )
+  ).toBeInTheDocument();
+});

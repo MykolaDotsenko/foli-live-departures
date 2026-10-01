@@ -722,7 +722,7 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-01): bounded one-transfer routing is implemented. Live revalidation of the committed second leg is being added as the next hardening slice.**
+**Status (2026-10-01): bounded one-transfer routing and live revalidation of the committed second leg are implemented through PR #118. Automatic replacement routing remains the next hardening slice.**
 
 Implemented:
 - transfer topology;

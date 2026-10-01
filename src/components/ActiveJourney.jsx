@@ -67,7 +67,7 @@ function transferLiveStatusText(journey) {
   const slackSec = Number(state.feasibility?.slackSec);
   const marginMinutes =
     Number.isFinite(slackSec) && slackSec >= 0
-      ? Math.max(1, Math.floor(slackSec / 60))
+      ? Math.floor(slackSec / 60)
       : null;
 
   if (state.providerState === "live" && state.decision === "good") {
@@ -80,12 +80,19 @@ function transferLiveStatusText(journey) {
   }
 
   if (state.providerState === "live" && state.decision === "tight") {
-    return marginMinutes === null
-      ? t("Live check: the transfer to line {line} is tight.", { line })
-      : t(
-          "Live check: the transfer to line {line} is tight · about {minutes} min margin.",
-          { line, minutes: marginMinutes }
-        );
+    if (marginMinutes === null) {
+      return t("Live check: the transfer to line {line} is tight.", { line });
+    }
+    if (marginMinutes < 1) {
+      return t(
+        "Live check: the transfer to line {line} is tight · less than 1 min margin.",
+        { line }
+      );
+    }
+    return t(
+      "Live check: the transfer to line {line} is tight · about {minutes} min margin.",
+      { line, minutes: marginMinutes }
+    );
   }
 
   if (
@@ -118,6 +125,7 @@ export default function ActiveJourney({
   if (!journey) return null;
 
   const walkingUrl = online ? buildWalkingDirectionsUrl(stop) : "";
+  const transferLiveStatus = transferLiveStatusText(journey);
 
   return (
     <section
@@ -143,9 +151,9 @@ export default function ActiveJourney({
         <p className={styles.transferPlan}>{transferPlanText(journey)}</p>
       )}
 
-      {transferLiveStatusText(journey) && (
+      {transferLiveStatus && (
         <p className={styles.monitoringNotice} aria-live="polite">
-          {transferLiveStatusText(journey)}
+          {transferLiveStatus}
         </p>
       )}
 
