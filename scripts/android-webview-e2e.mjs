@@ -11,6 +11,7 @@ const results = {
   consoleErrors: [],
   exceptions: [],
   failedRequests: [],
+  placeProviderRequests: [],
 };
 
 function record(name, passed, details = {}) {
@@ -115,6 +116,13 @@ Runtime.exceptionThrown(({ exceptionDetails }) => {
   });
 });
 
+Network.requestWillBeSent(({ request }) => {
+  const url = String(request?.url || "");
+  if (url.startsWith("https://nominatim.openstreetmap.org/")) {
+    results.placeProviderRequests.push(url);
+  }
+});
+
 Network.loadingFailed((event) => {
   results.failedRequests.push({
     requestId: event.requestId,
@@ -194,6 +202,53 @@ console.log("Android WebView capabilities:", results.capabilities);
 
 record("geolocation API is exposed", results.capabilities.geolocation === true);
 record("app starts online", results.capabilities.online === true);
+
+const nativeJourneyInput = await retry("native journey destination input", async () =>
+  evaluate(`Boolean(document.querySelector("#journey-destination"))`)
+);
+record("Journey Assistant destination input is present", nativeJourneyInput === true);
+
+await evaluate(`(() => {
+  const input = document.querySelector("#journey-destination");
+  const form = input?.closest("form");
+  if (!input || !form) return false;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  )?.set;
+  setter.call(input, "Prisma Itäharju");
+  input.dispatchEvent(new InputEvent("input", {
+    bubbles: true,
+    inputType: "insertText",
+    data: "Prisma Itäharju"
+  }));
+  input.dispatchEvent(new Event("change", { bubbles: true }));
+  form.requestSubmit();
+  return true;
+})()`);
+
+const nativePlaceHandoff = await retry("native place-search handoff", async () =>
+  evaluate(`(() => {
+    const text = document.body.innerText;
+    const link = [...document.querySelectorAll("a")].find((node) =>
+      node.href === "https://turku.digitransit.fi/"
+    );
+    return /official Turku journey planner/i.test(text) && link
+      ? { text: link.textContent?.trim() || "", href: link.href }
+      : null;
+  })()`),
+  { attempts: 20, delayMs: 250 }
+);
+record(
+  "packaged Android hands address/POI search to the official planner",
+  nativePlaceHandoff?.href === "https://turku.digitransit.fi/",
+  nativePlaceHandoff || {}
+);
+record(
+  "packaged Android makes no direct public Nominatim request",
+  results.placeProviderRequests.length === 0,
+  { requests: results.placeProviderRequests }
+);
 
 async function readAndroidGeolocation(enableHighAccuracy, timeout) {
   return evaluate(`

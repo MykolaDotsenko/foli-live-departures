@@ -79,7 +79,9 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 - your location is not stored;
 - your location during a ride stays on the phone;
 - GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
-- a Content-Security-Policy lets the page run only its own code and talk only to itself and Föli (`*.foli.fi`); it is checked on every build and in every browser test.
+- in the web PWA, an address/place query is sent to OpenStreetMap Nominatim only after you press **Search**; typing and Föli-stop selection stay local, and repeated place searches are cached only for the browser session;
+- the packaged Android app does **not** call public Nominatim directly; address/POI lookup is handed off to the official Turku journey planner while local Föli-stop search remains available;
+- a Content-Security-Policy lets the page run only its own code and talk only to its approved Föli and web place-search origins; it is checked on every build and in every browser test.
 
 A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
 
