@@ -902,6 +902,11 @@ function App() {
             </dd>
             <dd>
               {t(
+                "Stops are searched on this device. Address and place search sends your query to OpenStreetMap Nominatim only when you press Search."
+              )}
+            </dd>
+            <dd>
+              {t(
                 "Google Maps opens only when you tap a route link. It gets the stop you chose and may then use your location to plan the route."
               )}
             </dd>
