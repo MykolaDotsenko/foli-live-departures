@@ -51,11 +51,6 @@ export default defineConfig(({ mode }) => ({
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
     modulePreload: { polyfill: false },
-    // License notices remain available in package metadata/repository; they do
-    // not need to be duplicated inside every production JS artifact.
-    rolldownOptions: {
-      output: { legalComments: "none" },
-    },
   },
   css: {
     modules: {
