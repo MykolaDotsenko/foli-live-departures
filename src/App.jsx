@@ -63,9 +63,10 @@ function selectedJourneyDepartureAction() {
 }
 
 function firstJourneyOption() {
-  return document.querySelector(
+  const element = document.querySelector(
     '[aria-labelledby="direct-journey-options-title"] button'
   );
+  return element instanceof globalThis.HTMLElement ? element : null;
 }
 
 function announceStop(stopId, name, loading) {
