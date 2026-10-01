@@ -196,18 +196,9 @@ export default {
 
 
   // Final walk after Ride Mode
-  "Final walk": "Loppukävely",
   "Walk to {destination}": "Kävele määränpäähän {destination}",
-  "From {stop}": "Pysäkiltä {stop}",
-  "About {distance} from your exit stop.":
-    "Noin {distance} poistumispysäkiltä määränpäähän.",
-  "Continue from your exit stop to the destination.":
-    "Jatka poistumispysäkiltä määränpäähän.",
-  "Walking distance is approximate. Open walking directions for the street route.":
-    "Kävelyetäisyys on likimääräinen. Avaa kävelyohjeet nähdäksesi katuja pitkin kulkevan reitin.",
-  "Walking directions return when you’re online.":
-    "Kävelyohjeet ovat taas käytettävissä, kun verkkoyhteys toimii.",
-  "Open walking directions": "Avaa kävelyohjeet",
+  "Walking link unavailable offline.":
+    "Kävelyohje ei ole käytettävissä offline-tilassa.",
   Done: "Valmis",
 
 };
