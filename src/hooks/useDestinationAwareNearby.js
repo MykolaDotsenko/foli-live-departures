@@ -160,6 +160,20 @@ export async function loadDestinationAwareNearby({
   const candidates = Array.isArray(stops) ? stops : [];
   if (!destination || candidates.length === 0) return {};
 
+  /** @type {Record<string, number> | null} */
+  const destinationExtraSecByStop =
+    destination.kind === "external-place"
+      ? Object.fromEntries(
+          Object.entries(destination.finalWalkDistanceByStop || {})
+            .map(([stopId, distanceM]) => [
+              stopId,
+              estimateFinalWalkSeconds(distanceM),
+            ])
+            .filter(([, seconds]) => Number.isFinite(Number(seconds)))
+            .map(([stopId, seconds]) => [stopId, Number(seconds)])
+        )
+      : null;
+
   const monitorResults = await Promise.allSettled(
     candidates.map((stop) => fetchStopMonitor(String(stop.id), signal))
   );
@@ -280,6 +294,7 @@ export async function loadDestinationAwareNearby({
         boardingSequence: null,
         boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
         destinationStopIds: destination.acceptableStopIds,
+        destinationExtraSecByStop,
       });
 
       if (!fit.compatible) {
