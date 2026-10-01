@@ -1127,3 +1127,53 @@
     color: var(--dm-muted);
   }
 }
+
+
+/* The passenger explicitly selected this concrete trip. Keep the cue subtle
+   enough that the normal board remains readable, but stronger than a generic
+   destination match. */
+.table tbody tr[data-selected-journey="true"] > td {
+  background: #f0faf6;
+}
+
+.table tbody tr[data-selected-journey="true"] > td:first-child {
+  box-shadow: inset 3px 0 0 #16846e;
+}
+
+.selectedJourneyBadge {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #d8f1e7;
+  color: #115b49;
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+@media screen {
+  :root[data-theme="dark"] .table tbody tr[data-selected-journey="true"] > td {
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"]
+    .table
+    tbody
+    tr[data-selected-journey="true"]
+    > td:first-child {
+    box-shadow: inset 3px 0 0 var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .selectedJourneyBadge {
+    background: var(--dm-accent-surface);
+    color: var(--dm-accent);
+  }
+}
+
+@media (forced-colors: active) {
+  .table tbody tr[data-selected-journey="true"] > td:first-child {
+    box-shadow: inset 3px 0 0 Highlight;
+  }
+}
