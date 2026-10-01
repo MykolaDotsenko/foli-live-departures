@@ -57,9 +57,9 @@ export default function useTransferLegRevalidation({
   const [loading, setLoading] = useState(false);
   const abortRef = useRef(null);
   const previousRef = useRef(null);
-  const nowMs = useClockTick(10_000);
 
   const active = Boolean(enabled && journey && second && stopId);
+  const nowMs = useClockTick(10_000, active);
 
   const refresh = useCallback(async () => {
     if (!active) return null;
