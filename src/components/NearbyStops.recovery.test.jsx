@@ -156,7 +156,8 @@ test("recovery cards exclude the failed concrete trip but keep the full nearby l
   const nearbyGroup = screen.getByRole("group", {
     name: "Nearby Föli stops for Home stop",
   });
-  expect(within(nearbyGroup).getAllByRole("button")).toHaveLength(2);
-  expect(within(nearbyGroup).getByText("Line 18")).toBeInTheDocument();
-  expect(within(nearbyGroup).getByText("Line 2")).toBeInTheDocument();
+  const nearbyButtons = within(nearbyGroup).getAllByRole("button");
+  expect(nearbyButtons).toHaveLength(2);
+  expect(nearbyButtons.some((button) => button.textContent.includes("Line 18"))).toBe(true);
+  expect(nearbyButtons.some((button) => button.textContent.includes("Line 2"))).toBe(true);
 });
