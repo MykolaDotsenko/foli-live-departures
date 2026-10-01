@@ -21,7 +21,7 @@ function catchabilityRank(departure) {
 }
 
 /**
- * @param {NearbyDepartureFit} departure
+ * @param {{ distanceMeters: number, departure: NearbyDepartureFit }} candidate
  * @returns {number}
  */
 function totalApproxWalkingMeters(candidate) {
