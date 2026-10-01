@@ -144,6 +144,32 @@ describe("active journey transitions", () => {
     ).toBe(false);
   });
 
+  test("rejects a live row with a different trip-origin occurrence", () => {
+    const journey = activeJourneyFromOption(option(), destination, 1_000_000);
+
+    expect(
+      arrivalMatchesActiveJourney(
+        {
+          tripref: "trip-1",
+          aimeddeparturetime: 1_485,
+          originaimeddeparturetime: 1_500,
+        },
+        journey
+      )
+    ).toBe(false);
+
+    expect(
+      arrivalMatchesActiveJourney(
+        {
+          tripref: "trip-1",
+          aimeddeparturetime: 1_485,
+          originaimeddeparturetime: 905,
+        },
+        journey
+      )
+    ).toBe(true);
+  });
+
   test("moves to waiting only after explicit passenger confirmation", () => {
     const journey = activeJourneyFromOption(option(), destination, 1_000_000);
     const waiting = confirmActiveJourneyAtStop(journey, 1_010_000);
