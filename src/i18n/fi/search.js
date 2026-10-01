@@ -98,18 +98,18 @@ export default {
   "e.g. Prisma or Turun linna": "esim. Prisma tai Turun linna",
   Search: "Hae",
   "Searching…": "Haetaan…",
-  "Enter a stop, address or place.": "Kirjoita pysäkki, osoite tai paikka.",
-  "Stops stay on-device. Place search uses OpenStreetMap only after Search.":
-    "Pysäkit pysyvät laitteella. Paikkahaku käyttää OpenStreetMapia vasta Hae-painikkeen jälkeen.",
+  "Enter a destination.": "Kirjoita määränpää.",
+  "Stops stay local. Places use Photon after Search.":
+    "Pysäkit pysyvät laitteella. Paikat haetaan Photonista vasta Hae-painikkeen jälkeen.",
   "Stops stay on-device. Place search is sent to the OpenStreetMap-based Photon service only after you press Search.":
     "Pysäkit pysyvät laitteella. Paikkahaku lähetetään OpenStreetMap-pohjaiseen Photon-palveluun vasta, kun painat Hae.",
   "Place search data": "Paikkahaun tiedot",
-  "Place search unavailable. Stop search still works.":
-    "Paikkahaku ei ole käytettävissä. Pysäkkihaku toimii edelleen.",
-  "No matching destination found.": "Sopivaa määränpäätä ei löytynyt.",
-  "Outside Föli’s service area.": "Fölin palvelualueen ulkopuolella.",
-  "No usable Föli stop is nearby.": "Lähistöllä ei ole sopivaa Fölin pysäkkiä.",
-  "That place cannot be used.": "Paikkaa ei voi käyttää määränpäänä.",
+  "Place search unavailable. Use a stop.":
+    "Paikkahaku ei ole käytettävissä. Käytä pysäkkiä.",
+  "No destination found.": "Määränpäätä ei löytynyt.",
+  "Outside Föli area.": "Fölin alueen ulkopuolella.",
+  "No nearby Föli stop.": "Lähistöllä ei ole Fölin pysäkkiä.",
+  "Place unavailable.": "Paikka ei ole käytettävissä.",
   "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
@@ -159,8 +159,7 @@ export default {
   Estimate: "Arvio",
   "Föli data · walking distances are approximate.":
     "Föli-data · kävelyetäisyydet ovat likimääräisiä.",
-  "Final walk ≈ {distance}": "Loppukävely ≈ {distance}",
-  "final walk ≈ {distance}": "loppukävely ≈ {distance}",
+  "Walk ≈ {distance}": "Kävely ≈ {distance}",
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
   "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
 
@@ -173,21 +172,18 @@ export default {
   "To {destination}": "Määränpää {destination}",
   "Leaves {due}": "Lähtö {due}",
   "About {distance} to the boarding stop.": "Noin {distance} lähtöpysäkille.",
-  "At the stop? Confirm here. We don’t infer your location.":
-    "Oletko pysäkillä? Vahvista tässä. Emme päättele sijaintiasi.",
-  "Selected bus is pinned first below.":
-    "Valittu bussi näkyy ensimmäisenä alla.",
-  "After boarding, start Get-off alert. Ride Mode takes over.":
-    "Noustuasi kyytiin käynnistä poistumishälytys. Ride Mode ottaa ohjauksen.",
+  "At the stop? Confirm here.": "Oletko pysäkillä? Vahvista tässä.",
+  "Selected bus is first below.": "Valittu bussi näkyy ensimmäisenä alla.",
+  "Boarded? Start Get-off alert.":
+    "Kyydissä? Käynnistä poistumishälytys.",
   "Your selected bus was cancelled.": "Valitsemasi bussi peruttiin.",
   "Your selected bus is no longer a reliable option.":
     "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
-  "Offline: selected plan may be stale.":
-    "Offline: valittu suunnitelma voi olla vanhentunut.",
-  "Live monitoring paused while another stop is open. Return to resume.":
-    "Live-seuranta on tauolla toisen pysäkin ollessa avoinna. Palaa jatkaaksesi.",
-  "Live monitoring unavailable. Selected time may be stale.":
-    "Live-seuranta ei ole käytettävissä. Valittu aika voi olla vanhentunut.",
+  "Offline: plan may be stale.": "Offline: suunnitelma voi olla vanhentunut.",
+  "Monitoring paused. Return to selected stop.":
+    "Seuranta on tauolla. Palaa valitulle pysäkille.",
+  "Live unavailable. Time may be stale.":
+    "Live-tieto ei ole käytettävissä. Aika voi olla vanhentunut.",
   "Return to selected stop": "Palaa valitulle pysäkille",
   "I'm at the stop": "Olen pysäkillä",
   "Show selected departure": "Näytä valittu lähtö",
