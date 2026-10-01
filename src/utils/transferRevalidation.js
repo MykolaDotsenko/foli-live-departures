@@ -221,11 +221,16 @@ export function evaluateTransferRevalidation({
     incomingLiveState,
   });
 
+  // The local/reference clock advancing beyond an old prediction is not
+  // itself evidence that the bus left. Require the provider snapshot itself
+  // to have been recorded after that predicted departure; otherwise a still
+  // visible row may simply be ageing between polls.
+  const providerObservedAt = positive(arrival.recordedattime);
   const clearlyDeparted =
-    reference !== null &&
+    providerObservedAt !== null &&
     liveDepartureAt !== null &&
     arrival.vehicleatstop !== true &&
-    reference >= liveDepartureAt + 30;
+    providerObservedAt >= liveDepartureAt + 30;
 
   /** @type {TransferRevalidationDecision} */
   let decision = "unknown";
@@ -327,6 +332,34 @@ export function applyTransferRevalidation(journey, revalidation) {
         liveState: revalidation.liveState || "live",
       },
     };
+
+    // Keep the immutable option-level arrival times as the timetable
+    // baseline. Recompute from that baseline on every fresh observation so
+    // +120 s followed by +60 s becomes +60 s, not +180 s.
+    const hasDelay =
+      revalidation.delaySec !== null &&
+      revalidation.delaySec !== undefined &&
+      Number.isFinite(Number(revalidation.delaySec));
+    if (hasDelay) {
+      const delaySec = Number(revalidation.delaySec);
+      const plannedDestinationArrival =
+        positive(journey.transferPlan.destinationArrivalAt) ??
+        positive(journey.transferPlan.second?.arrivalAt) ??
+        positive(journey.destinationArrivalAt);
+      const plannedJourneyArrival =
+        positive(journey.transferPlan.journeyArrivalAt) ??
+        positive(journey.journeyArrivalAt) ??
+        plannedDestinationArrival;
+
+      next.destinationArrivalAt =
+        plannedDestinationArrival === null
+          ? journey.destinationArrivalAt
+          : plannedDestinationArrival + delaySec;
+      next.journeyArrivalAt =
+        plannedJourneyArrival === null
+          ? next.destinationArrivalAt
+          : plannedJourneyArrival + delaySec;
+    }
   }
 
   if (journey.phase === "recovery") return next;

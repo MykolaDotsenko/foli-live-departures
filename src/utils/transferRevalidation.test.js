@@ -242,28 +242,48 @@ describe("live transfer revalidation", () => {
     expect(confirmed.decision).toBe("missed");
   });
 
-  test("a fresh row clearly past its departure is missed unless still at the stop", () => {
-    const missed = evaluateTransferRevalidation({
-      journey,
-      arrivals: [liveArrival({ recordedattime: 2_050, expecteddeparturetime: 2_060 })],
-      referenceTimeSec: 2_100,
-      receivedAtMs: 2_100_000,
-      incomingArrivalAt: 1_600,
-      incomingLiveState: "live",
-    });
-    expect(missed.decision).toBe("missed");
-
-    const stillThere = evaluateTransferRevalidation({
+  test("only provider evidence recorded after departure can mark a still-visible row missed", () => {
+    const ageingLocally = evaluateTransferRevalidation({
       journey,
       arrivals: [
         liveArrival({
           recordedattime: 2_050,
           expecteddeparturetime: 2_060,
-          vehicleatstop: true,
         }),
       ],
       referenceTimeSec: 2_100,
       receivedAtMs: 2_100_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    expect(ageingLocally.decision).not.toBe("missed");
+
+    const providerObservedDeparture = evaluateTransferRevalidation({
+      journey,
+      arrivals: [
+        liveArrival({
+          recordedattime: 2_100,
+          expecteddeparturetime: 2_060,
+        }),
+      ],
+      referenceTimeSec: 2_110,
+      receivedAtMs: 2_110_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    expect(providerObservedDeparture.decision).toBe("missed");
+
+    const stillThere = evaluateTransferRevalidation({
+      journey,
+      arrivals: [
+        liveArrival({
+          recordedattime: 2_100,
+          expecteddeparturetime: 2_060,
+          vehicleatstop: true,
+        }),
+      ],
+      referenceTimeSec: 2_110,
+      receivedAtMs: 2_110_000,
       incomingArrivalAt: 1_600,
       incomingLiveState: "live",
     });
@@ -286,9 +306,40 @@ describe("applying revalidation to a committed journey", () => {
     expect(next.transferPlan.second).toMatchObject({
       tripRef: "second",
       departureAt: 2_120,
+      // This remains the timetable baseline used for downstream propagation.
+      arrivalAt: 2_400,
       liveState: "delayed",
     });
+    expect(next.destinationArrivalAt).toBe(2_520);
+    expect(next.journeyArrivalAt).toBe(2_520);
     expect(next.phase).toBe("waiting");
+  });
+
+  test("repeated live updates recompute final ETA from the timetable baseline without compounding delay", () => {
+    const firstState = evaluateTransferRevalidation({
+      journey,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+      referenceTimeSec: 1_720,
+      receivedAtMs: 1_720_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    const first = applyTransferRevalidation(journey, firstState);
+    expect(first.destinationArrivalAt).toBe(2_520);
+
+    const secondState = evaluateTransferRevalidation({
+      journey: first,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_060 })],
+      referenceTimeSec: 1_740,
+      receivedAtMs: 1_740_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    const second = applyTransferRevalidation(first, secondState);
+
+    expect(second.transferPlan.second.departureAt).toBe(2_060);
+    expect(second.destinationArrivalAt).toBe(2_460);
+    expect(second.journeyArrivalAt).toBe(2_460);
   });
 
   test.each([
