@@ -60,10 +60,17 @@ export function finalWalkFromRideSelection({
     return null;
   }
 
-  const selectedDistance = Number(journey.finalWalkDistanceM);
-  const mappedDistance = Number(
-    destination.finalWalkDistanceByStop?.[targetStopId]
-  );
+  const selectedDistance =
+    journey.finalWalkDistanceM === null ||
+    journey.finalWalkDistanceM === undefined
+      ? null
+      : Number(journey.finalWalkDistanceM);
+  const mappedRaw =
+    destination.finalWalkDistanceByStop?.[targetStopId];
+  const mappedDistance =
+    mappedRaw === null || mappedRaw === undefined
+      ? null
+      : Number(mappedRaw);
 
   return {
     destinationId: destination.id,
@@ -73,9 +80,13 @@ export function finalWalkFromRideSelection({
     fromStopId: targetStopId,
     fromStopName: String(rideConfig?.targetStop?.name || targetStopId),
     distanceMeters:
-      Number.isFinite(selectedDistance) && selectedDistance >= 0
+      selectedDistance !== null &&
+      Number.isFinite(selectedDistance) &&
+      selectedDistance >= 0
         ? selectedDistance
-        : Number.isFinite(mappedDistance) && mappedDistance >= 0
+        : mappedDistance !== null &&
+            Number.isFinite(mappedDistance) &&
+            mappedDistance >= 0
           ? mappedDistance
           : null,
   };
