@@ -471,9 +471,13 @@ function App() {
   };
 
   const chooseJourneyExternalPlace = (place) => {
-    const selected = journey.chooseExternalPlace(place, stops);
-    if (selected) clearJourney();
-    return selected;
+    const prepared = journey.chooseExternalPlace(
+      place,
+      stops,
+      serviceBoundary
+    );
+    if (prepared.ok) clearJourney();
+    return prepared;
   };
 
   const clearJourneyDestination = () => {
