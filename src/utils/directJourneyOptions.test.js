@@ -277,3 +277,50 @@ test("uses boarding plus final walk when labelling a place option as less walkin
   expect(lessWalking?.stopId).toBe("balanced");
   expect(lessWalking?.walkingDeltaMeters).toBe(-300);
 });
+
+
+test("chooses the smallest total walking, not merely the closest boarding stop", () => {
+  const fastest = departure({ tripRef: "fast", arrival: 2_000 });
+  fastest.finalWalkDistanceM = 400;
+  fastest.journeyArrivalAt = 2_400;
+
+  const closeBoard = departure({ tripRef: "close-board", arrival: 2_100 });
+  closeBoard.finalWalkDistanceM = 300;
+  closeBoard.journeyArrivalAt = 2_400;
+
+  const betterTotal = departure({ tripRef: "better-total", arrival: 2_150 });
+  betterTotal.finalWalkDistanceM = 40;
+  betterTotal.journeyArrivalAt = 2_350;
+
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "fast", distanceMeters: 350 },
+      { id: "close", distanceMeters: 40 },
+      { id: "balanced", distanceMeters: 120 },
+    ],
+    fitsByStop: {
+      fast: {
+        status: "good",
+        best: fastest,
+        departures: [fastest],
+      },
+      close: {
+        status: "good",
+        best: closeBoard,
+        departures: [closeBoard],
+      },
+      balanced: {
+        status: "good",
+        best: betterTotal,
+        departures: [betterTotal],
+      },
+    },
+  });
+
+  const lessWalking = options.find(
+    (item) => item.label === "less-walking"
+  );
+
+  expect(lessWalking?.stopId).toBe("balanced");
+  expect(lessWalking?.walkingDeltaMeters).toBe(-590);
+});
