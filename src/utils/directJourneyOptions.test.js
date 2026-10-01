@@ -236,3 +236,42 @@ test("ranks an external place by full door-arrival rather than bus-stop arrival"
   expect(options[0].label).toBe("fastest");
   expect(options[0].departure.tripRef).toBe("later-bus");
 });
+
+
+test("uses boarding plus final walk when labelling a place option as less walking", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "fast", distanceMeters: 50 },
+      { id: "balanced", distanceMeters: 300 },
+    ],
+    fitsByStop: {
+      fast: {
+        status: "good",
+        best: departure({ tripRef: "fast", arrival: 2_000 }),
+        departures: [
+          {
+            ...departure({ tripRef: "fast", arrival: 2_000 }),
+            finalWalkDistanceM: 600,
+            journeyArrivalAt: 2_625,
+          },
+        ],
+      },
+      balanced: {
+        status: "good",
+        best: departure({ tripRef: "balanced", arrival: 2_180 }),
+        departures: [
+          {
+            ...departure({ tripRef: "balanced", arrival: 2_180 }),
+            finalWalkDistanceM: 50,
+            journeyArrivalAt: 2_240,
+          },
+        ],
+      },
+    },
+  });
+
+  // The balanced option walks 300 + 50 = 350 m versus 50 + 600 = 650 m.
+  expect(options.some((item) => item.label === "less-walking")).toBe(true);
+  const lessWalking = options.find((item) => item.label === "less-walking");
+  expect(lessWalking?.stopId).toBe("fast");
+});
