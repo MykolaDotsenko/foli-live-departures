@@ -119,37 +119,29 @@
   box-shadow: 0 16px 36px rgba(31, 67, 74, 0.16);
 }
 
-.suggestion,
-.suggestionButton {
+.suggestion {
   display: flex;
+  width: 100%;
+  min-height: 48px;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  min-height: 48px;
   padding: 10px 13px;
+  border: 0;
   border-bottom: 1px solid #edf2f3;
-  cursor: pointer;
-}
-
-.suggestion:last-child,
-.suggestionButton:last-child {
-  border-bottom: 0;
-}
-
-.suggestionButton {
-  width: 100%;
-  border-top: 0;
-  border-right: 0;
-  border-left: 0;
   background: transparent;
+  cursor: pointer;
   font: inherit;
   text-align: left;
 }
 
+.suggestion:last-child {
+  border-bottom: 0;
+}
+
 .suggestion:hover,
 .suggestion[aria-selected="true"],
-.suggestionButton:hover,
-.suggestionButton:focus-visible {
+.suggestion:focus-visible {
   background: #edf8f8;
 }
 
@@ -325,15 +317,13 @@
     box-shadow: 0 16px 36px var(--dm-shadow);
   }
 
-  :root[data-theme="dark"] .suggestion,
-  :root[data-theme="dark"] .suggestionButton {
+  :root[data-theme="dark"] .suggestion {
     border-bottom-color: var(--dm-line);
   }
 
   :root[data-theme="dark"] .suggestion:hover,
   :root[data-theme="dark"] .suggestion[aria-selected="true"],
-  :root[data-theme="dark"] .suggestionButton:hover,
-  :root[data-theme="dark"] .suggestionButton:focus-visible {
+  :root[data-theme="dark"] .suggestion:focus-visible {
     background: var(--dm-accent-surface);
   }
 
@@ -352,13 +342,23 @@
 }
 
 
-/* Shared Journey destination search: keep one search visual language. */
-.journeyHeading {
+/* Shared Journey destination search. */
+.journeyHeading,
+.journeyCompact,
+.journeyQuick,
+.journeyActions {
   display: flex;
   align-items: center;
+}
+
+.journeyHeading,
+.journeyCompact {
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+}
+
+.journeyHeading {
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .journeyHeading h2 {
@@ -370,25 +370,22 @@
 .journeyTextButton,
 .journeyActions button {
   min-height: 40px;
-  padding: 0 9px;
+  padding: 0 8px;
   border: 0;
   border-radius: 8px;
   background: transparent;
   color: #00656f;
   cursor: pointer;
   font: inherit;
-  font-size: 0.76rem;
   font-weight: 850;
 }
 
 .journeyStatus {
   margin: 0 0 8px;
-  color: #425961;
   font-size: 0.8rem;
 }
 
 .journeyQuick {
-  display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 8px;
@@ -396,7 +393,7 @@
 
 .journeyQuick button {
   min-height: 40px;
-  padding: 0 11px;
+  padding: 0 10px;
   border: 1px solid #a9c9cd;
   border-radius: 999px;
   background: #f9fcfc;
@@ -409,7 +406,6 @@
 .journeyQuick button[aria-pressed="true"] {
   border-color: #007985;
   background: #dff4f2;
-  color: #005e67;
 }
 
 .journeyControls {
@@ -419,39 +415,29 @@
 }
 
 .journeyCompact {
-  display: flex;
   min-height: 44px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 8px;
-  padding: 5px 8px 5px 12px;
+  padding: 5px 8px;
   border: 1px solid #c9dde0;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.9);
 }
 
 .journeyCompactText {
   display: flex;
   min-width: 0;
-  align-items: baseline;
   gap: 6px;
-  color: #425961;
   font-size: 0.78rem;
 }
 
 .journeyCompactText strong {
   overflow: hidden;
-  color: #20343b;
-  font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .journeyActions {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 4px;
+  gap: 2px;
 }
 
 .journeyTextButton:hover,
@@ -461,15 +447,18 @@
 
 @media screen {
   :root[data-theme="dark"] .journeyHeading h2,
-  :root[data-theme="dark"] .journeyCompactText strong,
-  :root[data-theme="dark"] .journeyTextButton,
-  :root[data-theme="dark"] .journeyActions button {
+  :root[data-theme="dark"] .journeyCompactText strong {
     color: var(--dm-text);
   }
 
   :root[data-theme="dark"] .journeyStatus,
   :root[data-theme="dark"] .journeyCompactText {
     color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .journeyTextButton,
+  :root[data-theme="dark"] .journeyActions button {
+    color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .journeyQuick button,
