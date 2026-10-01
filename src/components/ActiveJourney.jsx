@@ -29,6 +29,7 @@ export default function ActiveJourney({
   journey,
   stop,
   online = true,
+  monitoringState = "active",
   onConfirmAtStop,
   onShowDeparture,
   onChooseAnother,
@@ -119,38 +120,71 @@ export default function ActiveJourney({
         </p>
       )}
 
+      {online &&
+        journey.phase !== "recovery" &&
+        monitoringState === "paused" && (
+          <p className={styles.monitoringNotice} role="status">
+            {t(
+              "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
+            )}
+          </p>
+        )}
+
+      {online &&
+        journey.phase !== "recovery" &&
+        monitoringState === "degraded" && (
+          <p className={styles.monitoringNotice} role="status">
+            {t(
+              "Live monitoring is temporarily unavailable. The selected departure may be out of date."
+            )}
+          </p>
+        )}
+
       <div className={styles.actions}>
-        {journey.phase === "walking-to-stop" && (
-          <>
+        {journey.phase !== "recovery" &&
+          monitoringState === "paused" && (
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={onConfirmAtStop}
+              onClick={onOpenStop}
             >
-              {t("I'm at the stop")}
+              {t("Return to selected stop")}
             </button>
-            {walkingUrl && (
-              <a
-                className={styles.secondaryLink}
-                href={walkingUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t("Walk there")}
-              </a>
-            )}
-          </>
-        )}
+          )}
 
-        {journey.phase === "waiting" && (
-          <button
-            type="button"
-            className={styles.primaryButton}
-            onClick={onShowDeparture}
-          >
-            {t("Show selected departure")}
-          </button>
-        )}
+        {journey.phase === "walking-to-stop" &&
+          monitoringState !== "paused" && (
+            <>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={onConfirmAtStop}
+              >
+                {t("I'm at the stop")}
+              </button>
+              {walkingUrl && (
+                <a
+                  className={styles.secondaryLink}
+                  href={walkingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("Walk there")}
+                </a>
+              )}
+            </>
+          )}
+
+        {journey.phase === "waiting" &&
+          monitoringState !== "paused" && (
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={onShowDeparture}
+            >
+              {t("Show selected departure")}
+            </button>
+          )}
 
         {journey.phase === "recovery" && (
           <button
