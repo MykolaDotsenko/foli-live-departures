@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { placeLabel } from "../hooks/useSavedPlaces";
+import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
 import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 import styles from "./JourneySearch.module.css";
@@ -14,29 +15,45 @@ function destinationLabel(destination) {
     : destination.label;
 }
 
+function geocodedSelectionError(reason) {
+  if (reason === "outside-service-area") {
+    return t("That place is outside Föli’s service area.");
+  }
+  if (reason === "no-nearby-stops") {
+    return t("No Föli stop is close enough to use for that place.");
+  }
+  return t("That place could not be used as a destination.");
+}
+
 export default function JourneySearch({
   compact = false,
   stops,
   places,
   destination,
+  online = true,
   onChoosePlace,
   onChooseStop,
+  onChooseGeocodedPlace = null,
   onClear,
 }) {
-  useLanguage();
+  const language = useLanguage();
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
+  const placeSearch = usePlaceSearch({ stops, language });
 
   const matches = useMemo(
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
   const showSuggestions = focused && value.trim() && matches.length > 0;
+  const showPlaceResults =
+    placeSearch.state === "ready" && placeSearch.results.length > 0;
 
   const chooseStop = (stop) => {
     onChooseStop(stop);
+    placeSearch.clear();
     setValue(stop.name || String(stop.id));
     setFocused(false);
     setError("");
@@ -45,15 +62,32 @@ export default function JourneySearch({
 
   const choosePlace = (place) => {
     onChoosePlace(place);
+    placeSearch.clear();
     setError("");
     if (compact) setExpanded(false);
   };
 
-  const submit = (event) => {
+  const chooseGeocodedPlace = (place) => {
+    if (!onChooseGeocodedPlace) return;
+
+    const prepared = onChooseGeocodedPlace(place);
+    if (!prepared?.ok) {
+      setError(geocodedSelectionError(prepared?.reason));
+      return;
+    }
+
+    placeSearch.clear();
+    setValue(place.label);
+    setFocused(false);
+    setError("");
+    if (compact) setExpanded(false);
+  };
+
+  const submit = async (event) => {
     event.preventDefault();
     const query = normalizeStopQuery(value);
     if (!query) {
-      setError(t("Enter a stop name or number."));
+      setError(t("Enter a stop, address or place."));
       return;
     }
 
@@ -63,24 +97,58 @@ export default function JourneySearch({
         normalizeStopQuery(stop.name) === query
     );
 
+    // Preserve the old fast path for an unambiguous exact public stop.
     if (exact.length === 1) {
       chooseStop(exact[0]);
       return;
     }
 
-    if (matches.length === 1) {
-      chooseStop(matches[0]);
+    setFocused(matches.length > 0);
+
+    if (!online) {
+      setError(
+        exact.length > 1
+          ? t(
+              "More than one stop has this name. Choose one from the suggestions."
+            )
+          : t(
+              "Place search needs an internet connection. Stop search still works."
+            )
+      );
       return;
     }
 
-    setFocused(true);
-    setError(
-      exact.length > 1
-        ? t(
+    const results = await placeSearch.search(value);
+
+    if (results === null) {
+      setError(
+        t(
+          "Place search is temporarily unavailable. Stop search still works."
+        )
+      );
+      return;
+    }
+
+    if (results.length === 0) {
+      if (exact.length > 1) {
+        setError(
+          t(
             "More than one stop has this name. Choose one from the suggestions."
           )
-        : t("Choose a destination stop from the suggestions.")
-    );
+        );
+      } else if (matches.length > 0) {
+        setError(
+          t(
+            "Choose a stop from the suggestions, or try a more specific address or place."
+          )
+        );
+      } else {
+        setError(t("No matching stop, address or place was found."));
+      }
+      return;
+    }
+
+    setError("");
   };
 
   if (compact && destination && !expanded) {
@@ -151,7 +219,7 @@ export default function JourneySearch({
 
       <form onSubmit={submit} noValidate>
         <label htmlFor="journey-destination" className={styles.label}>
-          {t("Choose destination stop")}
+          {t("Stop, address or place")}
         </label>
         <div className={styles.searchRow}>
           <div className={styles.inputWrap}>
@@ -159,6 +227,7 @@ export default function JourneySearch({
               id="journey-destination"
               value={value}
               onChange={(event) => {
+                placeSearch.clear();
                 setValue(event.target.value);
                 setError("");
                 setFocused(true);
@@ -166,7 +235,7 @@ export default function JourneySearch({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               className={styles.input}
-              placeholder={t("e.g. Turun linna")}
+              placeholder={t("e.g. Prisma Itäharju or Turun linna")}
               autoComplete="off"
               inputMode="search"
               role="combobox"
@@ -200,13 +269,60 @@ export default function JourneySearch({
               </div>
             )}
           </div>
-          <button type="submit" className={styles.submit}>
-            {t("Use destination")}
+          <button
+            type="submit"
+            className={styles.submit}
+            disabled={placeSearch.state === "loading"}
+            aria-busy={placeSearch.state === "loading"}
+          >
+            {placeSearch.state === "loading"
+              ? t("Searching…")
+              : t("Search")}
           </button>
         </div>
         <p className={styles.help}>
-          {t("Choose Home, Work, School or a Föli stop.")}
+          {t(
+            "Stops are searched locally. Address and place search runs only when you press Search."
+          )}
         </p>
+
+        {showPlaceResults && (
+          <div
+            className={styles.placeResults}
+            role="region"
+            aria-label={t("Places and addresses")}
+          >
+            <p className={styles.resultHeading}>
+              {t("Places and addresses")}
+            </p>
+            <div className={styles.placeList}>
+              {placeSearch.results.map((place) => (
+                <button
+                  key={place.id}
+                  type="button"
+                  className={styles.placeResult}
+                  onClick={() => chooseGeocodedPlace(place)}
+                >
+                  <strong>{place.label}</strong>
+                  {place.secondaryLabel && (
+                    <span>{place.secondaryLabel}</span>
+                  )}
+                </button>
+              ))}
+            </div>
+            <p className={styles.attribution}>
+              {t("Place search data")}{" "}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noreferrer"
+              >
+                © OpenStreetMap contributors
+              </a>
+            </p>
+          </div>
+        )}
+
         {error && (
           <p className={styles.error} role="alert">
             {error}
