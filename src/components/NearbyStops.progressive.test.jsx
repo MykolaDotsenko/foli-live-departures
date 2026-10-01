@@ -22,7 +22,7 @@ const destination = {
 
 const stops = Array.from({ length: 8 }, (_, index) => ({
   id: String((index + 1) * 100),
-  name: `Stop ${index + 1}`,
+  name: `Candidate ${index + 1}`,
   lat: 60.4518 + index * 0.00035,
   lon: 22.2666,
 }));
@@ -142,14 +142,14 @@ test("expands beyond the first six stops when no usable option exists there", as
 
   const stopButtons = within(group).getAllByRole("button");
   expect(stopButtons).toHaveLength(8);
-  expect(stopButtons[0]).toHaveAccessibleName(/Stop 7, stop 700/i);
+  expect(stopButtons[0]).toHaveAccessibleName(/Candidate 7, stop 700/i);
   expect(screen.getByText("Best ways to Home stop")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Nearest" }));
 
   const nearestButtons = within(group).getAllByRole("button");
   expect(nearestButtons).toHaveLength(8);
-  expect(nearestButtons[0]).toHaveAccessibleName(/Stop 1, stop 100/i);
+  expect(nearestButtons[0]).toHaveAccessibleName(/Candidate 1, stop 100/i);
 });
 
 test("does not expand when the first six already contain two meaningful options", async () => {
