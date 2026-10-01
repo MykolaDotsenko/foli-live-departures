@@ -137,7 +137,7 @@ export default function JourneyOptions({
 
       <p className={styles.note}>
         {t(
-          "Direct options use current Föli data. Walking distances are approximate straight-line estimates."
+          "Föli data · walking distances are approximate."
         )}
       </p>
     </section>
