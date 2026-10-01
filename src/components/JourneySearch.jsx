@@ -7,6 +7,7 @@ import styles from "./JourneySearch.module.css";
 import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
+const OSM_ATTRIBUTION = "© OpenStreetMap contributors";
 
 function destinationLabel(destination) {
   if (!destination) return "";
@@ -317,7 +318,7 @@ export default function JourneySearch({
                 target="_blank"
                 rel="noreferrer"
               >
-                © OpenStreetMap contributors
+                {OSM_ATTRIBUTION}
               </a>
             </p>
           </div>
