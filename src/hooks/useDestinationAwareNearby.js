@@ -84,17 +84,21 @@ function freshTargetArrival(monitor, candidate) {
   if (matches.length > 1) {
     if (plannedTarget === null) return null;
     const ranked = matches
-      .map((item) => ({
-        item,
-        delta: Math.abs(
-          Number(item?.aimedarrivaltime ?? item?.aimeddeparturetime) -
-            plannedTarget
-        ),
-      }))
-      .filter(({ delta }) => Number.isFinite(delta))
+      .map((item) => {
+        const aimed = Number(
+          item?.aimedarrivaltime ?? item?.aimeddeparturetime
+        );
+        return {
+          item,
+          delta:
+            Number.isFinite(aimed) && aimed > 0
+              ? Math.abs(aimed - plannedTarget)
+              : Number.POSITIVE_INFINITY,
+        };
+      })
       .sort((a, b) => a.delta - b.delta);
-    if (ranked.length === 0 || ranked[0].delta > 90) return null;
-    if (ranked[1] && ranked[1].delta === ranked[0].delta) return null;
+    if (!Number.isFinite(ranked[0].delta) || ranked[0].delta > 90) return null;
+    if (ranked[1]?.delta === ranked[0].delta) return null;
     row = ranked[0].item;
   }
 
