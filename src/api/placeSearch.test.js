@@ -379,3 +379,60 @@ test("honours Retry-After HTTP dates and falls back when the header is absent", 
   });
   expect(fallbackFetch).toHaveBeenCalledTimes(2);
 });
+
+
+test("fails closed for malformed or non-HTTPS runtime provider config", async () => {
+  const malformedFetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "not a valid URL",
+      })
+    );
+
+  vi.stubGlobal("fetch", malformedFetch);
+
+  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  expect(malformedFetch).toHaveBeenCalledTimes(1);
+
+  resetPlaceSearchForTests();
+
+  const insecureFetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "http://example.com/search",
+      })
+    );
+
+  vi.stubGlobal("fetch", insecureFetch);
+
+  await expect(searchPlaces("Prisma")).resolves.toEqual([]);
+  expect(insecureFetch).toHaveBeenCalledTimes(1);
+});
+
+test("surfaces non-rate-limit provider HTTP failures without retrying", async () => {
+  const fetchMock = vi
+    .fn()
+    .mockResolvedValueOnce(
+      response({
+        enabled: true,
+        endpoint: "https://nominatim.openstreetmap.org/search",
+        countrycodes: "fi",
+        limit: 5,
+      })
+    )
+    .mockResolvedValueOnce(
+      response({ message: "unavailable" }, false, 503)
+    );
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    searchPlaces("Unavailable place")
+  ).rejects.toThrow("Place search failed with HTTP 503.");
+
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+});
