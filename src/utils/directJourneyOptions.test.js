@@ -174,3 +174,29 @@ test("never surfaces an uncatchable or unknown-arrival option", () => {
 
   expect(options).toEqual([]);
 });
+
+
+test("withholds an option when catchability is unknown", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [{ id: "a", distanceMeters: 100 }],
+    fitsByStop: {
+      a: {
+        status: "uncertain",
+        best: departure({
+          tripRef: "uncertain",
+          arrival: 2_000,
+          catchability: "unknown",
+        }),
+        departures: [
+          departure({
+            tripRef: "uncertain",
+            arrival: 2_000,
+            catchability: "unknown",
+          }),
+        ],
+      },
+    },
+  });
+
+  expect(options).toEqual([]);
+});
