@@ -1,4 +1,4 @@
-import axios from "axios";
+import client from "./httpClient";
 import createBoundedCache from "../utils/boundedCache";
 import { timestampIsFresh } from "../utils/cacheTime";
 import {
@@ -50,11 +50,6 @@ const ROUTES_URL_OVERRIDE = import.meta.env.VITE_FOLI_ROUTES_URL || "";
 const SERVICE_BOUNDARY_URL =
   import.meta.env.VITE_FOLI_BOUNDARY_URL ||
   "https://data.foli.fi/geojson/bounds/compact";
-
-const client = axios.create({
-  timeout: 8000,
-  headers: { Accept: "application/json" },
-});
 
 // Föli publishes new GTFS dataset versions, so a long-lived session must not
 // keep requesting a retired dataset path for the rest of its life.
