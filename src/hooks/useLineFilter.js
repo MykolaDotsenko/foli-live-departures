@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 // The lines a passenger follows at a stop, kept per stop on this phone: a
 // commuter who only ever takes the 32 from here sets it once. Nothing else
@@ -57,6 +58,17 @@ export default function useLineFilter(stopId) {
     stopId,
     lines: linesFor(stopId),
   }));
+
+  useEffect(() => {
+    const takeImportedChanges = () =>
+      setState({ stopId, lines: linesFor(stopId) });
+    window.addEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
+    return () =>
+      window.removeEventListener(
+        LOCAL_STATE_IMPORTED_EVENT,
+        takeImportedChanges
+      );
+  }, [stopId]);
 
   // The board stays mounted across stops, so a new stop brings its own
   // filter with it rather than inheriting the last one's.
