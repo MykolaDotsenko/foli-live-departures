@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { t, useLanguage } from "../i18n";
 import {
   applyPreparedLocalStateImport,
+  MAX_BACKUP_BYTES,
   prepareLocalStateImport,
   serializeLocalStateBackup,
 } from "../utils/localStateBackup";
@@ -81,6 +82,11 @@ export default function LocalStateBackup() {
     setPrepared(null);
     setFeedback("");
     setError("");
+
+    if (file.size > MAX_BACKUP_BYTES) {
+      setError(t("This backup file is unexpectedly large and was not opened."));
+      return;
+    }
 
     try {
       const text = await file.text();
@@ -181,19 +187,10 @@ export default function LocalStateBackup() {
             <div>
               <dt>{t("Favourite stops")}</dt>
               <dd>
-                {preview.favoritesSkipped > 0
-                  ? t(
-                      "{count} in backup · {added} new · {skipped} not imported because this browser is full",
-                      {
-                        count: preview.favoriteCount,
-                        added: preview.favoritesAdded,
-                        skipped: preview.favoritesSkipped,
-                      }
-                    )
-                  : t("{count} in backup · {added} new", {
-                      count: preview.favoriteCount,
-                      added: preview.favoritesAdded,
-                    })}
+                {t("{count} in backup · {added} new", {
+                  count: preview.favoriteCount,
+                  added: preview.favoritesAdded,
+                })}
               </dd>
             </div>
             <div>
