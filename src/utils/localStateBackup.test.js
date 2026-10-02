@@ -303,9 +303,9 @@ test("serializer produces a stable inspectable JSON document", () => {
 });
 
 
-test("a full destination never loses current favourites or filters during merge", () => {
+test("import never truncates existing favourites while filter capacity stays bounded", () => {
   seed(LOCAL_STATE_KEYS.savedStops, {
-    favorites: Array.from({ length: 50 }, (_, index) => ({
+    favorites: Array.from({ length: 75 }, (_, index) => ({
       id: String(index + 1),
       name: `Current ${index + 1}`,
     })),
@@ -335,8 +335,7 @@ test("a full destination never loses current favourites or filters during merge"
   );
 
   expect(prepared.preview).toMatchObject({
-    favoritesAdded: 0,
-    favoritesSkipped: 1,
+    favoritesAdded: 1,
     lineFiltersAdded: 0,
     lineFiltersSkipped: 1,
   });
@@ -345,10 +344,87 @@ test("a full destination never loses current favourites or filters during merge"
 
   const saved = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.savedStops));
   const filters = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.lineFilters));
-  expect(saved.favorites).toHaveLength(50);
-  expect(saved.favorites.some((stop) => stop.id === "999")).toBe(false);
+  expect(saved.favorites).toHaveLength(76);
+  expect(saved.favorites.some((stop) => stop.id === "999")).toBe(true);
   expect(Object.keys(filters)).toHaveLength(20);
   expect(filters).not.toHaveProperty("999");
+});
+
+test("apply rebases on local state changed after the preview", () => {
+  seed(LOCAL_STATE_KEYS.places, [
+    {
+      id: "home",
+      label: "Home",
+      stops: [{ id: "111", name: "Preview Home" }],
+      primaryStopId: "111",
+      updatedAt: 1000,
+    },
+  ]);
+  seed(LOCAL_STATE_KEYS.savedStops, {
+    favorites: [{ id: "10", name: "Before preview" }],
+    recents: [{ id: "11", name: "Old recent", viewedAt: 1000 }],
+  });
+  seed(LOCAL_STATE_KEYS.lineFilters, {
+    111: { lines: ["1"], savedAt: 1000 },
+  });
+
+  const prepared = prepareLocalStateImport(
+    JSON.stringify({
+      kind: BACKUP_KIND,
+      version: BACKUP_VERSION,
+      data: {
+        places: [
+          {
+            id: "home",
+            stops: [{ id: "222", name: "Imported Home" }],
+            primaryStopId: "222",
+            updatedAt: 2000,
+          },
+        ],
+        favorites: [{ id: "20", name: "Imported favourite" }],
+        lineFilters: [{ stopId: "111", lines: ["2"], savedAt: 2000 }],
+        preferences: { language: "en", theme: "light" },
+      },
+    })
+  );
+
+  // The preview stays open while newer local state arrives.
+  seed(LOCAL_STATE_KEYS.places, [
+    {
+      id: "home",
+      label: "Home",
+      stops: [{ id: "333", name: "Newer local Home" }],
+      primaryStopId: "333",
+      updatedAt: 3000,
+    },
+  ]);
+  seed(LOCAL_STATE_KEYS.savedStops, {
+    favorites: [
+      { id: "10", name: "Before preview" },
+      { id: "30", name: "Added after preview" },
+    ],
+    recents: [{ id: "99", name: "New recent", viewedAt: 3000 }],
+  });
+  seed(LOCAL_STATE_KEYS.lineFilters, {
+    111: { lines: ["3"], savedAt: 3000 },
+  });
+  seed(LOCAL_STATE_KEYS.language, "fi");
+  seed(LOCAL_STATE_KEYS.theme, "dark");
+
+  applyPreparedLocalStateImport(prepared);
+
+  const places = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.places));
+  const saved = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.savedStops));
+  const filters = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.lineFilters));
+
+  expect(places[0].primaryStopId).toBe("333");
+  expect(saved.favorites.map((stop) => stop.id)).toEqual(["10", "30", "20"]);
+  expect(saved.recents).toEqual([
+    { id: "99", name: "New recent", viewedAt: 3000 },
+  ]);
+  expect(filters["111"]).toEqual({ lines: ["3"], savedAt: 3000 });
+  expect(localStorage.getItem(LOCAL_STATE_KEYS.language)).toBe("fi");
+  expect(localStorage.getItem(LOCAL_STATE_KEYS.theme)).toBe("dark");
 });
 
 test("apply rolls back already-written keys when a later storage write fails", () => {
