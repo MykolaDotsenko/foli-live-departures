@@ -70,8 +70,8 @@ jobs:
           set -euo pipefail
           tag="android-latest"
 
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release delete "$tag" --cleanup-tag --yes
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
           else
             gh api \
               --method DELETE \
@@ -80,6 +80,7 @@ jobs:
           fi
 
           gh release create "$tag" \
+            --repo "$GITHUB_REPOSITORY" \
             Turku-Departures.apk \
             Turku-Departures.apk.sha256 \
             --target "$VERIFIED_SHA" \
