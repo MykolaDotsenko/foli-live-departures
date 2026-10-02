@@ -30,7 +30,7 @@ The format is versioned as `turku-departures-local-state` v1 and capped at 128 K
 Import is preview-first and explicit. It merges rather than replaces:
 
 - newer saved places and line filters already on the destination origin win over older backup values;
-- current favourites are preserved and imported favourites are added only while capacity remains;
+- current favourites are preserved and every valid unique imported favourite is merged;
 - recent stops stay local to the destination browser;
 - language/theme are imported only when the destination has no explicit choice;
 - malformed, unknown or oversized content fails closed;
