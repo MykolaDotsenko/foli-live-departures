@@ -59,9 +59,9 @@ export default defineConfig(({ mode }) => ({
     // production styles while keeping Vite's default JS minifier, avoiding an
     // extra optional Terser dependency in native/release workflows.
     cssMinify: "lightningcss",
-    // The app has no dynamic imports, so the modulepreload compatibility
-    // polyfill has no runtime work to do. All supported release browsers also
-    // have native module support.
+    // Locale runtime helpers are dynamically imported, but all supported
+    // release browsers have native module support, so the legacy preload
+    // compatibility polyfill is unnecessary.
     modulePreload: { polyfill: false },
     // Keep third-party licence text available without repeating legal
     // comments inside the executable JS bundle. The generated file ships
