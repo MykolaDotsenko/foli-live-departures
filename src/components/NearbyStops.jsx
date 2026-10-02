@@ -219,6 +219,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: baseNearbyStops,
       fitsByStop,
+      timeConstraint,
       preference: routingPreference,
     });
     return excludedJourney
@@ -266,6 +267,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: nearbyStops,
       fitsByStop,
+      timeConstraint,
       preference: routingPreference,
     });
     return excludedJourney
