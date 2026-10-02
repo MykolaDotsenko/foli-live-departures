@@ -32,6 +32,7 @@ async function withFixtureServer(
     metadataShas = [EXPECTED_SHA],
     placeSearchEnabled = false,
     missingModule = false,
+    missingPrivacy = false,
   } = {},
   run
 ) {
@@ -91,6 +92,24 @@ async function withFixtureServer(
         "application/json",
         JSON.stringify({ enabled: placeSearchEnabled })
       );
+      return;
+    }
+
+    if (url.pathname === `${BASE_PATH}privacy.html`) {
+      if (missingPrivacy) {
+        send(404, "text/plain", "missing");
+      } else {
+        send(
+          200,
+          "text/html; charset=utf-8",
+          `<!doctype html>
+<title>Privacy policy · Turku Departures</title>
+<p>No advertising SDK or analytics SDK</p>
+<p>does not request Android background-location permission</p>
+<p>Transit requests use data.foli.fi</p>
+<a href="mailto:docnikolaj1990@gmail.com">Contact</a>`
+        );
+      }
       return;
     }
 
@@ -179,6 +198,24 @@ test("fails closed when the live place-search policy is enabled", async () => {
   );
 });
 
+
+test("fails closed when the public Play privacy policy is missing", async () => {
+  await withFixtureServer(
+    { missingPrivacy: true },
+    async ({ siteUrl }) => {
+      await assert.rejects(
+        verifyProductionSite({
+          siteUrl,
+          expectedSha: EXPECTED_SHA,
+          attempts: 1,
+          retryDelayMs: 0,
+          fetchTimeoutMs: 1_000,
+        }),
+        /Production privacy policy returned HTTP 404/
+      );
+    }
+  );
+});
 
 test("does not hide a contract failure behind propagation retries after the exact SHA appears", async () => {
   await withFixtureServer(

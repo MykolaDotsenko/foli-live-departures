@@ -7,6 +7,7 @@ on:
       - ".github/workflows/android-apk.yml"
       - "scripts/build-sw.mjs"
       - "scripts/configure-android-active-ride.mjs"
+      - "scripts/verify-android-play-target.mjs"
       - "src/**"
       - "public/**"
       - "index.html"

@@ -9,6 +9,7 @@ on:
       - "scripts/run-android-emulator-e2e.sh"
       - "scripts/build-sw.mjs"
       - "scripts/configure-android-active-ride.mjs"
+      - "scripts/verify-android-play-target.mjs"
       - "src/**"
       - "public/**"
       - "index.html"

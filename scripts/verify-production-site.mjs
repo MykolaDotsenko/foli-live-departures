@@ -212,6 +212,34 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
     throw new Error("Production place-search policy is not fail-closed.");
   }
 
+  const privacyUrl = cacheBusted(
+    new URL("privacy.html", baseUrl),
+    expectedSha,
+    attempt
+  );
+  const privacyResponse = await fetchRequired(privacyUrl, {
+    label: "Production privacy policy",
+    timeoutMs: fetchTimeoutMs,
+    retriable: false,
+  });
+  const privacyHtml = await privacyResponse.text();
+  if (!/text\/html/i.test(privacyResponse.headers.get("content-type") || "")) {
+    throw new Error("Production privacy policy is not served as HTML.");
+  }
+  for (const required of [
+    "<title>Privacy policy · Turku Departures</title>",
+    "No advertising SDK or analytics SDK",
+    "does not request Android background-location permission",
+    "data.foli.fi",
+    "docnikolaj1990@gmail.com",
+  ]) {
+    if (!privacyHtml.includes(required)) {
+      throw new Error(
+        `Production privacy policy is missing required disclosure: ${required}`
+      );
+    }
+  }
+
   return {
     sha: expectedSha,
     siteUrl: baseUrl.href,
