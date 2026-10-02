@@ -40,6 +40,10 @@ export function createNativeActiveRideBridge(options = {}) {
     return plugin;
   }
 
+  /**
+   * @param {"start" | "stop" | "status"} method
+   * @param {Record<string, string>} [payload]
+   */
   async function safeCall(method, payload = {}) {
     const target = resolvePlugin();
     if (!target || typeof target[method] !== "function") {
@@ -69,6 +73,9 @@ export function createNativeActiveRideBridge(options = {}) {
 
   return {
     supported: () => resolvePlugin() !== null,
+    /**
+     * @param {{id?: unknown, expiresAt?: unknown}} session
+     */
     start(session) {
       const rideId = String(session?.id || "").trim().slice(0, 128);
       const expiresAt = Number(session?.expiresAt);
@@ -85,6 +92,7 @@ export function createNativeActiveRideBridge(options = {}) {
         expiresAt: String(Math.trunc(expiresAt)),
       });
     },
+    /** @param {string} rideId */
     stop(rideId) {
       return safeCall("stop", {
         rideId: String(rideId || "").trim().slice(0, 128),
