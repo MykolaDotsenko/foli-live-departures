@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_BASE_PATH: /foli-live-departures/
+      VITE_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
       - name: Verify merged PR provenance before repository code
         env:
