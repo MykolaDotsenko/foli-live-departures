@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test, vi } from "vitest";
 import fi, { AREAS as FI_AREAS } from "./fi";
 import uk, { AREAS as UK_AREAS } from "./uk";
+import sv, { AREAS as SV_AREAS } from "./sv";
 import {
   ensureLanguageDictionary,
   getLanguage,
@@ -77,8 +78,8 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const LOCALIZED_DICTIONARIES = { fi, uk };
-const LOCALIZED_AREAS = { fi: FI_AREAS, uk: UK_AREAS };
+const LOCALIZED_DICTIONARIES = { fi, uk, sv };
+const LOCALIZED_AREAS = { fi: FI_AREAS, uk: UK_AREAS, sv: SV_AREAS };
 
 for (const [language, dictionary] of Object.entries(LOCALIZED_DICTIONARIES)) {
   test(`every phrase the code shows has a ${language} translation`, () => {
@@ -215,7 +216,7 @@ test("the page's own title is the phrase the app translates", () => {
 test("follows the first language the phone lists that the app speaks", () => {
   expect(preferredLanguage(["fi-FI", "en-US"])).toBe("fi");
   expect(preferredLanguage(["uk-UA", "fi", "en"])).toBe("uk");
-  expect(preferredLanguage(["sv-FI", "uk", "fi"])).toBe("uk");
+  expect(preferredLanguage(["sv-FI", "uk", "fi"])).toBe("sv");
   expect(preferredLanguage(["en-US", "uk"])).toBe("en");
   expect(preferredLanguage(["de-DE"])).toBe("en");
   expect(preferredLanguage([])).toBe("en");
@@ -223,7 +224,7 @@ test("follows the first language the phone lists that the app speaks", () => {
 });
 
 test("locale registry is the source of truth for formatting, speech and switching", () => {
-  expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk"]);
+  expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk", "sv"]);
   expect(localeDefinition("fi")).toMatchObject({
     nativeLabel: "Suomi",
     intlLocale: "fi-FI",
@@ -231,14 +232,18 @@ test("locale registry is the source of truth for formatting, speech and switchin
   });
   expect(intlLocale("fi")).toBe("fi-FI");
   expect(intlLocale("uk")).toBe("uk-UA");
+  expect(intlLocale("sv")).toBe("sv-FI");
   expect(intlLocale("en")).toBe("en-GB");
   expect(speechLocale("fi")).toBe("fi-FI");
   expect(speechLocale("uk")).toBe("uk-UA");
+  expect(speechLocale("sv")).toBe("sv-FI");
   expect(nextLocaleDefinition("en").code).toBe("fi");
   expect(nextLocaleDefinition("fi").code).toBe("uk");
-  expect(nextLocaleDefinition("uk").code).toBe("en");
+  expect(nextLocaleDefinition("uk").code).toBe("sv");
+  expect(nextLocaleDefinition("sv").code).toBe("en");
   expect(isSupportedLanguage("en")).toBe(true);
   expect(isSupportedLanguage("uk")).toBe(true);
+  expect(isSupportedLanguage("sv")).toBe(true);
   expect(isSupportedLanguage("xx")).toBe(false);
   expect(localeDefinition("xx").code).toBe("en");
   expect(nextLocaleDefinition(/** @type {any} */ ("xx")).code).toBe("en");
@@ -256,6 +261,11 @@ test("switching language updates the page, remembers the choice and tells listen
   expect(document.documentElement.lang).toBe("uk");
   expect(localStorage.getItem("foli-language-v1")).toBe("uk");
   expect(t("Online")).toBe("Онлайн");
+
+  setLanguage("sv");
+  expect(document.documentElement.lang).toBe("sv");
+  expect(localStorage.getItem("foli-language-v1")).toBe("sv");
+  expect(t("Online")).toBe("Online");
 
   setLanguage("en");
   expect(document.documentElement.lang).toBe("en");
@@ -402,15 +412,17 @@ test("a phrase with no translation falls back to English, placeholders filled", 
   expect(t("Stop {id}", {})).toBe("Pysäkki {id}");
 });
 
-test("reads Föli's own texts in the Finnish original, or the phone's languages in English", () => {
+test("reads provider text in the selected local language without inventing translations", () => {
   const languages = vi.spyOn(navigator, "languages", "get");
   try {
     languages.mockReturnValue(["fi-FI", "en-US"]);
     expect(providerLanguages("fi")).toEqual(["fi"]);
+    expect(providerLanguages("sv")).toEqual(["sv", "en"]);
     expect(providerLanguages("en")).toEqual(["en-US", "en"]);
 
     languages.mockReturnValue(["sv-SE", "en"]);
     expect(providerLanguages("en")[0]).toBe("sv-SE");
+    expect(providerLanguages("sv")).toEqual(["sv", "en"]);
   } finally {
     languages.mockRestore();
   }
