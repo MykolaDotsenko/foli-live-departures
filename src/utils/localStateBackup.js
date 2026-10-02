@@ -23,7 +23,6 @@ const PLACE_IDS = new Set(Object.keys(PLACE_PRESETS));
 const LANGUAGES = new Set(["en", "fi"]);
 const THEMES = new Set(["light", "dark"]);
 const MAX_PLACE_STOPS = 3;
-const MAX_FAVORITES = 50;
 const MAX_FILTER_STOPS = 20;
 const MAX_LINE_LENGTH = 12;
 const MAX_STOP_NAME_LENGTH = 80;
@@ -101,7 +100,9 @@ function normalizePlaces(places) {
 }
 
 function normalizeFavorites(favorites) {
-  return uniqueStops(favorites, MAX_FAVORITES);
+  // Saved favourites have no product-level capacity. Preserve every valid
+  // unique favourite; the import document itself is already byte-capped.
+  return uniqueStops(favorites, Number.POSITIVE_INFINITY);
 }
 
 function normalizeRecentStops(recents) {
@@ -276,7 +277,6 @@ function mergePlaces(current, incoming) {
 function mergeFavorites(current, incoming) {
   const byId = new Map(current.map((stop) => [stop.id, stop]));
   let added = 0;
-  let skipped = 0;
 
   for (const stop of incoming) {
     const existing = byId.get(stop.id);
@@ -285,19 +285,11 @@ function mergeFavorites(current, incoming) {
       continue;
     }
 
-    // Import must never evict an existing valid favourite just to satisfy
-    // the backup's own capacity. A full destination keeps its current state
-    // and reports the imported item as skipped in the preview.
-    if (byId.size >= MAX_FAVORITES) {
-      skipped += 1;
-      continue;
-    }
-
     byId.set(stop.id, stop);
     added += 1;
   }
 
-  return { value: [...byId.values()], added, skipped };
+  return { value: [...byId.values()], added };
 }
 
 function mergeFilters(current, incoming) {
@@ -336,26 +328,7 @@ function mergeFilters(current, incoming) {
   return { value, added, updated, kept, skipped };
 }
 
-export function prepareLocalStateImport(
-  text,
-  { storage = globalThis.localStorage } = {}
-) {
-  if (typeof text !== "string" || text.length === 0) {
-    throw new Error("backup-empty");
-  }
-  if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) {
-    throw new Error("backup-too-large");
-  }
-
-  let payload;
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    throw new Error("backup-invalid-json");
-  }
-
-  const incoming = normalizeIncoming(payload);
-  const current = currentState(storage);
+function mergeIncomingWithCurrent(incoming, current) {
   const places = mergePlaces(current.places, incoming.places);
   const favorites = mergeFavorites(current.favorites, incoming.favorites);
   const filters = mergeFilters(current.lineFilters, incoming.lineFilters);
@@ -365,7 +338,6 @@ export function prepareLocalStateImport(
   const themeWillImport = current.theme === null && incoming.theme !== null;
 
   return {
-    incoming,
     preview: {
       placeCount: incoming.places.length,
       favoriteCount: incoming.favorites.length,
@@ -374,7 +346,6 @@ export function prepareLocalStateImport(
       placesUpdated: places.updated,
       placesKept: places.kept,
       favoritesAdded: favorites.added,
-      favoritesSkipped: favorites.skipped,
       lineFiltersAdded: filters.added,
       lineFiltersUpdated: filters.updated,
       lineFiltersKept: filters.kept,
@@ -397,6 +368,31 @@ export function prepareLocalStateImport(
   };
 }
 
+export function prepareLocalStateImport(
+  text,
+  { storage = globalThis.localStorage } = {}
+) {
+  if (typeof text !== "string" || text.length === 0) {
+    throw new Error("backup-empty");
+  }
+  if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) {
+    throw new Error("backup-too-large");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error("backup-invalid-json");
+  }
+
+  const incoming = normalizeIncoming(payload);
+  return {
+    incoming,
+    ...mergeIncomingWithCurrent(incoming, currentState(storage)),
+  };
+}
+
 function filtersForStorage(entries) {
   return Object.fromEntries(
     entries.map((entry) => [
@@ -410,28 +406,38 @@ export function applyPreparedLocalStateImport(
   prepared,
   { storage = globalThis.localStorage, target = globalThis } = {}
 ) {
-  if (!prepared?.next) throw new Error("backup-not-prepared");
+  if (!prepared?.incoming) throw new Error("backup-not-prepared");
+
+  // A preview can stay open while another tab or this tab changes local
+  // state. Rebase at confirmation time so the import can never write the
+  // stale preview snapshot back over newer passenger data.
+  let rebased;
+  try {
+    rebased = mergeIncomingWithCurrent(prepared.incoming, currentState(storage));
+  } catch (cause) {
+    throw new Error("backup-storage-unavailable", { cause });
+  }
 
   const writes = [
     [
       LOCAL_STATE_KEYS.places,
-      JSON.stringify(prepared.next.places),
+      JSON.stringify(rebased.next.places),
     ],
     [
       LOCAL_STATE_KEYS.savedStops,
-      JSON.stringify(prepared.next.savedStops),
+      JSON.stringify(rebased.next.savedStops),
     ],
     [
       LOCAL_STATE_KEYS.lineFilters,
-      JSON.stringify(filtersForStorage(prepared.next.lineFilters)),
+      JSON.stringify(filtersForStorage(rebased.next.lineFilters)),
     ],
   ];
 
-  if (prepared.next.language) {
-    writes.push([LOCAL_STATE_KEYS.language, prepared.next.language]);
+  if (rebased.next.language) {
+    writes.push([LOCAL_STATE_KEYS.language, rebased.next.language]);
   }
-  if (prepared.next.theme) {
-    writes.push([LOCAL_STATE_KEYS.theme, prepared.next.theme]);
+  if (rebased.next.theme) {
+    writes.push([LOCAL_STATE_KEYS.theme, rebased.next.theme]);
   }
 
   let originals;
@@ -464,5 +470,5 @@ export function applyPreparedLocalStateImport(
   const EventCtor = target?.Event || globalThis.Event;
   target?.dispatchEvent?.(new EventCtor(LOCAL_STATE_IMPORTED_EVENT));
 
-  return prepared.preview;
+  return rebased.preview;
 }
