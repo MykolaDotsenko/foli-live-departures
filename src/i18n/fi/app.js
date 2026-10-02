@@ -96,6 +96,15 @@ export default {
   "The app works without an account. Some saved information remains available offline, but live departures and directions still need a connection.":
     "Sovellus toimii ilman käyttäjätiliä. Osa tallennetuista tiedoista on käytettävissä myös ilman verkkoyhteyttä, mutta reaaliaikaiset lähdöt ja reittiohjeet tarvitsevat yhteyden.",
   "Got it": "Selvä",
+  "Field-test diagnostics": "Kenttätestin diagnostiikka",
+  "Field-test report ready": "Kenttätestiraportti on valmis",
+  "This local report contains the build, public trip/stop identifiers and sanitized live-data states. It does not include GPS coordinates, saved-place labels or device identifiers.":
+    "Tämä paikallinen raportti sisältää sovellusversion, julkiset vuoro- ja pysäkkitunnisteet sekä puhdistetut reaaliaikatilojen tiedot. Se ei sisällä GPS-koordinaatteja, tallennettujen paikkojen nimiä eikä laitetunnisteita.",
+  "Copy report": "Kopioi raportti",
+  "Download report": "Lataa raportti",
+  "Field-test report copied.": "Kenttätestiraportti kopioitiin.",
+  "Could not copy the report. Download it instead.":
+    "Raporttia ei voitu kopioida. Lataa se sen sijaan.",
 
   // Connection and error screens
   Offline: "Ei yhteyttä",
