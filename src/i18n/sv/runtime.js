@@ -1,38 +1,42 @@
 /** @import { Dictionary } from "../index" */
 
+const countOf = (count) => Number(count);
+
 /** @param {Record<string, string | number>} params */
 export const serviceUpdates = ({ count }) =>
-  `${count} trafikmeddelanden`;
+  countOf(count) === 1 ? "1 trafikmeddelande" : `${count} trafikmeddelanden`;
 /** @param {Record<string, string | number>} params */
 export const moreUpdates = ({ count }) =>
-  `Visa ${count} fler meddelanden`;
+  countOf(count) === 1 ? "Visa 1 meddelande till" : `Visa ${count} fler meddelanden`;
 /** @param {Record<string, string | number>} params */
-export const upcoming = ({ count }) =>
-  `${count} kommande`;
+export const upcoming = ({ count }) => `${count} kommande`;
 /** @param {Record<string, string | number>} params */
-export const scheduledCount = ({ count }) =>
-  `${count} enligt tidtabell`;
+export const liveCount = ({ count }) =>
+  countOf(count) === 1 ? "realtid" : "realtid";
+/** @param {Record<string, string | number>} params */
+export const scheduledCount = ({ count }) => `${count} enligt tidtabell`;
 /** @param {Record<string, string | number>} params */
 export const backupStops = ({ count }) =>
-  `${count} reservhållplatser`;
+  countOf(count) === 1 ? "1 reservhållplats" : `${count} reservhållplatser`;
 /** @param {Record<string, string | number>} params */
 export const stops = ({ count }) =>
-  `${count} hållplatser`;
+  countOf(count) === 1 ? "1 hållplats" : `${count} hållplatser`;
 /** @param {Record<string, string | number>} params */
 export const stopsAway = ({ count }) =>
-  `${count} hållplatser kvar`;
+  countOf(count) === 1 ? "1 hållplats kvar" : `${count} hållplatser kvar`;
 /** @param {Record<string, string | number>} params */
 export const options = ({ count }) =>
-  `${count} alternativ`;
+  countOf(count) === 1 ? "1 alternativ" : `${count} alternativ`;
 /** @param {Record<string, string | number>} params */
 export const transfers = ({ count }) =>
-  `${count} byten`;
+  countOf(count) === 1 ? "1 byte" : `${count} byten`;
 
 /** @type {Dictionary} */
 export default Object.freeze({
   "{count} service updates": serviceUpdates,
   "Show {count} more updates": moreUpdates,
   "{count} upcoming": upcoming,
+  live: liveCount,
   "{count} scheduled": scheduledCount,
   "{count} backup stops": backupStops,
   "{count} stops": stops,
