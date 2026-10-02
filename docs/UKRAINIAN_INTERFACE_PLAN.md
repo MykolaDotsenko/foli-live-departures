@@ -150,9 +150,9 @@ context, but must not displace Finnish/English.
 Föli-supplied stop names, destination signs and service-alert text remain
 source data. The app does not invent Ukrainian translations for provider data.
 
-## Phase 6 — automated QA — partially implemented; item 17 remains open
+## Phase 6 — automated QA — implemented in PR #142
 
-Already automated:
+Automated and merge-gated:
 
 - [x] Ukrainian dictionary completeness;
 - [x] placeholder equality;
@@ -161,24 +161,21 @@ Already automated:
 - [x] Ukrainian first-visit language selection in locale-unit tests;
 - [x] plural-rule tests for counts such as 1, 2, 5, 21, 22, 25;
 - [x] generated lazy locale-pack validation, including HTTP failure, malformed payload and non-string-entry fail-closed paths;
-- [x] cross-browser registry cycle **FI → UK → EN**, asserting a Ukrainian departure-board column is rendered and the final English choice survives reload.
+- [x] cross-browser registry cycle **FI → UK → SV → EN**, asserting Ukrainian UI is actually rendered;
+- [x] dedicated Ukrainian Ride Mode component tests, including NEXT/NOW safety semantics;
+- [x] dedicated transfer/recovery Ukrainian component tests with explicit-selection/no-silent-switch assertions;
+- [x] Ukrainian-specific axe WCAG A/AA pass after switching into Ukrainian;
+- [x] 320 px / 360 px / 412 px Ukrainian overflow checks;
+- [x] 200% Ukrainian text checks;
+- [x] Ukrainian dark-theme check;
+- [x] persisted Ukrainian reload plus production PWA/offline reopen;
+- [x] Android emulator/WebView smoke preserving Ukrainian selection across reload.
 
-Still required before item 17 can close:
-
-- [ ] dedicated Ukrainian Ride Mode component tests;
-- [ ] dedicated transfer/recovery Ukrainian component tests;
-- [ ] Ukrainian-specific axe WCAG A/AA pass after switching into Ukrainian;
-- [ ] 320 px / 360 px / 412 px Ukrainian overflow checks;
-- [ ] 200% Ukrainian text checks;
-- [ ] Ukrainian dark-theme check;
-- [ ] persisted Ukrainian reload plus PWA/offline reopen;
-- [ ] Android emulator smoke preserving Ukrainian selection.
-
-A missing Ukrainian phrase or stale Ukrainian key already fails CI exactly as a
-Finnish localization defect does. PR #140 also moved string translations into
-generated same-origin JSON packs and budgets those packs independently; this is
-a payload optimization, not a substitute for the remaining language-specific
-QA.
+A missing Ukrainian phrase or stale Ukrainian key fails CI exactly as a Finnish
+or Swedish localization defect does. PR #142 keeps locale payload growth inside
+the unchanged aggregate locale budget by storing the shared English source-key
+table once and loading compact per-locale value arrays; malformed/misaligned
+packs and runtime grammar-slot mismatches fail closed.
 
 ## Phase 7 — language and accessibility review — manual gate, not yet complete
 
@@ -208,7 +205,6 @@ acceptance remains blocked until:
 
 ## Follow-up
 
-Swedish remains a separate localization milestone. The i18n generalization
-done for Ukrainian should intentionally make Swedish cheaper: adding `sv`
-should be mostly dictionary/review work rather than another architecture
-rewrite.
+Swedish is implemented as the next first-class locale in PR #142 using the
+same generalized registry and automated QA model. Native Swedish review and
+physical-device accessibility/speech review remain separate manual gates.
