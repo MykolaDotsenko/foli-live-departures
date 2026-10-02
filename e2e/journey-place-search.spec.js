@@ -19,7 +19,15 @@ const providerResult = [
   },
 ];
 
-test("direct provider search stays local while typing and resolves only after explicit submit when policy explicitly enables it", async ({ page }) => {
+test.describe("reviewed direct-provider activation harness", () => {
+  // Production deliberately omits Nominatim from connect-src. A future direct
+  // provider activation therefore requires a reviewed CSP change as well as
+  // runtime policy. bypassCSP models that second deliberate change here so the
+  // dormant implementation remains regression-tested without weakening the
+  // production CSP used by every other browser scenario.
+  test.use({ bypassCSP: true });
+
+  test("direct provider search stays local while typing and resolves only after explicit policy + CSP activation", async ({ page }) => {
   await page.route("**/place-search-config.json", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -71,6 +79,7 @@ test("direct provider search stays local while typing and resolves only after ex
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(a11y.violations).toEqual([]);
+  });
 });
 
 
