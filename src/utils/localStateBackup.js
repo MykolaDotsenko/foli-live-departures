@@ -2,6 +2,66 @@ import { normalizedPastTimestamp } from "./cacheTime";
 import { realStopName } from "./stopNames";
 import { LOCAL_STATE_IMPORTED_EVENT } from "./localStateEvents";
 
+/** @typedef {{ id: string, name: string }} BackupStop */
+/** @typedef {BackupStop & { viewedAt?: number }} RecentStop */
+/** @typedef {{
+ *   id: string,
+ *   label: string,
+ *   stops: BackupStop[],
+ *   primaryStopId: string,
+ *   updatedAt: number,
+ *   validatedAt: number,
+ *   needsReview: boolean,
+ * }} BackupPlace */
+/** @typedef {{ stopId: string, lines: string[], savedAt: number }} LineFilter */
+/** @typedef {"en" | "fi"} InterfaceLanguage */
+/** @typedef {"light" | "dark"} InterfaceTheme */
+/** @typedef {Pick<Storage, "getItem" | "setItem" | "removeItem">} StorageLike */
+/** @typedef {{
+ *   places: BackupPlace[],
+ *   favorites: BackupStop[],
+ *   recents: RecentStop[],
+ *   lineFilters: LineFilter[],
+ *   language: InterfaceLanguage | null,
+ *   theme: InterfaceTheme | null,
+ * }} LocalState */
+/** @typedef {{
+ *   places: BackupPlace[],
+ *   favorites: BackupStop[],
+ *   lineFilters: LineFilter[],
+ *   language: InterfaceLanguage | null,
+ *   theme: InterfaceTheme | null,
+ * }} IncomingState */
+/** @typedef {{
+ *   placeCount: number,
+ *   favoriteCount: number,
+ *   lineFilterCount: number,
+ *   placesAdded: number,
+ *   placesUpdated: number,
+ *   placesKept: number,
+ *   favoritesAdded: number,
+ *   lineFiltersAdded: number,
+ *   lineFiltersUpdated: number,
+ *   lineFiltersKept: number,
+ *   lineFiltersSkipped: number,
+ *   language: InterfaceLanguage | null,
+ *   theme: InterfaceTheme | null,
+ *   languageWillImport: boolean,
+ *   themeWillImport: boolean,
+ * }} ImportPreview */
+/** @typedef {{
+ *   places: BackupPlace[],
+ *   savedStops: { favorites: BackupStop[], recents: RecentStop[] },
+ *   lineFilters: LineFilter[],
+ *   language: InterfaceLanguage | null,
+ *   theme: InterfaceTheme | null,
+ * }} NextLocalState */
+/** @typedef {{
+ *   incoming: IncomingState,
+ *   preview: ImportPreview,
+ *   next: NextLocalState,
+ * }} PreparedImport */
+
 export const BACKUP_KIND = "turku-departures-local-state";
 export const BACKUP_VERSION = 1;
 export const MAX_BACKUP_BYTES = 128_000;
@@ -14,6 +74,7 @@ export const LOCAL_STATE_KEYS = Object.freeze({
   theme: "foli-theme-v1",
 });
 
+/** @type {Readonly<Record<string, string>>} */
 const PLACE_PRESETS = Object.freeze({
   home: "Home",
   school: "School",
@@ -27,6 +88,11 @@ const MAX_FILTER_STOPS = 20;
 const MAX_LINE_LENGTH = 12;
 const MAX_STOP_NAME_LENGTH = 80;
 
+/**
+ * @param {string | null | undefined} value
+ * @param {any} fallback
+ * @returns {any}
+ */
 function parseJson(value, fallback) {
   try {
     return JSON.parse(value ?? "");
@@ -35,6 +101,7 @@ function parseJson(value, fallback) {
   }
 }
 
+/** @param {unknown} value @returns {string} */
 function cleanStopName(value) {
   return realStopName(
     String(value || "")
@@ -45,6 +112,7 @@ function cleanStopName(value) {
   );
 }
 
+/** @param {any} stop @returns {BackupStop | null} */
 function normalizeStop(stop) {
   if (!stop || typeof stop !== "object") return null;
   const id = String(stop.id || "").trim();
@@ -52,6 +120,7 @@ function normalizeStop(stop) {
   return { id, name: cleanStopName(stop.name) };
 }
 
+/** @param {any} stops @param {number} limit @returns {BackupStop[]} */
 function uniqueStops(stops, limit) {
   const seen = new Set();
   const result = [];
@@ -65,6 +134,7 @@ function uniqueStops(stops, limit) {
   return result;
 }
 
+/** @param {any} place @returns {BackupPlace | null} */
 function normalizePlace(place) {
   if (!place || typeof place !== "object") return null;
   const id = String(place.id || "").trim();
@@ -86,6 +156,7 @@ function normalizePlace(place) {
   };
 }
 
+/** @param {any} places @returns {BackupPlace[]} */
 function normalizePlaces(places) {
   const byId = new Map();
   for (const source of Array.isArray(places) ? places : []) {
@@ -99,12 +170,14 @@ function normalizePlaces(places) {
   return [...byId.values()];
 }
 
+/** @param {any} favorites @returns {BackupStop[]} */
 function normalizeFavorites(favorites) {
   // Saved favourites have no product-level capacity. Preserve every valid
   // unique favourite; the import document itself is already byte-capped.
   return uniqueStops(favorites, Number.POSITIVE_INFINITY);
 }
 
+/** @param {any} recents @returns {RecentStop[]} */
 function normalizeRecentStops(recents) {
   return uniqueStops(recents, 5)
     .map((stop) => {
@@ -116,6 +189,7 @@ function normalizeRecentStops(recents) {
     });
 }
 
+/** @param {any} lines @returns {string[]} */
 function normalizeLines(lines) {
   return [
     ...new Set(
@@ -126,6 +200,7 @@ function normalizeLines(lines) {
   ];
 }
 
+/** @param {any} value @returns {LineFilter[]} */
 function normalizeFilterEntries(value) {
   const source = Array.isArray(value)
     ? value
@@ -156,16 +231,21 @@ function normalizeFilterEntries(value) {
     .slice(0, MAX_FILTER_STOPS);
 }
 
+/** @param {unknown} value @returns {InterfaceLanguage | null} */
 function normalizeLanguage(value) {
   const language = String(value || "");
-  return LANGUAGES.has(language) ? language : null;
+  return LANGUAGES.has(language)
+    ? /** @type {InterfaceLanguage} */ (language)
+    : null;
 }
 
+/** @param {unknown} value @returns {InterfaceTheme | null} */
 function normalizeTheme(value) {
   const theme = String(value || "");
-  return THEMES.has(theme) ? theme : null;
+  return THEMES.has(theme) ? /** @type {InterfaceTheme} */ (theme) : null;
 }
 
+/** @param {StorageLike} storage @returns {LocalState} */
 function currentState(storage) {
   const places = normalizePlaces(
     parseJson(storage?.getItem(LOCAL_STATE_KEYS.places), [])
@@ -187,6 +267,7 @@ function currentState(storage) {
   return { places, favorites, recents, lineFilters, language, theme };
 }
 
+/** @param {BackupPlace} place */
 function exportablePlace(place) {
   return {
     id: place.id,
@@ -196,6 +277,7 @@ function exportablePlace(place) {
   };
 }
 
+/** @param {LineFilter} entry */
 function exportableFilter(entry) {
   return {
     stopId: entry.stopId,
@@ -204,6 +286,7 @@ function exportableFilter(entry) {
   };
 }
 
+/** @param {{ storage?: StorageLike, now?: number }} [options] */
 export function createLocalStateBackup({
   storage = globalThis.localStorage,
   now = Date.now(),
@@ -225,10 +308,12 @@ export function createLocalStateBackup({
   };
 }
 
+/** @param {{ storage?: StorageLike, now?: number }} [options] */
 export function serializeLocalStateBackup(options) {
   return JSON.stringify(createLocalStateBackup(options), null, 2);
 }
 
+/** @param {any} payload @returns {IncomingState} */
 function normalizeIncoming(payload) {
   if (!payload || typeof payload !== "object") {
     throw new Error("backup-not-object");
@@ -252,6 +337,7 @@ function normalizeIncoming(payload) {
   };
 }
 
+/** @param {BackupPlace[]} current @param {BackupPlace[]} incoming */
 function mergePlaces(current, incoming) {
   const byId = new Map(current.map((place) => [place.id, place]));
   let added = 0;
@@ -274,6 +360,7 @@ function mergePlaces(current, incoming) {
   return { value: [...byId.values()], added, updated, kept };
 }
 
+/** @param {BackupStop[]} current @param {BackupStop[]} incoming */
 function mergeFavorites(current, incoming) {
   const byId = new Map(current.map((stop) => [stop.id, stop]));
   let added = 0;
@@ -292,6 +379,7 @@ function mergeFavorites(current, incoming) {
   return { value: [...byId.values()], added };
 }
 
+/** @param {LineFilter[]} current @param {LineFilter[]} incoming */
 function mergeFilters(current, incoming) {
   const byStop = new Map(current.map((entry) => [entry.stopId, entry]));
   let added = 0;
@@ -328,6 +416,11 @@ function mergeFilters(current, incoming) {
   return { value, added, updated, kept, skipped };
 }
 
+/**
+ * @param {IncomingState} incoming
+ * @param {LocalState} current
+ * @returns {{ preview: ImportPreview, next: NextLocalState }}
+ */
 function mergeIncomingWithCurrent(incoming, current) {
   const places = mergePlaces(current.places, incoming.places);
   const favorites = mergeFavorites(current.favorites, incoming.favorites);
@@ -368,6 +461,11 @@ function mergeIncomingWithCurrent(incoming, current) {
   };
 }
 
+/**
+ * @param {string} text
+ * @param {{ storage?: StorageLike }} [options]
+ * @returns {PreparedImport}
+ */
 export function prepareLocalStateImport(
   text,
   { storage = globalThis.localStorage } = {}
@@ -393,6 +491,7 @@ export function prepareLocalStateImport(
   };
 }
 
+/** @param {LineFilter[]} entries */
 function filtersForStorage(entries) {
   return Object.fromEntries(
     entries.map((entry) => [
@@ -402,6 +501,11 @@ function filtersForStorage(entries) {
   );
 }
 
+/**
+ * @param {PreparedImport} prepared
+ * @param {{ storage?: StorageLike, target?: any }} [options]
+ * @returns {ImportPreview}
+ */
 export function applyPreparedLocalStateImport(
   prepared,
   { storage = globalThis.localStorage, target = globalThis } = {}
@@ -458,7 +562,7 @@ export function applyPreparedLocalStateImport(
     for (const [key] of [...writes].reverse()) {
       try {
         const original = originals.get(key);
-        if (original === null) storage.removeItem(key);
+        if (original == null) storage.removeItem(key);
         else storage.setItem(key, original);
       } catch {
         // The caller gets an honest failure; no success event is emitted.
@@ -468,7 +572,9 @@ export function applyPreparedLocalStateImport(
   }
 
   const EventCtor = target?.Event || globalThis.Event;
-  target?.dispatchEvent?.(new EventCtor(LOCAL_STATE_IMPORTED_EVENT));
+  if (target?.dispatchEvent && typeof EventCtor === "function") {
+    target.dispatchEvent(new EventCtor(LOCAL_STATE_IMPORTED_EVENT));
+  }
 
   return rebased.preview;
 }
