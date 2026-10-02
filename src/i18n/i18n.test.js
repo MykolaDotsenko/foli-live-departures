@@ -16,6 +16,7 @@ import {
 } from ".";
 import {
   LANGUAGE_CODES,
+  isSupportedLanguage,
   localeDefinition,
   nextLocaleDefinition,
 } from "./locales";
@@ -228,6 +229,10 @@ test("locale registry is the source of truth for formatting, speech and switchin
   expect(speechLocale("fi")).toBe("fi-FI");
   expect(nextLocaleDefinition("en").code).toBe("fi");
   expect(nextLocaleDefinition("fi").code).toBe("en");
+  expect(isSupportedLanguage("en")).toBe(true);
+  expect(isSupportedLanguage("xx")).toBe(false);
+  expect(localeDefinition("xx").code).toBe("en");
+  expect(nextLocaleDefinition(/** @type {any} */ ("xx")).code).toBe("en");
 });
 
 test("switching language updates the page, remembers the choice and tells listeners", () => {
