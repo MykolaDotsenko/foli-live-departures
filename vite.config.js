@@ -47,15 +47,10 @@ function connectSources(env) {
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
-    // Keep Vite's compatibility target, but use the stronger minifiers already
-    // present in the locked toolchain. This reduces the actual production
-    // payload instead of weakening the release budget.
-    minify: "terser",
+    // Lightning CSS is already part of Vite's locked toolchain. Use it for
+    // production styles while keeping Vite's default JS minifier, avoiding an
+    // extra optional Terser dependency in native/release workflows.
     cssMinify: "lightningcss",
-    terserOptions: {
-      compress: { passes: 2 },
-      format: { comments: false },
-    },
     // The app has no dynamic imports, so the modulepreload compatibility
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
