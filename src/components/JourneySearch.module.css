@@ -562,3 +562,89 @@
     color: var(--dm-muted);
   }
 }
+
+
+.planControls {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid #d5e3e5;
+  border-radius: 12px;
+}
+
+.planControls legend {
+  padding: 0 5px;
+  color: #355159;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.planGrid label {
+  display: grid;
+  gap: 4px;
+  color: #4e676d;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.planGrid select,
+.planGrid input {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid #b8ced2;
+  border-radius: 10px;
+  background: #fff;
+  color: #20343b;
+  font: inherit;
+}
+
+.planHelp {
+  margin: 0;
+  color: #65777c;
+  font-size: 0.69rem;
+  line-height: 1.4;
+}
+
+.compactPlan {
+  flex-basis: 100%;
+  color: #667b80;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+@media (max-width: 620px) {
+  .planGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media screen {
+  :root[data-theme="dark"] .planControls {
+    border-color: var(--dm-line);
+  }
+
+  :root[data-theme="dark"] .planControls legend,
+  :root[data-theme="dark"] .planGrid label,
+  :root[data-theme="dark"] .compactPlan {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .planGrid select,
+  :root[data-theme="dark"] .planGrid input {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .planHelp {
+    color: var(--dm-muted);
+  }
+}
