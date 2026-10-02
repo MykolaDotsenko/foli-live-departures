@@ -83,6 +83,7 @@ function stopName(stopId, stops) {
   return String(stop?.name || stopId);
 }
 
+/** @param {unknown} value */
 function positive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
@@ -115,14 +116,6 @@ function matchesExcludedRun(candidate, excludedRun) {
     Math.abs(excludedOrigin - candidateOrigin) >
       EXCLUDED_RUN_TIME_TOLERANCE_SEC
   );
-}
-
-function itineraryTimeCandidate(option) {
-  return {
-    departureAt: option?.legs?.[0]?.departureAt,
-    journeyArrivalAt: option?.journeyArrivalAt,
-    destinationArrivalAt: option?.destinationArrivalAt,
-  };
 }
 
 /**
@@ -892,6 +885,10 @@ export default function useTransferJourneyOptions({
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
   const effectivePlan = journeyPlan || timeConstraint;
+  const effectivePreference =
+    effectivePlan && "preference" in effectivePlan
+      ? effectivePlan.preference || "balanced"
+      : "balanced";
   const requestRef = useRef({
     enabled,
     originStops,
@@ -922,9 +919,7 @@ export default function useTransferJourneyOptions({
             Math.round(Number(positionAccuracy) || 0),
             effectivePlan?.mode || "leave-now",
             effectivePlan?.targetTimeSec || "",
-            "preference" in (effectivePlan || {})
-              ? effectivePlan?.preference || "balanced"
-              : "balanced",
+            effectivePreference,
           ].join("|")
         : "",
     [
@@ -934,7 +929,7 @@ export default function useTransferJourneyOptions({
       positionAccuracy,
       effectivePlan?.mode,
       effectivePlan?.targetTimeSec,
-      "preference" in (effectivePlan || {}) ? effectivePlan?.preference : null,
+      effectivePreference,
     ]
   );
 
