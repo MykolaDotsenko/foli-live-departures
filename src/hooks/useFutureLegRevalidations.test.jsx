@@ -3,7 +3,8 @@ import { beforeEach, expect, test, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
   fetchStopMonitor: vi.fn(),
-  fetchStopAlerts: vi.fn(),
+  fetchAlerts: vi.fn(),
+  fetchStopServedRouteIds: vi.fn(),
 }));
 
 vi.mock("../api/foliApi", async () => {
@@ -11,7 +12,8 @@ vi.mock("../api/foliApi", async () => {
   return {
     ...actual,
     fetchStopMonitor: api.fetchStopMonitor,
-    fetchStopAlerts: api.fetchStopAlerts,
+    fetchAlerts: api.fetchAlerts,
+    fetchStopServedRouteIds: api.fetchStopServedRouteIds,
   };
 });
 
@@ -71,10 +73,11 @@ beforeEach(() => {
     ],
     serverTime: 1_210,
   }));
-  api.fetchStopAlerts.mockReset().mockResolvedValue({
-    alerts: [],
-    receivedAtMs: Date.now(),
+  api.fetchAlerts.mockReset().mockResolvedValue({
+    messages: [],
+    events: [],
   });
+  api.fetchStopServedRouteIds.mockReset().mockResolvedValue(new Set());
 });
 
 test("watches both committed future legs with live-only SIRI", async () => {
