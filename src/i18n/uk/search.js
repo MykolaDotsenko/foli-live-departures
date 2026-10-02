@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { options, transfers } from "./runtime";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
@@ -106,8 +106,7 @@ export default {
   "Direct options": "Прямі варіанти",
   "Best ways to {destination}": "Найкращі варіанти до {destination}",
   "1 option": "1 варіант",
-  "{count} options": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "варіант", few: "варіанти", many: "варіантів" })}`,
+  "{count} options": options,
   Fastest: "Найшвидше",
   "Less walking": "Менше пішки",
   "Easier to catch": "Легше встигнути",
@@ -226,8 +225,7 @@ export default {
   "Ways to {destination} with up to two changes":
     "Маршрути до {destination} максимум із двома пересадками",
   "1 transfer": "1 пересадка",
-  "{count} transfers": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "пересадка", few: "пересадки", many: "пересадок" })}`,
+  "{count} transfers": transfers,
   "Change {number}: {stop} · same stop": "Пересадка {number}: {stop} · та сама зупинка",
   "Change {number}: {stop} · walk ≈ {distance}":
     "Пересадка {number}: {stop} · пішки ≈ {distance}",
