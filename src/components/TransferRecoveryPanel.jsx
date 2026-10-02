@@ -1,5 +1,6 @@
 import { t, useLanguage } from "../i18n";
 import JourneyOptions from "./JourneyOptions";
+import TransferJourneyOptions from "./TransferJourneyOptions";
 import styles from "./JourneyOptions.module.css";
 
 /** @param {any} destination */
@@ -13,22 +14,48 @@ function shownDestinationLabel(destination) {
 export default function TransferRecoveryPanel({
   state,
   options,
+  transferOptions = [],
   destination,
   onSelectJourney,
+  onSelectTransferJourney,
 }) {
   useLanguage();
 
   if (!destination || state === "idle") return null;
 
   const destinationLabel = shownDestinationLabel(destination);
-  if (state === "ready" && Array.isArray(options) && options.length > 0) {
+  const hasDirect =
+    state === "ready" && Array.isArray(options) && options.length > 0;
+  const hasTransfer =
+    state === "ready" &&
+    Array.isArray(transferOptions) &&
+    transferOptions.length > 0;
+
+  if (hasDirect || hasTransfer) {
     return (
-      <JourneyOptions
-        mode="recovery"
-        options={options}
-        destinationLabel={destinationLabel}
-        onSelectJourney={onSelectJourney}
-      />
+      <>
+        {hasDirect && (
+          <JourneyOptions
+            mode="recovery"
+            options={options}
+            destinationLabel={destinationLabel}
+            onSelectJourney={onSelectJourney}
+          />
+        )}
+        {hasTransfer && (
+          <TransferJourneyOptions
+            mode="recovery"
+            options={transferOptions}
+            destinationLabel={destinationLabel}
+            onSelectJourney={onSelectTransferJourney}
+          />
+        )}
+        <p className={styles.note}>
+          {t(
+            "The failed bus is excluded. Nothing changes until you choose a new option."
+          )}
+        </p>
+      </>
     );
   }
 
@@ -43,7 +70,7 @@ export default function TransferRecoveryPanel({
     );
   } else if (state === "ready") {
     statusText = t(
-      "No reliable direct replacement is available from this transfer area right now."
+      "No reliable replacement is available from this transfer area right now."
     );
   }
 
