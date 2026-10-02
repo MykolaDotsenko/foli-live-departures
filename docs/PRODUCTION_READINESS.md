@@ -10,7 +10,7 @@ May ship when:
 
 - `master` CI is green;
 - production Pages deploy is green;
-- live Föli contract smoke is green;
+- the latest live Föli contract smoke is green (it runs after every master push and daily);
 - there is no known safety regression in Ride Mode or transfer recovery.
 
 This class is appropriate for controlled use and field validation.
@@ -40,7 +40,7 @@ Every pull request to `master` must prove:
 - PWA precache, CSP and bundle budget pass;
 - Chromium, Firefox, mobile WebKit and mobile Chromium E2E/accessibility pass.
 
-Production Pages deployment is downstream of successful `master` CI.
+Production Pages deployment is downstream of successful `master` CI. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
 
 ## Android
 

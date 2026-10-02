@@ -1,6 +1,9 @@
 name: Live Föli contract smoke
 
 on:
+  push:
+    branches:
+      - master
   schedule:
     - cron: "17 5 * * *"
   workflow_dispatch:
