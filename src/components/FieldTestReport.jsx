@@ -25,7 +25,7 @@ export default function FieldTestReport({ report }) {
       await navigator.clipboard.writeText(report);
       setStatus(t("Field-test report copied."));
     } catch {
-      setStatus(t("Could not copy the report. Download it instead."));
+      setStatus(t("Copy failed. Download the report instead."));
     }
   };
 
@@ -36,7 +36,7 @@ export default function FieldTestReport({ report }) {
         <h2 id="field-test-report-title">{t("Field-test report ready")}</h2>
         <p className={styles.privacy}>
           {t(
-            "This local report contains the build, public trip/stop identifiers and sanitized live-data states. It does not include GPS coordinates, saved-place labels or device identifiers."
+            "Local report: build, public trip/stop IDs and sanitized live-data states. No GPS coordinates, saved-place labels or device IDs."
           )}
         </p>
       </div>
