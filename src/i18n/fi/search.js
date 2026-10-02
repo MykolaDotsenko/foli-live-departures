@@ -226,10 +226,10 @@ export default {
     "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
     "Epäonnistunut bussivuoro on suljettu pois. Mikään ei muutu ennen kuin valitset uuden vaihtoehdon.",
-  "No direct trip found nearby. Checking one-transfer options…":
-    "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan yhden vaihdon vaihtoehtoja…",
-  "No reliable one-transfer option was found from the nearby stops.":
-    "Lähipysäkeiltä ei löytynyt luotettavaa yhden vaihdon vaihtoehtoa.",
+  "No direct trip found nearby. Checking options with up to two transfers…":
+    "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan enintään kahden vaihdon vaihtoehtoja…",
+  "No reliable option with up to two transfers was found from the nearby stops.":
+    "Lähipysäkeiltä ei löytynyt luotettavaa enintään kahden vaihdon vaihtoehtoa.",
   "Transfer search is temporarily unavailable. Nearby stops remain available.":
     "Vaihtoyhteyksien haku ei ole tilapäisesti käytettävissä. Lähipysäkit ovat edelleen käytettävissä.",
   "One-transfer options": "Yhden vaihdon vaihtoehdot",
