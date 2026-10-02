@@ -28,10 +28,15 @@ function fixtureHtml() {
 }
 
 async function withFixtureServer(
-  { metadataShas = [EXPECTED_SHA], placeSearchEnabled = false } = {},
+  {
+    metadataShas = [EXPECTED_SHA],
+    placeSearchEnabled = false,
+    missingModule = false,
+  } = {},
   run
 ) {
   let metadataReads = 0;
+  let moduleReads = 0;
   const server = http.createServer((request, response) => {
     const url = new URL(request.url || "/", "http://localhost");
     const send = (status, type, body) => {
@@ -64,7 +69,12 @@ async function withFixtureServer(
       return;
     }
     if (url.pathname === `${BASE_PATH}assets/app.js`) {
-      send(200, "text/javascript", "export const app = true;".padEnd(1_200, " "));
+      moduleReads += 1;
+      if (missingModule) {
+        send(404, "text/plain", "missing");
+      } else {
+        send(200, "text/javascript", "export const app = true;".padEnd(1_200, " "));
+      }
       return;
     }
     if (url.pathname === `${BASE_PATH}sw.js`) {
@@ -91,7 +101,11 @@ async function withFixtureServer(
   const address = server.address();
   const siteUrl = `http://127.0.0.1:${address.port}${BASE_PATH}`;
   try {
-    return await run({ siteUrl, metadataReads: () => metadataReads });
+    return await run({
+      siteUrl,
+      metadataReads: () => metadataReads,
+      moduleReads: () => moduleReads,
+    });
   } finally {
     await new Promise((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve()))
@@ -161,6 +175,27 @@ test("fails closed when the live place-search policy is enabled", async () => {
         }),
         /place-search policy is not fail-closed/
       );
+    }
+  );
+});
+
+
+test("does not hide a contract failure behind propagation retries after the exact SHA appears", async () => {
+  await withFixtureServer(
+    { missingModule: true },
+    async ({ siteUrl, metadataReads, moduleReads }) => {
+      await assert.rejects(
+        verifyProductionSite({
+          siteUrl,
+          expectedSha: EXPECTED_SHA,
+          attempts: 3,
+          retryDelayMs: 1,
+          fetchTimeoutMs: 1_000,
+        }),
+        /Module entry asset returned HTTP 404/
+      );
+      assert.equal(metadataReads(), 1);
+      assert.equal(moduleReads(), 1);
     }
   );
 });
