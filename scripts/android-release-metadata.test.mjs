@@ -46,6 +46,19 @@ test("requires a strictly increasing versionCode", () => {
   });
   assert.throws(() => assertIncreasingVersionCode(12, releases), /greater than/);
   assert.throws(() => assertIncreasingVersionCode(0, releases), /positive/);
+  assert.throws(
+    () =>
+      assertIncreasingVersionCode(13, [
+        ...releases,
+        {
+          tag_name: "v1.2.0",
+          draft: false,
+          prerelease: false,
+          body: "Production release without machine-readable code",
+        },
+      ]),
+    /missing exactly one Android-Version-Code marker/
+  );
 });
 
 test("metadata captures immutable release identity", () => {
