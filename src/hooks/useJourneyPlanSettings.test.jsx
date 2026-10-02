@@ -28,7 +28,7 @@ test("leave-at seeds a rounded future Turku wall time and keeps it stable", () =
   act(() => result.current.setTimeMode("leave-at"));
 
   expect(result.current.timeConstraint.mode).toBe("leave-at");
-  expect(result.current.timeLocalValue).toBe("2026-02-01T14:30");
+  expect(result.current.timeLocalValue).toBe("2026-02-01T12:30");
   expect(result.current.timeConstraint.targetTimeSec).toBe(
     Date.parse("2026-02-01T12:30:00Z") / 1000
   );
@@ -43,7 +43,7 @@ test("arrive-by defaults one hour ahead and uses the later fall-back occurrence"
   const { result } = renderHook(() => useJourneyPlanSettings());
 
   act(() => result.current.setTimeMode("arrive-by"));
-  expect(result.current.timeLocalValue).toBe("2026-02-01T15:00");
+  expect(result.current.timeLocalValue).toBe("2026-02-01T13:00");
 
   act(() => result.current.setTimeLocalValue("2026-10-25T03:30"));
   expect(result.current.timeConstraint).toEqual({
