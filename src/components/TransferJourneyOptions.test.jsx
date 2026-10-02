@@ -8,29 +8,25 @@ const option = {
   originStopId: "100",
   originStopName: "Origin",
   originDistanceMeters: 280,
-  legs: [
-    {
-      tripRef: "first",
-      lineRef: "1",
-      departureAt: now + 600,
+  first: {
+    tripRef: "first",
+    lineRef: "1",
+    departureAt: now + 600,
+  },
+  transfer: {
+    alightStopId: "200",
+    boardStopId: "201",
+    boardStopName: "Kauppatori platform B",
+    walkingDistanceM: 120,
+    feasibility: {
+      state: "comfortable",
+      slackSec: 360,
     },
-    {
-      tripRef: "second",
-      lineRef: "8",
-    },
-  ],
-  transfers: [
-    {
-      alightStopId: "200",
-      boardStopId: "201",
-      boardStopName: "Kauppatori platform B",
-      walkingDistanceM: 120,
-      feasibility: {
-        state: "comfortable",
-        slackSec: 360,
-      },
-    },
-  ],
+  },
+  second: {
+    tripRef: "second",
+    lineRef: "8",
+  },
   finalWalkDistanceM: 180,
   journeyArrivalAt: now + 2400,
   totalWalkingDistanceM: 580,
@@ -73,13 +69,13 @@ test("labels a same-stop tight connection without inventing a transfer walk", ()
         {
           ...option,
           id: "same-stop",
-          transfers: [{
-            ...option.transfers[0],
+          transfer: {
+            ...option.transfer,
             alightStopId: "200",
             boardStopId: "200",
             walkingDistanceM: 0,
             feasibility: { state: "tight", slackSec: 90 },
-          }],
+          },
         },
       ]}
       destinationLabel="Home"
@@ -120,23 +116,24 @@ test("covers plural cards, acceptable risk, missing margin and no final walk", (
           ...option,
           id: "acceptable",
           finalWalkDistanceM: null,
-          transfers: [{
-            ...option.transfers[0],
+          transfer: {
+            ...option.transfer,
             feasibility: { state: "acceptable", slackSec: null },
-          }],
+          },
         },
         {
           ...option,
           id: "fallbacks",
-          legs: option.legs.map((leg) => ({ ...leg, lineRef: "" })),
+          first: { ...option.first, lineRef: "" },
+          second: { ...option.second, lineRef: "" },
           finalWalkDistanceM: undefined,
           totalWalkingDistanceM: 0,
-          transfers: [{
-            ...option.transfers[0],
+          transfer: {
+            ...option.transfer,
             boardStopName: "",
             walkingDistanceM: 0,
             feasibility: { state: "unknown", slackSec: -1 },
-          }],
+          },
         },
       ]}
       destinationLabel="Home"
@@ -159,7 +156,7 @@ test("renders every leg and both changes for a bounded two-transfer option", () 
           ...option,
           id: "two-transfer",
           legs: [
-            { ...option.legs[0], lineRef: "1" },
+            { ...option.first, lineRef: "1" },
             {
               tripRef: "middle",
               lineRef: "7",
@@ -178,7 +175,7 @@ test("renders every leg and both changes for a bounded two-transfer option", () 
             },
           ],
           transfers: [
-            option.transfers[0],
+            option.transfer,
             {
               alightStopId: "300",
               alightStopSequence: 8,

@@ -927,7 +927,8 @@ function App() {
         )}
 
         {!ride.session &&
-          transferRecoveryContext && (
+          selectedJourney?.phase === "recovery" &&
+          selectedJourney?.transferPlan && (
             <TransferRecoveryPanel
               state={online ? transferRecovery.state : "offline"}
               options={transferRecovery.options}

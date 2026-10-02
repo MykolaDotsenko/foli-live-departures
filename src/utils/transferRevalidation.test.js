@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import {
+  applyTransferRevalidation,
   evaluateTransferRevalidation,
   transferSecondArrivalMatches,
 } from "./transferRevalidation";
@@ -30,14 +31,14 @@ const journey = {
   selectedAt: 1,
   atStopConfirmedAt: 2,
   lastSeenAt: 2,
-  activeLegIndex: 0,
+  transferLeg: 1,
   transferRevalidation: null,
-  itinerary: {
+  transferPlan: {
     id: "t",
     originStopId: "100",
     originStopName: "Origin",
     originDistanceMeters: 10,
-    legs: [{
+    first: {
       tripRef: "first",
       lineRef: "1",
       boardStopId: "100",
@@ -50,7 +51,7 @@ const journey = {
       originAimedDepartureAt: 900,
       liveState: "schedule",
     },
-    {
+    transfer: {
       alightStopId: "500",
       alightStopSequence: 5,
       boardStopId: "501",
@@ -66,8 +67,8 @@ const journey = {
         availableSec: 400,
         slackSec: 233,
       },
-    }],
-    transfers: [{
+    },
+    second: {
       tripRef: "second",
       lineRef: "7",
       boardStopId: "501",
@@ -79,7 +80,7 @@ const journey = {
       aimedDepartureAt: 2_000,
       originAimedDepartureAt: 1_800,
       liveState: "schedule",
-    }],
+    },
     destinationStopId: "900",
     destinationArrivalAt: 2_400,
     finalWalkDistanceM: null,
@@ -142,7 +143,7 @@ describe("live transfer revalidation", () => {
       departureAt: 2_120,
     });
     expect(state.feasibility.slackSec).toBeGreaterThan(
-      journey.itinerary.transfers[0].feasibility.slackSec
+      journey.transferPlan.transfer.feasibility.slackSec
     );
   });
 
@@ -289,6 +290,109 @@ describe("live transfer revalidation", () => {
   });
 });
 
+describe("applying revalidation to a committed journey", () => {
+  test("fresh live timing updates leg 2 without changing the selected trip", () => {
+    const state = evaluateTransferRevalidation({
+      journey,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+      referenceTimeSec: 1_720,
+      receivedAtMs: 1_720_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+
+    const next = applyTransferRevalidation(journey, state);
+    expect(next.transferPlan.second).toMatchObject({
+      tripRef: "second",
+      departureAt: 2_120,
+      // This remains the timetable baseline used for downstream propagation.
+      arrivalAt: 2_400,
+    });
+    expect(next.destinationArrivalAt).toBe(2_520);
+    expect(next.journeyArrivalAt).toBe(2_520);
+    expect(next.phase).toBe("waiting");
+  });
+
+  test("repeated live updates recompute final ETA from the timetable baseline without compounding delay", () => {
+    const firstState = evaluateTransferRevalidation({
+      journey,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+      referenceTimeSec: 1_720,
+      receivedAtMs: 1_720_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    const first = applyTransferRevalidation(journey, firstState);
+    expect(first.destinationArrivalAt).toBe(2_520);
+
+    const secondState = evaluateTransferRevalidation({
+      journey: first,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_060 })],
+      referenceTimeSec: 1_740,
+      receivedAtMs: 1_740_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    const second = applyTransferRevalidation(first, secondState);
+
+    expect(second.transferPlan.second.departureAt).toBe(2_060);
+    expect(second.destinationArrivalAt).toBe(2_460);
+    expect(second.journeyArrivalAt).toBe(2_460);
+  });
+
+  test.each([
+    ["cancelled", "cancelled", "transfer-cancelled"],
+    ["live", "unsafe", "transfer-risk"],
+    ["missing", "missed", "transfer-missed"],
+  ])("%s/%s enters %s recovery", (providerState, decision, reason) => {
+    const next = applyTransferRevalidation(journey, {
+      providerState,
+      decision,
+      departureAt: 2_000,
+      feasibility: journey.transferPlan.transfer.feasibility,
+      receivedAtMs: 2_100_000,
+      missingSinceMs: null,
+    });
+
+    expect(next).toMatchObject({
+      phase: "recovery",
+      recoveryReason: reason,
+    });
+  });
+
+  test("degraded evidence is recorded but cannot undo or fail the commitment", () => {
+    const next = applyTransferRevalidation(journey, {
+      providerState: "degraded",
+      decision: "unknown",
+      departureAt: 2_000,
+      feasibility: journey.transferPlan.transfer.feasibility,
+      receivedAtMs: 2_100_000,
+      missingSinceMs: null,
+    });
+
+    expect(next.phase).toBe("waiting");
+    expect(next.recoveryReason).toBeNull();
+    expect(next.transferRevalidation.providerState).toBe("degraded");
+  });
+});
+
+
+test("applying the same transfer observation is idempotent", () => {
+  const state = evaluateTransferRevalidation({
+    journey,
+    arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+    referenceTimeSec: 1_720,
+    receivedAtMs: 1_720_000,
+    incomingArrivalAt: 1_600,
+    incomingLiveState: "live",
+  });
+
+  const once = applyTransferRevalidation(journey, state);
+  const twice = applyTransferRevalidation(once, state);
+  expect(twice).toBe(once);
+});
+
+
 describe("transfer revalidation fallback and branch safety", () => {
   test("occurrence matching tolerates missing optional provider anchors but still requires an active transfer leg", () => {
     expect(
@@ -303,8 +407,8 @@ describe("transfer revalidation fallback and branch safety", () => {
     ).toBe(true);
 
     const unanchored = JSON.parse(JSON.stringify(journey));
-    unanchored.itinerary.legs[1].originAimedDepartureAt = null;
-    unanchored.itinerary.legs[1].aimedDepartureAt = null;
+    unanchored.transferPlan.second.originAimedDepartureAt = null;
+    unanchored.transferPlan.second.aimedDepartureAt = null;
 
     expect(
       transferSecondArrivalMatches(
@@ -320,18 +424,18 @@ describe("transfer revalidation fallback and branch safety", () => {
     expect(
       transferSecondArrivalMatches(liveArrival(), {
         ...journey,
-        activeLegIndex: 1,
+        transferLeg: 2,
       })
     ).toBe(false);
   });
 
   test("same-stop fallback can classify a tight connection using the planned incoming arrival", () => {
     const sameStop = JSON.parse(JSON.stringify(journey));
-    sameStop.itinerary.transfers[0].boardStopId = "500";
-    sameStop.itinerary.transfers[0].walkingDistanceM = null;
-    sameStop.itinerary.legs[1].boardStopId = "500";
-    sameStop.itinerary.legs[1].departureAt = 1_800;
-    sameStop.itinerary.legs[1].aimedDepartureAt = 1_800;
+    sameStop.transferPlan.transfer.boardStopId = "500";
+    sameStop.transferPlan.transfer.walkingDistanceM = null;
+    sameStop.transferPlan.second.boardStopId = "500";
+    sameStop.transferPlan.second.departureAt = 1_800;
+    sameStop.transferPlan.second.aimedDepartureAt = 1_800;
 
     const state = evaluateTransferRevalidation({
       journey: sameStop,
@@ -363,7 +467,7 @@ describe("transfer revalidation fallback and branch safety", () => {
       providerState: "live",
       decision: "good",
       departureAt: 2_000,
-      feasibility: journey.itinerary.transfers[0].feasibility,
+      feasibility: journey.transferPlan.transfer.feasibility,
       missingSinceMs: null,
     };
 
@@ -475,4 +579,110 @@ describe("transfer revalidation fallback and branch safety", () => {
     });
   });
 
+  test("apply is a no-op outside transfer leg 1 or without evidence", () => {
+    expect(applyTransferRevalidation(null, null)).toBeNull();
+
+    const legTwo = { ...journey, transferLeg: 2 };
+    expect(
+      applyTransferRevalidation(legTwo, {
+        providerState: "live",
+        decision: "good",
+      })
+    ).toBe(legTwo);
+
+    const noPlan = { ...journey, transferPlan: null };
+    expect(
+      applyTransferRevalidation(noPlan, {
+        providerState: "live",
+        decision: "good",
+      })
+    ).toBe(noPlan);
+
+    expect(applyTransferRevalidation(journey, null)).toBe(journey);
+  });
+
+  test("live evidence derives delay from the committed planned time and keeps feasibility fallback", () => {
+    const next = applyTransferRevalidation(journey, {
+      providerState: "live",
+      decision: "good",
+      departureAt: 2_030,
+      feasibility: null,
+      missingSinceMs: null,
+    });
+
+    expect(next.transferPlan.second).toMatchObject({
+      tripRef: "second",
+      departureAt: 2_030,
+    });
+    expect(next.transferPlan.transfer.feasibility).toEqual(
+      journey.transferPlan.transfer.feasibility
+    );
+    expect(next.destinationArrivalAt).toBe(2_430);
+    expect(next.journeyArrivalAt).toBe(2_430);
+  });
+
+  test("ETA propagation uses safe fallbacks when optional plan-level arrival baselines are absent", () => {
+    const sparse = JSON.parse(JSON.stringify(journey));
+    delete sparse.transferPlan.destinationArrivalAt;
+    delete sparse.transferPlan.journeyArrivalAt;
+    sparse.transferPlan.second.arrivalAt = null;
+    sparse.destinationArrivalAt = 2_400;
+    sparse.journeyArrivalAt = null;
+
+    const next = applyTransferRevalidation(sparse, {
+      providerState: "live",
+      decision: "good",
+      departureAt: 2_060,
+      feasibility: sparse.transferPlan.transfer.feasibility,
+      receivedAtMs: 1_800_000,
+      missingSinceMs: null,
+    });
+
+    expect(next.destinationArrivalAt).toBe(2_460);
+    expect(next.journeyArrivalAt).toBe(2_460);
+  });
+
+  test("recovery remains monotonic even when later live evidence looks good", () => {
+    const recovering = {
+      ...journey,
+      phase: "recovery",
+      recoveryReason: "transfer-cancelled",
+    };
+
+    const next = applyTransferRevalidation(recovering, {
+      providerState: "live",
+      decision: "good",
+      departureAt: 2_100,
+      feasibility: journey.transferPlan.transfer.feasibility,
+      receivedAtMs: 1_800_000,
+      missingSinceMs: null,
+    });
+
+    expect(next).toMatchObject({
+      phase: "recovery",
+      recoveryReason: "transfer-cancelled",
+      transferRevalidation: {
+        providerState: "live",
+        decision: "good",
+      },
+    });
+  });
+
+  test("structurally identical revalidation evidence is idempotent even when cloned", () => {
+    const state = evaluateTransferRevalidation({
+      journey,
+      arrivals: [liveArrival({ expecteddeparturetime: 2_120 })],
+      referenceTimeSec: 1_720,
+      receivedAtMs: 1_720_000,
+      incomingArrivalAt: 1_600,
+      incomingLiveState: "live",
+    });
+    const once = applyTransferRevalidation(journey, state);
+    const cloned = {
+      ...state,
+      feasibility: { ...state.feasibility },
+    };
+
+    expect(applyTransferRevalidation(once, cloned)).toBe(once);
+  });
 });

@@ -480,56 +480,54 @@ test("shifts stop and door arrival with a boarding delay", () => {
 
 
 function transferOption(overrides = {}) {
-  const first = {
-    tripRef: "first",
-    lineRef: "1",
-    boardStopId: "100",
-    boardStopSequence: 1,
-    exitStopId: "500",
-    exitStopSequence: 8,
-    departureAt: 1_500,
-    arrivalAt: 2_100,
-    aimedDepartureAt: 1_480,
-    originAimedDepartureAt: 900,
-    liveState: "live",
-  };
-  const second = {
-    tripRef: "second",
-    lineRef: "7",
-    boardStopId: "501",
-    boardStopSequence: 3,
-    exitStopId: "900",
-    exitStopSequence: 14,
-    departureAt: 2_700,
-    arrivalAt: 3_600,
-    aimedDepartureAt: 2_700,
-    originAimedDepartureAt: 2_400,
-    liveState: "schedule",
-  };
-  const transfer = {
-    alightStopId: "500",
-    alightStopSequence: 8,
-    boardStopId: "501",
-    boardStopName: "Transfer platform",
-    walkingDistanceM: 70,
-    feasibility: {
-      state: "comfortable",
-      recommendable: true,
-      incomingArrivalAt: 2_100,
-      outgoingDepartureAt: 2_700,
-      walkingDistanceM: 70,
-      requiredSec: 175,
-      availableSec: 600,
-      slackSec: 425,
-    },
-  };
   return {
     id: "transfer:100:first:500:second:900",
     originStopId: "100",
     originStopName: "Origin",
     originDistanceMeters: 80,
-    legs: [first, second],
-    transfers: [transfer],
+    first: {
+      tripRef: "first",
+      lineRef: "1",
+      boardStopId: "100",
+      boardStopSequence: 1,
+      exitStopId: "500",
+      exitStopSequence: 8,
+      departureAt: 1_500,
+      arrivalAt: 2_100,
+      aimedDepartureAt: 1_480,
+      originAimedDepartureAt: 900,
+      liveState: "live",
+    },
+    transfer: {
+      alightStopId: "500",
+      alightStopSequence: 8,
+      boardStopId: "501",
+      boardStopName: "Transfer platform",
+      walkingDistanceM: 70,
+      feasibility: {
+        state: "comfortable",
+        recommendable: true,
+        incomingArrivalAt: 2_100,
+        outgoingDepartureAt: 2_700,
+        walkingDistanceM: 70,
+        requiredSec: 175,
+        availableSec: 600,
+        slackSec: 425,
+      },
+    },
+    second: {
+      tripRef: "second",
+      lineRef: "7",
+      boardStopId: "501",
+      boardStopSequence: 3,
+      exitStopId: "900",
+      exitStopSequence: 14,
+      departureAt: 2_700,
+      arrivalAt: 3_600,
+      aimedDepartureAt: 2_700,
+      originAimedDepartureAt: 2_400,
+      liveState: "schedule",
+    },
     destinationStopId: "900",
     destinationArrivalAt: 3_600,
     finalWalkDistanceM: null,
@@ -556,10 +554,11 @@ describe("active transfer journey commitment", () => {
       lineRef: "1",
       destinationStopId: "500",
       destinationStopSequence: 8,
-      activeLegIndex: 0,
+      transferLeg: 1,
       phase: "walking-to-stop",
-      itinerary: {
-        legs: [{ tripRef: "first" }, { tripRef: "second" }],
+      transferPlan: {
+        first: { tripRef: "first" },
+        second: { tripRef: "second" },
       },
     });
   });
@@ -628,7 +627,7 @@ describe("active transfer journey commitment", () => {
       lineRef: "7",
       destinationStopId: "900",
       destinationStopSequence: 14,
-      activeLegIndex: 1,
+      transferLeg: 2,
       phase: "walking-to-stop",
       recoveryReason: null,
       distanceMeters: 70,
@@ -653,7 +652,7 @@ describe("active transfer journey commitment", () => {
     );
 
     expect(next).toMatchObject({
-      activeLegIndex: 1,
+      transferLeg: 2,
       tripRef: "second",
       phase: "recovery",
       recoveryReason: "transfer-missed",
@@ -681,7 +680,7 @@ describe("transfer Ride Mode fail-closed recovery", () => {
     );
 
     expect(recovered).toMatchObject({
-      activeLegIndex: 0,
+      transferLeg: 1,
       tripRef: "first",
       phase: "recovery",
       recoveryReason: "transfer-risk",
@@ -844,7 +843,7 @@ test("live transfer recovery cannot be undone by Ride Mode completion", () => {
   );
 
   expect(recovered).toMatchObject({
-    activeLegIndex: 1,
+    transferLeg: 2,
     tripRef: "second",
     stopId: "501",
     phase: "recovery",
@@ -874,7 +873,7 @@ test("failed transfer recovery stays on leg 1 when Ride Mode did not reach the t
   );
 
   expect(recovered).toMatchObject({
-    activeLegIndex: 0,
+    transferLeg: 1,
     tripRef: "first",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
@@ -908,18 +907,16 @@ test("first-leg live delay shifts transfer arrival but not the committed second-
   expect(updated).toMatchObject({
     departureAt: 1_620,
     // Bus 1 moved +120 s.
-    itinerary: {
-      legs: [
-        {
-          departureAt: 1_620,
-          arrivalAt: 2_220,
-          liveState: "live",
-        },
-        {
-          departureAt: 2_700,
-          arrivalAt: 3_600,
-        },
-      ],
+    transferPlan: {
+      first: {
+        departureAt: 1_620,
+        arrivalAt: 2_220,
+        liveState: "live",
+      },
+      second: {
+        departureAt: 2_700,
+        arrivalAt: 3_600,
+      },
     },
     // Bus 2 has not moved, so final arrival must not be fabricated as +120 s.
     destinationArrivalAt: 3_600,

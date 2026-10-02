@@ -15,6 +15,9 @@ function destinationLabel(destination) {
 }
 
 /**
+ * Only strong committed-leg failures are allowed to invalidate an itinerary.
+ * Unknown/stale/degraded evidence is deliberately not actionable.
+ *
  * @param {import("../types/journey").TransferRevalidationState | null | undefined} revalidation
  * @returns {import("../types/journey").ActiveJourneyRecoveryReason}
  */
@@ -25,7 +28,13 @@ function revalidationRecoveryReason(revalidation) {
   return null;
 }
 
-/** @param {ActiveDirectJourney | null | undefined} journey @param {number} afterLegIndex */
+/**
+ * A failure farther ahead must not interrupt the bus the passenger is already
+ * riding. It becomes actionable at the next safe transfer boundary.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {number} afterLegIndex
+ */
 function firstKnownDownstreamFailure(journey, afterLegIndex) {
   const states = journey?.futureLegRevalidations || {};
   const max = journey?.itinerary?.legs?.length || 0;
@@ -38,7 +47,10 @@ function firstKnownDownstreamFailure(journey, afterLegIndex) {
 
 /** @param {ActiveDirectJourney | null | undefined} journey */
 export function currentItineraryIndex(journey) {
-  if (journey?.activeLegIndex === null || journey?.activeLegIndex === undefined) {
+  if (
+    journey?.activeLegIndex === null ||
+    journey?.activeLegIndex === undefined
+  ) {
     return null;
   }
   const index = Number(journey.activeLegIndex);
@@ -69,11 +81,33 @@ export function itineraryHasFutureLeg(journey) {
 }
 
 /**
+ * @param {MultiLegJourneyOption | null | undefined} itinerary
+ * @param {number} activeLegIndex
+ * @returns {{transferPlan: import("../types/journey").TransferJourneyOption | null, transferLeg: 1 | 2 | null}}
+ */
+function legacyAliases(itinerary, activeLegIndex) {
+  if (!itinerary || itinerary.legs.length !== 2) {
+    return { transferPlan: null, transferLeg: null };
+  }
+  /** @type {import("../types/journey").TransferJourneyOption} */
+  const legacy = {
+    ...itinerary,
+    first: itinerary.legs[0],
+    transfer: itinerary.transfers[0],
+    second: itinerary.legs[1],
+  };
+  return {
+    transferPlan: legacy,
+    transferLeg: activeLegIndex === 0 ? 1 : 2,
+  };
+}
+
+/**
  * Build active state from a generic itinerary. The final door ETA remains
  * stable while the currently boarded leg changes; current-leg identity lives
  * in the top-level fields consumed by the existing board/Ride Mode surfaces.
  *
- * @param {MultiLegJourneyOption | any} option
+ * @param {MultiLegJourneyOption | import("../types/journey").TransferJourneyOption | any} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
@@ -100,6 +134,7 @@ export function activeJourneyFromItinerary(
     return null;
   }
 
+  const aliases = legacyAliases(itinerary, 0);
   return {
     id: itinerary.id,
     destinationId,
@@ -134,6 +169,7 @@ export function activeJourneyFromItinerary(
     itinerary,
     activeLegIndex: 0,
     futureLegRevalidations: {},
+    ...aliases,
     transferRevalidation: null,
   };
 }
@@ -192,6 +228,7 @@ function projectLeg(journey, index, nowMs, phase, recoveryReason) {
   const selectedAt = Number(nowMs);
   if (!Number.isFinite(selectedAt) || selectedAt <= 0) return null;
 
+  const aliases = legacyAliases(itinerary, index);
   return {
     ...journey,
     stopId: String(leg.boardStopId),
@@ -218,6 +255,7 @@ function projectLeg(journey, index, nowMs, phase, recoveryReason) {
     atStopConfirmedAt: null,
     lastSeenAt: Math.max(Number(journey.lastSeenAt) || 0, selectedAt),
     activeLegIndex: index,
+    ...aliases,
     transferRevalidation:
       journey.futureLegRevalidations?.[index + 1] || null,
   };
@@ -426,6 +464,7 @@ export function applyFutureLegRevalidation(
   }
 
   const recoveryReason = revalidationRecoveryReason(revalidation);
+  const aliases = legacyAliases(nextItinerary, currentIndex);
   const next = {
     ...journey,
     itinerary: nextItinerary,
@@ -436,6 +475,7 @@ export function applyFutureLegRevalidation(
       index === currentIndex + 1
         ? revalidation
         : journey.transferRevalidation,
+    ...aliases,
   };
 
   // A problem on a later committed bus is important, but it must not steal

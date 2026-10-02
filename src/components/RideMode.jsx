@@ -99,6 +99,13 @@ function currentTransferContext(journey) {
     if (transfer && next) return { transfer, next };
   }
 
+  if (journey?.transferPlan && journey.transferLeg === 1) {
+    return {
+      transfer: journey.transferPlan.transfer || null,
+      next: journey.transferPlan.second || null,
+    };
+  }
+
   return null;
 }
 

@@ -26,82 +26,28 @@ const allStops = [
   { id: "501", name: "Hub B", lat: 60.4503, lon: 22.2603 },
 ];
 
-function baseItinerary() {
-  return {
-    id: "selected-transfer",
-    originStopId: "100",
-    originStopName: "Origin",
-    originDistanceMeters: 0,
-    legs: [
-      {
-        tripRef: "first-run",
-        lineRef: "1",
-        boardStopId: "100",
-        boardStopSequence: 1,
-        exitStopId: "500",
-        exitStopSequence: 5,
-        departureAt: 1_800,
-        arrivalAt: 2_200,
-        aimedDepartureAt: 1_800,
-        originAimedDepartureAt: 1_700,
-        liveState: "schedule",
-      },
-      {
-        tripRef: "failed-run",
-        lineRef: "7",
-        boardStopId: "501",
-        boardStopSequence: 1,
-        exitStopId: "900",
-        exitStopSequence: 8,
-        departureAt: 2_700,
-        arrivalAt: 3_300,
-        aimedDepartureAt: 2_700,
-        originAimedDepartureAt: 2_400,
-        liveState: "schedule",
-      },
-    ],
-    transfers: [
-      {
-        alightStopId: "500",
-        alightStopSequence: 5,
-        boardStopId: "501",
-        boardStopName: "Hub B",
-        walkingDistanceM: 75,
-        feasibility: {
-          state: "comfortable",
-          recommendable: true,
-          incomingArrivalAt: 2_200,
-          outgoingDepartureAt: 2_700,
-          walkingDistanceM: 75,
-          requiredSec: 120,
-          availableSec: 500,
-          slackSec: 380,
-        },
-      },
-    ],
-    destinationStopId: "900",
-    destinationArrivalAt: 3_300,
-    finalWalkDistanceM: null,
-    finalWalkSecEstimate: null,
-    journeyArrivalAt: 3_300,
-    totalWalkingDistanceM: 75,
-    reliability: "medium",
-  };
-}
-
 function journey(overrides = {}) {
   return {
     id: "selected-transfer",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
-    activeLegIndex: 1,
-    stopId: "501",
-    atStopConfirmedAt: null,
-    itinerary: baseItinerary(),
+    transferLeg: 2,
+    tripRef: "failed-run",
+    originAimedDepartureAt: 2_400,
+    transferPlan: {
+      transfer: {
+        alightStopId: "500",
+        boardStopId: "501",
+      },
+      second: {
+        tripRef: "failed-run",
+        lineRef: "7",
+        originAimedDepartureAt: 2_400,
+      },
+    },
     ...overrides,
   };
 }
-
 
 function departure(tripRef, departureAt, origin = 2_400) {
   return {
@@ -163,7 +109,7 @@ test("loads direct recovery choices from the transfer area and removes the faile
 test("does not search from the transfer hub before authoritative arrival moved recovery to leg 2", async () => {
   await expect(
     loadTransferRecoveryOptions({
-      journey: journey({ activeLegIndex: 0 }),
+      journey: journey({ transferLeg: 1 }),
       destination,
       allStops,
     })
@@ -421,14 +367,13 @@ test("loader returns early without a destination or usable recovery origin", asy
   await expect(
     loadTransferRecoveryOptions({
       journey: journey({
-        itinerary: {
-          ...baseItinerary(),
-          transfers: [
-            {
-              ...baseItinerary().transfers[0],
-              alightStopId: "",
-            },
-          ],
+        transferPlan: {
+          transfer: { alightStopId: "", boardStopId: "501" },
+          second: {
+            tripRef: "failed-run",
+            lineRef: "7",
+            originAimedDepartureAt: 2_400,
+          },
         },
       }),
       destination,

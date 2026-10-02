@@ -34,9 +34,24 @@ function futureLegContext(journey, legIndex = null) {
   const leg = journey?.itinerary?.legs?.[targetIndex] || null;
   const incoming = journey?.itinerary?.legs?.[targetIndex - 1] || null;
   const transfer = journey?.itinerary?.transfers?.[targetIndex - 1] || null;
-  return leg && incoming && transfer
-    ? { targetIndex, leg, incoming, transfer }
-    : null;
+  if (leg && incoming && transfer) {
+    return { targetIndex, leg, incoming, transfer };
+  }
+
+  if (
+    targetIndex === 1 &&
+    journey?.transferPlan &&
+    journey.transferLeg === 1
+  ) {
+    return {
+      targetIndex: 1,
+      leg: journey.transferPlan.second,
+      incoming: journey.transferPlan.first,
+      transfer: journey.transferPlan.transfer,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -234,4 +249,91 @@ export function evaluateTransferRevalidation({
         : "good";
 
   return state("live", decision, liveDepartureAt, feasibility);
+}
+
+/**
+ * Apply only evidence strong enough to change a committed transfer.
+ * Degraded/stale/missing-unknown observations are recorded but cannot undo
+ * or falsely fail a selected journey.
+ *
+ * @param {ActiveDirectJourney | null} journey
+ * @param {TransferRevalidationState | null | undefined} revalidation
+ * @returns {ActiveDirectJourney | null}
+ */
+export function applyTransferRevalidation(journey, revalidation) {
+  if (!journey?.transferPlan || journey.transferLeg !== 1 || !revalidation) {
+    return journey;
+  }
+  if (
+    journey.transferRevalidation === revalidation ||
+    (journey.transferRevalidation &&
+      JSON.stringify(journey.transferRevalidation) ===
+        JSON.stringify(revalidation))
+  ) {
+    return journey;
+  }
+
+  const next = { ...journey, transferRevalidation: revalidation };
+
+  if (
+    revalidation.providerState === "live" &&
+    positive(revalidation.departureAt) !== null
+  ) {
+    const second = journey.transferPlan.second;
+    const departureAt = Number(revalidation.departureAt);
+    const aimedAt =
+      positive(second.aimedDepartureAt) ?? positive(second.departureAt);
+    const delaySec =
+      aimedAt === null ? null : departureAt - aimedAt;
+
+    next.transferPlan = {
+      ...journey.transferPlan,
+      transfer: {
+        ...journey.transferPlan.transfer,
+        feasibility:
+          revalidation.feasibility ?? journey.transferPlan.transfer.feasibility,
+      },
+      second: {
+        ...second,
+        departureAt,
+        liveState:
+          delaySec !== null && Math.abs(delaySec) >= 30 ? "delayed" : "live",
+      },
+    };
+
+    if (delaySec !== null) {
+      const plannedDestinationArrival =
+        positive(journey.transferPlan.destinationArrivalAt) ??
+        positive(second?.arrivalAt) ??
+        positive(journey.destinationArrivalAt);
+      const plannedJourneyArrival =
+        positive(journey.transferPlan.journeyArrivalAt) ??
+        positive(journey.journeyArrivalAt) ??
+        plannedDestinationArrival;
+
+      next.destinationArrivalAt =
+        plannedDestinationArrival === null
+          ? journey.destinationArrivalAt
+          : plannedDestinationArrival + delaySec;
+      next.journeyArrivalAt =
+        plannedJourneyArrival === null
+          ? next.destinationArrivalAt
+          : plannedJourneyArrival + delaySec;
+    }
+  }
+
+  if (journey.phase === "recovery") return next;
+
+  const recoveryReason =
+    revalidation.decision === "cancelled"
+      ? "transfer-cancelled"
+      : revalidation.decision === "missed"
+        ? "transfer-missed"
+        : revalidation.decision === "unsafe"
+          ? "transfer-risk"
+          : null;
+
+  return recoveryReason
+    ? { ...next, phase: "recovery", recoveryReason }
+    : next;
 }

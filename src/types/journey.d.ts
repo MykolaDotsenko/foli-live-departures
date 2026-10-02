@@ -217,6 +217,9 @@ export interface ActiveDirectJourney {
   itinerary: MultiLegJourneyOption | null;
   /** Zero-based index of the currently authoritative transit leg. */
   activeLegIndex: number | null;
+  /** Legacy one-transfer aliases retained while older component tests migrate. */
+  transferPlan: TransferJourneyOption | null;
+  transferLeg: 1 | 2 | null;
   /** Live state for each committed future leg, keyed by zero-based leg index. */
   futureLegRevalidations?: Record<number, TransferRevalidationState>;
   transferRevalidation?: TransferRevalidationState | null;

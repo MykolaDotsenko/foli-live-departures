@@ -88,9 +88,9 @@ test("projects the first leg of a three-leg itinerary", () => {
     tripRef: "first",
     stopId: "100",
     destinationStopId: "500",
+    transferPlan: null,
+    transferLeg: null,
   });
-  expect(journey).not.toHaveProperty("transferPlan");
-  expect(journey).not.toHaveProperty("transferLeg");
   expect(journey.itinerary.legs).toHaveLength(3);
   expect(currentItineraryLeg(journey).tripRef).toBe("first");
   expect(itineraryHasFutureLeg(journey)).toBe(true);
@@ -327,7 +327,7 @@ test("active-itinerary creation and advancement reject incomplete authority", ()
   ).toBeNull();
 });
 
-test("one-transfer generic itinerary stays generic through the handoff", () => {
+test("one-transfer generic itinerary preserves legacy aliases through the handoff", () => {
   const source = option();
   const twoLeg = {
     ...source,
@@ -339,16 +339,8 @@ test("one-transfer generic itinerary stays generic through the handoff", () => {
     journeyArrivalAt: 2_800,
   };
   const first = activeJourneyFromItinerary(twoLeg, destination, 1_000_000);
-  expect(first).toMatchObject({
-    activeLegIndex: 0,
-    tripRef: "first",
-  });
-  expect(first.itinerary.legs.map((leg) => leg.tripRef)).toEqual([
-    "first",
-    "second",
-  ]);
-  expect(first).not.toHaveProperty("transferPlan");
-  expect(first).not.toHaveProperty("transferLeg");
+  expect(first).toMatchObject({ transferLeg: 1 });
+  expect(first.transferPlan.first.tripRef).toBe("first");
 
   const second = advanceItineraryAfterRide(
     first,
@@ -361,10 +353,9 @@ test("one-transfer generic itinerary stays generic through the handoff", () => {
   );
   expect(second).toMatchObject({
     activeLegIndex: 1,
+    transferLeg: 2,
     tripRef: "second",
   });
-  expect(second).not.toHaveProperty("transferPlan");
-  expect(second).not.toHaveProperty("transferLeg");
   expect(itineraryHasFutureLeg(second)).toBe(false);
 });
 

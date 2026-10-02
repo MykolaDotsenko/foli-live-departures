@@ -6,82 +6,26 @@ import {
   withoutFailedTransferRun,
 } from "./transferRecovery";
 
-function baseItinerary() {
-  return {
-    id: "selected-transfer",
-    originStopId: "100",
-    originStopName: "Origin",
-    originDistanceMeters: 0,
-    legs: [
-      {
-        tripRef: "first-run",
-        lineRef: "1",
-        boardStopId: "100",
-        boardStopSequence: 1,
-        exitStopId: "500",
-        exitStopSequence: 5,
-        departureAt: 1_800,
-        arrivalAt: 2_200,
-        aimedDepartureAt: 1_800,
-        originAimedDepartureAt: 1_700,
-        liveState: "schedule",
-      },
-      {
-        tripRef: "failed-run",
-        lineRef: "7",
-        boardStopId: "501",
-        boardStopSequence: 1,
-        exitStopId: "900",
-        exitStopSequence: 8,
-        departureAt: 2_700,
-        arrivalAt: 3_300,
-        aimedDepartureAt: 2_700,
-        originAimedDepartureAt: 2_400,
-        liveState: "schedule",
-      },
-    ],
-    transfers: [
-      {
-        alightStopId: "500",
-        alightStopSequence: 5,
-        boardStopId: "501",
-        boardStopName: "Hub B",
-        walkingDistanceM: 75,
-        feasibility: {
-          state: "comfortable",
-          recommendable: true,
-          incomingArrivalAt: 2_200,
-          outgoingDepartureAt: 2_700,
-          walkingDistanceM: 75,
-          requiredSec: 120,
-          availableSec: 500,
-          slackSec: 380,
-        },
-      },
-    ],
-    destinationStopId: "900",
-    destinationArrivalAt: 3_300,
-    finalWalkDistanceM: null,
-    finalWalkSecEstimate: null,
-    journeyArrivalAt: 3_300,
-    totalWalkingDistanceM: 75,
-    reliability: "medium",
-  };
-}
-
 function journey(overrides = {}) {
   return {
-    id: "selected-transfer",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
-    activeLegIndex: 1,
+    transferLeg: 2,
     stopId: "501",
     atStopConfirmedAt: null,
-    itinerary: baseItinerary(),
+    transferPlan: {
+      transfer: {
+        alightStopId: "500",
+        boardStopId: "501",
+      },
+      second: {
+        tripRef: "failed-run",
+        originAimedDepartureAt: 2_400,
+      },
+    },
     ...overrides,
   };
 }
-
 
 const stops = [
   { id: "500", name: "Hub A", lat: 60.45, lon: 22.26 },
@@ -92,7 +36,7 @@ const stops = [
 describe("transfer recovery search boundary", () => {
   test("activates only after authoritative transfer arrival moved recovery into leg 2", () => {
     expect(canSearchTransferRecovery(journey())).toBe(true);
-    expect(canSearchTransferRecovery(journey({ activeLegIndex: 0 }))).toBe(false);
+    expect(canSearchTransferRecovery(journey({ transferLeg: 1 }))).toBe(false);
     expect(canSearchTransferRecovery(journey({ phase: "waiting" }))).toBe(false);
     expect(canSearchTransferRecovery(null)).toBe(false);
   });
@@ -210,22 +154,17 @@ describe("transfer recovery fail-closed fallbacks", () => {
     expect(
       canSearchTransferRecovery({
         phase: "recovery",
-        activeLegIndex: 1,
-        itinerary: null,
+        transferLeg: 2,
+        transferPlan: null,
       })
     ).toBe(false);
 
     expect(
       transferRecoveryOriginStops(
         journey({
-          itinerary: {
-            ...baseItinerary(),
-            transfers: [
-              {
-                ...baseItinerary().transfers[0],
-                alightStopId: "",
-              },
-            ],
+          transferPlan: {
+            transfer: { alightStopId: "", boardStopId: "501" },
+            second: { tripRef: "failed-run" },
           },
         }),
         stops
@@ -272,15 +211,12 @@ describe("transfer recovery fail-closed fallbacks", () => {
       departureMatchesFailedTransferRun(
         { tripRef: "failed-run", originAimedDepartureAt: 2_400 },
         journey({
-          itinerary: {
-            ...baseItinerary(),
-            legs: [
-              baseItinerary().legs[0],
-              {
-                ...baseItinerary().legs[1],
-                originAimedDepartureAt: null,
-              },
-            ],
+          transferPlan: {
+            transfer: { alightStopId: "500", boardStopId: "501" },
+            second: {
+              tripRef: "failed-run",
+              originAimedDepartureAt: null,
+            },
           },
         })
       )
@@ -303,7 +239,7 @@ describe("transfer recovery fail-closed fallbacks", () => {
     expect(
       departureMatchesFailedTransferRun(
         { tripRef: "anything" },
-        { phase: "recovery", activeLegIndex: 1, itinerary: null }
+        { phase: "recovery", transferLeg: 2, transferPlan: null }
       )
     ).toBe(false);
   });

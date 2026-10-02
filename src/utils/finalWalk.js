@@ -32,7 +32,12 @@ export function finalWalkFromRideSelection({
     Number.isInteger(activeLegIndex) &&
     activeLegIndex >= 0 &&
     Boolean(journey.itinerary.legs?.[activeLegIndex + 1]);
-  if (hasFutureItineraryLeg) return null;
+  if (
+    hasFutureItineraryLeg ||
+    (journey?.transferPlan && journey.transferLeg === 1)
+  ) {
+    return null;
+  }
 
   if (
     !journey ||

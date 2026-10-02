@@ -1,4 +1,4 @@
-/** @import { ItineraryTransfer, MultiLegJourneyOption, TransferTransitLeg } from "../types/journey" */
+/** @import { ItineraryTransfer, MultiLegJourneyOption, TransferJourneyOption, TransferTransitLeg } from "../types/journey" */
 
 /** @param {unknown} value */
 function nonNegative(value) {
@@ -21,8 +21,13 @@ function positive(value) {
  * @returns {MultiLegJourneyOption | null}
  */
 export function normalizeItineraryOption(option) {
-  const legs = Array.isArray(option?.legs) ? option.legs : [];
-  const transfers = Array.isArray(option?.transfers) ? option.transfers : [];
+  const legacyLegs =
+    option?.first && option?.second ? [option.first, option.second] : [];
+  const legacyTransfers = option?.transfer ? [option.transfer] : [];
+  const legs = Array.isArray(option?.legs) ? option.legs : legacyLegs;
+  const transfers = Array.isArray(option?.transfers)
+    ? option.transfers
+    : legacyTransfers;
 
   if (
     legs.length < 1 ||
@@ -110,6 +115,26 @@ export function normalizeItineraryOption(option) {
     reliability: ["high", "medium", "low"].includes(option?.reliability)
       ? option.reliability
       : "medium",
+  };
+}
+
+/**
+ * Add legacy one-transfer aliases without making them authoritative.
+ * Two-transfer itineraries intentionally expose only the first legacy pair;
+ * generic callers must use legs/transfers.
+ *
+ * @param {MultiLegJourneyOption} itinerary
+ * @returns {MultiLegJourneyOption & Partial<TransferJourneyOption>}
+ */
+export function withLegacyTransferAliases(itinerary) {
+  const normalized = normalizeItineraryOption(itinerary);
+  if (!normalized) return itinerary;
+  if (normalized.legs.length < 2) return normalized;
+  return {
+    ...normalized,
+    first: normalized.legs[0],
+    transfer: normalized.transfers[0],
+    second: normalized.legs[1],
   };
 }
 

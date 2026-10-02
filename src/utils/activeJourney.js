@@ -9,7 +9,7 @@ import {
   rideMatchesCurrentItineraryLeg,
 } from "./activeItinerary";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferRevalidationState } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferJourneyOption, TransferRevalidationState } from "../types/journey" */
 
 const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
@@ -150,12 +150,14 @@ export function activeJourneyFromOption(
     itinerary,
     activeLegIndex: itinerary ? 0 : null,
     futureLegRevalidations: {},
+    transferPlan: null,
+    transferLeg: null,
     transferRevalidation: null,
   };
 }
 
 /**
- * @param {MultiLegJourneyOption} option
+ * @param {TransferJourneyOption | MultiLegJourneyOption} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
@@ -507,6 +509,37 @@ export function observeActiveJourney(journey, observation) {
             ),
           }
         : journey.itinerary;
+    const firstTransferLeg =
+      journey.transferPlan && journey.transferLeg === 1
+        ? journey.transferPlan.first
+        : null;
+    const shiftedFirstArrival =
+      firstTransferLeg && finitePositive(firstTransferLeg.arrivalAt) !== null
+        ? Number(firstTransferLeg.arrivalAt) + departureShift
+        : null;
+    const nextFirstTransferArrivalAt =
+      shiftedFirstArrival ?? firstTransferLeg?.arrivalAt;
+    const firstTransferLegChanged = firstTransferLeg
+      ? firstTransferLeg.departureAt !== updatedDeparture ||
+        firstTransferLeg.aimedDepartureAt !== observedPlanned ||
+        firstTransferLeg.arrivalAt !== nextFirstTransferArrivalAt ||
+        firstTransferLeg.liveState !== currentLegLiveState
+      : false;
+    /** @type {import("../types/journey").TransferJourneyOption | null} */
+    const nextTransferPlan =
+      firstTransferLegChanged && firstTransferLeg && journey.transferPlan
+        ? {
+            ...journey.transferPlan,
+            first: {
+              ...firstTransferLeg,
+              departureAt: updatedDeparture,
+              aimedDepartureAt: observedPlanned,
+              arrivalAt: nextFirstTransferArrivalAt ?? firstTransferLeg.arrivalAt,
+              liveState: currentLegLiveState,
+            },
+          }
+        : journey.transferPlan;
+
     const nextLastSeenAt = Math.max(journey.lastSeenAt, receivedAtMs);
     const recoveredPhase = journey.atStopConfirmedAt
       ? "waiting"
@@ -527,6 +560,7 @@ export function observeActiveJourney(journey, observation) {
       journey.aimedDepartureAt === observedPlanned &&
       journey.destinationArrivalAt === shiftedDestinationArrival &&
       journey.journeyArrivalAt === shiftedJourneyArrival &&
+      journey.transferPlan === nextTransferPlan &&
       journey.itinerary === nextItinerary &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
@@ -542,6 +576,7 @@ export function observeActiveJourney(journey, observation) {
       aimedDepartureAt: observedPlanned,
       destinationArrivalAt: shiftedDestinationArrival,
       journeyArrivalAt: shiftedJourneyArrival,
+      transferPlan: nextTransferPlan,
       itinerary: nextItinerary,
       lineRef: nextLineRef,
       phase: nextPhase,

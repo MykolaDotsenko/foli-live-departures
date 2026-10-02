@@ -19,11 +19,9 @@ function positive(value) {
  * @param {ActiveDirectJourney | null | undefined} journey
  */
 export function canSearchTransferRecovery(journey) {
-  const index = Number(journey?.activeLegIndex);
   return Boolean(
-    journey?.itinerary &&
-      Number.isInteger(index) &&
-      index > 0 &&
+    journey?.transferPlan &&
+      journey.transferLeg === 2 &&
       journey.phase === "recovery"
   );
 }
@@ -37,11 +35,10 @@ export function canSearchTransferRecovery(journey) {
  * @param {readonly any[]} allStops
  */
 export function transferRecoveryOriginStops(journey, allStops) {
-  if (!canSearchTransferRecovery(journey) || !journey?.itinerary) return [];
+  if (!canSearchTransferRecovery(journey) || !journey?.transferPlan) return [];
 
-  const index = Number(journey.activeLegIndex);
   const alightStopId = String(
-    journey.itinerary.transfers?.[index - 1]?.alightStopId || ""
+    journey.transferPlan.transfer?.alightStopId || ""
   );
   const confirmedBoardStopId =
     journey.atStopConfirmedAt &&
@@ -82,19 +79,15 @@ export function transferRecoveryOriginStops(journey, allStops) {
  * @param {ActiveDirectJourney | null | undefined} journey
  */
 export function departureMatchesFailedTransferRun(departure, journey) {
-  const index = Number(journey?.activeLegIndex);
-  const failedLeg =
-    journey?.itinerary && Number.isInteger(index)
-      ? journey.itinerary.legs?.[index]
-      : null;
+  const second = journey?.transferPlan?.second;
   if (
-    !failedLeg ||
-    String(departure?.tripRef || "") !== String(failedLeg.tripRef || "")
+    !second ||
+    String(departure?.tripRef || "") !== String(second.tripRef || "")
   ) {
     return false;
   }
 
-  const selectedOrigin = positive(failedLeg.originAimedDepartureAt);
+  const selectedOrigin = positive(second.originAimedDepartureAt);
   const candidateOrigin = positive(departure?.originAimedDepartureAt);
   return !(
     selectedOrigin !== null &&
