@@ -404,11 +404,20 @@ test("Ride Mode reopens a false miss only after newer live evidence for the same
   context,
 }) => {
   const firstSnapshotSec = Math.floor(Date.now() / 1000);
+  const firstObservedAt = firstSnapshotSec - 5;
   let recoverySnapshot = false;
+  let resolveRecoverySnapshot;
+  const recoverySnapshotServed = new Promise((resolve) => {
+    resolveRecoverySnapshot = resolve;
+  });
 
   await page.route("https://data.foli.fi/siri/sm/32", async (route) => {
     const now = Math.floor(Date.now() / 1000);
-    const observedAt = recoverySnapshot ? now : firstSnapshotSec;
+    // Keep the pre-miss snapshot byte-for-byte stable even if the browser
+    // happens to cross a wall-clock second between polls. The recovery
+    // snapshot changes recordedattime deterministically, so the production
+    // signature logic sees genuinely newer provider evidence.
+    const observedAt = recoverySnapshot ? now : firstObservedAt;
     const expectedAt = recoverySnapshot ? now + 70 : firstSnapshotSec + 70;
     await route.fulfill({
       contentType: "application/json",
@@ -426,6 +435,7 @@ test("Ride Mode reopens a false miss only after newer live evidence for the same
         ],
       }),
     });
+    if (recoverySnapshot) resolveRecoverySnapshot?.();
   });
 
   await page.route(
@@ -460,6 +470,20 @@ test("Ride Mode reopens a false miss only after newer live evidence for the same
   });
   await expect(page.locator('[data-stage="missed"]')).toBeVisible();
 
+  // The correction contract requires the provider observation to be newer
+  // than the saved MISSED transition, not merely delivered later. Wait for
+  // the browser clock to move beyond that exact millisecond, then release a
+  // deterministically distinct SIRI snapshot and prove the poll consumed it.
+  await page.waitForFunction(() => {
+    const ride = JSON.parse(
+      globalThis.localStorage.getItem("foli-active-ride-v1") || "null"
+    );
+    return (
+      Number.isFinite(Number(ride?.stageChangedAt)) &&
+      Date.now() > Number(ride.stageChangedAt)
+    );
+  });
+
   // Repeated pre-miss transit data is not enough. Release one distinct SIRI
   // observation only after MISSED; it still matches the committed dated
   // journey and puts the target about a minute ahead.
@@ -467,6 +491,7 @@ test("Ride Mode reopens a false miss only after newer live evidence for the same
   await page.evaluate(() =>
     document.dispatchEvent(new globalThis.Event("visibilitychange"))
   );
+  await recoverySnapshotServed;
 
   await expect(page.locator('[data-stage="next"]')).toBeVisible();
   await expect(
