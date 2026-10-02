@@ -1,21 +1,23 @@
 # Localization
 
-The interface is currently available in English and Finnish. It follows the
-phone's language on a first visit (Finnish for `fi`, English for everything
-else) and the passenger's own choice from the header switch after that. The
-choice is kept on the phone.
+The locale registry currently contains **English (`en`)**, **Finnish (`fi`)** and
+**Ukrainian (`uk`)**. It follows the first browser language the app supports
+on a first visit and then keeps the passenger's explicit choice on the phone.
+Finnish and Ukrainian dictionaries are lazy-loaded so they do not inflate the
+startup graph.
 
-Two localization expansions are planned:
+Current implementation state:
 
-- **Ukrainian (`uk`)** is an explicit implementation milestone requested for
-  the product. It must be complete across the safety-critical Ride Mode,
-  Journey Assistant, recovery, offline, Places, privacy and accessibility
-  surfaces before it is exposed in the language switcher.
-- **Swedish (`sv`)** remains the obvious official-local expansion because
-  Turku is bilingual and Föli publishes its own data in Finnish, Swedish and
-  English.
+- **Ukrainian (`uk`)** was implemented in PR #139 across Ride Mode, Journey
+  Assistant, recovery, offline/degraded states, Places, privacy/help and the
+  rest of the passenger UI. It is currently reachable through the generic
+  language switch in the pre-field build. Native-language,
+  VoiceOver/TalkBack and speech review remain manual release gates; code
+  presence does not mark those reviews complete.
+- **Swedish (`sv`)** remains the next locale expansion. Turku is bilingual
+  and Föli publishes relevant provider text in Finnish, Swedish and English.
 
-The detailed Ukrainian acceptance plan is in
+The detailed Ukrainian acceptance and remaining review plan is in
 [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
 
 ## How it works
@@ -38,10 +40,11 @@ The detailed Ukrainian acceptance plan is in
   phrase and values, not the finished sentence, so it follows a switch of
   language while it is on screen.
 
-`src/i18n/i18n.test.js` currently protects the Finnish dictionary. Before
-Ukrainian is enabled, the same completeness, placeholder, unused-string and
-literal-English guarantees must apply to **every enabled locale**, not only
-Finnish. ESLint (`react/jsx-no-literals`) catches text between tags,
+`src/i18n/i18n.test.js` now iterates the enabled locale registry and protects
+dictionary completeness, placeholders and stale/unused keys across the
+implemented locales. JSX literal checks remain enforced by ESLint. Browser,
+layout, PWA and Android locale-specific QA is expanded in batch 17–24 rather
+than treating dictionary completeness as equivalent to release readiness. ESLint (`react/jsx-no-literals`) catches text between tags,
 including `{"text"}` and template literals, and an end-to-end test looks for
 English left on the Finnish screens.
 
@@ -115,10 +118,11 @@ The Finnish text was written for this app and has not yet been reviewed by
 a native speaker. That review should come before a city-wide launch.
 
 
-## Planned Ukrainian locale
+## Ukrainian locale — implemented, review gates open
 
-Ukrainian must be implemented as a first-class locale, not as a small set of
-translated labels.
+Ukrainian is implemented as a first-class locale rather than a small set of
+translated labels. The rules below remain the contract for review and future
+changes.
 
 Key rules:
 
