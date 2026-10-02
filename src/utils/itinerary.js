@@ -157,15 +157,30 @@ export function itineraryTransfer(option, index) {
   return normalized.transfers[index] || null;
 }
 
+function minimumTransferSlack(itinerary) {
+  const values = itinerary.transfers
+    .map((transfer) => Number(transfer?.feasibility?.slackSec))
+    .filter((value) => Number.isFinite(value));
+  return values.length > 0 ? Math.min(...values) : Number.POSITIVE_INFINITY;
+}
+
 /**
- * Prefer fewer transfers when arrivals are near-equivalent, but allow a
- * materially earlier two-transfer itinerary to win.
+ * Stable itinerary ordering. Preference changes are real ranking constraints,
+ * but only inside a bounded arrival trade-off so a preference cannot turn a
+ * dramatically slower route into the default without the passenger seeing
+ * that cost.
  *
  * @param {any} left
  * @param {any} right
  * @param {number} [nearEquivalentSec]
+ * @param {import("../types/journey").RoutingPreference | string} [preference]
  */
-export function compareItineraries(left, right, nearEquivalentSec = 120) {
+export function compareItineraries(
+  left,
+  right,
+  nearEquivalentSec = 120,
+  preference = "balanced"
+) {
   const a = normalizeItineraryOption(left);
   const b = normalizeItineraryOption(right);
   if (!a && !b) return 0;
@@ -173,12 +188,34 @@ export function compareItineraries(left, right, nearEquivalentSec = 120) {
   if (!b) return -1;
 
   const arrivalDelta = a.journeyArrivalAt - b.journeyArrivalAt;
-  if (Math.abs(arrivalDelta) > Math.max(0, nearEquivalentSec)) {
+  const preferenceWindow =
+    preference === "balanced"
+      ? Math.max(0, nearEquivalentSec)
+      : Math.max(10 * 60, nearEquivalentSec);
+
+  if (Math.abs(arrivalDelta) > preferenceWindow) {
     return arrivalDelta;
   }
 
+  if (preference === "less-walking") {
+    const walkingDelta =
+      a.totalWalkingDistanceM - b.totalWalkingDistanceM;
+    if (walkingDelta !== 0) return walkingDelta;
+  } else if (preference === "more-buffer") {
+    const bufferDelta =
+      minimumTransferSlack(b) - minimumTransferSlack(a);
+    if (Number.isFinite(bufferDelta) && bufferDelta !== 0) {
+      return bufferDelta;
+    }
+  }
+
   const transferDelta = a.transfers.length - b.transfers.length;
-  if (transferDelta !== 0) return transferDelta;
+  if (
+    preference === "fewer-transfers" ||
+    Math.abs(arrivalDelta) <= Math.max(0, nearEquivalentSec)
+  ) {
+    if (transferDelta !== 0) return transferDelta;
+  }
 
   return (
     arrivalDelta ||
