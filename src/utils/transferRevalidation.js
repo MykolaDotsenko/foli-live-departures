@@ -84,6 +84,7 @@ function state(
  *
  * @param {any} arrival
  * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {number | null} [legIndex]
  */
 export function transferSecondArrivalMatches(arrival, journey, legIndex = null) {
   const context = futureLegContext(journey, legIndex);
