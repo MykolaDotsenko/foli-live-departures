@@ -206,3 +206,26 @@ test("renders every leg and both changes for a bounded two-transfer option", () 
   expect(screen.getByText(/Change 1:/)).toBeInTheDocument();
   expect(screen.getByText(/Change 2: Kauppatori C/)).toBeInTheDocument();
 });
+
+
+test("recovery mode uses dedicated focus target and explicit-replacement copy", () => {
+  render(
+    <TransferJourneyOptions
+      mode="recovery"
+      options={[option]}
+      destinationLabel="Home"
+      onSelectJourney={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", {
+      name: "Continue to Home with a new connection",
+    })
+  ).toHaveAttribute("id", "recovery-transfer-journey-options-title");
+  expect(
+    screen.getByText(
+      "This replacement starts from the transfer area. Nothing changes until you choose it."
+    )
+  ).toBeInTheDocument();
+});
