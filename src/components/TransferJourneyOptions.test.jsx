@@ -47,15 +47,15 @@ test("renders a truthful one-transfer card and selects the concrete option", () 
       name: "Ways to Turun linna with one change",
     })
   ).toBeInTheDocument();
-  expect(screen.getByText("Line 1 → line 8")).toBeInTheDocument();
+  expect(screen.getByText("Line 1 → Line 8")).toBeInTheDocument();
   expect(
-    screen.getByText(/Change at Kauppatori platform B/)
-  ).toHaveTextContent("transfer walk");
+    screen.getByText(/Change 1: Kauppatori platform B/)
+  ).toHaveTextContent("walk");
   expect(screen.getByText(/Comfortable transfer/)).toHaveTextContent(
     "about 6 min transfer margin"
   );
   expect(
-    screen.getByText(/The second bus is based on timetable data/)
+    screen.getByText(/Future buses are rechecked against fresh live data/)
   ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: /Line 1 → line 8/i }));
@@ -83,7 +83,7 @@ test("labels a same-stop tight connection without inventing a transfer walk", ()
     />
   );
 
-  expect(screen.getByText(/same stop/i)).toBeInTheDocument();
+  expect(screen.getByText(/Change 1: Kauppatori platform B · same stop/i)).toBeInTheDocument();
   expect(screen.getByText(/Tight transfer/)).toBeInTheDocument();
 });
 
@@ -144,6 +144,65 @@ test("covers plural cards, acceptable risk, missing margin and no final walk", (
   expect(screen.getByText(/Reasonable transfer/)).toBeInTheDocument();
   expect(screen.getAllByText(/Arrive about/i)).toHaveLength(2);
   expect(screen.queryByText(/final walk ≈/i)).not.toBeInTheDocument();
-  expect(screen.getByText("Line — → line —")).toBeInTheDocument();
+  expect(screen.getByText("Line — → Line —")).toBeInTheDocument();
   expect(screen.getByText(/Tight transfer/)).toBeInTheDocument();
+});
+
+test("renders every leg and both changes for a bounded two-transfer option", () => {
+  render(
+    <TransferJourneyOptions
+      options={[
+        {
+          ...option,
+          id: "two-transfer",
+          legs: [
+            { ...option.first, lineRef: "1" },
+            {
+              tripRef: "middle",
+              lineRef: "7",
+              boardStopId: "201",
+              exitStopId: "300",
+              departureAt: now + 1500,
+              arrivalAt: now + 1900,
+            },
+            {
+              tripRef: "third",
+              lineRef: "18",
+              boardStopId: "301",
+              exitStopId: "900",
+              departureAt: now + 2200,
+              arrivalAt: now + 2800,
+            },
+          ],
+          transfers: [
+            option.transfer,
+            {
+              alightStopId: "300",
+              alightStopSequence: 8,
+              boardStopId: "301",
+              boardStopName: "Kauppatori C",
+              walkingDistanceM: 85,
+              feasibility: {
+                state: "acceptable",
+                slackSec: 240,
+              },
+            },
+          ],
+          journeyArrivalAt: now + 2800,
+        },
+      ]}
+      destinationLabel="Home"
+      onSelectJourney={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", {
+      name: "Ways to Home with up to two changes",
+    })
+  ).toBeInTheDocument();
+  expect(screen.getByText("2 transfers")).toBeInTheDocument();
+  expect(screen.getByText("Line 1 → Line 7 → Line 18")).toBeInTheDocument();
+  expect(screen.getByText(/Change 1:/)).toBeInTheDocument();
+  expect(screen.getByText(/Change 2: Kauppatori C/)).toBeInTheDocument();
 });
