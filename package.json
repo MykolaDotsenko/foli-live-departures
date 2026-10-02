@@ -43,7 +43,8 @@
     "build:production-site": "node scripts/build-production-site.mjs",
     "verify:production-cutover": "node --test scripts/production-site-config.test.mjs && node scripts/verify-production-cutover.mjs",
     "verify:release-gates": "node scripts/verify-release-gates.mjs",
-    "verify:release-readiness": "npm run verify:production-cutover && npm run verify:release-gates"
+    "verify:release-readiness": "npm run verify:production-cutover && npm run verify:release-gates && npm run verify:pwa-context",
+    "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
