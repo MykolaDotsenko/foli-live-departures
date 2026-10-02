@@ -157,6 +157,7 @@ export interface NearbyStopFit {
 
 export type DirectJourneyLabel =
   | "fastest"
+  | "latest-departure"
   | "less-walking"
   | "easier-to-catch";
 
