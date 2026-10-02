@@ -20,7 +20,10 @@ export const LOCALES = Object.freeze([
     nativeLabel: "English",
     switchLabel: "In English",
     intlLocale: "en-GB",
-    speechLocale: "en-GB",
+    // Preserve the established Ride Mode voice contract. Display formatting
+    // can stay British English while speech continues using the widely
+    // available en-US voice used and tested by earlier releases.
+    speechLocale: "en-US",
     providerMode: "translated",
   }),
   Object.freeze({
