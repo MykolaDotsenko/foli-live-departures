@@ -365,3 +365,141 @@ test("provider failure is not misreported as a valid zero-match result", async (
     screen.queryByText(/No matching stop, place or address was found/i)
   ).not.toBeInTheDocument();
 });
+
+
+test("journey planning controls expose every time mode and routing preference", () => {
+  const onTimeModeChange = vi.fn();
+  const onTimeLocalValueChange = vi.fn();
+  const onPreferenceChange = vi.fn();
+
+  renderSearch({
+    timeConstraint: { mode: "leave-at", targetTimeSec: 1_800_000_000 },
+    timeLocalValue: "2027-01-15T12:30",
+    timeValid: false,
+    routingPreference: "more-buffer",
+    onTimeModeChange,
+    onTimeLocalValueChange,
+    onPreferenceChange,
+  });
+
+  const selects = screen.getAllByRole("combobox");
+  const timeSelect = selects.find((element) => element.value === "leave-at");
+  const preferenceSelect = selects.find(
+    (element) => element.value === "more-buffer"
+  );
+  expect(timeSelect).toBeTruthy();
+  expect(preferenceSelect).toBeTruthy();
+
+  fireEvent.change(timeSelect, { target: { value: "arrive-by" } });
+  expect(onTimeModeChange).toHaveBeenCalledWith("arrive-by");
+
+  const clock = screen.getByLabelText("Turku local time");
+  expect(clock).toHaveAttribute("aria-invalid", "true");
+  fireEvent.change(clock, { target: { value: "2027-01-15T13:00" } });
+  expect(onTimeLocalValueChange).toHaveBeenCalledWith("2027-01-15T13:00");
+
+  fireEvent.change(preferenceSelect, {
+    target: { value: "fewer-transfers" },
+  });
+  fireEvent.change(preferenceSelect, {
+    target: { value: "less-walking" },
+  });
+  fireEvent.change(preferenceSelect, {
+    target: { value: "balanced" },
+  });
+  expect(onPreferenceChange.mock.calls.map(([value]) => value)).toEqual([
+    "fewer-transfers",
+    "less-walking",
+    "balanced",
+  ]);
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Choose a valid future Turku time"
+  );
+});
+
+test("leave-now hides the clock and normalizes an unknown preference to balanced", () => {
+  renderSearch({
+    timeConstraint: { mode: "unexpected", targetTimeSec: 123 },
+    routingPreference: "teleport",
+  });
+
+  expect(screen.queryByLabelText("Turku local time")).not.toBeInTheDocument();
+  const selects = screen.getAllByRole("combobox");
+  expect(selects.some((element) => element.value === "leave-now")).toBe(true);
+  expect(selects.some((element) => element.value === "balanced")).toBe(true);
+});
+
+test("compact destination summarizes arrive-by timing and preference", () => {
+  renderSearch({
+    compact: true,
+    destination: {
+      id: "external:osm:123",
+      kind: "external-place",
+      label: "Prisma Itäharju",
+      primaryStopId: "164",
+      acceptableStopIds: ["164"],
+      source: "osm-nominatim",
+    },
+    timeConstraint: {
+      mode: "arrive-by",
+      targetTimeSec: Date.parse("2027-01-15T10:30:00Z") / 1000,
+    },
+    routingPreference: "less-walking",
+  });
+
+  expect(screen.getByText(/Arrive by .*Less walking/)).toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "© OpenStreetMap contributors" })
+  ).toHaveAttribute("href", "https://www.openstreetmap.org/copyright");
+});
+
+test("place selection reports catalog loading and unavailable states distinctly", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [prisma],
+    status: "ready",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+  });
+
+  const { unmount } = render(
+    <JourneySearch
+      stops={stops}
+      places={[]}
+      destination={null}
+      coordinatesStatus="loading"
+      online
+      onChoosePlace={vi.fn()}
+      onChooseStop={vi.fn()}
+      onChooseExternalPlace={vi.fn(() => ({
+        ok: false,
+        reason: "no-nearby-stops",
+        destination: null,
+      }))}
+      onClear={vi.fn()}
+    />
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: /Prisma Itäharju.*Turku, Finland/i })
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Stop locations are still loading"
+  );
+  unmount();
+
+  renderSearch({
+    coordinatesStatus: "error",
+    onChooseExternalPlace: vi.fn(() => ({
+      ok: false,
+      reason: "no-nearby-stops",
+      destination: null,
+    })),
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: /Prisma Itäharju.*Turku, Finland/i })
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Stop locations are temporarily unavailable"
+  );
+});
