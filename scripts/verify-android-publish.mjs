@@ -41,6 +41,13 @@ const requiredPublishEvidence = [
   "github.event.workflow_run.head_repository.full_name == github.repository",
   "actions: read",
   "contents: write",
+  "pull-requests: read",
+  "Verify merged PR provenance before repository code",
+  "/commits/$CANDIDATE_SHA/pulls",
+  '.state == "closed"',
+  ".merged_at != null",
+  '.base.ref == "master"',
+  ".merge_commit_sha == $sha",
   "github.event.workflow_run.id",
   "--name android-e2e-evidence",
   "android/app/build/outputs/apk/debug/app-debug.apk",
@@ -58,6 +65,22 @@ for (const token of requiredPublishEvidence) {
   if (!publishWorkflow.includes(token)) {
     failures.push(`Android test publication is missing invariant: ${token}`);
   }
+}
+
+const provenanceIndex = publishWorkflow.indexOf(
+  "Verify merged PR provenance before repository code"
+);
+const downloadIndex = publishWorkflow.indexOf(
+  "Download the exact APK exercised by Android E2E"
+);
+if (
+  provenanceIndex < 0 ||
+  downloadIndex < 0 ||
+  provenanceIndex > downloadIndex
+) {
+  failures.push(
+    "Android test publication must verify merged-PR provenance before downloading the tested APK."
+  );
 }
 
 if (!e2eWorkflow.includes("name: android-e2e-evidence")) {

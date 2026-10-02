@@ -87,18 +87,35 @@ function remainingLabel(value, stage) {
   return count === 1 ? t("1 stop") : t("{count} stops", { count });
 }
 
-function transferNextAction(journey, revalidation, stage, targetStop) {
+function currentTransferContext(journey) {
+  const activeIndex = Number(journey?.activeLegIndex);
   if (
-    !journey?.transferPlan ||
-    journey.transferLeg !== 1 ||
-    stage === RIDE_STAGE.MISSED
+    journey?.itinerary &&
+    Number.isInteger(activeIndex) &&
+    activeIndex >= 0
   ) {
-    return null;
+    const transfer = journey.itinerary.transfers?.[activeIndex] || null;
+    const next = journey.itinerary.legs?.[activeIndex + 1] || null;
+    if (transfer && next) return { transfer, next };
   }
 
-  const transfer = journey.transferPlan.transfer || {};
-  const second = journey.transferPlan.second || {};
-  const line = String(second.lineRef || "").trim();
+  if (journey?.transferPlan && journey.transferLeg === 1) {
+    return {
+      transfer: journey.transferPlan.transfer || null,
+      next: journey.transferPlan.second || null,
+    };
+  }
+
+  return null;
+}
+
+function transferNextAction(journey, revalidation, stage, targetStop) {
+  const context = currentTransferContext(journey);
+  if (!context || stage === RIDE_STAGE.MISSED) return null;
+
+  const transfer = context.transfer || {};
+  const next = context.next || {};
+  const line = String(next.lineRef || "").trim();
   if (!line) return null;
 
   const decision = String(revalidation?.decision || "");
@@ -111,12 +128,18 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
   if (failed) {
     return {
       state: "recovery",
-      title: stage === RIDE_STAGE.NOW
-        ? msg("After you get off")
-        : msg("Connection needs a new plan"),
-      text: stage === RIDE_STAGE.NOW
-        ? msg("Journey Assistant will check fresh options from this transfer area.")
-        : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
+      title:
+        stage === RIDE_STAGE.NOW
+          ? msg("After you get off")
+          : msg("Connection needs a new plan"),
+      text:
+        stage === RIDE_STAGE.NOW
+          ? msg(
+              "Journey Assistant will check fresh options from this transfer area."
+            )
+          : msg(
+              "Get off at {stop}; Journey Assistant will check fresh options there."
+            ),
       params: { stop: stopLabel(targetStop) },
       meta: "",
       metaParams: {},
@@ -129,7 +152,7 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
   const boardStop = String(
     transfer.boardStopName ||
       transfer.boardStopId ||
-      second.boardStopId ||
+      next.boardStopId ||
       ""
   ).trim();
   const rawWalk = transfer.walkingDistanceM;
@@ -142,9 +165,6 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
       ? Number(rawWalk)
       : null;
 
-  // Cross-platform guidance needs a concrete boarding stop. A generic
-  // placeholder can send a passenger in the wrong direction at a busy hub,
-  // so fail closed into the transfer-area recovery flow instead.
   if (!sameStop && !boardStop) {
     return {
       state: "recovery",
@@ -154,8 +174,12 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
           : msg("Connection needs a new plan"),
       text:
         stage === RIDE_STAGE.NOW
-          ? msg("Journey Assistant will check fresh options from this transfer area.")
-          : msg("Get off at {stop}; Journey Assistant will check fresh options there."),
+          ? msg(
+              "Journey Assistant will check fresh options from this transfer area."
+            )
+          : msg(
+              "Get off at {stop}; Journey Assistant will check fresh options there."
+            ),
       params: { stop: stopLabel(targetStop) },
       meta: "",
       metaParams: {},
@@ -169,17 +193,6 @@ function transferNextAction(journey, revalidation, stage, targetStop) {
         title: msg("After you get off"),
         text: msg("Wait here for line {line}."),
         params: { line },
-        meta: "",
-        metaParams: {},
-      };
-    }
-
-    if (!boardStop) {
-      return {
-        state: "recovery",
-        title: msg("After you get off"),
-        text: msg("Journey Assistant will check fresh options from this transfer area."),
-        params: {},
         meta: "",
         metaParams: {},
       };

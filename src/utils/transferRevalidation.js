@@ -15,11 +15,43 @@ function positive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
-/** @param {ActiveDirectJourney | null | undefined} journey */
-function secondLeg(journey) {
-  return journey?.transferPlan && journey.transferLeg === 1
-    ? journey.transferPlan.second
-    : null;
+/**
+ * Resolve a concrete committed future leg and the transfer immediately before
+ * it. When legIndex is omitted, preserve the legacy "next leg" contract.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {number | null | undefined} legIndex
+ */
+function futureLegContext(journey, legIndex = null) {
+  const activeIndex = Number(journey?.activeLegIndex);
+  const targetIndex =
+    Number.isInteger(Number(legIndex)) && Number(legIndex) >= 1
+      ? Number(legIndex)
+      : Number.isInteger(activeIndex) && activeIndex >= 0
+        ? activeIndex + 1
+        : 1;
+
+  const leg = journey?.itinerary?.legs?.[targetIndex] || null;
+  const incoming = journey?.itinerary?.legs?.[targetIndex - 1] || null;
+  const transfer = journey?.itinerary?.transfers?.[targetIndex - 1] || null;
+  if (leg && incoming && transfer) {
+    return { targetIndex, leg, incoming, transfer };
+  }
+
+  if (
+    targetIndex === 1 &&
+    journey?.transferPlan &&
+    journey.transferLeg === 1
+  ) {
+    return {
+      targetIndex: 1,
+      leg: journey.transferPlan.second,
+      incoming: journey.transferPlan.first,
+      transfer: journey.transferPlan.transfer,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -52,9 +84,11 @@ function state(
  *
  * @param {any} arrival
  * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {number | null} [legIndex]
  */
-export function transferSecondArrivalMatches(arrival, journey) {
-  const second = secondLeg(journey);
+export function transferSecondArrivalMatches(arrival, journey, legIndex = null) {
+  const context = futureLegContext(journey, legIndex);
+  const second = context?.leg;
   if (!second || String(arrival?.tripref || "") !== String(second.tripRef || "")) {
     return false;
   }
@@ -93,6 +127,7 @@ export function transferSecondArrivalMatches(arrival, journey) {
  *   incomingArrivalAt?: number | null,
  *   incomingLiveState?: import("../types/journey").LiveState,
  *   previous?: TransferRevalidationState | null,
+ *   legIndex?: number | null,
  * }} input
  * @returns {TransferRevalidationState}
  */
@@ -106,25 +141,28 @@ export function evaluateTransferRevalidation({
   incomingArrivalAt = null,
   incomingLiveState = "unknown",
   previous = null,
+  legIndex = null,
 } = {}) {
-  const second = secondLeg(journey);
-  const plan = journey?.transferPlan;
-  if (!second || !journey || !plan) {
+  const context = futureLegContext(journey, legIndex);
+  const second = context?.leg;
+  const transfer = context?.transfer;
+  const incomingLeg = context?.incoming;
+  if (!second || !journey || !transfer || !incomingLeg) {
     return state("idle", "unknown", null, null);
   }
 
   const plannedDepartureAt = positive(second.departureAt);
   const incomingAt =
-    positive(incomingArrivalAt) ?? positive(plan.first?.arrivalAt);
+    positive(incomingArrivalAt) ?? positive(incomingLeg.arrivalAt);
   const reference = positive(referenceTimeSec);
   const received = positive(receivedAtMs);
   const plannedFeasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: plannedDepartureAt,
-    walkingDistanceM: plan.transfer.walkingDistanceM,
+    walkingDistanceM: transfer.walkingDistanceM,
     sameStop:
-      String(plan.transfer.alightStopId) ===
-      String(plan.transfer.boardStopId),
+      String(transfer.alightStopId) ===
+      String(transfer.boardStopId),
     incomingLiveState,
   });
 
@@ -147,7 +185,7 @@ export function evaluateTransferRevalidation({
   }
 
   const arrival = (Array.isArray(arrivals) ? arrivals : []).find((candidate) =>
-    transferSecondArrivalMatches(candidate, journey)
+    transferSecondArrivalMatches(candidate, journey, context.targetIndex)
   );
 
   if (!arrival) {
@@ -188,10 +226,10 @@ export function evaluateTransferRevalidation({
   const feasibility = assessTransfer({
     incomingArrivalAt: incomingAt,
     outgoingDepartureAt: liveDepartureAt,
-    walkingDistanceM: plan.transfer.walkingDistanceM,
+    walkingDistanceM: transfer.walkingDistanceM,
     sameStop:
-      String(plan.transfer.alightStopId) ===
-      String(plan.transfer.boardStopId),
+      String(transfer.alightStopId) ===
+      String(transfer.boardStopId),
     incomingLiveState,
   });
   const providerObservedAt = positive(arrival.recordedattime);

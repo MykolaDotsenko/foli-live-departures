@@ -1,0 +1,58 @@
+import { useState } from "react";
+import { t, useLanguage } from "../i18n";
+import styles from "./LocalStateBackup.module.css";
+
+function downloadReport(report) {
+  const blob = new Blob([report], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "turku-departures-field-report.json";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export default function FieldTestReport({ report }) {
+  useLanguage();
+  const [status, setStatus] = useState("");
+
+  if (!report) return null;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(report);
+      setStatus(t("Field-test report copied."));
+    } catch {
+      setStatus(t("Copy failed. Download the report instead."));
+    }
+  };
+
+  return (
+    <section className={styles.wrapper} aria-labelledby="field-test-report-title">
+      <div>
+        <p className={styles.kicker}>{t("Field-test diagnostics")}</p>
+        <h2 id="field-test-report-title">{t("Field-test report ready")}</h2>
+        <p className={styles.privacy}>
+          {t(
+            "Local report: build, public trip/stop IDs and sanitized live-data states. No GPS coordinates, saved-place labels or device IDs."
+          )}
+        </p>
+      </div>
+      <div className={styles.actions}>
+        <button type="button" className={styles.secondary} onClick={copy}>
+          {t("Copy report")}
+        </button>
+        <button type="button" className={styles.primary} onClick={() => downloadReport(report)}>
+          {t("Download report")}
+        </button>
+      </div>
+      {status && (
+        <p className={styles.feedback} role="status">
+          {status}
+        </p>
+      )}
+    </section>
+  );
+}

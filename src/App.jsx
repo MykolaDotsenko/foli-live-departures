@@ -5,6 +5,7 @@ import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
+import FieldTestReport from "./components/FieldTestReport";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import IosInstallHint from "./components/IosInstallHint";
@@ -30,20 +31,21 @@ import useServiceBoundary from "./hooks/useServiceBoundary";
 import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
-import useTransferLegRevalidation from "./hooks/useTransferLegRevalidation";
+import useFutureLegRevalidations from "./hooks/useFutureLegRevalidations";
 import useTransferRecoveryOptions from "./hooks/useTransferRecoveryOptions";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
   arrivalMatchesActiveJourney,
+  revalidateFutureJourneyLeg,
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
-import { applyTransferRevalidation } from "./utils/transferRevalidation";
 import { canSearchTransferRecovery } from "./utils/transferRecovery";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
 import { realStopName } from "./utils/stopNames";
+import { recordFieldDiagnosticObservation } from "./utils/fieldDiagnostics";
 import {
   completedFinalWalk,
   finalWalkFromRideSelection,
@@ -293,116 +295,110 @@ function App() {
     [serviceAlerts]
   );
 
-  const transferWatchJourney =
-    selectedJourney?.transferPlan &&
-    selectedJourney.transferLeg === 1 &&
+  const selectedFutureJourney =
+    selectedJourney?.itinerary &&
+    Number.isInteger(Number(selectedJourney.activeLegIndex)) &&
+    Number(selectedJourney.activeLegIndex) <
+      selectedJourney.itinerary.legs.length - 1 &&
     selectedJourney.phase !== "recovery"
       ? selectedJourney
-      : ride.session &&
-          pendingTransferJourneyRef.current?.transferPlan &&
-          pendingTransferJourneyRef.current.transferLeg === 1 &&
-          pendingTransferJourneyRef.current.phase !== "recovery"
-        ? pendingTransferJourneyRef.current
-        : null;
-  const transferSecondLeg = transferWatchJourney?.transferPlan?.second || null;
-  const transferWatchStopId = String(transferSecondLeg?.boardStopId || "");
-  const transferWatchLineRefs = useMemo(
-    () =>
-      transferSecondLeg?.lineRef
-        ? [String(transferSecondLeg.lineRef)]
-        : [],
-    [transferSecondLeg?.lineRef]
-  );
-  const { alerts: transferServiceAlerts } = useStopAlerts(
-    transferWatchStopId,
-    transferWatchLineRefs,
-    routesById,
-    {
-      enabled: Boolean(transferWatchJourney),
-      // A five-minute service-alert cadence is fine for a normal stop board,
-      // but too slow for a committed connection that may disappear while the
-      // passenger is already on leg 1.
-      refreshIntervalMs: 60_000,
-    }
-  );
-  const transferCancellations = useMemo(
-    () =>
-      transferServiceAlerts.filter(
-        (alert) => alert.type === "cancellation"
-      ),
-    [transferServiceAlerts]
-  );
-  const transferCancellationProbe = transferSecondLeg
-    ? {
-        lineref: transferSecondLeg.lineRef,
-        aimeddeparturetime:
-          transferSecondLeg.aimedDepartureAt ||
-          transferSecondLeg.departureAt,
-        originaimeddeparturetime:
-          transferSecondLeg.originAimedDepartureAt || undefined,
-      }
-    : null;
-  const transferSecondCancelled =
-    transferCancellationProbe &&
-    isCancelledHere(transferCancellationProbe, transferCancellations);
+      : null;
+  const pendingFutureJourney =
+    pendingTransferJourneyRef.current?.itinerary &&
+    Number.isInteger(
+      Number(pendingTransferJourneyRef.current.activeLegIndex)
+    ) &&
+    Number(pendingTransferJourneyRef.current.activeLegIndex) <
+      pendingTransferJourneyRef.current.itinerary.legs.length - 1 &&
+    pendingTransferJourneyRef.current.phase !== "recovery"
+      ? pendingTransferJourneyRef.current
+      : null;
+  const transferWatchJourney =
+    selectedFutureJourney ||
+    (ride.session ? pendingFutureJourney : null);
 
   const ridingSelectedTransfer =
     Boolean(ride.session) &&
     Boolean(transferWatchJourney) &&
     pendingTransferJourneyRef.current?.id === transferWatchJourney?.id;
   const rideEtaSec = Number(ride.runtime?.etaSec);
-  const transferIncomingArrivalAt =
-    ridingSelectedTransfer &&
-    Number.isFinite(rideEtaSec) &&
-    rideEtaSec >= 0
-      ? Math.floor(Date.now() / 1000 + rideEtaSec)
-      : transferWatchJourney?.transferPlan?.first?.arrivalAt || null;
-  const transferIncomingLiveState = ridingSelectedTransfer
-    ? ride.runtime?.etaSource === "live"
-      ? "live"
-      : ride.runtime?.etaSource === "location"
-        ? "delayed"
-        : "schedule"
-    : transferWatchJourney?.transferPlan?.first?.liveState || "unknown";
 
-  const transferRevalidation = useTransferLegRevalidation({
+  const futureLegWatch = useFutureLegRevalidations({
     enabled: Boolean(transferWatchJourney),
     journey: transferWatchJourney,
-    incomingArrivalAt: transferIncomingArrivalAt,
-    incomingLiveState: transferIncomingLiveState,
-    cancelled: transferSecondCancelled === true,
+    routesById,
+    riding: ridingSelectedTransfer,
+    rideEtaSec:
+      ridingSelectedTransfer &&
+      Number.isFinite(rideEtaSec) &&
+      rideEtaSec >= 0
+        ? rideEtaSec
+        : null,
+    rideEtaSource: String(ride.runtime?.etaSource || ""),
   });
+  const transferRevalidation = useMemo(
+    () =>
+      futureLegWatch.immediate || {
+        providerState: "idle",
+        decision: "unknown",
+        departureAt: null,
+        feasibility: null,
+        missingSinceMs: null,
+      },
+    [futureLegWatch.immediate]
+  );
+
+  useEffect(() => {
+    if (!transferWatchJourney || futureLegWatch.states.length === 0) {
+      return;
+    }
+
+    for (const { legIndex, state } of futureLegWatch.states) {
+      if (selectedJourney?.id === transferWatchJourney.id) {
+        revalidateTransfer(state, legIndex);
+      }
+
+      if (
+        ride.session &&
+        pendingTransferJourneyRef.current?.id === transferWatchJourney.id
+      ) {
+        pendingTransferJourneyRef.current = revalidateFutureJourneyLeg(
+          pendingTransferJourneyRef.current,
+          state,
+          legIndex
+        );
+      }
+    }
+  }, [
+    futureLegWatch.states,
+    revalidateTransfer,
+    ride.session,
+    selectedJourney,
+    transferWatchJourney,
+  ]);
 
   useEffect(() => {
     if (
-      !transferWatchJourney ||
+      !ride.fieldDiagnosticsEnabled ||
+      !ride.session ||
       transferRevalidation.providerState === "idle"
     ) {
       return;
     }
-
-    if (
-      selectedJourney?.id === transferWatchJourney.id &&
-      selectedJourney.transferLeg === 1
-    ) {
-      revalidateTransfer(transferRevalidation);
-    }
-
-    if (
-      ride.session &&
-      pendingTransferJourneyRef.current?.id === transferWatchJourney.id
-    ) {
-      pendingTransferJourneyRef.current = applyTransferRevalidation(
-        pendingTransferJourneyRef.current,
-        transferRevalidation
-      );
-    }
+    recordFieldDiagnosticObservation({
+      session: ride.session,
+      runtime: ride.runtime,
+      gps: ride.gps,
+      transferRevalidation,
+      futureLegRevalidations: futureLegWatch.states,
+    });
   }, [
-    revalidateTransfer,
+    ride.fieldDiagnosticsEnabled,
+    ride.gps,
+    ride.runtime,
     ride.session,
-    selectedJourney,
     transferRevalidation,
-    transferWatchJourney,
+    futureLegWatch.states,
   ]);
 
   const selectedJourneyArrival = useMemo(() => {
@@ -851,6 +847,10 @@ function App() {
             information visually authoritative. */}
         {!ride.session && !stopId && <IosInstallHint />}
 
+        {!ride.session &&
+          ride.fieldDiagnosticsEnabled &&
+          ride.fieldReport && <FieldTestReport report={ride.fieldReport} />}
+
         {ride.session && (
           <RideMode
             session={ride.session}
@@ -860,12 +860,12 @@ function App() {
             onTestAlert={ride.testAlert}
             onEndRide={endRide}
             onOpenStop={selectStop}
-            transferJourney={
-              pendingTransferJourneyRef.current?.transferPlan &&
-              pendingTransferJourneyRef.current.transferLeg === 1
-                ? pendingTransferJourneyRef.current
-                : null
-            }
+            // The pending ref is created only by
+            // transferJourneyForRideSelection(), which already proves an
+            // exact current-leg/exit-occurrence match and a committed future
+            // leg. Pass the generic itinerary through unchanged: gating on
+            // legacy transferPlan here hid 3-leg journeys from Ride Mode.
+            transferJourney={pendingTransferJourneyRef.current}
             transferRevalidation={transferRevalidation}
           />
         )}

@@ -130,12 +130,30 @@ const requiredReleaseEvidence = [
   "ANDROID_KEY_PASSWORD",
   "android-production",
   "actions: read",
+  "Require increasing production version code",
+  '"/repos/$GITHUB_REPOSITORY/releases?per_page=100"',
+  'android-release-metadata.mjs \\\n            check-version "$VERSION_CODE" "$releases"',
+  "ANDROID_CERT_SHA256",
+  "Signer #1 certificate SHA-256 digest",
+  "Write immutable release metadata",
+  ".release.json",
+  "APK_SHA256",
+  "AAB_SHA256",
+  "Android-Version-Code: %s",
+  "Source-Commit: %s",
+  '--notes "$notes"',
   "Require successful CI for this exact master commit",
   '--arg sha "$GITHUB_SHA"',
   "select(.head_sha == $sha)",
   "adb install -r",
   'PACKAGE_ID: io.github.mykoladotsenko.turkudepartures',
-  "permissions:\n  actions: read\n  contents: read",
+  "permissions:\n  actions: read\n  contents: read\n  pull-requests: read",
+  "Verify merged PR provenance before repository code",
+  "/commits/$CANDIDATE_SHA/pulls",
+  '.state == "closed"',
+  ".merged_at != null",
+  '.base.ref == "master"',
+  ".merge_commit_sha == $sha",
   "publish:",
   "needs: release",
   "contents: write",
@@ -165,6 +183,20 @@ if (releaseWorkflow.includes("jarsigner -verify -strict")) {
   );
 }
 
+const provenanceIndex = releaseWorkflow.indexOf(
+  "Verify merged PR provenance before repository code"
+);
+const checkoutIndex = releaseWorkflow.indexOf("Checkout verified master");
+if (
+  provenanceIndex < 0 ||
+  checkoutIndex < 0 ||
+  provenanceIndex > checkoutIndex
+) {
+  failures.push(
+    "Production Android must verify merged-PR provenance before checking out repository code."
+  );
+}
+
 const releaseJobStart = releaseWorkflow.indexOf("jobs:\n  release:");
 const publishJobStart = releaseWorkflow.indexOf("\n  publish:");
 if (releaseJobStart < 0 || publishJobStart < 0) {
@@ -188,5 +220,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Android release contract verified: independent app identity, green-master gating, step-scoped signing secrets, signing-key cleanup, least-privilege signing, exact signed-APK emulator verification and immutable version publishing are enforced."
+  "Android release contract verified: independent app identity, merged-PR/green-master gating, monotonic versionCode metadata, step-scoped signing secrets, signing-key cleanup, least-privilege signing, exact signed-APK emulator verification and immutable version publishing are enforced."
 );

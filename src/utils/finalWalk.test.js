@@ -176,3 +176,39 @@ test("never creates final walking guidance from transfer leg 1", () => {
     })
   ).toBeNull();
 });
+
+test("multi-leg journey cannot release final walking from an intermediate bus", () => {
+  const destination = {
+    id: "external:place",
+    kind: "external-place",
+    label: "Museum",
+    lat: 60.45,
+    lon: 22.26,
+    finalWalkDistanceByStop: { "900": 180 },
+  };
+  const journey = {
+    destinationId: destination.id,
+    destinationStopId: "500",
+    tripRef: "first",
+    activeLegIndex: 0,
+    finalWalkDistanceM: 180,
+    itinerary: {
+      legs: [
+        { tripRef: "first", boardStopId: "100", exitStopId: "500" },
+        { tripRef: "second", boardStopId: "500", exitStopId: "700" },
+        { tripRef: "third", boardStopId: "700", exitStopId: "900" },
+      ],
+    },
+  };
+
+  expect(
+    finalWalkFromRideSelection({
+      journey,
+      destination,
+      rideConfig: {
+        tripRef: "first",
+        targetStop: { id: "500", name: "Transfer" },
+      },
+    })
+  ).toBeNull();
+});

@@ -57,10 +57,10 @@ if (!workflow.includes("persist-credentials: false")) {
 }
 
 if (
-  !/permissions:\s*\n\s+contents: read\s*\n\s*\nconcurrency:/m.test(workflow)
+  !/permissions:\s*\n\s+contents: read\s*\n\s+pull-requests: read\s*\n\s*\nconcurrency:/m.test(workflow)
 ) {
   throw new Error(
-    "Workflow-level permissions must stay read-only; Pages credentials belong only to the deploy job."
+    "Workflow-level permissions must stay read-only (contents and pull-request metadata); Pages credentials belong only to the deploy job."
   );
 }
 
@@ -84,6 +84,31 @@ if (
   );
 }
 
+
+const provenanceIndex = workflow.indexOf(
+  "Verify merged PR provenance before repository code"
+);
+const firstCheckoutIndex = workflow.indexOf("Checkout verified revision");
+for (const required of [
+  "/commits/$CANDIDATE_SHA/pulls",
+  '.state == "closed"',
+  ".merged_at != null",
+  '.base.ref == "master"',
+  ".merge_commit_sha == $sha",
+]) {
+  if (!workflow.includes(required)) {
+    throw new Error(`Pages release provenance is missing: ${required}`);
+  }
+}
+if (
+  provenanceIndex < 0 ||
+  firstCheckoutIndex < 0 ||
+  provenanceIndex > firstCheckoutIndex
+) {
+  throw new Error(
+    "Pages must verify merged-PR provenance before checking out repository code."
+  );
+}
 
 const buildIndex = workflow.indexOf("run: npm run build");
 const stampIndex = workflow.indexOf("run: npm run stamp:deployment");

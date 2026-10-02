@@ -5,7 +5,11 @@ import {
   fetchTripStopTimes,
 } from "../api/foliApi";
 import { classifyCatchability } from "../utils/catchability";
-import { analyzeTripFit } from "../utils/destinationTripFit";
+import {
+  analyzeTripFit,
+  resolveBoardingOccurrence,
+} from "../utils/destinationTripFit";
+import { compareItineraries } from "../utils/itinerary";
 import { estimateFinalWalkSeconds } from "../utils/placeDestination";
 import { getDepartureTime } from "../utils/time";
 import {
@@ -14,7 +18,7 @@ import {
 } from "../utils/transferTopology";
 import { assessTransfer } from "../utils/transferFeasibility";
 
-/** @import { DestinationIntent, LiveState, TransferJourneyOption } from "../types/journey" */
+/** @import { DestinationIntent, LiveState, MultiLegJourneyOption } from "../types/journey" */
 
 const REFRESH_MS = 30_000;
 const MAX_FIRST_DEPARTURES_PER_STOP = 4;
@@ -26,6 +30,12 @@ const MAX_OUTGOING_PER_TRANSFER = 8;
 const MAX_SECOND_TRIPS = 32;
 const SECOND_TRIP_BATCH = 6;
 const MAX_CONNECTION_POINTS = 96;
+const MAX_SECOND_TRANSFER_OCCURRENCES_PER_TRIP = 4;
+const MAX_SECOND_CONNECTION_POINTS = 64;
+const MAX_THIRD_TRANSFER_TIMETABLE_LOOKUPS = 8;
+const MAX_OUTGOING_PER_SECOND_TRANSFER = 6;
+const MAX_THIRD_TRIPS = 24;
+const THIRD_TRIP_BATCH = 6;
 const MAX_OPTIONS = 3;
 const TRANSFER_BUCKET_SEC = 5 * 60;
 
@@ -78,7 +88,7 @@ function stopName(stopId, stops) {
  *   positionAccuracy?: number | null,
  *   signal?: AbortSignal,
  * }} input
- * @returns {Promise<TransferJourneyOption[]>}
+ * @returns {Promise<MultiLegJourneyOption[]>}
  */
 export async function loadTransferJourneyOptions({
   originStops,
@@ -308,9 +318,44 @@ export async function loadTransferJourneyOptions({
     });
   }
 
+  /** @type {MultiLegJourneyOption[]} */
   const candidates = [];
   const seen = new Set();
 
+  const firstLegFor = (seed) => ({
+    tripRef: seed.first.tripRef,
+    lineRef: String(seed.first.arrival?.lineref || ""),
+    boardStopId: String(seed.first.stop.id),
+    boardStopSequence: null,
+    exitStopId: String(seed.occurrence.stopId),
+    exitStopSequence: Number(seed.occurrence.stopSequence),
+    departureAt: seed.first.departureAt,
+    arrivalAt: seed.incomingArrivalAt,
+    aimedDepartureAt:
+      Number.isFinite(Number(seed.first.arrival?.aimeddeparturetime))
+        ? Number(seed.first.arrival.aimeddeparturetime)
+        : null,
+    originAimedDepartureAt:
+      Number.isFinite(Number(seed.first.arrival?.originaimeddeparturetime))
+        ? Number(seed.first.arrival.originaimeddeparturetime)
+        : null,
+    liveState: seed.first.liveState,
+  });
+
+  const firstTransferFor = (seed) => ({
+    alightStopId: String(seed.occurrence.stopId),
+    alightStopSequence: Number(seed.occurrence.stopSequence),
+    boardStopId: String(seed.board.stopId),
+    boardStopName: String(
+      seed.board.stopName || stopName(seed.board.stopId, networkStops)
+    ),
+    walkingDistanceM:
+      finiteNonNegative(seed.board.walkingDistanceM) || 0,
+    feasibility: seed.feasibility,
+  });
+
+  // First collect all valid one-transfer arrivals. The same committed second
+  // trips are also the bounded frontier for the optional second transfer.
   for (const seed of outgoingSeeds) {
     const secondTripRef = String(seed.outgoing?.tripref || "");
     if (!allowedSecondTrips.has(secondTripRef)) continue;
@@ -336,7 +381,8 @@ export async function loadTransferJourneyOptions({
     const finalWalkSecEstimate = estimateFinalWalkSeconds(finalWalkDistanceM);
     const journeyArrivalAt =
       destinationArrivalAt + (finalWalkSecEstimate || 0);
-    const originDistance = finiteNonNegative(seed.first.stop.distanceMeters) || 0;
+    const originDistance =
+      finiteNonNegative(seed.first.stop.distanceMeters) || 0;
     const transferDistance =
       finiteNonNegative(seed.board.walkingDistanceM) || 0;
     const finalDistance = finalWalkDistanceM || 0;
@@ -355,63 +401,42 @@ export async function loadTransferJourneyOptions({
     if (seen.has(id)) continue;
     seen.add(id);
 
+    const first = firstLegFor(seed);
+    const transfer = firstTransferFor(seed);
+    const second = {
+      tripRef: secondTripRef,
+      lineRef: String(seed.outgoing?.lineref || ""),
+      boardStopId: String(seed.board.stopId),
+      boardStopSequence:
+        Number.isFinite(Number(fit.boarding?.stopSequence))
+          ? Number(fit.boarding.stopSequence)
+          : null,
+      exitStopId: destinationStopId,
+      exitStopSequence:
+        Number.isFinite(Number(fit.destination?.stopSequence))
+          ? Number(fit.destination.stopSequence)
+          : null,
+      departureAt: secondDepartureAt,
+      arrivalAt: destinationArrivalAt,
+      aimedDepartureAt: secondDepartureAt,
+      originAimedDepartureAt:
+        Number.isFinite(Number(seed.outgoing?.originaimeddeparturetime))
+          ? Number(seed.outgoing.originaimeddeparturetime)
+          : null,
+      liveState: "schedule",
+    };
+
     candidates.push({
       id,
       originStopId: String(seed.first.stop.id),
       originStopName: String(seed.first.stop.name || seed.first.stop.id),
       originDistanceMeters: originDistance,
-      first: {
-        tripRef: seed.first.tripRef,
-        lineRef: String(seed.first.arrival?.lineref || ""),
-        boardStopId: String(seed.first.stop.id),
-        boardStopSequence: null,
-        exitStopId: String(seed.occurrence.stopId),
-        exitStopSequence: Number(seed.occurrence.stopSequence),
-        departureAt: seed.first.departureAt,
-        arrivalAt: seed.incomingArrivalAt,
-        aimedDepartureAt:
-          Number.isFinite(Number(seed.first.arrival?.aimeddeparturetime))
-            ? Number(seed.first.arrival.aimeddeparturetime)
-            : null,
-        originAimedDepartureAt:
-          Number.isFinite(Number(seed.first.arrival?.originaimeddeparturetime))
-            ? Number(seed.first.arrival.originaimeddeparturetime)
-            : null,
-        liveState: seed.first.liveState,
-      },
-      transfer: {
-        alightStopId: String(seed.occurrence.stopId),
-        alightStopSequence: Number(seed.occurrence.stopSequence),
-        boardStopId: String(seed.board.stopId),
-        boardStopName: String(
-          seed.board.stopName ||
-            stopName(seed.board.stopId, networkStops)
-        ),
-        walkingDistanceM: transferDistance,
-        feasibility: seed.feasibility,
-      },
-      second: {
-        tripRef: secondTripRef,
-        lineRef: String(seed.outgoing?.lineref || ""),
-        boardStopId: String(seed.board.stopId),
-        boardStopSequence:
-          Number.isFinite(Number(fit.boarding?.stopSequence))
-            ? Number(fit.boarding.stopSequence)
-            : null,
-        exitStopId: destinationStopId,
-        exitStopSequence:
-          Number.isFinite(Number(fit.destination?.stopSequence))
-            ? Number(fit.destination.stopSequence)
-            : null,
-        departureAt: secondDepartureAt,
-        arrivalAt: destinationArrivalAt,
-        aimedDepartureAt: secondDepartureAt,
-        originAimedDepartureAt:
-          Number.isFinite(Number(seed.outgoing?.originaimeddeparturetime))
-            ? Number(seed.outgoing.originaimeddeparturetime)
-            : null,
-        liveState: "schedule",
-      },
+      legs: [first, second],
+      transfers: [transfer],
+      // Compatibility aliases; orchestration below uses legs/transfers.
+      first,
+      transfer,
+      second,
       destinationStopId,
       destinationArrivalAt,
       finalWalkDistanceM,
@@ -427,14 +452,301 @@ export async function loadTransferJourneyOptions({
     });
   }
 
-  candidates.sort(
+  // Build a strictly bounded second-transfer frontier from the already
+  // selected second trips. No unbounded graph search is allowed in-browser.
+  const secondConnectionPoints = [];
+  for (const seed of outgoingSeeds) {
+    if (secondConnectionPoints.length >= MAX_SECOND_CONNECTION_POINTS) break;
+    const secondTripRef = String(seed.outgoing?.tripref || "");
+    if (!allowedSecondTrips.has(secondTripRef)) continue;
+    const stopTimes = secondTimes.get(secondTripRef);
+    if (!stopTimes) continue;
+
+    const secondDepartureAt = Number(seed.outgoing?.aimeddeparturetime);
+    const secondBoarding = resolveBoardingOccurrence(
+      stopTimes,
+      String(seed.board.stopId),
+      null,
+      secondDepartureAt
+    );
+    if (!secondBoarding) continue;
+
+    const occurrences = downstreamTransferOccurrences({
+      stopTimes,
+      boardingStopId: String(seed.board.stopId),
+      boardingSequence: Number(secondBoarding.stopSequence),
+      boardingAimedDepartureEpochSec: secondDepartureAt,
+      maxOccurrences: MAX_SECOND_TRANSFER_OCCURRENCES_PER_TRIP,
+    });
+
+    for (const occurrence of occurrences) {
+      if (destination.acceptableStopIds.includes(String(occurrence.stopId))) {
+        continue;
+      }
+      const incomingArrivalAt =
+        secondDepartureAt + Number(occurrence.rideDurationSec);
+      const boards = transferBoardingCandidates({
+        alightStopId: occurrence.stopId,
+        stops: networkStops,
+      });
+      for (const board of boards) {
+        const bucketRef =
+          Math.floor(incomingArrivalAt / TRANSFER_BUCKET_SEC) *
+          TRANSFER_BUCKET_SEC;
+        secondConnectionPoints.push({
+          seed,
+          secondTripRef,
+          secondBoarding,
+          occurrence,
+          board,
+          incomingArrivalAt,
+          scheduleKey: `third:${board.stopId}:${bucketRef}`,
+          bucketRef,
+        });
+        if (secondConnectionPoints.length >= MAX_SECOND_CONNECTION_POINTS) {
+          break;
+        }
+      }
+      if (secondConnectionPoints.length >= MAX_SECOND_CONNECTION_POINTS) break;
+    }
+  }
+
+  secondConnectionPoints.sort(
     (left, right) =>
-      left.journeyArrivalAt - right.journeyArrivalAt ||
-      (TRANSFER_RISK_RANK[left.transfer.feasibility.state] ?? 9) -
-        (TRANSFER_RISK_RANK[right.transfer.feasibility.state] ?? 9) ||
-      left.totalWalkingDistanceM - right.totalWalkingDistanceM ||
-      left.first.departureAt - right.first.departureAt
+      left.incomingArrivalAt - right.incomingArrivalAt ||
+      Number(right.board.sameStop) - Number(left.board.sameStop) ||
+      left.board.walkingDistanceM - right.board.walkingDistanceM
   );
+
+  const thirdScheduleKeys = new Set();
+  const thirdScheduleRequests = new Map();
+  for (const point of secondConnectionPoints) {
+    if (thirdScheduleKeys.has(point.scheduleKey)) continue;
+    if (
+      thirdScheduleKeys.size >= MAX_THIRD_TRANSFER_TIMETABLE_LOOKUPS
+    ) {
+      break;
+    }
+    thirdScheduleKeys.add(point.scheduleKey);
+    thirdScheduleRequests.set(point.scheduleKey, {
+      stopId: point.board.stopId,
+      reference: point.bucketRef,
+    });
+  }
+
+  const thirdScheduleEntries = [...thirdScheduleRequests.entries()];
+  const thirdScheduleResults = await Promise.allSettled(
+    thirdScheduleEntries.map(([, request]) =>
+      fetchScheduledStopDepartures(
+        request.stopId,
+        request.reference,
+        signal
+      )
+    )
+  );
+  throwIfAborted(signal);
+
+  const thirdSchedules = new Map();
+  thirdScheduleResults.forEach((result, index) => {
+    thirdSchedules.set(
+      thirdScheduleEntries[index][0],
+      result.status === "fulfilled" ? result.value : null
+    );
+  });
+
+  const thirdSeeds = [];
+  for (const point of secondConnectionPoints) {
+    if (!thirdScheduleKeys.has(point.scheduleKey)) continue;
+    const schedule = thirdSchedules.get(point.scheduleKey);
+    if (!schedule) continue;
+
+    const departures = (schedule.departures || [])
+      .filter(
+        (row) =>
+          Number(row?.aimeddeparturetime) >= point.incomingArrivalAt &&
+          String(row?.tripref || "") !== point.secondTripRef &&
+          String(row?.tripref || "") !== point.seed.first.tripRef
+      )
+      .slice(0, MAX_OUTGOING_PER_SECOND_TRANSFER);
+
+    for (const outgoing of departures) {
+      const feasibility = assessTransfer({
+        incomingArrivalAt: point.incomingArrivalAt,
+        outgoingDepartureAt: outgoing.aimeddeparturetime,
+        walkingDistanceM: point.board.walkingDistanceM,
+        sameStop: point.board.sameStop,
+        incomingLiveState: "schedule",
+      });
+      if (!feasibility.recommendable) continue;
+      thirdSeeds.push({ ...point, outgoing, feasibility });
+    }
+  }
+
+  thirdSeeds.sort(
+    (left, right) =>
+      Number(left.outgoing.aimeddeparturetime) -
+        Number(right.outgoing.aimeddeparturetime) ||
+      (TRANSFER_RISK_RANK[left.feasibility.state] ?? 9) -
+        (TRANSFER_RISK_RANK[right.feasibility.state] ?? 9)
+  );
+
+  const thirdTripIds = [
+    ...new Set(
+      thirdSeeds
+        .map((seed) => String(seed.outgoing?.tripref || ""))
+        .filter(Boolean)
+    ),
+  ].slice(0, MAX_THIRD_TRIPS);
+  const allowedThirdTrips = new Set(thirdTripIds);
+  const thirdTimes = new Map();
+
+  for (let index = 0; index < thirdTripIds.length; index += THIRD_TRIP_BATCH) {
+    const batch = thirdTripIds.slice(index, index + THIRD_TRIP_BATCH);
+    const results = await Promise.allSettled(
+      batch.map((tripId) => fetchTripStopTimes(tripId, signal))
+    );
+    throwIfAborted(signal);
+    results.forEach((result, resultIndex) => {
+      thirdTimes.set(
+        batch[resultIndex],
+        result.status === "fulfilled" ? result.value : null
+      );
+    });
+  }
+
+  for (const point of thirdSeeds) {
+    const thirdTripRef = String(point.outgoing?.tripref || "");
+    if (!allowedThirdTrips.has(thirdTripRef)) continue;
+    const thirdStopTimes = thirdTimes.get(thirdTripRef);
+    const secondStopTimes = secondTimes.get(point.secondTripRef);
+    if (!thirdStopTimes || !secondStopTimes) continue;
+
+    const thirdFit = analyzeTripFit({
+      stopTimes: thirdStopTimes,
+      boardingStopId: point.board.stopId,
+      boardingAimedDepartureEpochSec: point.outgoing.aimeddeparturetime,
+      destinationStopIds: destination.acceptableStopIds,
+      destinationExtraSecByStop: null,
+    });
+    if (!thirdFit.compatible || thirdFit.rideDurationSec === null) continue;
+
+    const thirdDepartureAt = Number(point.outgoing.aimeddeparturetime);
+    const destinationArrivalAt =
+      thirdDepartureAt + Number(thirdFit.rideDurationSec);
+    const destinationStopId = String(thirdFit.destination?.stopId || "");
+    const finalWalkDistanceM = finiteNonNegative(
+      destination.finalWalkDistanceByStop?.[destinationStopId]
+    );
+    const finalWalkSecEstimate = estimateFinalWalkSeconds(finalWalkDistanceM);
+    const journeyArrivalAt =
+      destinationArrivalAt + (finalWalkSecEstimate || 0);
+    const originDistance =
+      finiteNonNegative(point.seed.first.stop.distanceMeters) || 0;
+    const firstTransferDistance =
+      finiteNonNegative(point.seed.board.walkingDistanceM) || 0;
+    const secondTransferDistance =
+      finiteNonNegative(point.board.walkingDistanceM) || 0;
+    const finalDistance = finalWalkDistanceM || 0;
+
+    const first = firstLegFor(point.seed);
+    const firstTransfer = firstTransferFor(point.seed);
+    const second = {
+      tripRef: point.secondTripRef,
+      lineRef: String(point.seed.outgoing?.lineref || ""),
+      boardStopId: String(point.seed.board.stopId),
+      boardStopSequence: Number(point.secondBoarding.stopSequence),
+      exitStopId: String(point.occurrence.stopId),
+      exitStopSequence: Number(point.occurrence.stopSequence),
+      departureAt: Number(point.seed.outgoing.aimeddeparturetime),
+      arrivalAt: point.incomingArrivalAt,
+      aimedDepartureAt: Number(point.seed.outgoing.aimeddeparturetime),
+      originAimedDepartureAt:
+        Number.isFinite(
+          Number(point.seed.outgoing?.originaimeddeparturetime)
+        )
+          ? Number(point.seed.outgoing.originaimeddeparturetime)
+          : null,
+      liveState: "schedule",
+    };
+    const secondTransfer = {
+      alightStopId: String(point.occurrence.stopId),
+      alightStopSequence: Number(point.occurrence.stopSequence),
+      boardStopId: String(point.board.stopId),
+      boardStopName: String(
+        point.board.stopName || stopName(point.board.stopId, networkStops)
+      ),
+      walkingDistanceM: secondTransferDistance,
+      feasibility: point.feasibility,
+    };
+    const third = {
+      tripRef: thirdTripRef,
+      lineRef: String(point.outgoing?.lineref || ""),
+      boardStopId: String(point.board.stopId),
+      boardStopSequence:
+        Number.isFinite(Number(thirdFit.boarding?.stopSequence))
+          ? Number(thirdFit.boarding.stopSequence)
+          : null,
+      exitStopId: destinationStopId,
+      exitStopSequence:
+        Number.isFinite(Number(thirdFit.destination?.stopSequence))
+          ? Number(thirdFit.destination.stopSequence)
+          : null,
+      departureAt: thirdDepartureAt,
+      arrivalAt: destinationArrivalAt,
+      aimedDepartureAt: thirdDepartureAt,
+      originAimedDepartureAt:
+        Number.isFinite(Number(point.outgoing?.originaimeddeparturetime))
+          ? Number(point.outgoing.originaimeddeparturetime)
+          : null,
+      liveState: "schedule",
+    };
+
+    const id = [
+      first.tripRef,
+      first.exitStopId,
+      second.tripRef,
+      second.exitStopId,
+      third.tripRef,
+      third.exitStopId,
+      third.departureAt,
+    ].join(":");
+    if (seen.has(id)) continue;
+    seen.add(id);
+
+    candidates.push({
+      id,
+      originStopId: String(point.seed.first.stop.id),
+      originStopName: String(
+        point.seed.first.stop.name || point.seed.first.stop.id
+      ),
+      originDistanceMeters: originDistance,
+      legs: [first, second, third],
+      transfers: [firstTransfer, secondTransfer],
+      // Legacy aliases remain for one-transfer UI/tests while generic
+      // orchestration consumes legs/transfers.
+      first,
+      transfer: firstTransfer,
+      second,
+      destinationStopId,
+      destinationArrivalAt,
+      finalWalkDistanceM,
+      finalWalkSecEstimate,
+      journeyArrivalAt,
+      totalWalkingDistanceM:
+        originDistance +
+        firstTransferDistance +
+        secondTransferDistance +
+        finalDistance,
+      reliability:
+        point.seed.feasibility.state === "tight" ||
+        point.feasibility.state === "tight" ||
+        point.seed.first.liveState === "delayed"
+          ? "low"
+          : "medium",
+    });
+  }
+
+  candidates.sort((left, right) => compareItineraries(left, right));
 
   return candidates.slice(0, MAX_OPTIONS);
 }
@@ -455,7 +767,7 @@ export default function useTransferJourneyOptions({
   destination,
   positionAccuracy = null,
 }) {
-  /** @type {[TransferJourneyOption[], import("react").Dispatch<import("react").SetStateAction<TransferJourneyOption[]>>]} */
+  /** @type {[MultiLegJourneyOption[], import("react").Dispatch<import("react").SetStateAction<MultiLegJourneyOption[]>>]} */
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
   const requestRef = useRef({

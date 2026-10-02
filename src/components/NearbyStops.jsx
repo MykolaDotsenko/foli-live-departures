@@ -552,7 +552,7 @@ function NearbyStops({
             directSearchComplete &&
             transferState === "loading" && (
               <p className={styles.notice} role="status">
-                {t("No direct trip found nearby. Checking one-transfer options…")}
+                {t("No direct trip found nearby. Checking options with up to two transfers…")}
               </p>
             )}
 
@@ -572,7 +572,7 @@ function NearbyStops({
             transferState === "ready" &&
             transferJourneyOptions.length === 0 && (
               <p className={styles.notice} role="status">
-                {t("No reliable one-transfer option was found from the nearby stops.")}
+                {t("No reliable option with up to two transfers was found from the nearby stops.")}
               </p>
             )}
 

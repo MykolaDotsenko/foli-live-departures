@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   # Only a CI run that is actually allowed to deploy shares the production
@@ -34,7 +35,30 @@ jobs:
     runs-on: ubuntu-latest
     env:
       VITE_BASE_PATH: /foli-live-departures/
+      VITE_BUILD_SHA: ${{ github.event.workflow_run.head_sha }}
     steps:
+      - name: Verify merged PR provenance before repository code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pull="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$GITHUB_REPOSITORY/commits/$CANDIDATE_SHA/pulls" \
+              | jq -r --arg sha "$CANDIDATE_SHA" \
+                  '.[] | select(.state == "closed" and .merged_at != null and .base.ref == "master" and .merge_commit_sha == $sha) | .number' \
+              | head -n 1
+          )"
+          test -n "$pull" || {
+            echo "Refusing release path: $CANDIDATE_SHA is not the exact merge commit of a merged PR into master."
+            exit 1
+          }
+          echo "Verified merged PR #$pull for $CANDIDATE_SHA."
+
       - name: Checkout verified revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

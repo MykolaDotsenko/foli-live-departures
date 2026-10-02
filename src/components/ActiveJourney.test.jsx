@@ -620,3 +620,108 @@ test("same-stop transfer leg 2 says stay instead of pretending there is a walk",
   expect(screen.queryByText(/About 0 m to the boarding stop/i)).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
 });
+
+test("renders second and final legs of a three-leg itinerary without legacy aliases", () => {
+  const base = {
+    itinerary: {
+      legs: [
+        {
+          tripRef: "first",
+          lineRef: "1",
+          boardStopId: "100",
+          exitStopId: "500",
+          departureAt: 2_000_000_000,
+          arrivalAt: 2_000_000_300,
+        },
+        {
+          tripRef: "second",
+          lineRef: "7",
+          boardStopId: "500",
+          exitStopId: "700",
+          departureAt: 2_000_000_600,
+          arrivalAt: 2_000_000_900,
+        },
+        {
+          tripRef: "third",
+          lineRef: "18",
+          boardStopId: "700",
+          exitStopId: "900",
+          departureAt: 2_000_001_200,
+          arrivalAt: 2_000_001_500,
+        },
+      ],
+      transfers: [
+        {
+          alightStopId: "500",
+          boardStopId: "500",
+          boardStopName: "Hub A",
+          walkingDistanceM: 0,
+        },
+        {
+          alightStopId: "700",
+          boardStopId: "700",
+          boardStopName: "Hub B",
+          walkingDistanceM: 0,
+        },
+      ],
+    },
+    transferPlan: null,
+    transferLeg: null,
+  };
+
+  const common = {
+    stop: { id: "500", lat: 60.4518, lon: 22.2666 },
+    online: true,
+    onConfirmAtStop: () => {},
+    onShowDeparture: () => {},
+    onChooseAnother: () => {},
+    onOpenStop: () => {},
+  };
+
+  const { rerender } = render(
+    <ActiveJourney
+      {...common}
+      journey={journey({
+        ...base,
+        activeLegIndex: 1,
+        lineRef: "7",
+        stopId: "500",
+        stopName: "Hub A",
+        phase: "waiting",
+        atStopConfirmedAt: 1_900_000_010_000,
+      })}
+    />
+  );
+
+  expect(
+    screen.getByText("Leg 2 of 3 · change at Hub B to line 18")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Journey Assistant resumes with the next leg/i)
+  ).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney
+      {...common}
+      journey={journey({
+        ...base,
+        activeLegIndex: 2,
+        lineRef: "18",
+        stopId: "700",
+        stopName: "Hub B",
+        phase: "waiting",
+        atStopConfirmedAt: 1_900_000_020_000,
+      })}
+    />
+  );
+
+  expect(
+    screen.getByText("Leg 3 of 3 · continue on line 18")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "When line 18 arrives, open the selected departure and start the Get-off alert."
+    )
+  ).toBeInTheDocument();
+});
+

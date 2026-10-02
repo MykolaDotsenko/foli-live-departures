@@ -46,6 +46,9 @@ jobs:
       - name: Verify deployment trust boundary
         run: npm run verify:deployment
 
+      - name: Verify merged-PR release provenance contract
+        run: npm run verify:release-provenance
+
       - name: Verify backendless PWA architecture
         run: npm run verify:architecture
 

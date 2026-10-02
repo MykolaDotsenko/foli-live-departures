@@ -13,7 +13,8 @@ Record at least:
 
 ## Minimum ride matrix
 
-Complete at least 15 journeys:
+Run this matrix only after the feature-complete pre-field release candidate is
+frozen. Complete at least 20 journeys:
 
 ### Direct rides — 5
 
@@ -49,6 +50,21 @@ Verify:
 - [ ] cancellation/disappearance never silently switches the journey;
 - [ ] recovery retains the destination and requires explicit replacement choice.
 
+### Two-transfer journeys — 5
+
+Cover both same-stop and cross-platform changes when practical.
+
+Verify:
+
+- [ ] leg 1 remains authoritative in Ride Mode until the exact first transfer occurrence;
+- [ ] leg 2 becomes current only after authoritative handoff;
+- [ ] leg 3 never silently replaces an earlier committed leg;
+- [ ] both future legs are revalidated from fresh SIRI without timetable data being presented as live;
+- [ ] a distant future-leg problem is recorded without interrupting the current ride prematurely;
+- [ ] the problem becomes actionable at the next safe transfer boundary;
+- [ ] both transfer instructions identify the correct stop/platform context;
+- [ ] no cancellation, disappearance or delay causes a silent itinerary switch.
+
 ### Degraded / recovery scenarios — 5
 
 Safely exercise combinations such as:
@@ -77,6 +93,7 @@ On the physical phones:
 
 For each run keep:
 
+- the local sanitized field-test report from the exact release candidate when field-test mode is enabled;
 - date/time;
 - route and boarding/target stop IDs;
 - device/OS/browser;

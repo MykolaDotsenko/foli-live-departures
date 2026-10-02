@@ -52,6 +52,7 @@ jobs:
         env:
           VITE_BASE_PATH: /
           VITE_NATIVE_BUILD: "true"
+          VITE_BUILD_SHA: ${{ github.sha }}
         run: npm run build
 
       - name: Verify native provider trust boundary

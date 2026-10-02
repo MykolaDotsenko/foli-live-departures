@@ -5,15 +5,58 @@ import { buildWalkingDirectionsUrl } from "../utils/maps";
 import { formatClock, formatDue } from "../utils/time";
 import styles from "./ActiveJourney.module.css";
 
-function isSecondTransferLeg(journey) {
-  return Boolean(journey?.transferPlan && journey.transferLeg === 2);
+function itineraryContext(journey) {
+  const activeIndex = Number(journey?.activeLegIndex);
+  if (
+    journey?.itinerary &&
+    Number.isInteger(activeIndex) &&
+    activeIndex >= 0
+  ) {
+    const legs = journey.itinerary.legs || [];
+    return {
+      activeIndex,
+      totalLegs: legs.length,
+      current: legs[activeIndex] || null,
+      previousTransfer:
+        activeIndex > 0
+          ? journey.itinerary.transfers?.[activeIndex - 1] || null
+          : null,
+      nextTransfer: journey.itinerary.transfers?.[activeIndex] || null,
+      next: legs[activeIndex + 1] || null,
+    };
+  }
+
+  if (journey?.transferPlan) {
+    const legacyIndex = journey.transferLeg === 2 ? 1 : 0;
+    return {
+      activeIndex: legacyIndex,
+      totalLegs: 2,
+      current:
+        legacyIndex === 0
+          ? journey.transferPlan.first || null
+          : journey.transferPlan.second || null,
+      previousTransfer:
+        legacyIndex === 1 ? journey.transferPlan.transfer || null : null,
+      nextTransfer:
+        legacyIndex === 0 ? journey.transferPlan.transfer || null : null,
+      next:
+        legacyIndex === 0 ? journey.transferPlan.second || null : null,
+    };
+  }
+
+  return null;
 }
 
-function secondLegUsesSameStop(journey) {
-  return (
-    isSecondTransferLeg(journey) &&
-    String(journey.transferPlan.transfer?.alightStopId || "") ===
-      String(journey.transferPlan.transfer?.boardStopId || "")
+function isTransferContinuationLeg(journey) {
+  return (itineraryContext(journey)?.activeIndex || 0) > 0;
+}
+
+function currentLegUsesSameTransferStop(journey) {
+  const transfer = itineraryContext(journey)?.previousTransfer;
+  return Boolean(
+    transfer &&
+      String(transfer.alightStopId || "") ===
+        String(transfer.boardStopId || "")
   );
 }
 
@@ -22,7 +65,7 @@ function phaseTitle(journey) {
   if (journey.phase === "waiting") {
     return t("Wait for line {line}", { line: journey.lineRef || "—" });
   }
-  if (secondLegUsesSameStop(journey)) {
+  if (currentLegUsesSameTransferStop(journey)) {
     return t("Stay at {stop}", { stop: journey.stopName });
   }
   return t("Walk to {stop}", { stop: journey.stopName });
@@ -38,11 +81,18 @@ function recoveryText(journey) {
   if (journey.recoveryReason === "cancelled") {
     return t("Your selected bus was cancelled.");
   }
+  const totalLegs = itineraryContext(journey)?.totalLegs || 0;
   if (journey.recoveryReason === "transfer-cancelled") {
-    return t("Your second bus was cancelled. Choose a fresh option.");
+    return totalLegs > 2
+      ? t("A committed future bus was cancelled. Choose a fresh option.")
+      : t("Your second bus was cancelled. Choose a fresh option.");
   }
   if (journey.recoveryReason === "transfer-missed") {
-    return t("The second bus has probably been missed. Choose a fresh option.");
+    return totalLegs > 2
+      ? t(
+          "A committed future bus has probably been missed. Choose a fresh option."
+        )
+      : t("The second bus has probably been missed. Choose a fresh option.");
   }
   if (journey.recoveryReason === "transfer-risk") {
     return t(
@@ -53,32 +103,48 @@ function recoveryText(journey) {
 }
 
 function transferPlanText(journey) {
-  if (!journey.transferPlan) return "";
-  if (journey.transferLeg === 1) {
-    return t("Leg 1 of 2 · change at {stop} to line {line}", {
-      stop:
-        journey.transferPlan.transfer?.boardStopName ||
-        journey.transferPlan.transfer?.boardStopId,
-      line: journey.transferPlan.second?.lineRef || "—",
-    });
+  const context = itineraryContext(journey);
+  if (!context || context.totalLegs < 2) return "";
+
+  const current = context.activeIndex + 1;
+  if (context.next && context.nextTransfer) {
+    return t(
+      "Leg {current} of {total} · change at {stop} to line {line}",
+      {
+        current,
+        total: context.totalLegs,
+        stop:
+          context.nextTransfer.boardStopName ||
+          context.nextTransfer.boardStopId ||
+          "—",
+        line: context.next.lineRef || "—",
+      }
+    );
   }
-  return t("Leg 2 of 2 · continue on line {line}", {
-    line: journey.lineRef || journey.transferPlan.second?.lineRef || "—",
+
+  return t("Leg {current} of {total} · continue on line {line}", {
+    current,
+    total: context.totalLegs,
+    line: journey.lineRef || context.current?.lineRef || "—",
   });
 }
 
 function transferLiveStatusText(journey) {
-  const state = journey.transferRevalidation;
+  const context = itineraryContext(journey);
+  const state =
+    context?.next
+      ? journey.futureLegRevalidations?.[context.activeIndex + 1] ||
+        journey.transferRevalidation
+      : null;
   if (
-    !journey.transferPlan ||
-    journey.transferLeg !== 1 ||
+    !context?.next ||
     journey.phase === "recovery" ||
     !state
   ) {
     return "";
   }
 
-  const line = journey.transferPlan.second?.lineRef || "—";
+  const line = context.next.lineRef || "—";
   const slackSec = Number(state.feasibility?.slackSec);
   const marginMinutes =
     Number.isFinite(slackSec) && slackSec >= 0
@@ -140,8 +206,10 @@ export default function ActiveJourney({
   if (!journey) return null;
 
   const transferLiveStatus = transferLiveStatusText(journey);
-  const secondTransferLeg = isSecondTransferLeg(journey);
-  const sameTransferStop = secondLegUsesSameStop(journey);
+  const itinerary = itineraryContext(journey);
+  const continuationLeg = isTransferContinuationLeg(journey);
+  const sameTransferStop = currentLegUsesSameTransferStop(journey);
+  const hasFutureLeg = Boolean(itinerary?.next && itinerary?.nextTransfer);
   const walkingUrl =
     online && !sameTransferStop ? buildWalkingDirectionsUrl(stop) : "";
 
@@ -165,7 +233,7 @@ export default function ActiveJourney({
         </span>
       </div>
 
-      {journey.transferPlan && (
+      {itinerary?.totalLegs > 1 && (
         <p className={styles.transferPlan}>{transferPlanText(journey)}</p>
       )}
 
@@ -219,7 +287,7 @@ export default function ActiveJourney({
       {journey.phase === "walking-to-stop" && (
         <>
           <p className={styles.primaryStatus}>
-            {secondTransferLeg
+            {continuationLeg
               ? sameTransferStop
                 ? t("Stay here for line {line}.", {
                     line: journey.lineRef || "—",
@@ -234,7 +302,7 @@ export default function ActiveJourney({
                 })}
           </p>
           <p className={styles.note}>
-            {secondTransferLeg
+            {continuationLeg
               ? sameTransferStop
                 ? t(
                     "You are at the transfer stop. Confirm it below before waiting for the next bus."
@@ -252,18 +320,22 @@ export default function ActiveJourney({
       {journey.phase === "waiting" && (
         <>
           <p className={styles.primaryStatus}>
-            {secondTransferLeg
+            {continuationLeg
               ? t("Wait here for line {line}.", {
                   line: journey.lineRef || "—",
                 })
               : t("Your selected bus is pinned first in the departure board.")}
           </p>
           <p className={styles.note}>
-            {journey.transferPlan && journey.transferLeg === 1
-              ? t(
-                  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
-                )
-              : secondTransferLeg
+            {hasFutureLeg
+              ? itinerary?.totalLegs > 2
+                ? t(
+                    "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
+                  )
+                : t(
+                    "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
+                  )
+              : continuationLeg
                 ? t(
                     "When line {line} arrives, open the selected departure and start the Get-off alert.",
                     { line: journey.lineRef || "—" }
@@ -349,7 +421,7 @@ export default function ActiveJourney({
               className={styles.primaryButton}
               onClick={onShowDeparture}
             >
-              {secondTransferLeg
+              {continuationLeg
                 ? t("Show line {line} departure", {
                     line: journey.lineRef || "—",
                   })

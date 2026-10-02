@@ -1,7 +1,15 @@
 import { getDepartureTime } from "./time";
-import { assessTransfer } from "./transferFeasibility";
+import {
+  activeJourneyFromItinerary,
+  advanceItineraryAfterRide,
+  applyFutureLegRevalidation,
+  currentItineraryIndex,
+  itineraryHasFutureLeg,
+  recoverItineraryAfterRide,
+  rideMatchesCurrentItineraryLeg,
+} from "./activeItinerary";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, TransferJourneyOption } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferJourneyOption, TransferRevalidationState } from "../types/journey" */
 
 const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
@@ -60,9 +68,52 @@ export function activeJourneyFromOption(
     finitePositive(option?.departure?.journeyArrivalAt) ??
     destinationArrivalAt;
   const finalWalkDistanceM = Number(option?.departure?.finalWalkDistanceM);
-  const finalWalkSecEstimate = Number(
-    option?.departure?.finalWalkSecEstimate
-  );
+  const finalWalkSecEstimate = Number(option?.departure?.finalWalkSecEstimate);
+  const destinationStopId = String(option?.departure?.destinationStopId || "");
+
+  /** @type {MultiLegJourneyOption | null} */
+  const itinerary =
+    destinationArrivalAt !== null && destinationStopId
+      ? {
+          id: String(option.id || [stopId, tripRef, departureAt].join(":")),
+          originStopId: stopId,
+          originStopName: String(option.stopName || stopId),
+          originDistanceMeters: Math.max(0, Number(option.distanceMeters) || 0),
+          legs: [
+            {
+              tripRef,
+              lineRef,
+              boardStopId: stopId,
+              boardStopSequence: null,
+              exitStopId: destinationStopId,
+              exitStopSequence: null,
+              departureAt,
+              arrivalAt: destinationArrivalAt,
+              aimedDepartureAt,
+              originAimedDepartureAt,
+              liveState: option.departure.liveState || "unknown",
+            },
+          ],
+          transfers: [],
+          destinationStopId,
+          destinationArrivalAt,
+          finalWalkDistanceM:
+            Number.isFinite(finalWalkDistanceM) && finalWalkDistanceM >= 0
+              ? finalWalkDistanceM
+              : null,
+          finalWalkSecEstimate:
+            Number.isFinite(finalWalkSecEstimate) && finalWalkSecEstimate >= 0
+              ? finalWalkSecEstimate
+              : null,
+          journeyArrivalAt: journeyArrivalAt ?? destinationArrivalAt,
+          totalWalkingDistanceM:
+            Math.max(0, Number(option.distanceMeters) || 0) +
+            (Number.isFinite(finalWalkDistanceM) && finalWalkDistanceM >= 0
+              ? finalWalkDistanceM
+              : 0),
+          reliability: "high",
+        }
+      : null;
 
   return {
     id: String(option.id || [stopId, tripRef, departureAt].join(":")),
@@ -75,7 +126,7 @@ export function activeJourneyFromOption(
     distanceMeters: Math.max(0, Number(option.distanceMeters) || 0),
     tripRef,
     lineRef,
-    destinationStopId: String(option.departure.destinationStopId || ""),
+    destinationStopId,
     destinationStopSequence: null,
     departureAt,
     aimedDepartureAt,
@@ -87,8 +138,7 @@ export function activeJourneyFromOption(
         ? finalWalkDistanceM
         : null,
     finalWalkSecEstimate:
-      Number.isFinite(finalWalkSecEstimate) &&
-      finalWalkSecEstimate >= 0
+      Number.isFinite(finalWalkSecEstimate) && finalWalkSecEstimate >= 0
         ? finalWalkSecEstimate
         : null,
     liveState: option.departure.liveState || "unknown",
@@ -97,13 +147,17 @@ export function activeJourneyFromOption(
     selectedAt,
     atStopConfirmedAt: null,
     lastSeenAt: selectedAt,
+    itinerary,
+    activeLegIndex: itinerary ? 0 : null,
+    futureLegRevalidations: {},
     transferPlan: null,
     transferLeg: null,
+    transferRevalidation: null,
   };
 }
 
 /**
- * @param {TransferJourneyOption} option
+ * @param {TransferJourneyOption | MultiLegJourneyOption} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
@@ -113,82 +167,13 @@ export function activeJourneyFromTransferOption(
   destination,
   nowMs = Date.now()
 ) {
-  const first = option?.first;
-  const second = option?.second;
-  const stopId = String(option?.originStopId || "");
-  const destinationId = String(destination?.id || "");
-  const label = destinationLabel(destination);
-  const selectedAt = Number(nowMs);
-  const departureAt = finitePositive(first?.departureAt);
-  const destinationArrivalAt = finitePositive(option?.destinationArrivalAt);
-  const journeyArrivalAt =
-    finitePositive(option?.journeyArrivalAt) ?? destinationArrivalAt;
-
-  if (
-    !/^\d+$/.test(stopId) ||
-    !String(first?.tripRef || "") ||
-    !String(second?.tripRef || "") ||
-    !String(first?.exitStopId || "") ||
-    !String(second?.exitStopId || "") ||
-    !destinationId ||
-    !label ||
-    departureAt === null ||
-    destinationArrivalAt === null ||
-    journeyArrivalAt === null ||
-    !Number.isFinite(selectedAt) ||
-    selectedAt <= 0
-  ) {
-    return null;
-  }
-
-  return {
-    id: String(option.id || [stopId, first.tripRef, departureAt].join(":")),
-    destinationId,
-    destinationKind: destination.kind,
-    destinationLabel: label,
-    optionLabel: "transfer",
-    stopId,
-    stopName: String(option.originStopName || stopId),
-    distanceMeters: Math.max(0, Number(option.originDistanceMeters) || 0),
-    tripRef: String(first.tripRef),
-    lineRef: String(first.lineRef || ""),
-    destinationStopId: String(first.exitStopId),
-    destinationStopSequence:
-      Number.isFinite(Number(first.exitStopSequence))
-        ? Number(first.exitStopSequence)
-        : null,
-    departureAt,
-    aimedDepartureAt:
-      finitePositive(first.aimedDepartureAt) ?? departureAt,
-    originAimedDepartureAt:
-      finitePositive(first.originAimedDepartureAt) ?? null,
-    destinationArrivalAt,
-    journeyArrivalAt,
-    finalWalkDistanceM:
-      Number.isFinite(Number(option.finalWalkDistanceM)) &&
-      Number(option.finalWalkDistanceM) >= 0
-        ? Number(option.finalWalkDistanceM)
-        : null,
-    finalWalkSecEstimate:
-      Number.isFinite(Number(option.finalWalkSecEstimate)) &&
-      Number(option.finalWalkSecEstimate) >= 0
-        ? Number(option.finalWalkSecEstimate)
-        : null,
-    liveState: first.liveState || "unknown",
-    phase: "walking-to-stop",
-    recoveryReason: null,
-    selectedAt,
-    atStopConfirmedAt: null,
-    lastSeenAt: selectedAt,
-    transferPlan: option,
-    transferLeg: 1,
-  };
+  return activeJourneyFromItinerary(option, destination, nowMs);
 }
 
 /**
- * Only the exact selected first leg may preserve a transfer plan into Ride
- * Mode. This prevents a manually opened different trip from inheriting the
- * selected connection.
+ * Preserve a committed itinerary into Ride Mode only when the exact current
+ * leg and exact selected alighting occurrence match. This now works for leg
+ * 1 or leg 2 of a three-leg itinerary.
  *
  * @param {ActiveDirectJourney | null | undefined} journey
  * @param {any} rideConfig
@@ -196,115 +181,21 @@ export function activeJourneyFromTransferOption(
  */
 export function transferJourneyForRideSelection(journey, rideConfig) {
   if (
-    !journey?.transferPlan ||
-    journey.transferLeg !== 1 ||
-    journey.phase === "recovery"
-  ) {
-    return null;
-  }
-  if (String(rideConfig?.tripRef || "") !== journey.tripRef) return null;
-  if (
-    String(rideConfig?.targetStop?.id || "") !== journey.destinationStopId
+    !journey ||
+    journey.phase === "recovery" ||
+    !itineraryHasFutureLeg(journey)
   ) {
     return null;
   }
 
-  const selectedSequence = Number(journey.destinationStopSequence);
-  const rideSequence = Number(rideConfig?.targetStop?.stopSequence);
-  if (
-    Number.isFinite(selectedSequence) &&
-    selectedSequence > 0 &&
-    Number.isFinite(rideSequence) &&
-    rideSequence > 0 &&
-    selectedSequence !== rideSequence
-  ) {
-    return null;
-  }
-
-  return journey;
+  return rideMatchesCurrentItineraryLeg(journey, rideConfig)
+    ? journey
+    : null;
 }
 
 /**
- * @param {ActiveDirectJourney | null | undefined} pending
- * @param {any} rideSession
- */
-function rideReachedSelectedTransfer(pending, rideSession) {
-  if (
-    !pending?.transferPlan ||
-    pending.transferLeg !== 1 ||
-    rideSession?.stage !== "now" ||
-    String(rideSession?.tripRef || "") !== pending.tripRef ||
-    String(rideSession?.targetStop?.id || "") !== pending.destinationStopId
-  ) {
-    return false;
-  }
-
-  const selectedSequence = Number(pending.destinationStopSequence);
-  const rideSequence = Number(rideSession?.targetStop?.stopSequence);
-  return !(
-    Number.isFinite(selectedSequence) &&
-    selectedSequence > 0 &&
-    Number.isFinite(rideSequence) &&
-    rideSequence > 0 &&
-    selectedSequence !== rideSequence
-  );
-}
-
-/**
- * Preserve one canonical conversion into the committed second leg. Recovery
- * may change location/leg context after an authoritative arrival, but never
- * clears the recovery reason or silently chooses another trip.
- *
- * @param {ActiveDirectJourney} pending
- * @param {number} selectedAt
- * @param {import("../types/journey").ActiveJourneyPhase} phase
- * @param {import("../types/journey").ActiveJourneyRecoveryReason} recoveryReason
- * @returns {ActiveDirectJourney | null}
- */
-function secondLegJourney(pending, selectedAt, phase, recoveryReason) {
-  const plan = pending.transferPlan;
-  const second = plan?.second;
-  const departureAt = finitePositive(second?.departureAt);
-  if (
-    !plan ||
-    !second ||
-    departureAt === null ||
-    !Number.isFinite(selectedAt) ||
-    selectedAt <= 0
-  ) {
-    return null;
-  }
-
-  return {
-    ...pending,
-    stopId: String(second.boardStopId),
-    stopName: String(plan.transfer.boardStopName || second.boardStopId),
-    distanceMeters: Math.max(0, Number(plan.transfer.walkingDistanceM) || 0),
-    tripRef: String(second.tripRef),
-    lineRef: String(second.lineRef || ""),
-    destinationStopId: String(second.exitStopId),
-    destinationStopSequence:
-      Number.isFinite(Number(second.exitStopSequence))
-        ? Number(second.exitStopSequence)
-        : null,
-    departureAt,
-    aimedDepartureAt:
-      finitePositive(second.aimedDepartureAt) ?? departureAt,
-    originAimedDepartureAt:
-      finitePositive(second.originAimedDepartureAt) ?? null,
-    liveState: second.liveState || "schedule",
-    phase,
-    recoveryReason,
-    selectedAt,
-    atStopConfirmedAt: null,
-    lastSeenAt: selectedAt,
-    transferLeg: 2,
-  };
-}
-
-/**
- * Ride Mode is authoritative for leg 1. Only its NOW stage at the exact
- * selected transfer occurrence can advance Journey Mode to leg 2.
+ * Backward-compatible name; implementation is generic for any current leg
+ * with a committed future leg.
  *
  * @param {ActiveDirectJourney | null | undefined} pending
  * @param {any} rideSession
@@ -316,61 +207,12 @@ export function completedTransferJourney(
   rideSession,
   nowMs = Date.now()
 ) {
-  if (
-    !pending?.transferPlan ||
-    pending.transferLeg !== 1 ||
-    pending.phase === "recovery" ||
-    !rideReachedSelectedTransfer(pending, rideSession)
-  ) {
-    return null;
-  }
-
-  const plan = pending.transferPlan;
-  const selectedAt = Number(nowMs);
-  const departureAt = finitePositive(plan.second?.departureAt);
-  if (
-    departureAt === null ||
-    !Number.isFinite(selectedAt) ||
-    selectedAt <= 0
-  ) {
-    return null;
-  }
-
-  const nowSec = Math.floor(selectedAt / 1000);
-  const remainingTransfer = assessTransfer({
-    incomingArrivalAt: nowSec,
-    outgoingDepartureAt: departureAt,
-    walkingDistanceM: plan.transfer.walkingDistanceM,
-    sameStop:
-      String(plan.transfer.alightStopId) ===
-      String(plan.transfer.boardStopId),
-    incomingLiveState: "live",
-  });
-
-  const missed = departureAt <= nowSec;
-  const phase = remainingTransfer.recommendable
-    ? "walking-to-stop"
-    : "recovery";
-  const recoveryReason =
-    phase === "recovery"
-      ? missed
-        ? "transfer-missed"
-        : "transfer-risk"
-      : null;
-
-  return secondLegJourney(
-    pending,
-    selectedAt,
-    phase,
-    recoveryReason
-  );
+  return advanceItineraryAfterRide(pending, rideSession, nowMs);
 }
 
 /**
- * Ending Ride Mode before it authoritatively reaches the selected transfer
- * occurrence must never silently advance to leg 2. Preserve the committed
- * plan only as recovery context so the passenger can deliberately choose
- * another option.
+ * Backward-compatible name; preserves current-leg authority for N-leg
+ * itineraries and never silently skips a leg.
  *
  * @param {ActiveDirectJourney | null | undefined} pending
  * @param {any} rideSession
@@ -382,48 +224,37 @@ export function recoverTransferJourneyAfterRide(
   rideSession,
   nowMs = Date.now()
 ) {
-  if (!pending?.transferPlan || pending.transferLeg !== 1) return null;
+  return recoverItineraryAfterRide(pending, rideSession, nowMs);
+}
 
-  const selectedAt = Number(nowMs);
-  if (!Number.isFinite(selectedAt) || selectedAt <= 0) return null;
-
-  if (
-    pending.phase === "recovery" &&
-    ["transfer-cancelled", "transfer-risk", "transfer-missed"].includes(
-      String(pending.recoveryReason || "")
-    )
-  ) {
-    if (rideReachedSelectedTransfer(pending, rideSession)) {
-      return secondLegJourney(
-        pending,
-        selectedAt,
-        "recovery",
-        pending.recoveryReason
-      );
-    }
-
-    return {
-      ...pending,
-      selectedAt,
-      lastSeenAt: Math.max(Number(pending.lastSeenAt) || 0, selectedAt),
-    };
-  }
-
-  const secondDepartureAt = finitePositive(
-    pending.transferPlan?.second?.departureAt
-  );
-  const nowSec = Math.floor(selectedAt / 1000);
-  const missed =
-    rideSession?.stage === "missed" ||
-    (secondDepartureAt !== null && nowSec >= secondDepartureAt);
-
-  return {
-    ...pending,
-    phase: "recovery",
-    recoveryReason: missed ? "transfer-missed" : "transfer-risk",
-    selectedAt,
-    lastSeenAt: Math.max(Number(pending.lastSeenAt) || 0, selectedAt),
-  };
+/**
+ * Apply live evidence to any concrete committed future leg. Existing callers
+ * that omit legIndex continue to target the immediate next leg.
+ *
+ * @param {ActiveDirectJourney | null} journey
+ * @param {TransferRevalidationState | null | undefined} revalidation
+ * @param {number | null} [legIndex]
+ * @returns {ActiveDirectJourney | null}
+ */
+export function revalidateFutureJourneyLeg(
+  journey,
+  revalidation,
+  legIndex = null
+) {
+  const currentIndex = currentItineraryIndex(journey);
+  const hasExplicitLegIndex =
+    legIndex !== null &&
+    legIndex !== undefined &&
+    Number.isInteger(Number(legIndex)) &&
+    Number(legIndex) >= 0;
+  const target = hasExplicitLegIndex
+    ? Number(legIndex)
+    : currentIndex === null
+      ? null
+      : currentIndex + 1;
+  return target === null
+    ? journey
+    : applyFutureLegRevalidation(journey, target, revalidation);
 }
 
 /**
@@ -620,44 +451,91 @@ export function observeActiveJourney(journey, observation) {
       journey.aimedDepartureAt;
 
     const departureShift = updatedDeparture - journey.departureAt;
-    const firstTransferLeg =
-      journey.transferPlan && journey.transferLeg === 1
-        ? journey.transferPlan.first
-        : null;
-    // On a direct journey, a boarding delay shifts the downstream arrival.
-    // On transfer leg 1 it only shifts the first bus's transfer arrival:
-    // the committed second bus keeps its own timetable/live prediction.
+    const itineraryIndex = currentItineraryIndex(journey);
+    const itineraryCurrent =
+      itineraryIndex === null
+        ? null
+        : journey.itinerary?.legs?.[itineraryIndex] || null;
+    const hasFuture =
+      itineraryIndex !== null &&
+      Boolean(journey.itinerary?.legs?.[itineraryIndex + 1]);
+    // A delay on the final/direct leg shifts door arrival. A delay on an
+    // earlier leg changes transfer arrival/catchability but never fabricates
+    // the independent future bus's final ETA.
     const shiftedDestinationArrival =
-      firstTransferLeg
+      hasFuture
         ? journey.destinationArrivalAt
         : journey.destinationArrivalAt === null
           ? null
           : journey.destinationArrivalAt + departureShift;
     const shiftedJourneyArrival =
-      firstTransferLeg
+      hasFuture
         ? journey.journeyArrivalAt
         : journey.journeyArrivalAt === null
           ? shiftedDestinationArrival
           : journey.journeyArrivalAt + departureShift;
+    /** @type {import("../types/journey").LiveState} */
+    const currentLegLiveState =
+      arrival.monitored === true
+        ? "live"
+        : arrival.monitored === false
+          ? "schedule"
+          : itineraryCurrent?.liveState || journey.liveState || "unknown";
+    const currentLegArrivalAt = itineraryCurrent
+      ? finitePositive(itineraryCurrent.arrivalAt) !== null
+        ? Number(itineraryCurrent.arrivalAt) + departureShift
+        : itineraryCurrent.arrivalAt
+      : null;
+    const itineraryLegChanged = itineraryCurrent
+      ? itineraryCurrent.departureAt !== updatedDeparture ||
+        itineraryCurrent.aimedDepartureAt !== observedPlanned ||
+        itineraryCurrent.arrivalAt !== currentLegArrivalAt ||
+        itineraryCurrent.liveState !== currentLegLiveState
+      : false;
+    const nextItinerary =
+      itineraryLegChanged && journey.itinerary && itineraryIndex !== null
+        ? {
+            ...journey.itinerary,
+            legs: journey.itinerary.legs.map((leg, index) =>
+              index === itineraryIndex
+                ? {
+                    ...leg,
+                    departureAt: updatedDeparture,
+                    aimedDepartureAt: observedPlanned,
+                    arrivalAt: currentLegArrivalAt ?? leg.arrivalAt,
+                    liveState: currentLegLiveState,
+                  }
+                : leg
+            ),
+          }
+        : journey.itinerary;
+    const firstTransferLeg =
+      journey.transferPlan && journey.transferLeg === 1
+        ? journey.transferPlan.first
+        : null;
     const shiftedFirstArrival =
       firstTransferLeg && finitePositive(firstTransferLeg.arrivalAt) !== null
         ? Number(firstTransferLeg.arrivalAt) + departureShift
         : null;
-    /** @type {import("../types/journey").LiveState} */
-    const firstLegLiveState =
-      arrival.monitored === true ? "live" : "schedule";
+    const nextFirstTransferArrivalAt =
+      shiftedFirstArrival ?? firstTransferLeg?.arrivalAt;
+    const firstTransferLegChanged = firstTransferLeg
+      ? firstTransferLeg.departureAt !== updatedDeparture ||
+        firstTransferLeg.aimedDepartureAt !== observedPlanned ||
+        firstTransferLeg.arrivalAt !== nextFirstTransferArrivalAt ||
+        firstTransferLeg.liveState !== currentLegLiveState
+      : false;
     /** @type {import("../types/journey").TransferJourneyOption | null} */
     const nextTransferPlan =
-      firstTransferLeg && journey.transferPlan
+      firstTransferLegChanged && firstTransferLeg && journey.transferPlan
         ? {
             ...journey.transferPlan,
             first: {
               ...firstTransferLeg,
               departureAt: updatedDeparture,
               aimedDepartureAt: observedPlanned,
-              arrivalAt:
-                shiftedFirstArrival ?? firstTransferLeg.arrivalAt,
-              liveState: firstLegLiveState,
+              arrivalAt: nextFirstTransferArrivalAt ?? firstTransferLeg.arrivalAt,
+              liveState: currentLegLiveState,
             },
           }
         : journey.transferPlan;
@@ -683,6 +561,7 @@ export function observeActiveJourney(journey, observation) {
       journey.destinationArrivalAt === shiftedDestinationArrival &&
       journey.journeyArrivalAt === shiftedJourneyArrival &&
       journey.transferPlan === nextTransferPlan &&
+      journey.itinerary === nextItinerary &&
       journey.lineRef === nextLineRef &&
       journey.phase === nextPhase &&
       journey.recoveryReason === nextRecoveryReason &&
@@ -698,6 +577,7 @@ export function observeActiveJourney(journey, observation) {
       destinationArrivalAt: shiftedDestinationArrival,
       journeyArrivalAt: shiftedJourneyArrival,
       transferPlan: nextTransferPlan,
+      itinerary: nextItinerary,
       lineRef: nextLineRef,
       phase: nextPhase,
       recoveryReason: nextRecoveryReason,

@@ -5,6 +5,7 @@ import {
   contentSecurityPolicyPlugin,
   originOf,
 } from "./scripts/content-security-policy.mjs";
+import { createCssModuleScopedNameGenerator } from "./scripts/css-module-names.mjs";
 
 // Link previews need absolute URLs. This is where production lives; a
 // deployment elsewhere sets VITE_SITE_URL, and index.html reads it as
@@ -44,21 +45,44 @@ function connectSources(env) {
   ];
 }
 
+const generateScopedName = createCssModuleScopedNameGenerator();
+
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
+    // Release QA targets current Chromium, Firefox and mobile WebKit. ES2022
+    // is exercised by Playwright on every pull request and avoids unnecessary
+    // compatibility transforms in both the web and Android payloads.
+    target: "es2022",
+    // Lightning CSS is already part of Vite's locked toolchain. Use it for
+    // production styles while keeping Vite's default JS minifier, avoiding an
+    // extra optional Terser dependency in native/release workflows.
+    cssMinify: "lightningcss",
     // The app has no dynamic imports, so the modulepreload compatibility
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
     modulePreload: { polyfill: false },
+    // Keep third-party licence text available without repeating legal
+    // comments inside the executable JS bundle. The generated file ships
+    // with the static site and is outside the JS/CSS performance budget.
+    license: true,
+    rolldownOptions: {
+      output: {
+        // Rolldown uses the same built-in Oxc minifier as Vite. Full output
+        // minification performs compression/DCE without adding an optional
+        // external minifier dependency, so web and Android stay identical.
+        minify: true,
+        minifyInternalExports: true,
+        legalComments: "none",
+      },
+    },
   },
   css: {
     modules: {
-      // Default CSS-module identifiers repeat file/local names in both the
-      // stylesheet and JS class map. A six-character content hash keeps
-      // module isolation while materially reducing the executable/style
-      // payload. Global class names are unaffected.
-      generateScopedName: "[hash:base64:6]",
+      // A build-local registry guarantees uniqueness while using compact
+      // names (a, b, …). A contract test proves these names do not collide
+      // with global App.css classes on every pull request.
+      generateScopedName,
     },
   },
   plugins: [

@@ -1642,30 +1642,28 @@ The final experience should feel simpler to the passenger than the current produ
 
 ## P2 — Transfer journeys
 
-**Implementation status (2026-10-01): bounded one-transfer foundation implemented in PR #116; live second-leg revalidation implemented in PR #118; automatic direct replacement recovery is implemented in PR #119.**
+**Implementation status (2026-10-02):** the one-transfer foundation from PR #116, second-leg revalidation from PR #118 and explicit recovery from PR #119 are now generalized in PR #137 to an ordered itinerary with at most three transit legs (up to two transfers), multi-leg Active Journey handoffs and live revalidation of every committed future leg.
 
-Direct options remain preferred. If none are found after progressive nearby expansion, Journey Assistant may search for one conservative transfer using bounded client-side Föli SIRI/GTFS lookups. Ride Mode remains authoritative on each boarded leg; premature leg-1 termination fails closed into recovery and can never create final-walk guidance.
+Direct options remain preferred. When direct options are unavailable, Journey Assistant may search a strictly bounded client-side Föli SIRI/GTFS frontier with one or two transfers. Ride Mode remains authoritative on the currently boarded leg; only authoritative NOW at the exact selected alighting occurrence may advance the committed itinerary.
 
-Live second-leg revalidation contract:
-- monitor only the already committed second trip at its concrete transfer boarding stop;
+Future-leg live revalidation contract:
+- monitor each already committed future trip at its concrete boarding stop;
 - use live-only SIRI for revalidation, never timetable fallback disguised as live evidence;
-- require trip identity plus planned/origin-time occurrence anchors when available;
+- require exact trip identity plus planned/origin-time occurrence anchors when available;
 - age repeated provider snapshots naturally;
-- fresh delay/early-running evidence may update the transfer margin;
+- fresh delay/early-running evidence may update that concrete leg and transfer catchability;
 - cancellation is strong failure evidence even if the departure row has disappeared;
 - provider failure or stale data degrades to unknown and must not create false missed/unsafe recovery;
-- disappearance becomes missed only after the planned departure grace window plus repeated successful absence;
-- once live evidence has put the committed transfer into recovery, Ride Mode completion cannot silently restore or advance that old plan.
+- disappearance becomes missed only after the planned-departure grace window plus repeated successful absence;
+- a failure on the immediate next leg may enter recovery, while a failure farther ahead is recorded without stealing control from the current Ride Mode and becomes actionable only at the next safe transfer boundary;
+- no live revalidation may silently replace a committed trip.
 
 Automatic recovery contract:
-- recovery search may start only after Ride Mode authoritatively establishes the passenger at the selected transfer occurrence, or after leg 2 itself later fails;
+- recovery search may start only from passenger context established by Ride Mode or an explicit at-stop confirmation;
 - keep the original destination selected; never ask the passenger to re-enter it;
-- derive recovery origins from the authoritative transfer stop and a bounded set of nearby platforms using static stop geometry; do not invent a new GPS position;
-- if the passenger explicitly confirmed a later boarding stop before leg-2 failure, that confirmed stop becomes the recovery anchor;
-- exclude the failed concrete second run before ranking while still allowing another run of the same line;
-- search only bounded direct replacements in this release;
+- derive recovery origins from authoritative stop context and bounded nearby-platform geometry; do not invent a new GPS position;
+- exclude the failed concrete run while still allowing another run of the same line;
 - never auto-commit or silently switch to a replacement: the passenger must explicitly choose one;
-- hidden-tab / resumed recovery options fail closed until a fresh provider response refreshes them;
-- board-refresh metadata changes that do not alter recovery identity must not clear already verified replacement cards.
+- hidden-tab / resumed recovery options fail closed until a fresh provider response refreshes them.
 
-Out of scope for this release: replacement journeys requiring another transfer, 2+ transfer routing, arrive-by/leave-at controls and full pedestrian street routing.
+Remaining pre-field work is tracked separately: recovery alternatives may themselves include another bounded transfer, leave-at/arrive-by controls, routing preferences, entrance-aware destinations and the pedestrian-routing production decision.

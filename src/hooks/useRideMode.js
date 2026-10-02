@@ -28,6 +28,13 @@ import {
   rideLongOver,
 } from "../utils/rideProgress";
 import {
+  buildFieldDiagnosticReport,
+  fieldDiagnosticsRequested,
+  finishFieldDiagnostics,
+  recordFieldDiagnosticObservation,
+  startFieldDiagnostics,
+} from "../utils/fieldDiagnostics";
+import {
   RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
@@ -46,6 +53,11 @@ import useRideShape from "./useRideShape";
 import useRideWakeLock from "./useRideWakeLock";
 
 const CLOCK_INTERVAL_MS = 10_000;
+const FIELD_BUILD = {
+  version: import.meta.env.VITE_APP_VERSION || "",
+  sha: import.meta.env.VITE_BUILD_SHA || "",
+  platform: import.meta.env.VITE_NATIVE_BUILD === "true" ? "android" : "web",
+};
 
 // Ride Mode's get-off alert: one ride at a time, carried across reloads, and
 // moved through its stages by every piece of evidence as it arrives, from
@@ -66,6 +78,10 @@ export default function useRideMode() {
   const restoredRideIdRef = useRef(initialRideRef.current?.id || "");
   const [runtime, setRuntimeState] = useState(emptyRuntime);
   const [gps, setGpsState] = useState(emptyGps);
+  const diagnosticsEnabledRef = useRef(fieldDiagnosticsRequested());
+  const [fieldReport, setFieldReport] = useState(() =>
+    diagnosticsEnabledRef.current ? buildFieldDiagnosticReport() : ""
+  );
 
   const rideId = session?.id || "";
   const rideActive = Boolean(session);
@@ -115,6 +131,16 @@ export default function useRideMode() {
   });
 
   const endRide = useCallback(() => {
+    const current = sessionRef.current;
+    if (diagnosticsEnabledRef.current && current) {
+      finishFieldDiagnostics({
+        session: current,
+        runtime: runtimeRef.current,
+        gps: gpsRef.current,
+        outcome: "passenger-ended",
+      });
+      setFieldReport(buildFieldDiagnosticReport());
+    }
     stopRideAlerts();
     shapeRef.current = null;
     commitSession(null);
@@ -275,6 +301,14 @@ export default function useRideMode() {
       sessionRef.current = nextSession;
       setSession(nextSession);
       persistRide(nextSession);
+      if (diagnosticsEnabledRef.current) {
+        recordFieldDiagnosticObservation({
+          session: nextSession,
+          runtime: mergedRuntime,
+          gps: nextGps,
+          type: "stage-transition",
+        });
+      }
 
       if (announceStage) {
         announceRideStage(
@@ -309,6 +343,10 @@ export default function useRideMode() {
       commitRuntime(emptyRuntime());
       commitGps(emptyGps());
       commitSession(nextSession);
+      if (diagnosticsEnabledRef.current) {
+        startFieldDiagnostics(nextSession, FIELD_BUILD);
+        setFieldReport("");
+      }
 
       const wantsNotifications =
         nextSession.options?.notifications !== false;
@@ -349,6 +387,13 @@ export default function useRideMode() {
       const merged = { ...next, trackingHealth: trackingHealth(next) };
       runtimeRef.current = merged;
       setRuntimeState(merged);
+      if (diagnosticsEnabledRef.current && sessionRef.current) {
+        recordFieldDiagnosticObservation({
+          session: sessionRef.current,
+          runtime: merged,
+          gps: gpsRef.current,
+        });
+      }
       applyProgress(merged, gpsRef.current);
     },
     [applyProgress]
@@ -400,6 +445,8 @@ export default function useRideMode() {
     runtime,
     gps,
     wakeLockState,
+    fieldDiagnosticsEnabled: diagnosticsEnabledRef.current,
+    fieldReport,
     active: Boolean(session),
     startRide,
     endRide,

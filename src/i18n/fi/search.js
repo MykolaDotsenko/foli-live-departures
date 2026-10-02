@@ -226,31 +226,40 @@ export default {
     "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
     "Epäonnistunut bussivuoro on suljettu pois. Mikään ei muutu ennen kuin valitset uuden vaihtoehdon.",
-  "No direct trip found nearby. Checking one-transfer options…":
-    "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan yhden vaihdon vaihtoehtoja…",
-  "No reliable one-transfer option was found from the nearby stops.":
-    "Lähipysäkeiltä ei löytynyt luotettavaa yhden vaihdon vaihtoehtoa.",
+  "No direct trip found nearby. Checking options with up to two transfers…":
+    "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan enintään kahden vaihdon vaihtoehtoja…",
+  "No reliable option with up to two transfers was found from the nearby stops.":
+    "Lähipysäkeiltä ei löytynyt luotettavaa enintään kahden vaihdon vaihtoehtoa.",
   "Transfer search is temporarily unavailable. Nearby stops remain available.":
     "Vaihtoyhteyksien haku ei ole tilapäisesti käytettävissä. Lähipysäkit ovat edelleen käytettävissä.",
-  "One-transfer options": "Yhden vaihdon vaihtoehdot",
+  "Transfer options": "Vaihtoyhteydet",
   "Ways to {destination} with one change": "Reitit kohteeseen {destination} yhdellä vaihdolla",
+  "Ways to {destination} with up to two changes":
+    "Reitit kohteeseen {destination} enintään kahdella vaihdolla",
   "1 transfer": "1 vaihto",
-  "Line {first} → line {second}": "Linja {first} → linja {second}",
-  "Change at {stop} · same stop": "Vaihda pysäkillä {stop} · sama pysäkki",
-  "Change at {stop} · transfer walk ≈ {distance}":
-    "Vaihda pysäkillä {stop} · kävely vaihdossa ≈ {distance}",
+  "{count} transfers": "{count} vaihtoa",
+  "Change {number}: {stop} · same stop":
+    "Vaihto {number}: {stop} · sama pysäkki",
+  "Change {number}: {stop} · walk ≈ {distance}":
+    "Vaihto {number}: {stop} · kävely ≈ {distance}",
   "total walking ≈ {distance}": "kävelyä yhteensä ≈ {distance}",
   "to first stop": "ensimmäiselle pysäkille",
   "Comfortable transfer": "Hyvin aikaa vaihtoon",
   "Reasonable transfer": "Riittävästi aikaa vaihtoon",
   "Tight transfer": "Tiukka vaihto",
   "about {minutes} min transfer margin": "noin {minutes} min vaihtoaikaa",
-  "The second bus is based on timetable data. Live changes can reduce the transfer margin, so the app only recommends connections with conservative walking and uncertainty allowance.":
-    "Toinen bussi perustuu aikataulutietoon. Reaaliaikaiset muutokset voivat lyhentää vaihtoaikaa, joten sovellus suosittelee vain yhteyksiä, joissa kävelyyn ja epävarmuuteen on jätetty varovainen marginaali.",
-  "Leg 1 of 2 · change at {stop} to line {line}":
-    "Osuus 1/2 · vaihda pysäkillä {stop} linjalle {line}",
-  "Leg 2 of 2 · continue on line {line}":
-    "Osuus 2/2 · jatka linjalla {line}",
+  "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey.":
+    "Tulevat bussit tarkistetaan uudelleen tuoreista reaaliaikatiedoista. Sovellus pitää jokaisen valitun osuuden näkyvänä eikä koskaan vaihda matkaa taustalla toiseen.",
+  "Leg {current} of {total} · change at {stop} to line {line}":
+    "Osuus {current}/{total} · vaihda pysäkillä {stop} linjalle {line}",
+  "Leg {current} of {total} · continue on line {line}":
+    "Osuus {current}/{total} · jatka linjalla {line}",
+  "A committed future bus was cancelled. Choose a fresh option.":
+    "Valitun matkan tuleva bussi peruttiin. Valitse uusi vaihtoehto.",
+  "A committed future bus has probably been missed. Choose a fresh option.":
+    "Valitun matkan tuleva bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
+  "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg.":
+    "Kun nouset kyytiin, käynnistä tämän osuuden poistumishälytys. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa seuraavalla osuudella.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Toinen bussisi peruttiin. Valitse uusi vaihtoehto.",
   "Live check: line {line} still looks catchable.":

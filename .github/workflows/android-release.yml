@@ -20,6 +20,7 @@ on:
 permissions:
   actions: read
   contents: read
+  pull-requests: read
 
 concurrency:
   group: android-production-release
@@ -37,6 +38,28 @@ jobs:
       PACKAGE_ID: io.github.mykoladotsenko.turkudepartures
 
     steps:
+      - name: Verify merged PR provenance before repository code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          pull="$(
+            gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "/repos/$GITHUB_REPOSITORY/commits/$CANDIDATE_SHA/pulls" \
+              | jq -r --arg sha "$CANDIDATE_SHA" \
+                  '.[] | select(.state == "closed" and .merged_at != null and .base.ref == "master" and .merge_commit_sha == $sha) | .number' \
+              | head -n 1
+          )"
+          test -n "$pull" || {
+            echo "Refusing production signing: $CANDIDATE_SHA is not the exact merge commit of a merged PR into master."
+            exit 1
+          }
+          echo "Verified merged PR #$pull for $CANDIDATE_SHA."
+
       - name: Checkout verified master
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -76,6 +99,22 @@ jobs:
           : "${ANDROID_KEY_ALIAS:?ANDROID_KEY_ALIAS is required}"
           : "${ANDROID_KEY_PASSWORD:?ANDROID_KEY_PASSWORD is required}"
 
+      - name: Require increasing production version code
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          releases="$RUNNER_TEMP/production-releases.json"
+          gh api --paginate \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            --jq '.[]' \
+            | jq -s '.' > "$releases"
+          node scripts/android-release-metadata.mjs \
+            check-version "$VERSION_CODE" "$releases"
+
       - name: Require successful CI for this exact master commit
         env:
           GH_TOKEN: ${{ github.token }}
@@ -113,6 +152,8 @@ jobs:
         env:
           VITE_BASE_PATH: /
           VITE_NATIVE_BUILD: "true"
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_APP_VERSION: ${{ inputs.version_name }}
         run: |
           npm run build
           npm run verify:csp
@@ -261,7 +302,19 @@ jobs:
             --key-pass env:ANDROID_KEY_PASSWORD \
             --out "$apk" \
             "$aligned_apk"
-          "$tools_dir/apksigner" verify --verbose --print-certs "$apk"
+          cert_output="$("$tools_dir/apksigner" verify --verbose --print-certs "$apk")"
+          printf '%s\n' "$cert_output"
+          cert_sha256="$(
+            printf '%s\n' "$cert_output" \
+              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' \
+              | head -n 1 \
+              | tr '[:upper:]' '[:lower:]'
+          )"
+          [[ "$cert_sha256" =~ ^[0-9a-f]{64}$ ]] || {
+            echo "Could not extract the production signing certificate SHA-256 digest."
+            exit 1
+          }
+          echo "ANDROID_CERT_SHA256=$cert_sha256" >> "$GITHUB_ENV"
 
           jarsigner \
             -keystore "$keystore" \
@@ -278,6 +331,17 @@ jobs:
         if: always()
         shell: bash
         run: rm -rf "$RUNNER_TEMP/turku-signing"
+
+      - name: Write immutable release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="Turku-Departures-v$VERSION_NAME.apk"
+          aab="Turku-Departures-v$VERSION_NAME.aab"
+          metadata="Turku-Departures-v$VERSION_NAME.release.json"
+          export APK_SHA256="$(sha256sum "$apk" | awk '{print $1}')"
+          export AAB_SHA256="$(sha256sum "$aab" | awk '{print $1}')"
+          node scripts/android-release-metadata.mjs write "$metadata"
 
       - name: Verify signed release APK on emulator
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
@@ -308,6 +372,7 @@ jobs:
             Turku-Departures-v${{ inputs.version_name }}.apk
             Turku-Departures-v${{ inputs.version_name }}.aab
             Turku-Departures-v${{ inputs.version_name }}.sha256
+            Turku-Departures-v${{ inputs.version_name }}.release.json
           if-no-files-found: error
           retention-days: 30
 
@@ -327,17 +392,37 @@ jobs:
           name: Turku-Departures-v${{ inputs.version_name }}
           path: release-assets
 
-      - name: Verify downloaded production checksums
+      - name: Verify downloaded production checksums and metadata
         working-directory: release-assets
+        env:
+          EXPECTED_VERSION_NAME: ${{ inputs.version_name }}
+          EXPECTED_VERSION_CODE: ${{ inputs.version_code }}
         shell: bash
         run: |
           set -euo pipefail
-          sha256sum -c "Turku-Departures-v${{ inputs.version_name }}.sha256"
+          sha256sum -c "Turku-Departures-v$EXPECTED_VERSION_NAME.sha256"
+          node - <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.EXPECTED_VERSION_NAME;
+          const code = Number(process.env.EXPECTED_VERSION_CODE);
+          const metadata = JSON.parse(
+            fs.readFileSync(`Turku-Departures-v${version}.release.json`, "utf8")
+          );
+          if (
+            metadata.schema !== 1 ||
+            metadata.versionName !== version ||
+            metadata.versionCode !== code ||
+            metadata.commitSha !== process.env.GITHUB_SHA
+          ) {
+            throw new Error("Downloaded Android release metadata does not match this workflow dispatch.");
+          }
+          NODE
 
       - name: Publish verified immutable-version release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_NAME: ${{ inputs.version_name }}
+          VERSION_CODE: ${{ inputs.version_code }}
         shell: bash
         run: |
           set -euo pipefail
@@ -346,10 +431,17 @@ jobs:
             echo "Release $tag already exists; refusing to overwrite a production version."
             exit 1
           fi
+          notes="$(
+            printf '%s\n\nAndroid-Version-Code: %s\nSource-Commit: %s\n' \
+              "Production-signed Android release from verified master commit \`$GITHUB_SHA\`. APK and AAB were signed with the persistent production key; the exact APK was installed and launch-smoke-tested on Android API 35 before publication." \
+              "$VERSION_CODE" \
+              "$GITHUB_SHA"
+          )"
           gh release create "$tag" \
             "release-assets/Turku-Departures-v$VERSION_NAME.apk" \
             "release-assets/Turku-Departures-v$VERSION_NAME.aab" \
             "release-assets/Turku-Departures-v$VERSION_NAME.sha256" \
+            "release-assets/Turku-Departures-v$VERSION_NAME.release.json" \
             --target "$GITHUB_SHA" \
             --title "Turku Departures v$VERSION_NAME" \
-            --notes "Production-signed Android release from verified master commit \`$GITHUB_SHA\`. APK and AAB were signed with the persistent production key; the exact APK was installed and launch-smoke-tested on Android API 35 before publication."
+            --notes "$notes"

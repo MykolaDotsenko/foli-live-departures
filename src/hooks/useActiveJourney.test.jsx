@@ -245,3 +245,177 @@ test("applies live second-leg revalidation through the public hook API", () => {
     recoveryReason: "transfer-cancelled",
   });
 });
+
+function threeLegOption() {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id: "three-leg",
+    originStopId: "100",
+    originStopName: "Origin",
+    originDistanceMeters: 20,
+    legs: [
+      {
+        tripRef: "first-3",
+        lineRef: "1",
+        boardStopId: "100",
+        boardStopSequence: 1,
+        exitStopId: "500",
+        exitStopSequence: 5,
+        departureAt: now + 300,
+        arrivalAt: now + 600,
+        aimedDepartureAt: now + 300,
+        originAimedDepartureAt: now + 180,
+        liveState: "live",
+      },
+      {
+        tripRef: "second-3",
+        lineRef: "7",
+        boardStopId: "500",
+        boardStopSequence: 1,
+        exitStopId: "700",
+        exitStopSequence: 6,
+        departureAt: now + 900,
+        arrivalAt: now + 1_200,
+        aimedDepartureAt: now + 900,
+        originAimedDepartureAt: now + 780,
+        liveState: "schedule",
+      },
+      {
+        tripRef: "third-3",
+        lineRef: "18",
+        boardStopId: "700",
+        boardStopSequence: 1,
+        exitStopId: "900",
+        exitStopSequence: 7,
+        departureAt: now + 1_500,
+        arrivalAt: now + 1_900,
+        aimedDepartureAt: now + 1_500,
+        originAimedDepartureAt: now + 1_380,
+        liveState: "schedule",
+      },
+    ],
+    transfers: [
+      {
+        alightStopId: "500",
+        alightStopSequence: 5,
+        boardStopId: "500",
+        boardStopName: "Hub A",
+        walkingDistanceM: 0,
+        feasibility: {
+          state: "comfortable",
+          recommendable: true,
+          incomingArrivalAt: now + 600,
+          outgoingDepartureAt: now + 900,
+          walkingDistanceM: 0,
+          requiredSec: 60,
+          availableSec: 300,
+          slackSec: 240,
+        },
+      },
+      {
+        alightStopId: "700",
+        alightStopSequence: 6,
+        boardStopId: "700",
+        boardStopName: "Hub B",
+        walkingDistanceM: 0,
+        feasibility: {
+          state: "comfortable",
+          recommendable: true,
+          incomingArrivalAt: now + 1_200,
+          outgoingDepartureAt: now + 1_500,
+          walkingDistanceM: 0,
+          requiredSec: 60,
+          availableSec: 300,
+          slackSec: 240,
+        },
+      },
+    ],
+    destinationStopId: "900",
+    destinationArrivalAt: now + 1_900,
+    finalWalkDistanceM: null,
+    finalWalkSecEstimate: null,
+    journeyArrivalAt: now + 1_900,
+    totalWalkingDistanceM: 20,
+    reliability: "medium",
+  };
+}
+
+test("three-leg journey advances through both authoritative Ride Mode handoffs", () => {
+  const { result } = renderHook(() => useActiveJourney());
+  const multi = threeLegOption();
+
+  act(() => {
+    expect(result.current.selectTransferJourney(multi, destination)).toBe(true);
+  });
+  expect(result.current.journey).toMatchObject({
+    activeLegIndex: 0,
+    tripRef: "first-3",
+    destinationStopId: "500",
+    transferPlan: null,
+  });
+
+  const first = result.current.journey;
+  act(() => {
+    result.current.continueTransferAfterRide(first, {
+      tripRef: "first-3",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 5 },
+    });
+  });
+  expect(result.current.journey).toMatchObject({
+    activeLegIndex: 1,
+    tripRef: "second-3",
+    stopId: "500",
+    destinationStopId: "700",
+  });
+
+  const second = result.current.journey;
+  act(() => {
+    result.current.continueTransferAfterRide(second, {
+      tripRef: "second-3",
+      stage: "now",
+      targetStop: { id: "700", stopSequence: 6 },
+    });
+  });
+  expect(result.current.journey).toMatchObject({
+    activeLegIndex: 2,
+    tripRef: "third-3",
+    stopId: "700",
+    destinationStopId: "900",
+  });
+});
+
+test("three-leg journey can fail a specific later leg without skipping the current leg", () => {
+  const { result } = renderHook(() => useActiveJourney());
+  const multi = threeLegOption();
+
+  act(() => {
+    result.current.selectTransferJourney(multi, destination);
+  });
+  act(() => {
+    result.current.revalidateTransfer(
+      {
+        providerState: "cancelled",
+        decision: "cancelled",
+        departureAt: multi.legs[2].departureAt,
+        feasibility: multi.transfers[1].feasibility,
+        missingSinceMs: null,
+      },
+      2
+    );
+  });
+
+  expect(result.current.journey).toMatchObject({
+    activeLegIndex: 0,
+    tripRef: "first-3",
+    phase: "walking-to-stop",
+    recoveryReason: null,
+    futureLegRevalidations: {
+      2: {
+        providerState: "cancelled",
+        decision: "cancelled",
+      },
+    },
+  });
+});
+

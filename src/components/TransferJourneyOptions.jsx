@@ -26,6 +26,54 @@ function hasFinalWalk(option) {
   );
 }
 
+function transferCount(option) {
+  if (Array.isArray(option?.transfers)) return option.transfers.length;
+  return option?.transfer ? 1 : 0;
+}
+
+function legs(option) {
+  if (Array.isArray(option?.legs) && option.legs.length) return option.legs;
+  return [option?.first, option?.second].filter(Boolean);
+}
+
+function transfers(option) {
+  if (Array.isArray(option?.transfers)) return option.transfers;
+  return option?.transfer ? [option.transfer] : [];
+}
+
+function transferSummary(option) {
+  return transfers(option)
+    .map((transfer, index) => {
+      const sameStop =
+        String(transfer?.alightStopId || "") ===
+        String(transfer?.boardStopId || "");
+      const stop =
+        transfer?.boardStopName || transfer?.boardStopId || "—";
+      return sameStop
+        ? t("Change {number}: {stop} · same stop", {
+            number: index + 1,
+            stop,
+          })
+        : t("Change {number}: {stop} · walk ≈ {distance}", {
+            number: index + 1,
+            stop,
+            distance: formatDistance(transfer?.walkingDistanceM || 0),
+          });
+    })
+    .join(" · ");
+}
+
+function worstFeasibility(option) {
+  const all = transfers(option).map((item) => item?.feasibility).filter(Boolean);
+  if (all.some((item) => item.state === "tight")) {
+    return all.find((item) => item.state === "tight");
+  }
+  if (all.some((item) => item.state === "acceptable")) {
+    return all.find((item) => item.state === "acceptable");
+  }
+  return all[0] || null;
+}
+
 export default function TransferJourneyOptions({
   options,
   destinationLabel,
@@ -34,6 +82,8 @@ export default function TransferJourneyOptions({
   useLanguage();
   if (!Array.isArray(options) || options.length === 0) return null;
 
+  const maxTransfers = Math.max(...options.map(transferCount));
+
   return (
     <section
       className={styles.wrapper}
@@ -41,11 +91,15 @@ export default function TransferJourneyOptions({
     >
       <div className={styles.headingRow}>
         <div>
-          <p className={styles.kicker}>{t("One-transfer options")}</p>
+          <p className={styles.kicker}>{t("Transfer options")}</p>
           <h3 id="transfer-journey-options-title">
-            {t("Ways to {destination} with one change", {
-              destination: destinationLabel,
-            })}
+            {maxTransfers > 1
+              ? t("Ways to {destination} with up to two changes", {
+                  destination: destinationLabel,
+                })
+              : t("Ways to {destination} with one change", {
+                  destination: destinationLabel,
+                })}
           </h3>
         </div>
         <span className={styles.count}>
@@ -57,19 +111,23 @@ export default function TransferJourneyOptions({
 
       <div className={styles.grid}>
         {options.map((option) => {
-          const margin = marginText(option.transfer?.feasibility);
-          const sameStop =
-            String(option.transfer?.alightStopId || "") ===
-            String(option.transfer?.boardStopId || "");
+          const optionTransfers = transferCount(option);
+          const routeLegs = legs(option);
+          const feasibility = worstFeasibility(option);
+          const margin = marginText(feasibility);
           return (
             <button
               key={option.id}
               type="button"
               className={styles.card}
-              data-risk={option.transfer?.feasibility?.state || "unknown"}
+              data-risk={feasibility?.state || "unknown"}
               onClick={() => onSelectJourney?.(option)}
             >
-              <span className={styles.badge}>{t("1 transfer")}</span>
+              <span className={styles.badge}>
+                {optionTransfers === 1
+                  ? t("1 transfer")
+                  : t("{count} transfers", { count: optionTransfers })}
+              </span>
 
               <span className={styles.arrival}>
                 {hasFinalWalk(option)
@@ -83,27 +141,19 @@ export default function TransferJourneyOptions({
 
               <span className={styles.route}>
                 <strong>
-                  {t("Line {first} → line {second}", {
-                    first: option.first?.lineRef || "—",
-                    second: option.second?.lineRef || "—",
-                  })}
+                  {routeLegs
+                    .map((leg) => t("Line {line}", { line: leg?.lineRef || "—" }))
+                    .join(" → ")}
                 </strong>
               </span>
 
               <span className={styles.transfer}>
-                {sameStop
-                  ? t("Change at {stop} · same stop", {
-                      stop: option.transfer?.boardStopName || option.transfer?.boardStopId,
-                    })
-                  : t("Change at {stop} · transfer walk ≈ {distance}", {
-                      stop: option.transfer?.boardStopName || option.transfer?.boardStopId,
-                      distance: formatDistance(option.transfer?.walkingDistanceM || 0),
-                    })}
+                {transferSummary(option)}
               </span>
 
               <span className={styles.meta}>
                 {formatDistance(option.originDistanceMeters)} {t("to first stop")} ·{" "}
-                {formatDue(option.first?.departureAt)}
+                {formatDue(routeLegs[0]?.departureAt)}
                 {" · "}
                 {t("total walking ≈ {distance}", {
                   distance: formatDistance(option.totalWalkingDistanceM || 0),
@@ -111,7 +161,7 @@ export default function TransferJourneyOptions({
               </span>
 
               <span className={styles.risk}>
-                {riskText(option.transfer?.feasibility)}
+                {riskText(feasibility)}
                 {margin ? <> · {margin}</> : null}
               </span>
 
@@ -129,9 +179,10 @@ export default function TransferJourneyOptions({
 
       <p className={styles.note}>
         {t(
-          "The second bus is based on timetable data. Live changes can reduce the transfer margin, so the app only recommends connections with conservative walking and uncertainty allowance."
+          "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey."
         )}
       </p>
     </section>
   );
 }
+
