@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/android-apk.yml"
       - "scripts/build-sw.mjs"
+      - "scripts/verify-pwa*.mjs"
       - "scripts/configure-android-active-ride.mjs"
       - "scripts/verify-android-play-target.mjs"
       - "scripts/verify-play-*.mjs"

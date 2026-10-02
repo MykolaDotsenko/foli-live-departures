@@ -8,6 +8,7 @@ on:
       - "scripts/android-webview-e2e.mjs"
       - "scripts/run-android-emulator-e2e.sh"
       - "scripts/build-sw.mjs"
+      - "scripts/verify-pwa*.mjs"
       - "scripts/configure-android-active-ride.mjs"
       - "scripts/verify-android-play-target.mjs"
       - "scripts/verify-play-*.mjs"
