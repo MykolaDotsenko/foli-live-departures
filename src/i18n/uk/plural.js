@@ -1,3 +1,8 @@
+/**
+ * @param {string | number} count
+ * @param {{ one: string, few: string, many: string }} forms
+ * @returns {string}
+ */
 export function ukPlural(count, forms) {
   const n = Math.abs(Number(count) || 0);
   const mod10 = n % 10;
