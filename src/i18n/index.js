@@ -48,8 +48,8 @@ const LOCALE_PACKS = Object.freeze({
 
 /** @type {Partial<Record<Language, () => Promise<{default: Dictionary}>>>} */
 const RUNTIME_LOADERS = {
-  fi: () => import("./fi/runtime"),
-  uk: () => import("./uk/runtime"),
+  fi: () => import("./fi/runtime.js"),
+  uk: () => import("./uk/runtime.js"),
 };
 
 /**
@@ -64,7 +64,7 @@ async function loadDictionary(language) {
   const runtimeLoader = RUNTIME_LOADERS[language];
   if (!relativePath || !runtimeLoader) return {};
 
-  const response = await fetch(`${import.meta.env.BASE_URL}${relativePath}`, {
+  const response = await globalThis.fetch(`${import.meta.env.BASE_URL}${relativePath}`, {
     cache: "force-cache",
   });
   if (!response.ok) {
