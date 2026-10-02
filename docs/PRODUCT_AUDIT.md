@@ -104,14 +104,13 @@ These came out of the verification round and are not yet re-scored.
 **Found by the reviews, not done**
 - **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
-- Public web address/POI lookup is intentionally policy-switchable and fails closed to the official Turku journey planner, but the public Nominatim service is not a city-wide scaling guarantee. A promoted launch needs either a provider arrangement suitable for the expected traffic or direct-search disabled by runtime policy.
+- Direct web address/POI lookup is policy-switchable, but **production now defaults it off**. Broad-promotion builds keep address/place text on-device and hand off to the official Turku journey planner; CI prevents accidental re-enabling of public Nominatim without an explicit policy change.
 
 **Owner decisions still open**
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
-3. **Web place-search production policy,** before city-wide promotion: provider arrangement suitable for expected traffic, or runtime-disable direct address/POI lookup and hand off to the official planner.
-4. **Swedish.**
-5. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
+3. **Swedish.**
+4. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
 
 **Closed owner decisions**
 - **One product name:** Turku Departures.
@@ -121,6 +120,7 @@ These came out of the verification round and are not yet re-scored.
 - **Place setup interaction:** selecting one stop makes it the main stop automatically; a Main stop choice appears only when backups make that distinction meaningful, and Save is the explicit confirmation.
 - **Board retry actions:** failure states own the retry action instead of competing with a simultaneous header Refresh.
 - **iPhone install discovery:** uninstalled iOS browsers get a dismissible Home Screen installation hint on the landing/search screen; it never sits above an active departure board or Ride Mode, and installed standalone PWAs/native Android do not show it.
+- **Web place-search production policy:** direct public Nominatim lookup is disabled by default for broad promotion; address/POI text stays on-device and the official Turku journey planner is the explicit handoff. CI locks this fail-closed default.
 
 ## Known limitations
 

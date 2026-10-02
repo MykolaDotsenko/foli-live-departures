@@ -22,7 +22,7 @@ Do not promote broadly until all of these are explicitly closed:
 - [ ] real-bus field validation in [FIELD_VALIDATION.md](FIELD_VALIDATION.md);
 - [ ] native Finnish review in [FINNISH_NATIVE_REVIEW.md](FINNISH_NATIVE_REVIEW.md);
 - [ ] custom production domain is chosen and configured before significant installs/favourites are accumulated on the GitHub Pages origin;
-- [ ] web place-search policy is appropriate for expected traffic: suitable provider arrangement, or `public/place-search-config.json` disables direct address/POI lookup so the app hands off to the official planner;
+- [x] web place-search policy is fail-closed for broad promotion: `public/place-search-config.json` disables direct address/POI lookup by default, and the app hands off to the official Turku journey planner; CI prevents accidental re-enabling without an explicit policy change;
 - [ ] representative physical iPhone and Android lifecycle checks are complete;
 - [ ] TalkBack and VoiceOver manual smoke checks are complete.
 
@@ -34,6 +34,7 @@ Every pull request to `master` must prove:
 - lint and strict JS/type checks pass;
 - architecture remains static, backendless and privacy-first;
 - workflow actions remain immutable-SHA pinned;
+- production place-search policy stays fail-closed unless deliberately reviewed;
 - Android production identity/release invariants remain intact;
 - unit/integration coverage meets the repository ratchet;
 - PWA precache, CSP and bundle budget pass;
