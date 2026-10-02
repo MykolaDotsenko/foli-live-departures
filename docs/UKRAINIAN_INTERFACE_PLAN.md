@@ -150,29 +150,35 @@ context, but must not displace Finnish/English.
 Föli-supplied stop names, destination signs and service-alert text remain
 source data. The app does not invent Ukrainian translations for provider data.
 
-## Phase 6 — automated QA — partially implemented; batch 17 closes the remaining matrix
+## Phase 6 — automated QA — partially implemented; item 17 remains open
 
-Extend CI with:
+Already automated:
 
-- [ ] Ukrainian dictionary completeness;
-- [ ] placeholder equality;
-- [ ] unused Ukrainian translation detection;
-- [ ] no literal English accessibility labels on Ukrainian screens;
-- [ ] Ukrainian first-visit language detection tests;
-- [ ] persisted switch EN ⇄ FI ⇄ UK;
-- [ ] plural-rule tests for counts such as 1, 2, 5, 21, 22, 25;
-- [ ] Ukrainian Ride Mode component tests;
-- [ ] transfer/recovery Ukrainian component tests;
-- [ ] browser E2E Ukrainian smoke on a phone viewport;
-- [ ] axe WCAG A/AA checks;
-- [ ] 320 px / 360 px / 412 px overflow checks;
-- [ ] 200% text checks;
-- [ ] dark-theme check;
-- [ ] PWA/offline reopen in Ukrainian;
+- [x] Ukrainian dictionary completeness;
+- [x] placeholder equality;
+- [x] unused Ukrainian translation detection;
+- [x] source-level guard against literal English accessible labels bypassing the translator;
+- [x] Ukrainian first-visit language selection in locale-unit tests;
+- [x] plural-rule tests for counts such as 1, 2, 5, 21, 22, 25;
+- [x] generated lazy locale-pack validation, including HTTP failure, malformed payload and non-string-entry fail-closed paths;
+- [x] cross-browser registry cycle **FI → UK → EN**, asserting a Ukrainian departure-board column is rendered and the final English choice survives reload.
+
+Still required before item 17 can close:
+
+- [ ] dedicated Ukrainian Ride Mode component tests;
+- [ ] dedicated transfer/recovery Ukrainian component tests;
+- [ ] Ukrainian-specific axe WCAG A/AA pass after switching into Ukrainian;
+- [ ] 320 px / 360 px / 412 px Ukrainian overflow checks;
+- [ ] 200% Ukrainian text checks;
+- [ ] Ukrainian dark-theme check;
+- [ ] persisted Ukrainian reload plus PWA/offline reopen;
 - [ ] Android emulator smoke preserving Ukrainian selection.
 
-A missing Ukrainian phrase or stale Ukrainian key must fail CI exactly as a
-Finnish localization defect does.
+A missing Ukrainian phrase or stale Ukrainian key already fails CI exactly as a
+Finnish localization defect does. PR #140 also moved string translations into
+generated same-origin JSON packs and budgets those packs independently; this is
+a payload optimization, not a substitute for the remaining language-specific
+QA.
 
 ## Phase 7 — language and accessibility review — manual gate, not yet complete
 
