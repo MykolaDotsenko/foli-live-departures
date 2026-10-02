@@ -39,6 +39,8 @@ for(const name of ["phone-01-board.jpg","phone-02-ride-setup.jpg","phone-03-ride
   if(buffer.length>8*1024*1024) failures.push(`${name} is above Google Play's 8MB screenshot limit`);
   const size=jpegDimensions(buffer);
   if(size.width<1080) failures.push(`${name} width ${size.width} is below 1080`);
+  if(Math.max(size.width,size.height)>3840) failures.push(`${name} exceeds Google Play's 3840px maximum dimension`);
+  if(Math.min(size.width,size.height)<320) failures.push(`${name} is below Google Play's 320px minimum dimension`);
   if(Math.abs(size.width/size.height-9/16)>0.002){
     failures.push(`${name} is ${size.width}x${size.height}, expected 9:16`);
   }

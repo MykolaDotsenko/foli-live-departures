@@ -9,6 +9,9 @@ const shortDescription=read("play/listings/en-US/short-description.txt").trim();
 const fullDescription=read("play/listings/en-US/full-description.txt").trim();
 const releaseNotes=read("play/release-notes/en-US/default.txt").trim();
 const dataSafety=read("play/DATA_SAFETY.md");
+const playReadme=read("play/README.md");
+const contact=JSON.parse(read("play/contact.json"));
+const altText=JSON.parse(read("play/alt-text.en-US.json"));
 const privacy=read("public/privacy.html");
 const privacyText=privacy.replace(/\s+/g," ");
 const app=read("src/App.jsx");
@@ -52,6 +55,19 @@ for(const token of [
   if(!privacyText.includes(token)) failures.push(`Privacy policy missing: ${token}`);
 }
 if(!app.includes('privacy.html')) failures.push("In-app trust surface must link the public privacy policy.");
+
+if(contact.supportEmail!=="docnikolaj1990@gmail.com") failures.push("Play support email drifted.");
+if(contact.privacyPolicyUrl!=="https://mykoladotsenko.github.io/foli-live-departures/privacy.html") failures.push("Play privacy-policy URL drifted.");
+if(contact.websiteUrl!=="https://mykoladotsenko.github.io/foli-live-departures/") failures.push("Play website URL drifted.");
+if(!playReadme.includes("public/icon-512.png")) failures.push("Play README must name the canonical PNG icon source.");
+if(playReadme.includes("public/icon-512.jpg")) failures.push("Play README contains the invalid JPG icon source.");
+for(const [key,value] of Object.entries(altText)){
+  if(!String(value).trim()) failures.push(`Play alt text is empty: ${key}`);
+  if([...String(value)].length>140) failures.push(`Play alt text exceeds 140 characters: ${key}`);
+}
+for(const key of ["feature-graphic","phone-01-board","phone-02-ride-setup","phone-03-ride-now","phone-04-privacy"]){
+  if(!(key in altText)) failures.push(`Play alt text missing: ${key}`);
+}
 
 const icon=fs.readFileSync(path.join(root,assetManifest.storeIcon.source));
 if(icon.toString("ascii",1,4)!=="PNG") failures.push("Play store icon source must be PNG.");

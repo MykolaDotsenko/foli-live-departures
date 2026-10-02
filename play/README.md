@@ -10,7 +10,7 @@ This directory is the repository source for the Google Play listing and release-
 - Release notes: maximum 500 Unicode characters per language.
 - At least two screenshots are required; this repository generates four JPEG 9:16 phone screenshots at >=1080 px.
 - Feature graphic: generated at exactly 1024×500.
-- Store icon source: `public/icon-512.jpg`, exactly 512×512.
+- Store icon source: `public/icon-512.png`, exactly 512×512.
 - From 31 August 2026, new apps and updates must target Android 16 / API 36. The pinned Capacitor 8 Android toolchain is verified against that generated target.
 
 Official references:
@@ -26,6 +26,8 @@ Official references:
 - `listings/en-US/` — canonical default listing. Additional localized listings stay blocked by the existing native-language review gates.
 - `release-notes/en-US/default.txt` — default release note source.
 - `DATA_SAFETY.md` — conservative pre-submission worksheet; it is deliberately not a self-approving “no data” declaration.
+- `contact.json` — exact Play Console support/privacy/website fields.
+- `alt-text.en-US.json` — <=140-character accessibility descriptions for the generated store graphics.
 - `artifacts/play-store/` — generated in browser CI:
   - `app-icon.png`;
   - `feature-graphic.jpg`;
