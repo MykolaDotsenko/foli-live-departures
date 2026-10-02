@@ -66,6 +66,71 @@ test("shows a fresh replacement and commits it only after an explicit tap", () =
   expect(onSelect).toHaveBeenCalledWith(option);
 });
 
+
+test("shows a one-transfer recovery choice and commits it only after an explicit tap", () => {
+  const onSelectTransferJourney = vi.fn();
+  const transferOption = {
+    id: "replacement-transfer",
+    originStopId: "500",
+    originStopName: "Hub A",
+    originDistanceMeters: 0,
+    legs: [
+      {
+        tripRef: "replacement-first",
+        lineRef: "7",
+        boardStopId: "500",
+        exitStopId: "700",
+        departureAt: Math.floor(Date.now() / 1000) + 600,
+        arrivalAt: Math.floor(Date.now() / 1000) + 1_000,
+      },
+      {
+        tripRef: "replacement-second",
+        lineRef: "18",
+        boardStopId: "701",
+        exitStopId: "900",
+        departureAt: Math.floor(Date.now() / 1000) + 1_300,
+        arrivalAt: Math.floor(Date.now() / 1000) + 1_900,
+      },
+    ],
+    transfers: [
+      {
+        alightStopId: "700",
+        boardStopId: "701",
+        boardStopName: "Hub C",
+        walkingDistanceM: 30,
+        feasibility: { state: "comfortable", slackSec: 240 },
+      },
+    ],
+    destinationStopId: "900",
+    destinationArrivalAt: Math.floor(Date.now() / 1000) + 1_900,
+    journeyArrivalAt: Math.floor(Date.now() / 1000) + 1_900,
+    totalWalkingDistanceM: 30,
+    finalWalkDistanceM: null,
+  };
+
+  render(
+    <TransferRecoveryPanel
+      state="ready"
+      directOptions={[]}
+      transferOptions={[transferOption]}
+      destination={destination}
+      onSelectJourney={() => {}}
+      onSelectTransferJourney={onSelectTransferJourney}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", {
+      name: "Continue to Destination with a new connection",
+    })
+  ).toBeInTheDocument();
+  expect(screen.getByText("Line 7 → Line 18")).toBeInTheDocument();
+  expect(onSelectTransferJourney).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: /Line 7 → line 18/i }));
+  expect(onSelectTransferJourney).toHaveBeenCalledWith(transferOption);
+});
+
 test.each([
   ["offline", "Recovery search will resume when you’re online."],
   [
@@ -74,7 +139,7 @@ test.each([
   ],
   [
     "ready",
-    "No reliable direct replacement is available from this transfer area right now.",
+    "No reliable replacement with at most one new transfer is available from this transfer area right now.",
   ],
 ])("renders %s recovery state truthfully", (state, message) => {
   render(
