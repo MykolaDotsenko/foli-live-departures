@@ -392,6 +392,33 @@ test("Ukrainian plural forms use one, few and many correctly", () => {
   expect(t("{count} stops", { count: 25 })).toBe("25 зупинок");
 });
 
+test("Swedish count grammar covers singular and plural runtime branches", () => {
+  resetLanguageForTests("sv");
+
+  expect(t("{count} service updates", { count: 1 })).toBe("1 trafikmeddelande");
+  expect(t("{count} service updates", { count: 3 })).toBe("3 trafikmeddelanden");
+  expect(t("Show {count} more updates", { count: 1 })).toBe(
+    "Visa 1 meddelande till"
+  );
+  expect(t("Show {count} more updates", { count: 4 })).toBe(
+    "Visa 4 fler meddelanden"
+  );
+  expect(t("{count} upcoming", { count: 2 })).toBe("2 kommande");
+  expect(t("live", { count: 1 })).toBe("realtid");
+  expect(t("live", { count: 2 })).toBe("realtid");
+  expect(t("{count} scheduled", { count: 2 })).toBe("2 enligt tidtabell");
+  expect(t("{count} backup stops", { count: 1 })).toBe("1 reservhållplats");
+  expect(t("{count} backup stops", { count: 2 })).toBe("2 reservhållplatser");
+  expect(t("{count} stops", { count: 1 })).toBe("1 hållplats");
+  expect(t("{count} stops", { count: 2 })).toBe("2 hållplatser");
+  expect(t("{count} stops away", { count: 1 })).toBe("1 hållplats kvar");
+  expect(t("{count} stops away", { count: 3 })).toBe("3 hållplatser kvar");
+  expect(t("{count} options", { count: 1 })).toBe("1 alternativ");
+  expect(t("{count} options", { count: 2 })).toBe("2 alternativ");
+  expect(t("{count} transfers", { count: 1 })).toBe("1 byte");
+  expect(t("{count} transfers", { count: 2 })).toBe("2 byten");
+});
+
 test("a context keeps two meanings of one English phrase apart", () => {
   setLanguage("fi");
 
