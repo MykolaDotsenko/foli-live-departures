@@ -1,11 +1,6 @@
 import { useCallback, useState } from "react";
 import { prepareExternalPlaceDestination } from "../utils/placeDestination";
-import {
-  DEFAULT_JOURNEY_PLAN,
-  normalizeJourneyPlan,
-} from "../utils/journeyPlanning";
-
-/** @import { DestinationIntent, JourneyPlan } from "../types/journey" */
+/** @import { DestinationIntent } from "../types/journey" */
 
 /**
  * @param {{ id?: unknown, name?: unknown } | null | undefined} stop
@@ -60,18 +55,6 @@ export function destinationFromPlace(place) {
 export default function useDestinationIntent() {
   /** @type {[DestinationIntent | null, import("react").Dispatch<import("react").SetStateAction<DestinationIntent | null>>]} */
   const [destination, setDestination] = useState(null);
-  /** @type {[JourneyPlan, import("react").Dispatch<import("react").SetStateAction<JourneyPlan>>]} */
-  const [plan, setPlanState] = useState(() => ({ ...DEFAULT_JOURNEY_PLAN }));
-
-  const updatePlan = useCallback((patch) => {
-    setPlanState((current) =>
-      normalizeJourneyPlan({
-        ...current,
-        ...(patch && typeof patch === "object" ? patch : {}),
-      })
-    );
-  }, []);
-
   const chooseStop = useCallback((stop) => {
     const next = destinationFromStop(stop);
     if (next) setDestination(next);
@@ -101,8 +84,6 @@ export default function useDestinationIntent() {
 
   return {
     destination,
-    plan,
-    updatePlan,
     chooseStop,
     choosePlace,
     chooseExternalPlace,
