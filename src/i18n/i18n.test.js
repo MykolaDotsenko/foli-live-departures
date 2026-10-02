@@ -278,22 +278,49 @@ test("an unknown language is ignored", () => {
   expect(getLanguage()).toBe("en");
 });
 
-test("loads a locale string pack on demand and overlays runtime grammar", async () => {
+const FI_RUNTIME_KEYS = [
+  "{count} service updates",
+  "Show {count} more updates",
+  "live",
+  "{count} scheduled",
+];
+
+function compactFiFixture({
+  keys = ["Online", ...FI_RUNTIME_KEYS],
+  values = ["Yhteys toimii", null, null, null, null],
+  fiStatus = 200,
+} = {}) {
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    const isKeys = /locales\/keys\.json$/.test(url);
+    const isFi = /locales\/fi\.json$/.test(url);
+
+    if (!isKeys && !isFi) {
+      throw new Error(`Unexpected locale request: ${url}`);
+    }
+
+    const status = isFi ? fiStatus : 200;
+    return /** @type {Response} */ ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => (isKeys ? keys : values),
+    });
+  });
+}
+
+test("loads compact locale values against the shared key pack and overlays runtime grammar", async () => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: true,
-        status: 200,
-        json: async () => ({ Online: "Yhteys toimii" }),
-      })
-    );
+  const fetchMock = compactFiFixture();
 
   try {
     const fresh = await import("./index.js");
     const dictionary = await fresh.ensureLanguageDictionary("fi");
 
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/locales\/keys\.json$/),
+      { cache: "force-cache" }
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/locales\/fi\.json$/),
       { cache: "force-cache" }
@@ -307,14 +334,7 @@ test("loads a locale string pack on demand and overlays runtime grammar", async 
 
 test("locale pack HTTP failure rejects instead of activating partial translations", async () => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: false,
-        status: 503,
-      })
-    );
+  const fetchMock = compactFiFixture({ fiStatus: 503 });
 
   try {
     const fresh = await import("./index.js");
@@ -327,24 +347,44 @@ test("locale pack HTTP failure rejects instead of activating partial translation
 });
 
 test.each([
-  ["array payload", []],
-  ["non-string entry", { Online: 42 }],
-])("rejects an invalid locale pack: %s", async (_label, payload) => {
+  ["key pack is not an array", {}, ["Yhteys toimii", null, null, null, null]],
+  ["value pack is not an array", ["Online", ...FI_RUNTIME_KEYS], {}],
+  ["key/value lengths differ", ["Online", ...FI_RUNTIME_KEYS], ["Yhteys toimii"]],
+  [
+    "key table contains a duplicate",
+    ["Online", "Online", ...FI_RUNTIME_KEYS],
+    ["Yhteys toimii", "Yhteys toimii", null, null, null, null],
+  ],
+  [
+    "value slot is neither text nor runtime null",
+    ["Online", ...FI_RUNTIME_KEYS],
+    [42, null, null, null, null],
+  ],
+])("rejects a malformed compact locale pack: %s", async (_label, keys, values) => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: true,
-        status: 200,
-        json: async () => payload,
-      })
-    );
+  const fetchMock = compactFiFixture({ keys, values });
 
   try {
     const fresh = await import("./index.js");
     await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
-      /Invalid fi locale pack/
+      /Invalid (?:fi locale pack|locale key pack)/
+    );
+  } finally {
+    fetchMock.mockRestore();
+  }
+});
+
+test("compact locale runtime slots must exactly match the locale grammar module", async () => {
+  vi.resetModules();
+  const fetchMock = compactFiFixture({
+    keys: ["Online", ...FI_RUNTIME_KEYS, "Unexpected runtime slot"],
+    values: ["Yhteys toimii", null, null, null, null, null],
+  });
+
+  try {
+    const fresh = await import("./index.js");
+    await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
+      /missing runtime translation for "Unexpected runtime slot"/
     );
   } finally {
     fetchMock.mockRestore();
