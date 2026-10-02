@@ -1,12 +1,79 @@
 import { normalizeItineraryOption } from "./itinerary";
 import { assessTransfer } from "./transferFeasibility";
 
+/** @import { ActiveDirectJourney, DestinationIntent, MultiLegJourneyOption } from "../types/journey" */
+
+/** @param {unknown} value */
+function positive(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+/** @param {DestinationIntent | null | undefined} destination */
+function destinationLabel(destination) {
+  return String(destination?.label || "").trim();
+}
+
+/**
+ * @param {import("../types/journey").TransferRevalidationState | null | undefined} revalidation
+ * @returns {import("../types/journey").ActiveJourneyRecoveryReason}
+ */
+function revalidationRecoveryReason(revalidation) {
+  if (revalidation?.decision === "cancelled") return "transfer-cancelled";
+  if (revalidation?.decision === "missed") return "transfer-missed";
+  if (revalidation?.decision === "unsafe") return "transfer-risk";
+  return null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey @param {number} afterLegIndex */
+function firstKnownDownstreamFailure(journey, afterLegIndex) {
+  const states = journey?.futureLegRevalidations || {};
+  const max = journey?.itinerary?.legs?.length || 0;
+  for (let index = afterLegIndex + 1; index < max; index += 1) {
+    const reason = revalidationRecoveryReason(states[index]);
+    if (reason) return { index, reason };
+  }
+  return null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
+export function currentItineraryIndex(journey) {
+  if (journey?.activeLegIndex === null || journey?.activeLegIndex === undefined) {
+    return null;
+  }
+  const index = Number(journey.activeLegIndex);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
+export function currentItineraryLeg(journey) {
+  const index = currentItineraryIndex(journey);
+  return index === null ? null : journey?.itinerary?.legs?.[index] || null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
+export function nextItineraryTransfer(journey) {
+  const index = currentItineraryIndex(journey);
+  return index === null ? null : journey?.itinerary?.transfers?.[index] || null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
+export function nextItineraryLeg(journey) {
+  const index = currentItineraryIndex(journey);
+  return index === null ? null : journey?.itinerary?.legs?.[index + 1] || null;
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
+export function itineraryHasFutureLeg(journey) {
+  return Boolean(nextItineraryTransfer(journey) && nextItineraryLeg(journey));
+}
+
 /**
  * Build active state from a generic itinerary. The final door ETA remains
  * stable while the currently boarded leg changes; current-leg identity lives
  * in the top-level fields consumed by the existing board/Ride Mode surfaces.
  *
- * @param {MultiLegJourneyOption | import("../types/journey").TransferJourneyOption | any} option
+ * @param {MultiLegJourneyOption | any} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
