@@ -47,7 +47,7 @@ vi.mock("../utils/nativeActiveRide", () => ({
     Boolean(
       session?.id &&
         session?.options?.locationBackup === true &&
-        session?.options?.notifications !== false &&
+        session?.options?.nativeForeground === true &&
         ["active", "weak", "off-route"].includes(String(gps?.status || ""))
     ),
   nativeActiveRideBridge: {
