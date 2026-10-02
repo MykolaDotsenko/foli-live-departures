@@ -27,18 +27,15 @@ function hasFinalWalk(option) {
 }
 
 function transferCount(option) {
-  if (Array.isArray(option?.transfers)) return option.transfers.length;
-  return option?.transfer ? 1 : 0;
+  return Array.isArray(option?.transfers) ? option.transfers.length : 0;
 }
 
 function legs(option) {
-  if (Array.isArray(option?.legs) && option.legs.length) return option.legs;
-  return [option?.first, option?.second].filter(Boolean);
+  return Array.isArray(option?.legs) ? option.legs : [];
 }
 
 function transfers(option) {
-  if (Array.isArray(option?.transfers)) return option.transfers;
-  return option?.transfer ? [option.transfer] : [];
+  return Array.isArray(option?.transfers) ? option.transfers : [];
 }
 
 function transferSummary(option) {
