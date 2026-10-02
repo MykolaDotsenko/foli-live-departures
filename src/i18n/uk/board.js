@@ -108,6 +108,8 @@ export default {
   "Next stops": "Наступні зупинки",
   "short|Next stops": "Наступні",
   "Next stops · timetable times": "Наступні зупинки · часи за розкладом",
+  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
+    "Час без позначки — опублікований часовий пункт розкладу. «Приблизно» означає оцінку між такими пунктами.",
   "Loading planned stops…": "Завантаження запланованих зупинок…",
   "Next stops are temporarily unavailable.": "Наступні зупинки тимчасово недоступні.",
   "No later stops are listed.": "Подальших зупинок не вказано.",
