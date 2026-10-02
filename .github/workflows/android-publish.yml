@@ -71,13 +71,16 @@ jobs:
           tag="android-latest"
 
           if gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes
-          else
-            gh api \
-              --method DELETE \
-              "/repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
-              >/dev/null 2>&1 || true
+            gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes
           fi
+
+          # The release and its tag can become partially out of sync after an
+          # interrupted prior publication. Clean the tag independently and
+          # tolerate "not found" so the workflow is idempotent.
+          gh api \
+            --method DELETE \
+            "/repos/$GITHUB_REPOSITORY/git/refs/tags/$tag" \
+            >/dev/null 2>&1 || true
 
           gh release create "$tag" \
             --repo "$GITHUB_REPOSITORY" \
