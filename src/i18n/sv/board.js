@@ -116,6 +116,8 @@ export default {
   "Next stops": "Nästa hållplatser",
   "short|Next stops": "Hållplatser",
   "Next stops · timetable times": "Nästa hållplatser · tidtabellstider",
+  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
+    "En vanlig klocktid är en publicerad tidtabellstidpunkt. ”Cirka” är ungefärlig tid mellan tidpunkterna.",
   "Loading planned stops…": "Laddar planerade hållplatser…",
   "Next stops are temporarily unavailable.":
     "Nästa hållplatser är tillfälligt otillgängliga.",
