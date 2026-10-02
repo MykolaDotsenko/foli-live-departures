@@ -16,7 +16,7 @@
     "test:e2e": "playwright test",
     "preview": "vite preview",
     "verify:pwa": "node scripts/verify-pwa.mjs",
-    "verify:bundle": "node scripts/verify-bundle.mjs",
+    "verify:bundle": "node --test scripts/css-module-names.test.mjs && node scripts/verify-bundle.mjs",
     "verify:csp": "node scripts/verify-csp.mjs",
     "verify:native-boundary": "node scripts/verify-native-provider-boundary.mjs",
     "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
