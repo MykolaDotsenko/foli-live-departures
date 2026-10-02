@@ -481,8 +481,18 @@ export function observeActiveJourney(journey, observation) {
         : arrival.monitored === false
           ? "schedule"
           : itineraryCurrent?.liveState || journey.liveState || "unknown";
+    const currentLegArrivalAt =
+      itineraryCurrent && finitePositive(itineraryCurrent.arrivalAt) !== null
+        ? Number(itineraryCurrent.arrivalAt) + departureShift
+        : itineraryCurrent?.arrivalAt;
+    const itineraryLegChanged =
+      Boolean(itineraryCurrent) &&
+      (itineraryCurrent.departureAt !== updatedDeparture ||
+        itineraryCurrent.aimedDepartureAt !== observedPlanned ||
+        itineraryCurrent.arrivalAt !== currentLegArrivalAt ||
+        itineraryCurrent.liveState !== currentLegLiveState);
     const nextItinerary =
-      itineraryCurrent && journey.itinerary && itineraryIndex !== null
+      itineraryLegChanged && journey.itinerary && itineraryIndex !== null
         ? {
             ...journey.itinerary,
             legs: journey.itinerary.legs.map((leg, index) =>
@@ -491,10 +501,7 @@ export function observeActiveJourney(journey, observation) {
                     ...leg,
                     departureAt: updatedDeparture,
                     aimedDepartureAt: observedPlanned,
-                    arrivalAt:
-                      finitePositive(leg.arrivalAt) !== null
-                        ? Number(leg.arrivalAt) + departureShift
-                        : leg.arrivalAt,
+                    arrivalAt: currentLegArrivalAt,
                     liveState: currentLegLiveState,
                   }
                 : leg
@@ -509,17 +516,24 @@ export function observeActiveJourney(journey, observation) {
       firstTransferLeg && finitePositive(firstTransferLeg.arrivalAt) !== null
         ? Number(firstTransferLeg.arrivalAt) + departureShift
         : null;
+    const nextFirstTransferArrivalAt =
+      shiftedFirstArrival ?? firstTransferLeg?.arrivalAt;
+    const firstTransferLegChanged =
+      Boolean(firstTransferLeg) &&
+      (firstTransferLeg.departureAt !== updatedDeparture ||
+        firstTransferLeg.aimedDepartureAt !== observedPlanned ||
+        firstTransferLeg.arrivalAt !== nextFirstTransferArrivalAt ||
+        firstTransferLeg.liveState !== currentLegLiveState);
     /** @type {import("../types/journey").TransferJourneyOption | null} */
     const nextTransferPlan =
-      firstTransferLeg && journey.transferPlan
+      firstTransferLegChanged && firstTransferLeg && journey.transferPlan
         ? {
             ...journey.transferPlan,
             first: {
               ...firstTransferLeg,
               departureAt: updatedDeparture,
               aimedDepartureAt: observedPlanned,
-              arrivalAt:
-                shiftedFirstArrival ?? firstTransferLeg.arrivalAt,
+              arrivalAt: nextFirstTransferArrivalAt,
               liveState: currentLegLiveState,
             },
           }
