@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { backupStops } from "./runtime";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
@@ -89,8 +89,7 @@ export default {
   "Open School stop": "Відкрити зупинку Школи",
   "Open Work stop": "Відкрити зупинку Роботи",
   "1 backup stop": "1 резервна зупинка",
-  "{count} backup stops": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "резервна зупинка", few: "резервні зупинки", many: "резервних зупинок" })}`,
+  "{count} backup stops": backupStops,
   "Make main stop": "Зробити основною",
   "Replace using where I am now": "Замінити за моїм поточним місцезнаходженням",
   "Share this place": "Поділитися цим місцем",
