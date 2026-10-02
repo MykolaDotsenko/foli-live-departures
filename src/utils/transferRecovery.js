@@ -18,11 +18,47 @@ function positive(value) {
  *
  * @param {ActiveDirectJourney | null | undefined} journey
  */
+function activeLegIndex(journey) {
+  const index = Number(journey?.activeLegIndex);
+  return Number.isInteger(index) && index >= 0 ? index : null;
+}
+
+function failedRevalidation(revalidation) {
+  return ["cancelled", "missed", "unsafe"].includes(
+    String(revalidation?.decision || "")
+  );
+}
+
+/**
+ * The concrete committed leg whose failure caused recovery. A downstream
+ * failure can be known before the passenger reaches that leg; once the next
+ * safe transfer boundary is reached, recovery replans the remaining journey
+ * while excluding that concrete failed run.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ */
+export function failedRecoveryLeg(journey) {
+  const itinerary = journey?.itinerary;
+  const current = activeLegIndex(journey);
+  if (!itinerary || current === null) return null;
+
+  for (let index = current; index < itinerary.legs.length; index += 1) {
+    if (failedRevalidation(journey?.futureLegRevalidations?.[index])) {
+      return itinerary.legs[index] || null;
+    }
+  }
+
+  return itinerary.legs[current] || null;
+}
+
 export function canSearchTransferRecovery(journey) {
+  const current = activeLegIndex(journey);
   return Boolean(
-    journey?.transferPlan &&
-      journey.transferLeg === 2 &&
-      journey.phase === "recovery"
+    journey?.phase === "recovery" &&
+      journey?.itinerary &&
+      current !== null &&
+      current > 0 &&
+      journey.itinerary.legs?.[current]
   );
 }
 
@@ -35,11 +71,12 @@ export function canSearchTransferRecovery(journey) {
  * @param {readonly any[]} allStops
  */
 export function transferRecoveryOriginStops(journey, allStops) {
-  if (!canSearchTransferRecovery(journey) || !journey?.transferPlan) return [];
+  if (!canSearchTransferRecovery(journey)) return [];
 
-  const alightStopId = String(
-    journey.transferPlan.transfer?.alightStopId || ""
-  );
+  const current = activeLegIndex(journey);
+  const previousTransfer =
+    current !== null ? journey?.itinerary?.transfers?.[current - 1] : null;
+  const alightStopId = String(previousTransfer?.alightStopId || "");
   const confirmedBoardStopId =
     journey.atStopConfirmedAt &&
     /^\d+$/.test(String(journey.stopId || ""))
@@ -79,15 +116,15 @@ export function transferRecoveryOriginStops(journey, allStops) {
  * @param {ActiveDirectJourney | null | undefined} journey
  */
 export function departureMatchesFailedTransferRun(departure, journey) {
-  const second = journey?.transferPlan?.second;
+  const failed = failedRecoveryLeg(journey);
   if (
-    !second ||
-    String(departure?.tripRef || "") !== String(second.tripRef || "")
+    !failed ||
+    String(departure?.tripRef || "") !== String(failed.tripRef || "")
   ) {
     return false;
   }
 
-  const selectedOrigin = positive(second.originAimedDepartureAt);
+  const selectedOrigin = positive(failed.originAimedDepartureAt);
   const candidateOrigin = positive(departure?.originAimedDepartureAt);
   return !(
     selectedOrigin !== null &&
