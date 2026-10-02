@@ -276,18 +276,28 @@ function mergePlaces(current, incoming) {
 function mergeFavorites(current, incoming) {
   const byId = new Map(current.map((stop) => [stop.id, stop]));
   let added = 0;
+  let skipped = 0;
 
   for (const stop of incoming) {
     const existing = byId.get(stop.id);
-    if (!existing) {
-      byId.set(stop.id, stop);
-      added += 1;
-    } else if (!existing.name && stop.name) {
-      byId.set(stop.id, stop);
+    if (existing) {
+      if (!existing.name && stop.name) byId.set(stop.id, stop);
+      continue;
     }
+
+    // Import must never evict an existing valid favourite just to satisfy
+    // the backup's own capacity. A full destination keeps its current state
+    // and reports the imported item as skipped in the preview.
+    if (byId.size >= MAX_FAVORITES) {
+      skipped += 1;
+      continue;
+    }
+
+    byId.set(stop.id, stop);
+    added += 1;
   }
 
-  return { value: [...byId.values()].slice(0, MAX_FAVORITES), added };
+  return { value: [...byId.values()], added, skipped };
 }
 
 function mergeFilters(current, incoming) {
@@ -295,25 +305,35 @@ function mergeFilters(current, incoming) {
   let added = 0;
   let updated = 0;
   let kept = 0;
+  let skipped = 0;
 
   for (const entry of incoming) {
     const existing = byStop.get(entry.stopId);
-    if (!existing) {
-      byStop.set(entry.stopId, entry);
-      added += 1;
-    } else if (entry.savedAt > existing.savedAt) {
-      byStop.set(entry.stopId, entry);
-      updated += 1;
-    } else {
-      kept += 1;
+    if (existing) {
+      if (entry.savedAt > existing.savedAt) {
+        byStop.set(entry.stopId, entry);
+        updated += 1;
+      } else {
+        kept += 1;
+      }
+      continue;
     }
+
+    // The normal UI caps stored filters at 20. During import, preserve all
+    // valid current filters first; an imported extra is skipped rather than
+    // evicting a current passenger preference.
+    if (byStop.size >= MAX_FILTER_STOPS) {
+      skipped += 1;
+      continue;
+    }
+
+    byStop.set(entry.stopId, entry);
+    added += 1;
   }
 
-  const value = [...byStop.values()]
-    .sort((a, b) => b.savedAt - a.savedAt)
-    .slice(0, MAX_FILTER_STOPS);
+  const value = [...byStop.values()].sort((a, b) => b.savedAt - a.savedAt);
 
-  return { value, added, updated, kept };
+  return { value, added, updated, kept, skipped };
 }
 
 export function prepareLocalStateImport(
@@ -354,9 +374,11 @@ export function prepareLocalStateImport(
       placesUpdated: places.updated,
       placesKept: places.kept,
       favoritesAdded: favorites.added,
+      favoritesSkipped: favorites.skipped,
       lineFiltersAdded: filters.added,
       lineFiltersUpdated: filters.updated,
       lineFiltersKept: filters.kept,
+      lineFiltersSkipped: filters.skipped,
       language: incoming.language,
       theme: incoming.theme,
       languageWillImport,
@@ -390,27 +412,57 @@ export function applyPreparedLocalStateImport(
 ) {
   if (!prepared?.next) throw new Error("backup-not-prepared");
 
-  storage.setItem(
-    LOCAL_STATE_KEYS.places,
-    JSON.stringify(prepared.next.places)
-  );
-  storage.setItem(
-    LOCAL_STATE_KEYS.savedStops,
-    JSON.stringify(prepared.next.savedStops)
-  );
-  storage.setItem(
-    LOCAL_STATE_KEYS.lineFilters,
-    JSON.stringify(filtersForStorage(prepared.next.lineFilters))
-  );
+  const writes = [
+    [
+      LOCAL_STATE_KEYS.places,
+      JSON.stringify(prepared.next.places),
+    ],
+    [
+      LOCAL_STATE_KEYS.savedStops,
+      JSON.stringify(prepared.next.savedStops),
+    ],
+    [
+      LOCAL_STATE_KEYS.lineFilters,
+      JSON.stringify(filtersForStorage(prepared.next.lineFilters)),
+    ],
+  ];
 
   if (prepared.next.language) {
-    storage.setItem(LOCAL_STATE_KEYS.language, prepared.next.language);
+    writes.push([LOCAL_STATE_KEYS.language, prepared.next.language]);
   }
   if (prepared.next.theme) {
-    storage.setItem(LOCAL_STATE_KEYS.theme, prepared.next.theme);
+    writes.push([LOCAL_STATE_KEYS.theme, prepared.next.theme]);
   }
 
-  target?.dispatchEvent?.(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  let originals;
+  try {
+    originals = new Map(
+      writes.map(([key]) => [key, storage.getItem(key)])
+    );
+  } catch (cause) {
+    throw new Error("backup-storage-unavailable", { cause });
+  }
+
+  try {
+    for (const [key, value] of writes) storage.setItem(key, value);
+  } catch (cause) {
+    // localStorage has no transaction. Restore every touched key best-effort
+    // before reporting failure, so a quota/security error cannot leave a
+    // half-imported mix of origins behind.
+    for (const [key] of [...writes].reverse()) {
+      try {
+        const original = originals.get(key);
+        if (original === null) storage.removeItem(key);
+        else storage.setItem(key, original);
+      } catch {
+        // The caller gets an honest failure; no success event is emitted.
+      }
+    }
+    throw new Error("backup-apply-failed", { cause });
+  }
+
+  const EventCtor = target?.Event || globalThis.Event;
+  target?.dispatchEvent?.(new EventCtor(LOCAL_STATE_IMPORTED_EVENT));
 
   return prepared.preview;
 }

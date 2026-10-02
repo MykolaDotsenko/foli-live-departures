@@ -301,3 +301,112 @@ test("serializer produces a stable inspectable JSON document", () => {
   expect(parsed.exportedAt).toBe("2026-10-02T00:00:00.000Z");
   expect(parsed.data.favorites).toEqual([{ id: "10", name: "Kauppatori" }]);
 });
+
+
+test("a full destination never loses current favourites or filters during merge", () => {
+  seed(LOCAL_STATE_KEYS.savedStops, {
+    favorites: Array.from({ length: 50 }, (_, index) => ({
+      id: String(index + 1),
+      name: `Current ${index + 1}`,
+    })),
+    recents: [],
+  });
+  seed(
+    LOCAL_STATE_KEYS.lineFilters,
+    Object.fromEntries(
+      Array.from({ length: 20 }, (_, index) => [
+        String(index + 1),
+        { lines: [`L${index + 1}`], savedAt: 10_000 + index },
+      ])
+    )
+  );
+
+  const prepared = prepareLocalStateImport(
+    JSON.stringify({
+      kind: BACKUP_KIND,
+      version: BACKUP_VERSION,
+      data: {
+        favorites: [{ id: "999", name: "Imported extra" }],
+        lineFilters: [
+          { stopId: "999", lines: ["99"], savedAt: 99_999 },
+        ],
+      },
+    })
+  );
+
+  expect(prepared.preview).toMatchObject({
+    favoritesAdded: 0,
+    favoritesSkipped: 1,
+    lineFiltersAdded: 0,
+    lineFiltersSkipped: 1,
+  });
+
+  applyPreparedLocalStateImport(prepared);
+
+  const saved = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.savedStops));
+  const filters = JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.lineFilters));
+  expect(saved.favorites).toHaveLength(50);
+  expect(saved.favorites.some((stop) => stop.id === "999")).toBe(false);
+  expect(Object.keys(filters)).toHaveLength(20);
+  expect(filters).not.toHaveProperty("999");
+});
+
+test("apply rolls back already-written keys when a later storage write fails", () => {
+  const state = new Map([
+    [LOCAL_STATE_KEYS.places, JSON.stringify([])],
+    [
+      LOCAL_STATE_KEYS.savedStops,
+      JSON.stringify({
+        favorites: [{ id: "10", name: "Keep me" }],
+        recents: [{ id: "11", name: "Recent", viewedAt: 1000 }],
+      }),
+    ],
+    [LOCAL_STATE_KEYS.lineFilters, JSON.stringify({})],
+  ]);
+  let failed = false;
+  const storage = {
+    getItem(key) {
+      return state.has(key) ? state.get(key) : null;
+    },
+    setItem(key, value) {
+      if (key === LOCAL_STATE_KEYS.savedStops && !failed) {
+        failed = true;
+        throw new Error("quota");
+      }
+      state.set(key, String(value));
+    },
+    removeItem(key) {
+      state.delete(key);
+    },
+  };
+
+  const prepared = prepareLocalStateImport(
+    JSON.stringify({
+      kind: BACKUP_KIND,
+      version: BACKUP_VERSION,
+      data: {
+        places: [
+          {
+            id: "home",
+            stops: [{ id: "164", name: "Kauppatori" }],
+            primaryStopId: "164",
+            updatedAt: 2000,
+          },
+        ],
+        favorites: [{ id: "20", name: "New" }],
+      },
+    }),
+    { storage }
+  );
+
+  expect(() =>
+    applyPreparedLocalStateImport(prepared, { storage, target: new EventTarget() })
+  ).toThrow("backup-apply-failed");
+
+  expect(JSON.parse(state.get(LOCAL_STATE_KEYS.places))).toEqual([]);
+  expect(JSON.parse(state.get(LOCAL_STATE_KEYS.savedStops))).toEqual({
+    favorites: [{ id: "10", name: "Keep me" }],
+    recents: [{ id: "11", name: "Recent", viewedAt: 1000 }],
+  });
+  expect(JSON.parse(state.get(LOCAL_STATE_KEYS.lineFilters))).toEqual({});
+});
