@@ -1,4 +1,4 @@
-import { options, transfers } from "./runtime";
+import { options, transfers } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
