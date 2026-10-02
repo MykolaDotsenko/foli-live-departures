@@ -3,17 +3,22 @@
 The locale registry currently contains **English (`en`)**, **Finnish (`fi`)** and
 **Ukrainian (`uk`)**. It follows the first browser language the app supports
 on a first visit and then keeps the passenger's explicit choice on the phone.
-Finnish and Ukrainian dictionaries are lazy-loaded so they do not inflate the
-startup graph.
+Finnish and Ukrainian **string translations** are generated from the canonical
+source dictionaries into same-origin lazy JSON packs so repeated English source
+keys do not inflate executable JS. Function-valued plural/count grammar remains
+in small lazy runtime modules. The generated locale packs have their own
+raw/gzip bundle budgets, so this split cannot hide translation growth.
 
 Current implementation state:
 
 - **Ukrainian (`uk`)** was implemented in PR #139 across Ride Mode, Journey
   Assistant, recovery, offline/degraded states, Places, privacy/help and the
-  rest of the passenger UI. It is currently reachable through the generic
-  language switch in the pre-field build. Native-language,
-  VoiceOver/TalkBack and speech review remain manual release gates; code
-  presence does not mark those reviews complete.
+  rest of the passenger UI. PR #140 added generated lazy locale packs,
+  fail-closed locale-loader tests and a cross-browser `fi → uk → en` locale
+  cycle that asserts Ukrainian UI is actually rendered. Native-language,
+  VoiceOver/TalkBack, speech and full Ukrainian-specific layout/offline/Android
+  review remain release gates; code presence does not mark those reviews
+  complete.
 - **Swedish (`sv`)** remains the next locale expansion. Turku is bilingual
   and Föli publishes relevant provider text in Finnish, Swedish and English.
 
@@ -40,12 +45,14 @@ The detailed Ukrainian acceptance and remaining review plan is in
   phrase and values, not the finished sentence, so it follows a switch of
   language while it is on screen.
 
-`src/i18n/i18n.test.js` now iterates the enabled locale registry and protects
-dictionary completeness, placeholders and stale/unused keys across the
-implemented locales. ESLint (`react/jsx-no-literals`) catches text between
-tags, including `{"text"}` and template literals. Browser, layout, PWA and
-Android locale-specific QA is expanded in batch 17–24 rather than treating
-dictionary completeness as equivalent to release readiness.
+`src/i18n/i18n.test.js` protects dictionary completeness, placeholders,
+stale/unused keys, plural behavior and fail-closed lazy-pack loading for the
+implemented locales. Source-level tests also reject literal English accessible
+labels that bypass the translator. Browser QA now exercises the registry cycle
+from Finnish through Ukrainian to English across the configured browser/device
+projects. Full Ukrainian-specific layout, 200% text, dark-theme, offline/PWA,
+Ride/recovery and Android persistence coverage is still part of item 17 rather
+than being inferred from dictionary completeness.
 
 ## Rules
 

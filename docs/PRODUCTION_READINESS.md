@@ -4,19 +4,25 @@ This is the canonical launch checklist for Turku Departures.
 
 ## Current automated state — 2026-10-02
 
-Implementation batches 1–16 are merged. The current `master` SHA is
-`f436b4d4dab2c46fc34b71010ece8340058d51f3`.
+Items 1–16 plus item 21 (bundle headroom) are merged. The current
+`master` SHA is `4f88d851e5eb5ebf0fab555e8725551a209f893e`, so implementation
+progress is **17/47**.
 
+- unit-build, coverage, PWA, CSP and bundle verification: green;
 - Android build: green;
 - Android emulator E2E: green;
 - live Föli contract smoke: green;
-- main CI: **red** at the unchanged complete-app bundle gate;
-- measured shipped JS/CSS: **739,109 raw bytes** vs **625,000 allowed**;
-- production Pages deployment for this SHA is therefore not treated as verified.
+- tested `android-latest` publication path: green;
+- verified PR build shipped JS/CSS: **578,177 raw / 161,897 gzip bytes** vs
+  **625,000 / 180,000** limits;
+- generated FI/UK locale packs: **161,165 raw / 43,526 gzip bytes** vs their
+  independent **180,000 / 55,000** limits;
+- production Pages deployment and its exact-revision post-deploy smoke: green.
 
-This is an automated release blocker, not a reason to raise the budget. Batch
-17–24 must restore headroom and then re-run the full browser/PWA/Android
-verification path on the exact head SHA.
+PR #140 fixed the inherited bundle regression without raising the existing
+JS/CSS budget. The exact merge SHA has now completed the full automated
+CI/browser/PWA/Android/live-contract/test-APK/deployment path. The remaining
+batch 17–24 scope is still open unless explicitly listed as implemented below.
 
 ## Release classes
 
@@ -90,9 +96,10 @@ Routing/recovery through two transfers, leave-at/arrive-by, routing
 preferences, entrance-aware destination handling, the pedestrian-routing
 production boundary, generic locale plumbing and the full Ukrainian dictionary
 are implemented in the merged source. Before the field-validation freeze, the
-remaining pre-field work is automated Ukrainian QA hardening, Swedish,
-exact/approximate time semantics, bundle/performance headroom, health/CSP and
-toolchain hardening, followed by the later native/background, physical-device
+remaining pre-field work is the still-open Ukrainian QA matrix, Swedish,
+exact/approximate time semantics, further performance headroom toward the
+stretch target, health/CSP and toolchain hardening, followed by the later
+native/background, physical-device
 accessibility/language, domain and Android/Play release gates. Manual reviews
 remain open until they are actually performed.
 
