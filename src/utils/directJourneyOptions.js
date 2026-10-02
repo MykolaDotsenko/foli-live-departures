@@ -1,3 +1,4 @@
+import { compareJourneyTimeCandidates } from "./journeyTime";
 /** @import { DirectJourneyOption, NearbyFitMap, NearbyDepartureFit } from "../types/journey" */
 
 const MAX_ALTERNATIVE_DELAY_SEC = 10 * 60;
@@ -121,7 +122,11 @@ export function selectDirectJourneyOptions({ stops, fitsByStop, preference = "ba
 
   candidates.sort(
     (left, right) =>
-      arrivalRank(left.departure) - arrivalRank(right.departure) ||
+      compareJourneyTimeCandidates(
+        left.departure,
+        right.departure,
+        timeConstraint
+      ) ||
       catchabilityRank(left.departure) - catchabilityRank(right.departure) ||
       left.distanceMeters - right.distanceMeters
   );
@@ -133,7 +138,10 @@ export function selectDirectJourneyOptions({ stops, fitsByStop, preference = "ba
   const selected = [
     {
       id: optionId(fastest.stopId, fastest.departure),
-      label: "fastest",
+      label:
+        timeConstraint?.mode === "arrive-by"
+          ? "latest-departure"
+          : "fastest",
       stopId: fastest.stopId,
       stopName: fastest.stopName,
       distanceMeters: fastest.distanceMeters,
