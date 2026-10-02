@@ -5,7 +5,6 @@ import {
   itineraryTransfer,
   itineraryTransferCount,
   normalizeItineraryOption,
-  withLegacyTransferAliases,
 } from "./itinerary";
 
 function leg(id, board, exit, departureAt, arrivalAt) {
@@ -72,25 +71,19 @@ test("normalizes a three-leg itinerary without special-case fields", () => {
   expect(itineraryTransfer(option, 1)?.boardStopId).toBe("301");
 });
 
-test("normalizes the legacy first/transfer/second shape", () => {
-  const first = leg("a", "100", "200", 1000, 1200);
-  const second = leg("b", "200", "900", 1500, 2000);
-  const normalized = normalizeItineraryOption({
-    id: "legacy",
-    originStopId: "100",
-    first,
-    transfer: transfer("200", "200"),
-    second,
-    destinationStopId: "900",
-    destinationArrivalAt: 2000,
-    journeyArrivalAt: 2000,
-    totalWalkingDistanceM: 0,
-  });
-
-  expect(normalized?.legs.map((item) => item.tripRef)).toEqual(["a", "b"]);
-  const aliases = withLegacyTransferAliases(normalized);
-  expect(aliases.first?.tripRef).toBe("a");
-  expect(aliases.second?.tripRef).toBe("b");
+test("rejects the removed legacy first/transfer/second shape", () => {
+  expect(
+    normalizeItineraryOption({
+      id: "legacy",
+      originStopId: "100",
+      first: leg("a", "100", "200", 1000, 1200),
+      transfer: transfer("200", "200"),
+      second: leg("b", "200", "900", 1500, 2000),
+      destinationStopId: "900",
+      destinationArrivalAt: 2000,
+      journeyArrivalAt: 2000,
+    })
+  ).toBeNull();
 });
 
 test("fails closed on disconnected or overlong itinerary shapes", () => {
@@ -118,7 +111,7 @@ test("fails closed on disconnected or overlong itinerary shapes", () => {
 });
 
 test("prefers fewer transfers inside the near-equivalent arrival band", () => {
-  const one = withLegacyTransferAliases({
+  const one = {
     id: "one",
     originStopId: "100",
     originStopName: "Origin",
@@ -132,7 +125,7 @@ test("prefers fewer transfers inside the near-equivalent arrival band", () => {
     finalWalkSecEstimate: null,
     totalWalkingDistanceM: 0,
     reliability: "medium",
-  });
+  };
   const two = {
     ...one,
     id: "two",
@@ -231,15 +224,12 @@ test("keeps unknown optional distances distinct from a real zero-distance value"
   expect(zeroWalk.reliability).toBe("high");
 });
 
-test("access helpers and legacy aliases fail closed without inventing legs", () => {
+test("access helpers fail closed without inventing legs", () => {
   const direct = normalizeItineraryOption({
     legs: [leg("direct", "100", "900", 1000, 1800)],
     transfers: [],
   });
-  const directAliases = withLegacyTransferAliases(direct);
 
-  expect(directAliases.first).toBeUndefined();
-  expect(withLegacyTransferAliases({ legs: [] })).toEqual({ legs: [] });
   expect(itineraryTransferCount(null)).toBe(0);
   expect(itineraryLeg(null, 0)).toBeNull();
   expect(itineraryTransfer(null, 0)).toBeNull();
