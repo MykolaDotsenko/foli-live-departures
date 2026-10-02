@@ -46,7 +46,10 @@ const requiredPublishEvidence = [
   "android/app/build/outputs/apk/debug/app-debug.apk",
   "sha256sum -c apk-sha256.txt",
   "github.event.workflow_run.head_sha",
+  'gh release view "$tag" --repo "$GITHUB_REPOSITORY"',
+  'gh release delete "$tag" --repo "$GITHUB_REPOSITORY"',
   'gh release create "$tag"',
+  '--repo "$GITHUB_REPOSITORY"',
 ];
 
 for (const token of requiredPublishEvidence) {
