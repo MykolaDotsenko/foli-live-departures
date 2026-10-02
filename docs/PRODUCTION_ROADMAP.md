@@ -459,6 +459,8 @@ Provider-owned stop/destination/service text remains provider text.
 
 ## PR-B04 — Ukrainian QA and enablement
 
+**Implementation status (PR #142): automated matrix implemented on the batch branch; native-language, physical-device accessibility/speech and real-bus review remain manual release gates.**
+
 **Priority:** 82/100  
 **Dependency:** B03 + native Ukrainian review.
 
@@ -473,11 +475,13 @@ Provider-owned stop/destination/service text remains provider text.
 - axe;
 - speech pronunciation review.
 
-PR #139 already made Ukrainian reachable through the generic pre-field language switch so the full flow can be exercised. This item now owns the automated QA hardening and release-readiness evidence; native-language/physical-device accessibility/speech review remains a later manual gate and is not marked complete here.
+PR #139 made Ukrainian reachable through the generic pre-field language switch. PR #142 adds dedicated Ride/recovery safety tests, cross-browser axe coverage, 320/360/412 px + 200% text + dark-theme reflow checks, production PWA offline reopen with the lazy Ukrainian pack, and Android WebView locale persistence. Native-language/physical-device accessibility/speech and real-bus review remain manual gates and are not inferred from green automation.
 
 ---
 
 ## PR-B05 — Swedish dictionary
+
+**Implementation status (PR #142): implemented on the batch branch with a full UI dictionary, lazy locale pack, Swedish runtime grammar and provider-language separation.**
 
 **Priority:** 76/100  
 **Dependency:** B01.
@@ -488,16 +492,20 @@ Use the generalized locale infrastructure. Keep provider-owned Swedish text sepa
 
 ## PR-B06 — Swedish QA and enablement
 
+**Implementation status (PR #142): automated matrix implemented on the batch branch; native Swedish, physical-device accessibility/speech and real-bus review remain manual release gates.**
+
 **Priority:** 78/100  
 **Dependency:** B05 + native Swedish review.
 
-Same enablement rule as Ukrainian: complete dictionary + mobile/accessibility review before exposing the selector.
+PR #142 exercises first-visit `sv-FI`, Swedish Föli provider-text precedence, Ride/recovery safety semantics, axe, 320/360/412 px reflow at 200% text in dark mode, production PWA offline reopen and Android WebView persistence. The selector is available for pre-field QA, but broad release still requires native Swedish and physical-device review.
 
 ---
 
 # Track C — UX, performance and operational polish
 
 ## PR-C01 — Exact vs approximate “Next stops” time semantics
+
+**Implementation status (PR #142): implemented on the batch branch.**
 
 **Priority:** 72/100
 
@@ -514,6 +522,8 @@ The UI intentionally mixes exact timepoints with approximate non-timepoints. The
 ### Acceptance
 
 A first-time passenger can tell why one time says “around” and another does not.
+
+PR #142 preserves GTFS `timepoint` truth, labels non-timepoint rows as approximate, leaves published timepoints as plain clock times, adds a concise explanation beside Next stops and locks both states with component assertions.
 
 ---
 
@@ -571,6 +581,8 @@ not a release gate; PR #140 restored release headroom but did not yet reach it.
 
 ## PR-C03 — External health alerting without user analytics
 
+**Implementation status (PR #142): implemented on the batch branch.**
+
 **Priority:** 78/100
 
 The live Föli smoke exists. Improve operator awareness without collecting passenger data.
@@ -586,9 +598,13 @@ The live Föli smoke exists. Improve operator awareness without collecting passe
 
 A transient single upstream failure does not spam issues or block deploying an app fix.
 
+PR #142 adds a telemetry-free workflow summary. Only two consecutive scheduled failures can create/update one deduplicated GitHub issue; push/manual failures stay in Actions, and a subsequent successful contract run closes the open health issue. Repository contents remain read-only to the workflow.
+
 ---
 
 ## PR-C04 — Tighten dormant provider CSP boundary
+
+**Implementation status (PR #142): implemented on the batch branch.**
 
 **Priority:** 82/100  
 **Dependency:** production place-search policy remains disabled.
@@ -608,9 +624,13 @@ If removed, future direct-provider activation must deliberately change:
 
 Production cannot contact the dormant provider even if a UI bug attempts to.
 
+PR #142 removes public Nominatim from the shipped production `connect-src` entirely and adds build/policy assertions against reintroducing it accidentally. The reviewed dormant endpoint remains in config, but future activation now requires an explicit runtime-policy + CSP change.
+
 ---
 
 ## PR-C05 — Final dependency/toolchain refresh
+
+**Implementation status (PR #142 audit): no forced upgrade taken; current verified lock retained.**
 
 **Priority:** 68/100
 
@@ -621,6 +641,8 @@ Upgrade only packages with supported peer ranges. Do not force unsupported ESLin
 - no `--force` or `--legacy-peer-deps`;
 - CI unchanged or stronger;
 - runtime vulnerability gate stays green.
+
+The current lock already includes the safe refresh from PR #114 (Vite 8.3.1 / Vitest 5.0.2 and refreshed immutable Actions pins). PR #142 re-audited the remaining majors and deliberately does not force ESLint 10 across the current React lint-plugin peer boundary or combine unrelated React/jsdom major migrations with the pre-field release batch.
 
 ---
 
