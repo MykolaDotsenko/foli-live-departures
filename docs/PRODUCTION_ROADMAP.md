@@ -31,9 +31,9 @@ Already implemented and considered part of the baseline:
 - generic locale registry with lazy dictionaries and Ukrainian (`uk-UA`) implementation across the passenger UI;
 - live Föli contract smoke after each master merge and daily.
 
-PR #137 (batch 1), PR #139 (batch 2) and the bundle-headroom slice in PR #140 are merged. The implementation count is therefore **17/47**: items 1–16 plus item 21. Verification remains deliberately separate. The current `master` merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e` has green CI including cross-browser/accessibility, bundle/PWA/CSP, Android build/E2E, live Föli smoke, tested Android APK publication and production Pages deployment with exact-revision smoke. The verified PR payload is **578,177 raw / 161,897 gzip JS/CSS bytes** against unchanged **625,000 / 180,000** limits.
+PR #137 (batch 1), PR #139 (batch 2), PR #140 (item 21) and PR #142 (items 17–20 and 22–24) complete the first **24/47** implementation items. Verification remains deliberately separate from implementation count: PR #142 is merge-gated on the repository's full unit/coverage/build/PWA/CSP/bundle/cross-browser/accessibility/Android path, and production deployment still verifies the exact merge revision after merge.
 
-The Ukrainian localization implementation is present in code and currently reachable through the locale registry/language switch for pre-field testing. Native-language, physical-device accessibility and speech review remain explicit manual release gates; they are not inferred from the presence of the dictionary.
+PR #142 keeps the unchanged **625,000 raw / 180,000 gzip** complete-app JS/CSS budgets and **180,000 raw / 55,000 gzip** aggregate locale-data budgets. Its supported toolchain refresh measured **580,581 raw / 162,788 gzip JS/CSS** and **166,793 raw / 42,478 gzip locale data**. Ukrainian and Swedish are available for pre-field QA; native-language, physical-device accessibility/speech and real-bus review remain explicit manual release gates and are never inferred from green automation.
 
 ## Non-negotiable PR rules
 
@@ -630,7 +630,7 @@ PR #142 removes public Nominatim from the shipped production `connect-src` entir
 
 ## PR-C05 — Final dependency/toolchain refresh
 
-**Implementation status (PR #142 audit): no forced upgrade taken; current verified lock retained.**
+**Implementation status (PR #142): completed with a supported in-range lock refresh; no forced peer override or unrelated major migration.**
 
 **Priority:** 68/100
 
@@ -642,7 +642,7 @@ Upgrade only packages with supported peer ranges. Do not force unsupported ESLin
 - CI unchanged or stronger;
 - runtime vulnerability gate stays green.
 
-The current lock already includes the safe refresh from PR #114 (Vite 8.3.1 / Vitest 5.0.2 and refreshed immutable Actions pins). PR #142 re-audited the remaining majors and deliberately does not force ESLint 10 across the current React lint-plugin peer boundary or combine unrelated React/jsdom major migrations with the pre-field release batch.
+PR #142 refreshes the lock within the repository's declared supported ranges to Vite **8.3.2**, Vitest / coverage-v8 **5.0.3** and jsdom **30.1.1**, while retaining React **18.3.1**, Playwright **1.63.0**, TypeScript **7.0.2** and ESLint **9.39.5**. The refresh ran without `--force` or `--legacy-peer-deps`, with zero runtime audit findings, and passed lint, typecheck, coverage, build, PWA, CSP, bundle and architecture/policy gates before its lockfile commit. ESLint 10 is deliberately not forced across the current `eslint-plugin-react` peer boundary.
 
 ---
 
@@ -910,9 +910,11 @@ Work is merged in verified batches of eight checklist items:
    without passenger analytics, dormant-provider CSP tightening, and the final
    supported dependency/toolchain refresh. **Item 21 is implemented in PR
    #140 and post-merge verified on `4f88d851e5eb5ebf0fab555e8725551a209f893e`.**
-   Items 17–20 and 22–24 remain open; PR #140 also added useful locale-loader
-   regression coverage and a browser locale-cycle check, but that partial QA
-   work does not by itself close item 17.
+   **PR #142 completes items 17–20 and 22–24**, including language-specific
+   browser/PWA/Android automation, Swedish, GTFS timepoint semantics,
+   telemetry-free health alerting, the dormant-provider CSP boundary and the
+   supported dependency/toolchain refresh. Manual language/device/field gates
+   remain separate and open until real evidence exists.
 4. Later batches cover release/version identity polish, Android native
    background feasibility/implementation, physical-device accessibility and
    language review, domain/Play/release readiness and the final pre-field audit.
