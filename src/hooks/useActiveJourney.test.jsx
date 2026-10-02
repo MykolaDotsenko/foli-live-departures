@@ -408,8 +408,8 @@ test("three-leg journey can fail a specific later leg without skipping the curre
   expect(result.current.journey).toMatchObject({
     activeLegIndex: 0,
     tripRef: "first-3",
-    phase: "recovery",
-    recoveryReason: "transfer-cancelled",
+    phase: "walking-to-stop",
+    recoveryReason: null,
     futureLegRevalidations: {
       2: {
         providerState: "cancelled",
