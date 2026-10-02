@@ -860,12 +860,12 @@ function App() {
             onTestAlert={ride.testAlert}
             onEndRide={endRide}
             onOpenStop={selectStop}
-            transferJourney={
-              pendingTransferJourneyRef.current?.transferPlan &&
-              pendingTransferJourneyRef.current.transferLeg === 1
-                ? pendingTransferJourneyRef.current
-                : null
-            }
+            // The pending ref is created only by
+            // transferJourneyForRideSelection(), which already proves an
+            // exact current-leg/exit-occurrence match and a committed future
+            // leg. Pass the generic itinerary through unchanged: gating on
+            // legacy transferPlan here hid 3-leg journeys from Ride Mode.
+            transferJourney={pendingTransferJourneyRef.current}
             transferRevalidation={transferRevalidation}
           />
         )}
