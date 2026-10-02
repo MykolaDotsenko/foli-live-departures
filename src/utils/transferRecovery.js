@@ -10,20 +10,85 @@ function positive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** @param {any} state */
+function strongFutureFailure(state) {
+  return ["cancelled", "missed", "unsafe"].includes(
+    String(state?.decision || "")
+  );
+}
+
 /**
- * Automatic transfer recovery is only valid once Ride Mode has
- * authoritatively moved the committed journey into leg 2 context. A leg-1
- * recovery can mean the passenger ended Ride Mode early and must not pretend
- * they are already at the transfer hub.
+ * Resolve the concrete failed committed leg. A farther committed leg may be
+ * the actual failure that caused recovery at the current safe transfer
+ * boundary, so do not blindly exclude the current leg.
  *
  * @param {ActiveDirectJourney | null | undefined} journey
  */
+export function failedRecoveryLeg(journey) {
+  const itinerary = journey?.itinerary;
+  const activeIndex = Number(journey?.activeLegIndex);
+  if (
+    !itinerary ||
+    !Array.isArray(itinerary.legs) ||
+    !Number.isInteger(activeIndex) ||
+    activeIndex < 0 ||
+    activeIndex >= itinerary.legs.length
+  ) {
+    return null;
+  }
+
+  const states = journey?.futureLegRevalidations || {};
+  for (let index = activeIndex; index < itinerary.legs.length; index += 1) {
+    if (strongFutureFailure(states[index])) {
+      return itinerary.legs[index] || null;
+    }
+  }
+
+  // Transfer-risk can also be created by authoritative transfer-feasibility
+  // evidence at the boundary before a per-leg provider state exists.
+  return itinerary.legs[activeIndex] || null;
+}
+
+/**
+ * Resolve the transfer area from which a passenger may explicitly recover.
+ * Recovery is allowed only after Ride Mode has authoritatively advanced to a
+ * later transit leg; a failure observed while still on leg 1 does not unlock
+ * this search.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ */
+export function transferRecoveryContext(journey) {
+  const itinerary = journey?.itinerary;
+  const activeIndex = Number(journey?.activeLegIndex);
+  const transferFailure = [
+    "transfer-risk",
+    "transfer-missed",
+    "transfer-cancelled",
+  ].includes(String(journey?.recoveryReason || ""));
+
+  if (
+    journey?.phase !== "recovery" ||
+    !transferFailure ||
+    !itinerary ||
+    !Array.isArray(itinerary.legs) ||
+    !Array.isArray(itinerary.transfers) ||
+    !Number.isInteger(activeIndex) ||
+    activeIndex < 1 ||
+    activeIndex >= itinerary.legs.length
+  ) {
+    return null;
+  }
+
+  const previousTransfer = itinerary.transfers[activeIndex - 1];
+  const failedLeg = failedRecoveryLeg(journey);
+  if (!failedLeg || !previousTransfer) return null;
+
+  return { activeIndex, failedLeg, previousTransfer };
+}
+
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function canSearchTransferRecovery(journey) {
-  return Boolean(
-    journey?.transferPlan &&
-      journey.transferLeg === 2 &&
-      journey.phase === "recovery"
-  );
+  return Boolean(transferRecoveryContext(journey));
 }
 
 /**
@@ -35,14 +100,13 @@ export function canSearchTransferRecovery(journey) {
  * @param {readonly any[]} allStops
  */
 export function transferRecoveryOriginStops(journey, allStops) {
-  if (!canSearchTransferRecovery(journey) || !journey?.transferPlan) return [];
+  const context = transferRecoveryContext(journey);
+  if (!context) return [];
 
-  const alightStopId = String(
-    journey.transferPlan.transfer?.alightStopId || ""
-  );
+  const alightStopId = String(context.previousTransfer.alightStopId || "");
   const confirmedBoardStopId =
-    journey.atStopConfirmedAt &&
-    /^\d+$/.test(String(journey.stopId || ""))
+    journey?.atStopConfirmedAt &&
+    /^\d+$/.test(String(journey?.stopId || ""))
       ? String(journey.stopId)
       : "";
   const recoveryAnchorStopId = confirmedBoardStopId || alightStopId;
@@ -62,32 +126,41 @@ export function transferRecoveryOriginStops(journey, allStops) {
       ...catalogStop,
       id: String(candidate.stopId),
       name: String(candidate.stopName || catalogStop.name || candidate.stopId),
-      distanceMeters: Math.max(
-        0,
-        Number(candidate.walkingDistanceM) || 0
-      ),
+      distanceMeters: Math.max(0, Number(candidate.walkingDistanceM) || 0),
     };
   });
 }
 
 /**
- * Exclude the failed committed second run itself while allowing another bus
- * on the same line. Trip ref identifies the run in normal service; origin
+ * Identity used to keep the failed concrete run out of every recovery search.
+ * @param {ActiveDirectJourney | null | undefined} journey
+ */
+export function failedTransferRunIdentity(journey) {
+  const failedLeg = transferRecoveryContext(journey)?.failedLeg;
+  const tripRef = String(failedLeg?.tripRef || "");
+  if (!tripRef) return null;
+  return {
+    tripRef,
+    originAimedDepartureAt: positive(failedLeg?.originAimedDepartureAt),
+  };
+}
+
+/**
+ * Exclude only the failed concrete run while allowing another departure on
+ * the same line. Trip ref identifies the run in normal service; origin
  * planned time disambiguates providers that may reuse an identifier.
  *
  * @param {NearbyDepartureFit | null | undefined} departure
  * @param {ActiveDirectJourney | null | undefined} journey
  */
 export function departureMatchesFailedTransferRun(departure, journey) {
-  const second = journey?.transferPlan?.second;
-  if (
-    !second ||
-    String(departure?.tripRef || "") !== String(second.tripRef || "")
-  ) {
+  const failed = failedTransferRunIdentity(journey);
+  const candidateTripRef = String(departure?.tripRef || "");
+  if (!failed || !candidateTripRef || candidateTripRef !== failed.tripRef) {
     return false;
   }
 
-  const selectedOrigin = positive(second.originAimedDepartureAt);
+  const selectedOrigin = positive(failed.originAimedDepartureAt);
   const candidateOrigin = positive(departure?.originAimedDepartureAt);
   return !(
     selectedOrigin !== null &&

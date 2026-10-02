@@ -3,6 +3,7 @@ import { placeLabel } from "../hooks/useSavedPlaces";
 import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
 import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
+import { formatClock } from "../utils/time";
 import styles from "./JourneySearch.module.css";
 import StopName from "./StopName";
 
@@ -29,16 +30,48 @@ function destinationLabel(destination) {
     : destination.label;
 }
 
+function journeyModeLabel(mode) {
+  if (mode === "leave-at") return t("Leave at");
+  if (mode === "arrive-by") return t("Arrive by");
+  return t("Leave now");
+}
+
+function preferenceLabel(preference) {
+  if (preference === "fewer-transfers") return t("Fewer transfers");
+  if (preference === "less-walking") return t("Less walking");
+  if (preference === "more-buffer") return t("More transfer time");
+  return t("Balanced");
+}
+
+function planSummary(timeConstraint, routingPreference) {
+  const mode = ["leave-at", "arrive-by"].includes(timeConstraint?.mode)
+    ? timeConstraint.mode
+    : "leave-now";
+  const targetTimeSec = Number(timeConstraint?.targetTimeSec);
+  const preference = preferenceLabel(routingPreference);
+  if (mode === "leave-now" || !Number.isFinite(targetTimeSec) || targetTimeSec <= 0) {
+    return `${journeyModeLabel(mode)} · ${preference}`;
+  }
+  return `${journeyModeLabel(mode)} ${formatClock(targetTimeSec)} · ${preference}`;
+}
+
 export default function JourneySearch({
   compact = false,
   stops,
   places,
   destination,
+  timeConstraint = null,
+  timeLocalValue = "",
+  timeValid = true,
+  routingPreference = "balanced",
   coordinatesStatus = "ready",
   online = true,
   onChoosePlace,
   onChooseStop,
   onChooseExternalPlace = null,
+  onTimeModeChange = null,
+  onTimeLocalValueChange = null,
+  onPreferenceChange = null,
   onClear,
 }) {
   const language = useLanguage();
@@ -48,6 +81,16 @@ export default function JourneySearch({
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
+  const timeMode = ["leave-at", "arrive-by"].includes(timeConstraint?.mode)
+    ? timeConstraint.mode
+    : "leave-now";
+  const preference = [
+    "fewer-transfers",
+    "less-walking",
+    "more-buffer",
+  ].includes(routingPreference)
+    ? routingPreference
+    : "balanced";
 
   const matches = useMemo(
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
@@ -77,6 +120,10 @@ export default function JourneySearch({
       if (coordinatesStatus === "loading") {
         setError(
           t("Stop locations are still loading. Try again in a moment.")
+        );
+      } else if (coordinatesStatus !== "ready") {
+        setError(
+          t("Stop locations are temporarily unavailable. Search manually instead.")
         );
       } else if (prepared?.reason === "outside-service-area") {
         setError(
@@ -182,6 +229,9 @@ export default function JourneySearch({
         <span className={styles.compactDestination}>
           <span>{t("Going to")}</span>
           <strong>{destinationLabel(destination)}</strong>
+          <span className={styles.compactPlan}>
+            {planSummary(timeConstraint, preference)}
+          </span>
           {destination.source === "osm-nominatim" && (
             <OpenStreetMapAttribution compact />
           )}
@@ -244,6 +294,64 @@ export default function JourneySearch({
           ))}
         </div>
       )}
+
+      <fieldset className={styles.planControls}>
+        <legend>{t("Journey timing and preference")}</legend>
+        <div className={styles.planGrid}>
+          <label>
+            <span>{t("When")}</span>
+            <select
+              value={timeMode}
+              onChange={(event) => onTimeModeChange?.(event.target.value)}
+            >
+              <option value="leave-now">{t("Leave now")}</option>
+              <option value="leave-at">{t("Leave at")}</option>
+              <option value="arrive-by">{t("Arrive by")}</option>
+            </select>
+          </label>
+
+          {timeMode !== "leave-now" && (
+            <label>
+              <span>{t("Turku local time")}</span>
+              <input
+                type="datetime-local"
+                value={timeLocalValue}
+                onChange={(event) =>
+                  onTimeLocalValueChange?.(event.target.value)
+                }
+                aria-invalid={!timeValid}
+              />
+            </label>
+          )}
+
+          <label>
+            <span>{t("Route preference")}</span>
+            <select
+              value={preference}
+              onChange={(event) =>
+                onPreferenceChange?.(event.target.value)
+              }
+            >
+              <option value="balanced">{t("Balanced")}</option>
+              <option value="fewer-transfers">{t("Fewer transfers")}</option>
+              <option value="less-walking">{t("Less walking")}</option>
+              <option value="more-buffer">{t("More transfer time")}</option>
+            </select>
+          </label>
+        </div>
+        <p className={styles.planHelp}>
+          {t(
+            "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh."
+          )}
+        </p>
+        {!timeValid && timeMode !== "leave-now" && (
+          <p className={styles.error} role="alert">
+            {t(
+              "Choose a valid future Turku time. Times skipped by the daylight-saving clock change are not available."
+            )}
+          </p>
+        )}
+      </fieldset>
 
       <form onSubmit={submit} noValidate>
         <label htmlFor="journey-destination" className={styles.label}>

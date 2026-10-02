@@ -4,6 +4,7 @@ import { formatClock, formatDue } from "../utils/time";
 import styles from "./JourneyOptions.module.css";
 
 function labelText(label) {
+  if (label === "latest-departure") return t("Latest departure");
   if (label === "less-walking") return t("Less walking");
   if (label === "easier-to-catch") return t("Easier to catch");
   return t("Fastest");
@@ -71,6 +72,10 @@ function tradeoffText(option) {
       : t("More time to catch");
   }
 
+  if (option.label === "latest-departure") {
+    return t("Latest departure we found that meets your arrival time");
+  }
+
   return t("Earliest arrival we found");
 }
 
@@ -123,7 +128,11 @@ export default function JourneyOptions({
             key={option.id}
             type="button"
             className={styles.card}
-            data-primary={option.label === "fastest" ? "true" : undefined}
+            data-primary={
+              ["fastest", "latest-departure"].includes(option.label)
+                ? "true"
+                : undefined
+            }
             onClick={() => {
               if (onSelectJourney) onSelectJourney(option);
               else onOpenStop?.(option.stopId);

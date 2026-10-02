@@ -1,4 +1,4 @@
-import { getLanguage, t } from "../i18n";
+import { getLanguage, speechLocale, t } from "../i18n";
 import { rideExitInstruction } from "./rideInstructions";
 import { realStopName } from "./stopNames";
 
@@ -233,12 +233,11 @@ function speakUtterance(text, lang, voice = null) {
   globalThis.speechSynthesis.speak(utterance);
 }
 
-// The instructions are spoken in the language the passenger reads, by a
-// voice for that language. The stop name is read by the Finnish voice in
-// either language: it is the word the passenger is listening for, and an
-// English voice mangles a Finnish name past recognition.
-/** @type {Record<Language, string>} */
-const SPEECH_LANG = { en: "en-US", fi: "fi-FI" };
+// The instructions are spoken in the language the passenger reads. Locale
+// metadata is the source of truth, so adding a supported language cannot leave
+// a separate speech-language table incomplete. Stop names still use Finnish:
+// that is the name the passenger is listening for on the bus and stop pole.
+const FINNISH_SPEECH_LANG = speechLocale("fi");
 
 // Whether "Press STOP now" would be premature: the bus has not been seen
 // leaving the stop before the exit yet, on a trip with a STOP button.
@@ -268,13 +267,14 @@ export function speakRideStage(stage, stop, routeType = null, context = {}) {
   // is not a name to read out with the Finnish voice.
   const realName = realStopName(exitStop(stop).name);
   const fiVoice = finnishVoice();
-  const lang = SPEECH_LANG[getLanguage()] || SPEECH_LANG.en;
-  const voice = lang === SPEECH_LANG.fi ? fiVoice : null;
+  const currentLanguage = getLanguage();
+  const lang = speechLocale(currentLanguage);
+  const voice = currentLanguage === "fi" ? fiVoice : null;
   const say = (/** @type {string} */ text) => speakUtterance(text, lang, voice);
   // Every lead-in already says "your stop", so a stop with no name is
   // simply not named again: "This is your stop. Your stop." was an echo.
   const sayName = () => {
-    if (realName) speakUtterance(realName, SPEECH_LANG.fi, fiVoice);
+    if (realName) speakUtterance(realName, FINNISH_SPEECH_LANG, fiVoice);
   };
 
   try {
@@ -299,7 +299,7 @@ export function speakRideStage(stage, stop, routeType = null, context = {}) {
       const requestStop = /** @type {RequestStopInstruction} */ (exit);
       if (waitingForPrevious(routeType, context) && previousName) {
         say(t(requestStop.afterPreviousLead));
-        speakUtterance(previousName, SPEECH_LANG.fi, fiVoice);
+        speakUtterance(previousName, FINNISH_SPEECH_LANG, fiVoice);
         say(t(requestStop.afterPreviousVoice));
         return true;
       }

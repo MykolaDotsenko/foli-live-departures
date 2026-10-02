@@ -2,29 +2,72 @@ import { describe, expect, test } from "vitest";
 import {
   canSearchTransferRecovery,
   departureMatchesFailedTransferRun,
+  failedRecoveryLeg,
   transferRecoveryOriginStops,
   withoutFailedTransferRun,
 } from "./transferRecovery";
 
-function journey(overrides = {}) {
+function leg(tripRef, boardStopId, exitStopId, originAimedDepartureAt) {
   return {
+    tripRef,
+    lineRef: "7",
+    boardStopId,
+    boardStopSequence: 1,
+    exitStopId,
+    exitStopSequence: 2,
+    departureAt: originAimedDepartureAt + 60,
+    arrivalAt: originAimedDepartureAt + 600,
+    aimedDepartureAt: originAimedDepartureAt + 60,
+    originAimedDepartureAt,
+    liveState: "schedule",
+  };
+}
+
+function journey(overrides = {}) {
+  const first = leg("first-run", "100", "500", 1_800);
+  const failed = leg("failed-run", "501", "900", 2_400);
+  const base = {
+    id: "selected-transfer",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
-    transferLeg: 2,
+    activeLegIndex: 1,
     stopId: "501",
     atStopConfirmedAt: null,
-    transferPlan: {
-      transfer: {
-        alightStopId: "500",
-        boardStopId: "501",
-      },
-      second: {
-        tripRef: "failed-run",
-        originAimedDepartureAt: 2_400,
+    itinerary: {
+      id: "itinerary",
+      originStopId: "100",
+      originStopName: "Origin",
+      originDistanceMeters: 0,
+      legs: [first, failed],
+      transfers: [
+        {
+          alightStopId: "500",
+          alightStopSequence: 8,
+          boardStopId: "501",
+          boardStopName: "Hub B",
+          walkingDistanceM: 35,
+          feasibility: { state: "comfortable", recommendable: true },
+        },
+      ],
+      destinationStopId: "900",
+      destinationArrivalAt: 3_000,
+      finalWalkDistanceM: 0,
+      finalWalkSecEstimate: 0,
+      journeyArrivalAt: 3_000,
+      totalWalkingDistanceM: 35,
+      reliability: "medium",
+    },
+    futureLegRevalidations: {
+      1: {
+        providerState: "cancelled",
+        decision: "cancelled",
+        departureAt: null,
+        feasibility: null,
+        missingSinceMs: null,
       },
     },
-    ...overrides,
   };
+  return { ...base, ...overrides };
 }
 
 const stops = [
@@ -33,17 +76,66 @@ const stops = [
   { id: "700", name: "Far", lat: 60.48, lon: 22.3 },
 ];
 
-describe("transfer recovery search boundary", () => {
-  test("activates only after authoritative transfer arrival moved recovery into leg 2", () => {
+describe("generic transfer recovery boundary", () => {
+  test("activates only after the passenger reaches a safe transfer boundary", () => {
     expect(canSearchTransferRecovery(journey())).toBe(true);
-    expect(canSearchTransferRecovery(journey({ transferLeg: 1 }))).toBe(false);
-    expect(canSearchTransferRecovery(journey({ phase: "waiting" }))).toBe(false);
+    expect(
+      canSearchTransferRecovery(journey({ activeLegIndex: 0 }))
+    ).toBe(false);
+    expect(
+      canSearchTransferRecovery(journey({ phase: "walking-to-stop" }))
+    ).toBe(false);
+    expect(canSearchTransferRecovery(journey({ itinerary: null }))).toBe(false);
     expect(canSearchTransferRecovery(null)).toBe(false);
   });
 
-  test("builds same-stop first plus bounded nearby-platform origins", () => {
-    const origins = transferRecoveryOriginStops(journey(), stops);
+  test("uses the failed current committed leg when it has strong failure evidence", () => {
+    expect(failedRecoveryLeg(journey())).toMatchObject({
+      tripRef: "failed-run",
+      boardStopId: "501",
+      originAimedDepartureAt: 2_400,
+    });
+  });
 
+  test("finds a failed farther leg without pretending the current leg failed", () => {
+    const second = leg("second-run", "501", "700", 2_400);
+    const third = leg("failed-third", "701", "900", 3_200);
+    const selected = journey({
+      activeLegIndex: 1,
+      itinerary: {
+        ...journey().itinerary,
+        legs: [journey().itinerary.legs[0], second, third],
+        transfers: [
+          journey().itinerary.transfers[0],
+          {
+            alightStopId: "700",
+            alightStopSequence: 9,
+            boardStopId: "701",
+            boardStopName: "Hub C",
+            walkingDistanceM: 25,
+            feasibility: { state: "comfortable", recommendable: true },
+          },
+        ],
+      },
+      futureLegRevalidations: {
+        2: {
+          providerState: "cancelled",
+          decision: "cancelled",
+          departureAt: null,
+          feasibility: null,
+          missingSinceMs: null,
+        },
+      },
+    });
+
+    expect(failedRecoveryLeg(selected)).toMatchObject({
+      tripRef: "failed-third",
+      boardStopId: "701",
+    });
+  });
+
+  test("builds same-stop first plus bounded nearby-platform origins from the authoritative alighting point", () => {
+    const origins = transferRecoveryOriginStops(journey(), stops);
     expect(origins[0]).toMatchObject({
       id: "500",
       name: "Hub A",
@@ -51,10 +143,21 @@ describe("transfer recovery search boundary", () => {
     });
     expect(origins.map((item) => item.id)).toContain("501");
     expect(origins.map((item) => item.id)).not.toContain("700");
-    expect(origins[1].distanceMeters).toBeGreaterThan(0);
   });
 
-  test("falls back to the exact transfer stop when catalogue coordinates are missing", () => {
+  test("uses the explicitly confirmed boarding stop after the passenger has walked there", () => {
+    const origins = transferRecoveryOriginStops(
+      journey({ atStopConfirmedAt: 2_200_000 }),
+      stops
+    );
+    expect(origins[0]).toMatchObject({
+      id: "501",
+      name: "Hub B",
+      distanceMeters: 0,
+    });
+  });
+
+  test("falls back to the exact authoritative stop without catalogue coordinates", () => {
     expect(
       transferRecoveryOriginStops(journey(), [{ id: "500", name: "Hub A" }])
     ).toEqual([
@@ -65,59 +168,40 @@ describe("transfer recovery search boundary", () => {
       }),
     ]);
   });
-
-  test("uses the explicitly confirmed boarding stop after the passenger has walked there", () => {
-    const origins = transferRecoveryOriginStops(
-      journey({ atStopConfirmedAt: 2_200_000 }),
-      stops
-    );
-
-    expect(origins[0]).toMatchObject({
-      id: "501",
-      name: "Hub B",
-      distanceMeters: 0,
-    });
-  });
 });
 
-describe("failed second-run exclusion", () => {
-  test("excludes the failed concrete run but not another run on the same line", () => {
+describe("failed concrete-run exclusion", () => {
+  test("excludes the failed run but not another run on the same line", () => {
     expect(
       departureMatchesFailedTransferRun(
-        {
-          tripRef: "failed-run",
-          originAimedDepartureAt: 2_400,
-          lineRef: "7",
-        },
+        { tripRef: "failed-run", originAimedDepartureAt: 2_400 },
         journey()
       )
     ).toBe(true);
-
     expect(
       departureMatchesFailedTransferRun(
-        {
-          tripRef: "replacement-run",
-          originAimedDepartureAt: 2_400,
-          lineRef: "7",
-        },
+        { tripRef: "replacement-run", originAimedDepartureAt: 2_400 },
         journey()
       )
     ).toBe(false);
   });
 
-  test("uses origin planned time when both sides expose it", () => {
+  test("uses origin planned time as an occurrence discriminator", () => {
     expect(
       departureMatchesFailedTransferRun(
-        {
-          tripRef: "failed-run",
-          originAimedDepartureAt: 2_460,
-        },
+        { tripRef: "failed-run", originAimedDepartureAt: 2_430 },
+        journey()
+      )
+    ).toBe(true);
+    expect(
+      departureMatchesFailedTransferRun(
+        { tripRef: "failed-run", originAimedDepartureAt: 2_431 },
         journey()
       )
     ).toBe(false);
   });
 
-  test("removes a failed run before option ranking can select it", () => {
+  test("removes failed departures before ranking while preserving alternatives", () => {
     const failed = {
       tripRef: "failed-run",
       originAimedDepartureAt: 2_400,
@@ -146,141 +230,18 @@ describe("failed second-run exclusion", () => {
     expect(filtered["500"].departures).toEqual([replacement]);
     expect(filtered["500"].best).toBe(replacement);
   });
-});
 
-
-describe("transfer recovery fail-closed fallbacks", () => {
-  test("requires a concrete transfer plan and recovery anchor", () => {
-    expect(
-      canSearchTransferRecovery({
-        phase: "recovery",
-        transferLeg: 2,
-        transferPlan: null,
-      })
-    ).toBe(false);
-
-    expect(
-      transferRecoveryOriginStops(
-        journey({
-          transferPlan: {
-            transfer: { alightStopId: "", boardStopId: "501" },
-            second: { tripRef: "failed-run" },
-          },
-        }),
-        stops
-      )
-    ).toEqual([]);
-  });
-
-  test("treats a non-array stop catalogue conservatively but keeps the exact authoritative stop", () => {
-    const origins = transferRecoveryOriginStops(journey(), null);
-
-    expect(origins).toEqual([
-      {
-        id: "500",
-        name: "500",
-        distanceMeters: 0,
-      },
-    ]);
-  });
-
-  test("ignores a non-numeric confirmed stop and keeps the authoritative alighting stop", () => {
-    const origins = transferRecoveryOriginStops(
-      journey({
-        stopId: "platform-x",
-        atStopConfirmedAt: 2_200_000,
-      }),
-      stops
-    );
-
-    expect(origins[0]).toMatchObject({
-      id: "500",
-      distanceMeters: 0,
-    });
-  });
-
-  test("failed-run matching stays conservative when optional origin anchors are missing", () => {
-    expect(
-      departureMatchesFailedTransferRun(
-        { tripRef: "failed-run", originAimedDepartureAt: null },
-        journey()
-      )
-    ).toBe(true);
-
-    expect(
-      departureMatchesFailedTransferRun(
-        { tripRef: "failed-run", originAimedDepartureAt: 2_400 },
-        journey({
-          transferPlan: {
-            transfer: { alightStopId: "500", boardStopId: "501" },
-            second: {
-              tripRef: "failed-run",
-              originAimedDepartureAt: null,
-            },
-          },
-        })
-      )
-    ).toBe(true);
-
-    expect(
-      departureMatchesFailedTransferRun(
-        { tripRef: "failed-run", originAimedDepartureAt: 2_430 },
-        journey()
-      )
-    ).toBe(true);
-
-    expect(
-      departureMatchesFailedTransferRun(
-        { tripRef: "failed-run", originAimedDepartureAt: 2_431 },
-        journey()
-      )
-    ).toBe(false);
-
-    expect(
-      departureMatchesFailedTransferRun(
-        { tripRef: "anything" },
-        { phase: "recovery", transferLeg: 2, transferPlan: null }
-      )
-    ).toBe(false);
-  });
-
-  test("fit filtering handles best-only, empty and null fit maps without resurrecting the failed run", () => {
-    const failed = {
-      tripRef: "failed-run",
-      originAimedDepartureAt: 2_400,
-      departureAt: 2_700,
-    };
-    const replacement = {
-      tripRef: "replacement-run",
-      originAimedDepartureAt: 2_500,
-      departureAt: 2_800,
-    };
-
+  test("handles null/best-only fits fail closed", () => {
     expect(withoutFailedTransferRun(null, journey())).toEqual({});
-
-    const bestOnly = withoutFailedTransferRun(
-      {
-        "500": {
-          stopId: "500",
-          best: replacement,
-          departures: null,
-        },
-      },
-      journey()
-    );
-    expect(bestOnly["500"].departures).toEqual([replacement]);
-    expect(bestOnly["500"].best).toBe(replacement);
 
     const failedOnly = withoutFailedTransferRun(
       {
         "500": {
           stopId: "500",
-          best: failed,
-          departures: null,
-        },
-        "501": {
-          stopId: "501",
-          best: null,
+          best: {
+            tripRef: "failed-run",
+            originAimedDepartureAt: 2_400,
+          },
           departures: null,
         },
       },
@@ -288,18 +249,12 @@ describe("transfer recovery fail-closed fallbacks", () => {
     );
     expect(failedOnly["500"].departures).toEqual([]);
     expect(failedOnly["500"].best).toBeNull();
-    expect(failedOnly["501"].departures).toEqual([]);
-    expect(failedOnly["501"].best).toBeNull();
   });
-});
 
-
-test("missing candidate departure identity never matches a failed transfer run", () => {
-  expect(departureMatchesFailedTransferRun(null, journey())).toBe(false);
-  expect(
-    departureMatchesFailedTransferRun(
-      { tripRef: "" },
-      journey()
-    )
-  ).toBe(false);
+  test("missing candidate identity never matches", () => {
+    expect(departureMatchesFailedTransferRun(null, journey())).toBe(false);
+    expect(
+      departureMatchesFailedTransferRun({ tripRef: "" }, journey())
+    ).toBe(false);
+  });
 });

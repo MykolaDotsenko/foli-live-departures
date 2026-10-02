@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import LanguageSwitch from "./LanguageSwitch";
 import BusStopDisplay from "./BusStopDisplay";
@@ -12,21 +12,38 @@ afterEach(() => {
   localStorage.clear();
 });
 
-test("offers the other language in its own words, and switches the page to it", () => {
+test("cycles every enabled language in its own words and persists each choice", async () => {
   render(<LanguageSwitch />);
 
   const toFinnish = screen.getByRole("button", { name: "Suomeksi" });
   expect(toFinnish).toHaveAttribute("lang", "fi");
-
   fireEvent.click(toFinnish);
 
-  expect(document.documentElement.lang).toBe("fi");
-  expect(localStorage.getItem("foli-language-v1")).toBe("fi");
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("fi");
+    expect(localStorage.getItem("foli-language-v1")).toBe("fi");
+    expect(screen.getByRole("button", { name: "Українською" })).not.toBeDisabled();
+  });
+
+  const toUkrainian = screen.getByRole("button", { name: "Українською" });
+  expect(toUkrainian).toHaveAttribute("lang", "uk");
+  fireEvent.click(toUkrainian);
+
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("uk");
+    expect(localStorage.getItem("foli-language-v1")).toBe("uk");
+    expect(screen.getByRole("button", { name: "In English" })).not.toBeDisabled();
+  });
+
   const toEnglish = screen.getByRole("button", { name: "In English" });
   expect(toEnglish).toHaveAttribute("lang", "en");
-
   fireEvent.click(toEnglish);
-  expect(document.documentElement.lang).toBe("en");
+
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("en");
+    expect(localStorage.getItem("foli-language-v1")).toBe("en");
+    expect(screen.getByRole("button", { name: "Suomeksi" })).not.toBeDisabled();
+  });
 });
 
 const NOW = Math.floor(Date.now() / 1000);
@@ -234,7 +251,6 @@ test("applies an imported language immediately when this origin had no explicit 
   });
 
   expect(document.documentElement.lang).toBe("fi");
-  expect(
-    screen.getByRole("button", { name: "In English" })
-  ).toBeInTheDocument();
+  const nextLanguage = screen.getByRole("button", { name: "Українською" });
+  expect(nextLanguage).toHaveAttribute("lang", "uk");
 });

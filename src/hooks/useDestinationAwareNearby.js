@@ -1,11 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { fetchStopMonitor, fetchTripStopTimes } from "../api/foliApi";
+import {
+  fetchScheduledStopDepartures,
+  fetchStopMonitor,
+  fetchTripStopTimes,
+} from "../api/foliApi";
 import { classifyCatchability } from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
 import { getDepartureTime } from "../utils/time";
 import { estimateFinalWalkSeconds } from "../utils/placeDestination";
+import {
+  compareJourneyTimeCandidates,
+  journeyTimeAllows,
+  normalizeJourneyTimeConstraint,
+} from "../utils/journeyTime";
 
-/** @import { DestinationIntent, NearbyFitMap, NearbyDepartureFit, LiveState } from "../types/journey" */
+/** @import { DestinationIntent, JourneyTimeConstraint, NearbyFitMap, NearbyDepartureFit, LiveState } from "../types/journey" */
 
 const REFRESH_MS = 30_000;
 const MAX_DEPARTURES_PER_STOP = 16;
@@ -173,14 +182,13 @@ function freshTargetArrival(monitor, candidate) {
  * @param {NearbyDepartureFit[]} candidates
  * @returns {NearbyDepartureFit | null}
  */
-function chooseBestDeparture(candidates) {
+function chooseBestDeparture(candidates, timeConstraint = null) {
   const usable = candidates
     .filter((candidate) => candidate.catchability !== "too-late")
-    .sort((a, b) => {
-      const left = journeyArrivalRank(a);
-      const right = journeyArrivalRank(b);
-      return left - right || a.departureAt - b.departureAt;
-    });
+    .sort((a, b) =>
+      compareJourneyTimeCandidates(a, b, timeConstraint) ||
+      journeyArrivalRank(a) - journeyArrivalRank(b)
+    );
 
   if (usable.length === 0) return null;
 
@@ -208,6 +216,8 @@ function chooseBestDeparture(candidates) {
  *   stops: readonly ({ id: string, distanceMeters?: number } & Record<string, any>)[],
  *   destination: DestinationIntent,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: import("../types/journey").JourneyPlan | null,
+ *   timeConstraint?: JourneyTimeConstraint | null,
  *   signal?: AbortSignal,
  * }} input
  * @returns {Promise<NearbyFitMap>}
@@ -216,10 +226,17 @@ export async function loadDestinationAwareNearby({
   stops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
+  timeConstraint = null,
   signal,
 }) {
   const candidates = Array.isArray(stops) ? stops : [];
   if (!destination || candidates.length === 0) return {};
+
+  const effectiveTimeConstraint = journeyPlan || timeConstraint;
+  const normalizedTime = normalizeJourneyTimeConstraint(effectiveTimeConstraint);
+  if (!normalizedTime.valid) return {};
+  const scheduledPlanning = normalizedTime.mode !== "leave-now";
 
   /** @type {Record<string, number> | null} */
   const destinationExtraSecByStop =
@@ -236,7 +253,26 @@ export async function loadDestinationAwareNearby({
       : null;
 
   const monitorResults = await Promise.allSettled(
-    candidates.map((stop) => fetchStopMonitor(String(stop.id), signal))
+    candidates.map(async (stop) => {
+      if (!scheduledPlanning) {
+        return fetchStopMonitor(String(stop.id), signal);
+      }
+
+      const schedule = await fetchScheduledStopDepartures(
+        String(stop.id),
+        normalizedTime.referenceTimeSec,
+        signal
+      );
+      return {
+        stopName: String(stop.name || stop.id),
+        arrivals: schedule.departures || [],
+        serverTime: normalizedTime.referenceTimeSec,
+        realtimeAvailable: false,
+        scheduleAvailable: true,
+        scheduleFailed: false,
+        scheduleIncomplete: schedule.complete === false,
+      };
+    })
   );
   throwIfAborted(signal);
 
@@ -419,31 +455,36 @@ export async function loadDestinationAwareNearby({
       }
     }
 
-    await Promise.all(
-      compatible.map(async (candidate) => {
-        if (!targetIdsToEnrich.has(candidate.destinationStopId)) return;
+    if (!scheduledPlanning) {
+      await Promise.all(
+        compatible.map(async (candidate) => {
+          if (!targetIdsToEnrich.has(candidate.destinationStopId)) return;
 
-        const destinationMonitor = await targetMonitor(
-          candidate.destinationStopId
-        );
-        throwIfAborted(signal);
+          const destinationMonitor = await targetMonitor(
+            candidate.destinationStopId
+          );
+          throwIfAborted(signal);
 
-        const liveArrival = freshTargetArrival(
-          destinationMonitor,
-          candidate
-        );
-        if (
-          liveArrival !== null &&
-          liveArrival >= candidate.departureAt
-        ) {
-          candidate.destinationArrivalAt = liveArrival;
-          candidate.liveState = "live";
-        }
-        applyFinalWalk(candidate, destination);
-      })
+          const liveArrival = freshTargetArrival(
+            destinationMonitor,
+            candidate
+          );
+          if (
+            liveArrival !== null &&
+            liveArrival >= candidate.departureAt
+          ) {
+            candidate.destinationArrivalAt = liveArrival;
+            candidate.liveState = "live";
+          }
+          applyFinalWalk(candidate, destination);
+        })
+      );
+    }
+
+    const timeCompatible = compatible.filter((candidate) =>
+      journeyTimeAllows(candidate, effectiveTimeConstraint, nowSec)
     );
-
-    const best = chooseBestDeparture(compatible);
+    const best = chooseBestDeparture(timeCompatible, effectiveTimeConstraint);
     /** @type {import("../types/journey").NearbyFitStatus} */
     let status = "no-direct";
     if (best) {
@@ -455,8 +496,8 @@ export async function loadDestinationAwareNearby({
             : "good";
     }
     else if (
-      compatible.length > 0 &&
-      compatible.every((candidate) => candidate.catchability === "too-late")
+      timeCompatible.length > 0 &&
+      timeCompatible.every((candidate) => candidate.catchability === "too-late")
     ) {
       status = "too-late";
     }
@@ -467,17 +508,15 @@ export async function loadDestinationAwareNearby({
       stopId: String(stop.id),
       status,
       best,
-      departures: compatible
+      departures: timeCompatible
         .slice()
-        .sort(
-          (left, right) =>
-            journeyArrivalRank(left) -
-              journeyArrivalRank(right) ||
-            left.departureAt - right.departureAt
+        .sort((left, right) =>
+          compareJourneyTimeCandidates(left, right, effectiveTimeConstraint) ||
+          journeyArrivalRank(left) - journeyArrivalRank(right)
         ),
       additionalCount: Math.max(
         0,
-        compatible.filter((candidate) => candidate !== best).length
+        timeCompatible.filter((candidate) => candidate !== best).length
       ),
       checkedAt: Date.now(),
     };
@@ -491,18 +530,35 @@ export async function loadDestinationAwareNearby({
  *   stops: readonly any[],
  *   destination: DestinationIntent | null,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: import("../types/journey").JourneyPlan | null,
+ *   timeConstraint?: JourneyTimeConstraint | null,
  * }} input
  */
 export default function useDestinationAwareNearby({
   stops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
+  timeConstraint = null,
 }) {
   /** @type {[NearbyFitMap, import("react").Dispatch<import("react").SetStateAction<NearbyFitMap>>]} */
   const [fitsByStop, setFitsByStop] = useState({});
   const [state, setState] = useState("idle");
-  const requestRef = useRef({ stops, destination, positionAccuracy });
-  requestRef.current = { stops, destination, positionAccuracy };
+  const effectiveTimeConstraint = journeyPlan || timeConstraint;
+  const requestRef = useRef({
+    stops,
+    destination,
+    positionAccuracy,
+    journeyPlan,
+    timeConstraint: effectiveTimeConstraint,
+  });
+  requestRef.current = {
+    stops,
+    destination,
+    positionAccuracy,
+    journeyPlan,
+    timeConstraint: effectiveTimeConstraint,
+  };
 
   const signature = useMemo(
     () =>
@@ -513,9 +569,17 @@ export default function useDestinationAwareNearby({
             ...destination.acceptableStopIds,
             stops.map((stop) => stop.id).join(","),
             Math.round(Number(positionAccuracy) || 0),
+            effectiveTimeConstraint?.mode || "leave-now",
+            effectiveTimeConstraint?.targetTimeSec || "",
           ].join("|")
         : "",
-    [destination, positionAccuracy, stops]
+    [
+      destination,
+      positionAccuracy,
+      stops,
+      effectiveTimeConstraint?.mode,
+      effectiveTimeConstraint?.targetTimeSec,
+    ]
   );
 
   useEffect(() => {

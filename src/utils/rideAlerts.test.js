@@ -383,6 +383,17 @@ describe("spoken get-off alerts", () => {
     expect(spoken.map((u) => u.text)).toContain("Paina stop-nappia nyt.");
   });
 
+  it("speaks Ukrainian instructions in uk-UA while keeping the Finnish stop name pronounceable", () => {
+    resetLanguageForTests("uk");
+    speakRideStage("now", "Puistokatu", 3);
+
+    expect(spoken.map((u) => [u.text, u.lang])).toEqual([
+      ["Це ваша зупинка.", "uk-UA"],
+      ["Puistokatu", "fi-FI"],
+      ["Виходьте зараз.", "uk-UA"],
+    ]);
+  });
+
   it("speaks a nameless stop's alert wholly in the reader's language", () => {
     resetLanguageForTests("fi");
     speakRideStage("soon", "");

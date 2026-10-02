@@ -8,13 +8,14 @@
 // A dictionary entry is either a template ("Stop {id}") or, where word forms
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
-import fi from "./fi";
+import {
+  LANGUAGE_CODES,
+  isSupportedLanguage,
+  localeDefinition,
+} from "./locales";
 import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
-/**
- * A language the interface speaks.
- * @typedef {"en" | "fi"} Language
- */
+/** @typedef {import("./locales").Language} Language */
 
 /**
  * The values a phrase's placeholders are filled from, by placeholder name.
@@ -33,19 +34,57 @@ import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
  */
 
 /** @type {readonly Language[]} */
-export const LANGUAGES = Object.freeze(["en", "fi"]);
+export const LANGUAGES = LANGUAGE_CODES;
 
-/** @type {Record<Language, Dictionary>} */
-const DICTIONARIES = { en: {}, fi };
+/** @type {Partial<Record<Language, Dictionary>>} */
+const DICTIONARIES = { en: {} };
 const STORAGE_KEY = "foli-language-v1";
+
+/** @type {Partial<Record<Language, () => Promise<{default: Dictionary}>>>} */
+const DICTIONARY_LOADERS = {
+  fi: () => import("./fi"),
+  uk: () => import("./uk"),
+};
+/** @type {Map<Language, Promise<Dictionary>>} */
+const dictionaryLoads = new Map();
+
+/**
+ * Test setup and a successfully loaded locale both use the same registration
+ * path. Production never imports non-English dictionaries eagerly.
+ * @param {Language} language
+ * @param {Dictionary} dictionary
+ */
+export function registerDictionary(language, dictionary) {
+  if (!isLanguage(language) || language === "en" || !dictionary) return;
+  DICTIONARIES[language] = dictionary;
+}
+
+/** @param {Language} language @returns {Promise<Dictionary>} */
+export function ensureLanguageDictionary(language) {
+  const existing = DICTIONARIES[language];
+  if (existing) return Promise.resolve(existing);
+
+  const loader = DICTIONARY_LOADERS[language];
+  if (!loader) return Promise.resolve({});
+
+  const pending =
+    dictionaryLoads.get(language) ||
+    loader()
+      .then((module) => {
+        registerDictionary(language, module.default);
+        return DICTIONARIES[language] || {};
+      })
+      .finally(() => dictionaryLoads.delete(language));
+  dictionaryLoads.set(language, pending);
+  return pending;
+}
 
 /**
  * @param {unknown} value
  * @returns {value is Language}
  */
 function isLanguage(value) {
-  // Widened only for the lookup: any value may be asked about.
-  return /** @type {readonly unknown[]} */ (LANGUAGES).includes(value);
+  return isSupportedLanguage(value);
 }
 
 /** @returns {readonly string[]} */
@@ -98,8 +137,11 @@ applyToDocument(current);
 
 globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
   const next = storedLanguage() || preferredLanguage();
-  if (next !== current) switchTo(next);
-  else applyToDocument(next);
+  if (next !== current) {
+    void setLanguage(next);
+  } else {
+    applyToDocument(next);
+  }
 });
 
 /** @returns {Language} */
@@ -119,13 +161,43 @@ function switchTo(language) {
  * @param {string} language
  */
 export function setLanguage(language) {
-  if (!isLanguage(language) || language === current) return;
-  try {
-    globalThis.localStorage?.setItem(STORAGE_KEY, language);
-  } catch {
-    // Still switches for this visit.
+  if (!isLanguage(language) || language === current) {
+    return Promise.resolve(false);
   }
-  switchTo(language);
+
+  const activate = () => {
+    try {
+      globalThis.localStorage?.setItem(STORAGE_KEY, language);
+    } catch {
+      // Still switches for this visit.
+    }
+    switchTo(language);
+    return true;
+  };
+
+  if (DICTIONARIES[language]) {
+    return Promise.resolve(activate());
+  }
+
+  return ensureLanguageDictionary(language)
+    .then(activate)
+    .catch(() => false);
+}
+
+/**
+ * Load the selected non-English dictionary before the first React render.
+ * If it cannot load, fail closed to English rather than showing a half-
+ * translated interface.
+ * @returns {Promise<Language>}
+ */
+export async function initializeLanguage() {
+  try {
+    await ensureLanguageDictionary(current);
+  } catch {
+    current = "en";
+  }
+  applyToDocument(current);
+  return current;
 }
 
 // Tests start every case from the same place, without touching storage.
@@ -200,10 +272,21 @@ export function tc(context, key, params) {
 // TRANSIT_CLOCK_LOCALE in utils/time.js).
 /**
  * @param {Language} [language]
- * @returns {"fi-FI" | "en-GB"}
+ * @returns {string}
  */
 export function intlLocale(language = current) {
-  return language === "fi" ? "fi-FI" : "en-GB";
+  return localeDefinition(language).intlLocale;
+}
+
+/**
+ * Speech APIs need a full BCP-47 locale even though document.lang stays the
+ * short interface code.
+ *
+ * @param {Language} [language]
+ * @returns {string}
+ */
+export function speechLocale(language = current) {
+  return localeDefinition(language).speechLocale;
 }
 
 // Which of Föli's own texts to show: its notices and destination names come
@@ -217,7 +300,7 @@ export function intlLocale(language = current) {
  * @returns {string[]}
  */
 export function providerLanguages(language = current) {
-  if (language === "fi") return ["fi"];
+  if (localeDefinition(language).providerMode === "finnish") return ["fi"];
   return [
     ...browserLanguages().filter(
       (tag) => tag && !/^fi\b/i.test(String(tag))

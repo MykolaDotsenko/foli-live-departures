@@ -1,5 +1,6 @@
 import { t, useLanguage } from "../i18n";
 import JourneyOptions from "./JourneyOptions";
+import TransferJourneyOptions from "./TransferJourneyOptions";
 import styles from "./JourneyOptions.module.css";
 
 /** @param {any} destination */
@@ -13,22 +14,39 @@ function shownDestinationLabel(destination) {
 export default function TransferRecoveryPanel({
   state,
   options,
+  directOptions = options,
+  transferOptions = [],
   destination,
   onSelectJourney,
+  onSelectTransferJourney,
 }) {
   useLanguage();
 
   if (!destination || state === "idle") return null;
 
   const destinationLabel = shownDestinationLabel(destination);
-  if (state === "ready" && Array.isArray(options) && options.length > 0) {
+  const direct = Array.isArray(directOptions) ? directOptions : [];
+  const transfers = Array.isArray(transferOptions) ? transferOptions : [];
+  if (state === "ready" && (direct.length > 0 || transfers.length > 0)) {
     return (
-      <JourneyOptions
-        mode="recovery"
-        options={options}
-        destinationLabel={destinationLabel}
-        onSelectJourney={onSelectJourney}
-      />
+      <>
+        {direct.length > 0 && (
+          <JourneyOptions
+            mode="recovery"
+            options={direct}
+            destinationLabel={destinationLabel}
+            onSelectJourney={onSelectJourney}
+          />
+        )}
+        {transfers.length > 0 && (
+          <TransferJourneyOptions
+            mode="recovery"
+            options={transfers}
+            destinationLabel={destinationLabel}
+            onSelectJourney={onSelectTransferJourney}
+          />
+        )}
+      </>
     );
   }
 
@@ -43,7 +61,7 @@ export default function TransferRecoveryPanel({
     );
   } else if (state === "ready") {
     statusText = t(
-      "No reliable direct replacement is available from this transfer area right now."
+      "No reliable replacement with at most one new transfer is available from this transfer area right now."
     );
   }
 

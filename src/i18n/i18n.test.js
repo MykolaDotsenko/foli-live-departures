@@ -2,16 +2,27 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test, vi } from "vitest";
-import fi, { AREAS } from "./fi";
+import fi, { AREAS as FI_AREAS } from "./fi";
+import uk, { AREAS as UK_AREAS } from "./uk";
 import {
+  ensureLanguageDictionary,
   getLanguage,
   preferredLanguage,
+  registerDictionary,
   resetLanguageForTests,
   providerLanguages,
   setLanguage,
+  speechLocale,
+  intlLocale,
   t,
   tc,
 } from ".";
+import {
+  LANGUAGE_CODES,
+  isSupportedLanguage,
+  localeDefinition,
+  nextLocaleDefinition,
+} from "./locales";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -66,46 +77,47 @@ afterEach(() => {
   localStorage.clear();
 });
 
-test("every phrase the code shows has a Finnish translation", () => {
-  const missing = [...phrasesInCode()]
-    .filter(([phrase]) => !Object.hasOwn(fi, phrase))
-    .map(([phrase, file]) => `${file}: ${phrase}`);
+const LOCALIZED_DICTIONARIES = { fi, uk };
+const LOCALIZED_AREAS = { fi: FI_AREAS, uk: UK_AREAS };
 
-  expect(missing).toEqual([]);
-});
+for (const [language, dictionary] of Object.entries(LOCALIZED_DICTIONARIES)) {
+  test(`every phrase the code shows has a ${language} translation`, () => {
+    const missing = [...phrasesInCode()]
+      .filter(([phrase]) => !Object.hasOwn(dictionary, phrase))
+      .map(([phrase, file]) => `${file}: ${phrase}`);
+    expect(missing).toEqual([]);
+  });
 
-test("every Finnish translation is still asked for by the code", () => {
-  const used = phrasesInCode();
-  const stale = Object.keys(fi).filter((phrase) => !used.has(phrase));
+  test(`every ${language} translation is still asked for by the code`, () => {
+    const used = phrasesInCode();
+    const stale = Object.keys(dictionary).filter((phrase) => !used.has(phrase));
+    expect(stale).toEqual([]);
+  });
 
-  expect(stale).toEqual([]);
-});
+  test(`${language} translations keep phrase placeholders`, () => {
+    const mismatched = Object.entries(dictionary)
+      .filter(([, value]) => typeof value === "string")
+      .filter(([phrase, value]) =>
+        placeholders(phrase).join() !== placeholders(value).join()
+      )
+      .map(([phrase]) => phrase);
+    expect(mismatched).toEqual([]);
+  });
 
-test("a translation keeps its phrase's placeholders", () => {
-  const mismatched = Object.entries(fi)
-    .filter(([, value]) => typeof value === "string")
-    .filter(([phrase, value]) =>
-      placeholders(phrase).join() !== placeholders(value).join()
-    )
-    .map(([phrase]) => phrase);
-
-  expect(mismatched).toEqual([]);
-});
-
-test("no two areas translate the same phrase differently", () => {
-  const seen = new Map();
-  const conflicts = [];
-  for (const [area, entries] of Object.entries(AREAS)) {
-    for (const [phrase, value] of Object.entries(entries)) {
-      if (seen.has(phrase) && seen.get(phrase).value !== value) {
-        conflicts.push(`${phrase} (${seen.get(phrase).area}, ${area})`);
+  test(`no ${language} areas translate the same phrase differently`, () => {
+    const seen = new Map();
+    const conflicts = [];
+    for (const [area, entries] of Object.entries(LOCALIZED_AREAS[language])) {
+      for (const [phrase, value] of Object.entries(entries)) {
+        if (seen.has(phrase) && seen.get(phrase).value !== value) {
+          conflicts.push(`${phrase} (${seen.get(phrase).area}, ${area})`);
+        }
+        seen.set(phrase, { area, value });
       }
-      seen.set(phrase, { area, value });
     }
-  }
-
-  expect(conflicts).toEqual([]);
-});
+    expect(conflicts).toEqual([]);
+  });
+}
 
 // Text a component shows outside t() stays English whatever the language.
 // ESLint catches literal text between tags; this catches it in the
@@ -202,11 +214,34 @@ test("the page's own title is the phrase the app translates", () => {
 
 test("follows the first language the phone lists that the app speaks", () => {
   expect(preferredLanguage(["fi-FI", "en-US"])).toBe("fi");
-  expect(preferredLanguage(["sv-FI", "fi", "en"])).toBe("fi");
-  expect(preferredLanguage(["en-US", "fi"])).toBe("en");
+  expect(preferredLanguage(["uk-UA", "fi", "en"])).toBe("uk");
+  expect(preferredLanguage(["sv-FI", "uk", "fi"])).toBe("uk");
+  expect(preferredLanguage(["en-US", "uk"])).toBe("en");
   expect(preferredLanguage(["de-DE"])).toBe("en");
   expect(preferredLanguage([])).toBe("en");
   expect(preferredLanguage([undefined, null, ""])).toBe("en");
+});
+
+test("locale registry is the source of truth for formatting, speech and switching", () => {
+  expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk"]);
+  expect(localeDefinition("fi")).toMatchObject({
+    nativeLabel: "Suomi",
+    intlLocale: "fi-FI",
+    speechLocale: "fi-FI",
+  });
+  expect(intlLocale("fi")).toBe("fi-FI");
+  expect(intlLocale("uk")).toBe("uk-UA");
+  expect(intlLocale("en")).toBe("en-GB");
+  expect(speechLocale("fi")).toBe("fi-FI");
+  expect(speechLocale("uk")).toBe("uk-UA");
+  expect(nextLocaleDefinition("en").code).toBe("fi");
+  expect(nextLocaleDefinition("fi").code).toBe("uk");
+  expect(nextLocaleDefinition("uk").code).toBe("en");
+  expect(isSupportedLanguage("en")).toBe(true);
+  expect(isSupportedLanguage("uk")).toBe(true);
+  expect(isSupportedLanguage("xx")).toBe(false);
+  expect(localeDefinition("xx").code).toBe("en");
+  expect(nextLocaleDefinition(/** @type {any} */ ("xx")).code).toBe("en");
 });
 
 test("switching language updates the page, remembers the choice and tells listeners", () => {
@@ -217,6 +252,11 @@ test("switching language updates the page, remembers the choice and tells listen
   expect(localStorage.getItem("foli-language-v1")).toBe("fi");
   expect(t("Online")).toBe("Yhteys toimii");
 
+  setLanguage("uk");
+  expect(document.documentElement.lang).toBe("uk");
+  expect(localStorage.getItem("foli-language-v1")).toBe("uk");
+  expect(t("Online")).toBe("Онлайн");
+
   setLanguage("en");
   expect(document.documentElement.lang).toBe("en");
   expect(t("Online")).toBe("Online");
@@ -226,6 +266,23 @@ test("an unknown language is ignored", () => {
   setLanguage("xx");
 
   expect(getLanguage()).toBe("en");
+});
+
+test("locale registry guards duplicate, unsupported and missing-loader paths", async () => {
+  resetLanguageForTests("en");
+
+  await expect(setLanguage("en")).resolves.toBe(false);
+  await expect(setLanguage("xx")).resolves.toBe(false);
+  await expect(
+    ensureLanguageDictionary(/** @type {any} */ ("xx"))
+  ).resolves.toEqual({});
+
+  // English is the source phrase table and unsupported/missing dictionaries
+  // must never be registered over it.
+  registerDictionary("en", { Online: "Wrong" });
+  registerDictionary(/** @type {any} */ ("xx"), { Online: "Wrong" });
+  registerDictionary("fi", /** @type {any} */ (null));
+  expect(t("Online")).toBe("Online");
 });
 
 test("blocked storage still switches the language for the visit", () => {
@@ -240,6 +297,16 @@ test("blocked storage still switches the language for the visit", () => {
   } finally {
     setItem.mockRestore();
   }
+});
+
+test("Ukrainian plural forms use one, few and many correctly", () => {
+  resetLanguageForTests("uk");
+  expect(t("{count} stops", { count: 1 })).toBe("1 зупинка");
+  expect(t("{count} stops", { count: 2 })).toBe("2 зупинки");
+  expect(t("{count} stops", { count: 5 })).toBe("5 зупинок");
+  expect(t("{count} stops", { count: 21 })).toBe("21 зупинка");
+  expect(t("{count} stops", { count: 22 })).toBe("22 зупинки");
+  expect(t("{count} stops", { count: 25 })).toBe("25 зупинок");
 });
 
 test("a context keeps two meanings of one English phrase apart", () => {

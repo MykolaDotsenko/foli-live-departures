@@ -22,6 +22,7 @@ import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
 import useActiveJourney from "./hooks/useActiveJourney";
 import useDestinationIntent from "./hooks/useDestinationIntent";
+import useJourneyPlanSettings from "./hooks/useJourneyPlanSettings";
 import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
@@ -78,10 +79,13 @@ function finalWalkHeading() {
 
 function recoveryJourneyTarget() {
   const option = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button'
   );
   if (option instanceof globalThis.HTMLElement) return option;
-  return document.getElementById("recovery-journey-options-title");
+  return (
+    document.getElementById("recovery-journey-options-title") ||
+    document.getElementById("recovery-transfer-journey-options-title")
+  );
 }
 
 function selectedJourneyDepartureAction() {
@@ -93,7 +97,7 @@ function selectedJourneyDepartureAction() {
 
 function firstJourneyOption() {
   const element = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
   );
   return element instanceof globalThis.HTMLElement ? element : null;
 }
@@ -176,6 +180,7 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const journey = useDestinationIntent();
+  const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const pendingFinalWalkRef = useRef(null);
   const pendingTransferJourneyRef = useRef(null);
@@ -904,11 +909,30 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
+            timeConstraint={journeyPlan.timeConstraint}
+            timeLocalValue={journeyPlan.timeLocalValue}
+            timeValid={journeyPlan.timeValid}
+            routingPreference={journeyPlan.preference}
             coordinatesStatus={coordinatesStatus}
             online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
+            onTimeModeChange={(mode) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setTimeMode(mode);
+            }}
+            onTimeLocalValueChange={(value) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setTimeLocalValue(value);
+            }}
+            onPreferenceChange={(preference) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setPreference(preference);
+            }}
             onClear={clearJourneyDestination}
           />
         )}
@@ -928,12 +952,14 @@ function App() {
 
         {!ride.session &&
           selectedJourney?.phase === "recovery" &&
-          selectedJourney?.transferPlan && (
+          transferRecoveryContext && (
             <TransferRecoveryPanel
               state={online ? transferRecovery.state : "offline"}
-              options={transferRecovery.options}
+              directOptions={transferRecovery.directOptions}
+              transferOptions={transferRecovery.transferOptions}
               destination={journey.destination}
               onSelectJourney={selectJourneyOption}
+              onSelectTransferJourney={selectTransferJourneyOption}
             />
           )}
 
@@ -1038,6 +1064,9 @@ function App() {
           online={online}
           searchEdits={readSearchEdits}
           destination={journey.destination}
+          timeConstraint={journeyPlan.timeConstraint}
+          timeValid={journeyPlan.timeValid}
+          routingPreference={journeyPlan.preference}
           excludedJourney={
             selectedJourney?.phase === "recovery" ? selectedJourney : null
           }

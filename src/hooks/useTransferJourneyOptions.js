@@ -10,6 +10,11 @@ import {
   resolveBoardingOccurrence,
 } from "../utils/destinationTripFit";
 import { compareItineraries } from "../utils/itinerary";
+import {
+  compareJourneyOptions,
+  journeyPlanAllowsOption,
+} from "../utils/journeyPlanning";
+import { normalizeJourneyTimeConstraint } from "../utils/journeyTime";
 import { estimateFinalWalkSeconds } from "../utils/placeDestination";
 import { getDepartureTime } from "../utils/time";
 import {
@@ -18,7 +23,7 @@ import {
 } from "../utils/transferTopology";
 import { assessTransfer } from "../utils/transferFeasibility";
 
-/** @import { DestinationIntent, LiveState, MultiLegJourneyOption } from "../types/journey" */
+/** @import { DestinationIntent, JourneyPlan, JourneyTimeConstraint, LiveState, MultiLegJourneyOption } from "../types/journey" */
 
 const REFRESH_MS = 30_000;
 const MAX_FIRST_DEPARTURES_PER_STOP = 4;
@@ -38,6 +43,7 @@ const MAX_THIRD_TRIPS = 24;
 const THIRD_TRIP_BATCH = 6;
 const MAX_OPTIONS = 3;
 const TRANSFER_BUCKET_SEC = 5 * 60;
+const EXCLUDED_RUN_TIME_TOLERANCE_SEC = 30;
 
 const TRANSFER_RISK_RANK = {
   comfortable: 0,
@@ -77,6 +83,61 @@ function stopName(stopId, stops) {
   return String(stop?.name || stopId);
 }
 
+/** @param {unknown} value */
+function positive(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+/**
+ * Exclude one concrete failed committed run without hiding another departure
+ * on the same line. Trip ref is primary; origin planned time disambiguates
+ * providers that may reuse identifiers.
+ *
+ * @param {any} candidate
+ * @param {{tripRef?: string, originAimedDepartureAt?: number | null} | null | undefined} excludedRun
+ */
+function matchesExcludedRun(candidate, excludedRun) {
+  if (
+    !excludedRun ||
+    String(candidate?.tripref || candidate?.tripRef || "") !==
+      String(excludedRun.tripRef || "")
+  ) {
+    return false;
+  }
+
+  const excludedOrigin = positive(excludedRun.originAimedDepartureAt);
+  const candidateOrigin = positive(
+    candidate?.originaimeddeparturetime ?? candidate?.originAimedDepartureAt
+  );
+  return !(
+    excludedOrigin !== null &&
+    candidateOrigin !== null &&
+    Math.abs(excludedOrigin - candidateOrigin) >
+      EXCLUDED_RUN_TIME_TOLERANCE_SEC
+  );
+}
+
+/**
+ * @param {MultiLegJourneyOption[]} candidates
+ * @param {JourneyPlan | JourneyTimeConstraint | null | undefined} plan
+ */
+function finalizeOptions(candidates, plan) {
+  const filtered = plan
+    ? candidates.filter((candidate) =>
+        journeyPlanAllowsOption(candidate, plan)
+      )
+    : [...candidates];
+
+  filtered.sort((left, right) =>
+    plan
+      ? compareJourneyOptions(left, right, plan)
+      : compareItineraries(left, right)
+  );
+
+  return filtered.slice(0, MAX_OPTIONS);
+}
+
 /**
  * Bounded client-side one-transfer search. It is deliberately invoked only
  * when direct Journey Assistant options are absent.
@@ -86,6 +147,11 @@ function stopName(stopId, stops) {
  *   allStops: readonly any[],
  *   destination: DestinationIntent,
  *   positionAccuracy?: number | null,
+ *   maxTransitLegs?: 2 | 3,
+ *   excludedRun?: {tripRef?: string, originAimedDepartureAt?: number | null} | null,
+ *   journeyPlan?: JourneyPlan | null,
+ *   timeConstraint?: JourneyTimeConstraint | null,
+ *   routingPreference?: import("../types/journey").RoutingPreference | string,
  *   signal?: AbortSignal,
  * }} input
  * @returns {Promise<MultiLegJourneyOption[]>}
@@ -95,15 +161,57 @@ export async function loadTransferJourneyOptions({
   allStops,
   destination,
   positionAccuracy = null,
+  maxTransitLegs = 3,
+  excludedRun = null,
+  journeyPlan = null,
+  timeConstraint = null,
+  routingPreference = "balanced",
   signal,
 }) {
   const origins = Array.isArray(originStops) ? originStops : [];
+  const legLimit = Number(maxTransitLegs) <= 2 ? 2 : 3;
   const networkStops = Array.isArray(allStops) ? allStops : [];
   if (!destination || origins.length === 0) return [];
 
-  const monitorResults = await Promise.allSettled(
-    origins.map((stop) => fetchStopMonitor(String(stop.id), signal))
-  );
+  const effectivePlan =
+    journeyPlan ||
+    (timeConstraint || routingPreference !== "balanced"
+      ? {
+          mode: timeConstraint?.mode || "leave-now",
+          targetTimeSec: timeConstraint?.targetTimeSec ?? null,
+          preference: routingPreference,
+        }
+      : null);
+  const normalizedTime = normalizeJourneyTimeConstraint(effectivePlan);
+  if (effectivePlan && !normalizedTime.valid) return [];
+  const scheduledPlanning =
+    Boolean(effectivePlan) && normalizedTime.mode !== "leave-now";
+
+  const monitorTasks = origins.map((stop) => {
+    if (!scheduledPlanning) {
+      // Keep synchronous adapter/programming failures visible to the hook.
+      // Normal network/provider failures are promises and are still isolated
+      // below with allSettled so one bad origin cannot poison the search.
+      return fetchStopMonitor(String(stop.id), signal);
+    }
+    return (async () => {
+      const schedule = await fetchScheduledStopDepartures(
+        String(stop.id),
+        normalizedTime.referenceTimeSec,
+        signal
+      );
+      return {
+        stopName: String(stop.name || stop.id),
+        arrivals: schedule.departures || [],
+        serverTime: normalizedTime.referenceTimeSec,
+        realtimeAvailable: false,
+        scheduleAvailable: true,
+        scheduleFailed: false,
+        scheduleIncomplete: schedule.complete === false,
+      };
+    })();
+  });
+  const monitorResults = await Promise.allSettled(monitorTasks);
   throwIfAborted(signal);
 
   const firstCandidates = [];
@@ -111,12 +219,18 @@ export async function loadTransferJourneyOptions({
 
   for (
     let departureIndex = 0;
-    departureIndex < MAX_FIRST_DEPARTURES_PER_STOP &&
-    firstCandidates.length < MAX_FIRST_TRIPS;
+    departureIndex <
+      (scheduledPlanning ? Math.max(MAX_FIRST_DEPARTURES_PER_STOP, 12) : MAX_FIRST_DEPARTURES_PER_STOP) &&
+    firstCandidates.length < (scheduledPlanning ? Math.max(MAX_FIRST_TRIPS, 36) : MAX_FIRST_TRIPS);
     departureIndex += 1
   ) {
     for (let stopIndex = 0; stopIndex < origins.length; stopIndex += 1) {
-      if (firstCandidates.length >= MAX_FIRST_TRIPS) break;
+      if (
+        firstCandidates.length >=
+        (scheduledPlanning ? Math.max(MAX_FIRST_TRIPS, 36) : MAX_FIRST_TRIPS)
+      ) {
+        break;
+      }
       const monitorResult = monitorResults[stopIndex];
       if (monitorResult.status !== "fulfilled") continue;
 
@@ -126,7 +240,13 @@ export async function loadTransferJourneyOptions({
       if (!arrival) continue;
 
       const tripRef = String(arrival.tripref || "");
-      if (!tripRef || seenFirstTrips.has(tripRef)) continue;
+      if (
+        !tripRef ||
+        seenFirstTrips.has(tripRef) ||
+        matchesExcludedRun(arrival, excludedRun)
+      ) {
+        continue;
+      }
 
       const nowSec =
         Number.isFinite(Number(monitor.serverTime)) &&
@@ -264,7 +384,8 @@ export async function loadTransferJourneyOptions({
       .filter(
         (row) =>
           Number(row?.aimeddeparturetime) >= point.incomingArrivalAt &&
-          String(row?.tripref || "") !== point.first.tripRef
+          String(row?.tripref || "") !== point.first.tripRef &&
+          !matchesExcludedRun(row, excludedRun)
       )
       .slice(0, MAX_OUTGOING_PER_TRANSFER);
 
@@ -452,6 +573,10 @@ export async function loadTransferJourneyOptions({
     });
   }
 
+  if (legLimit === 2) {
+    return finalizeOptions(candidates, effectivePlan);
+  }
+
   // Build a strictly bounded second-transfer frontier from the already
   // selected second trips. No unbounded graph search is allowed in-browser.
   const secondConnectionPoints = [];
@@ -565,7 +690,8 @@ export async function loadTransferJourneyOptions({
         (row) =>
           Number(row?.aimeddeparturetime) >= point.incomingArrivalAt &&
           String(row?.tripref || "") !== point.secondTripRef &&
-          String(row?.tripref || "") !== point.seed.first.tripRef
+          String(row?.tripref || "") !== point.seed.first.tripRef &&
+          !matchesExcludedRun(row, excludedRun)
       )
       .slice(0, MAX_OUTGOING_PER_SECOND_TRANSFER);
 
@@ -746,9 +872,7 @@ export async function loadTransferJourneyOptions({
     });
   }
 
-  candidates.sort((left, right) => compareItineraries(left, right));
-
-  return candidates.slice(0, MAX_OPTIONS);
+  return finalizeOptions(candidates, effectivePlan);
 }
 
 /**
@@ -758,6 +882,9 @@ export async function loadTransferJourneyOptions({
  *   allStops: readonly any[],
  *   destination: DestinationIntent | null,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: JourneyPlan | null,
+ *   timeConstraint?: JourneyTimeConstraint | null,
+ *   routingPreference?: import("../types/journey").RoutingPreference | string,
  * }} input
  */
 export default function useTransferJourneyOptions({
@@ -766,16 +893,35 @@ export default function useTransferJourneyOptions({
   allStops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
+  timeConstraint = null,
+  routingPreference = "balanced",
 }) {
   /** @type {[MultiLegJourneyOption[], import("react").Dispatch<import("react").SetStateAction<MultiLegJourneyOption[]>>]} */
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
+  const effectivePlan =
+    journeyPlan ||
+    (timeConstraint || routingPreference !== "balanced"
+      ? {
+          mode: timeConstraint?.mode || "leave-now",
+          targetTimeSec: timeConstraint?.targetTimeSec ?? null,
+          preference: routingPreference,
+        }
+      : null);
+  const effectivePreference =
+    effectivePlan && "preference" in effectivePlan
+      ? effectivePlan.preference || "balanced"
+      : "balanced";
   const requestRef = useRef({
     enabled,
     originStops,
     allStops,
     destination,
     positionAccuracy,
+    journeyPlan,
+    timeConstraint: effectivePlan,
+    routingPreference,
   });
   requestRef.current = {
     enabled,
@@ -783,6 +929,9 @@ export default function useTransferJourneyOptions({
     allStops,
     destination,
     positionAccuracy,
+    journeyPlan,
+    timeConstraint: effectivePlan,
+    routingPreference,
   };
 
   const signature = useMemo(
@@ -794,9 +943,20 @@ export default function useTransferJourneyOptions({
             ...destination.acceptableStopIds,
             originStops.map((stop) => stop.id).join(","),
             Math.round(Number(positionAccuracy) || 0),
+            effectivePlan?.mode || "leave-now",
+            effectivePlan?.targetTimeSec || "",
+            effectivePreference,
           ].join("|")
         : "",
-    [destination, enabled, originStops, positionAccuracy]
+    [
+      destination,
+      enabled,
+      originStops,
+      positionAccuracy,
+      effectivePlan?.mode,
+      effectivePlan?.targetTimeSec,
+      effectivePreference,
+    ]
   );
 
   useEffect(() => {
@@ -823,6 +983,9 @@ export default function useTransferJourneyOptions({
           allStops: request.allStops,
           destination: request.destination,
           positionAccuracy: request.positionAccuracy,
+          journeyPlan: request.journeyPlan,
+          timeConstraint: request.timeConstraint,
+          routingPreference: request.routingPreference,
           signal: controller.signal,
         });
         if (!active || controller.signal.aborted) return;

@@ -212,6 +212,23 @@ export default {
   "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
     "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
+  "Journey timing and preference": "Matkan aika ja reittitoive",
+  When: "Milloin",
+  "Leave now": "Lähde nyt",
+  "Leave at": "Lähde klo",
+  "Arrive by": "Perillä viimeistään",
+  "Turku local time": "Turun paikallisaika",
+  "Route preference": "Reittitoive",
+  "Balanced": "Tasapainoinen",
+  "Fewer transfers": "Vähemmän vaihtoja",
+  "More transfer time": "Enemmän vaihtoaikaa",
+  "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh.":
+    "Tulevan ajan haut käyttävät Fölin julkaistuja aikatauluja. Nyt lähdettäessä käytetään tuoreita reaaliaika-arvioita.",
+  "Choose a valid future Turku time. Times skipped by the daylight-saving clock change are not available.":
+    "Valitse kelvollinen tuleva Turun aika. Kesäaikaan siirtymisessä väliin jääviä kellonaikoja ei voi valita.",
+  "Latest departure": "Viimeisin lähtö",
+  "Latest departure we found that meets your arrival time":
+    "Viimeisin löytämämme lähtö, jolla ehdit perille valitsemaasi aikaan",
   "Fresh transfer options": "Uudet vaihtovaihtoehdot",
   "Continue to {destination}": "Jatka kohteeseen {destination}",
   "Checking fresh buses from this transfer area…":
@@ -220,8 +237,8 @@ export default {
     "Korvaavan yhteyden haku jatkuu, kun verkkoyhteys palaa.",
   "Recovery search is temporarily unavailable. Your destination is kept.":
     "Korvaavan yhteyden haku ei ole tilapäisesti käytettävissä. Kohde säilyy valittuna.",
-  "No reliable direct replacement is available from this transfer area right now.":
-    "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa suoraa korvaavaa yhteyttä.",
+  "No reliable replacement with at most one new transfer is available from this transfer area right now.":
+    "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa korvaavaa yhteyttä enintään yhdellä uudella vaihdolla.",
   "These options start from the transfer area. Your journey changes only after you choose one.":
     "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
@@ -234,6 +251,8 @@ export default {
     "Vaihtoyhteyksien haku ei ole tilapäisesti käytettävissä. Lähipysäkit ovat edelleen käytettävissä.",
   "Transfer options": "Vaihtoyhteydet",
   "Ways to {destination} with one change": "Reitit kohteeseen {destination} yhdellä vaihdolla",
+  "Continue to {destination} with a new connection":
+    "Jatka kohteeseen {destination} uudella vaihtoyhteydellä",
   "Ways to {destination} with up to two changes":
     "Reitit kohteeseen {destination} enintään kahdella vaihdolla",
   "1 transfer": "1 vaihto",
@@ -250,6 +269,8 @@ export default {
   "about {minutes} min transfer margin": "noin {minutes} min vaihtoaikaa",
   "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey.":
     "Tulevat bussit tarkistetaan uudelleen tuoreista reaaliaikatiedoista. Sovellus pitää jokaisen valitun osuuden näkyvänä eikä koskaan vaihda matkaa taustalla toiseen.",
+  "This replacement starts from the transfer area. Nothing changes until you choose it.":
+    "Tämä korvaava yhteys lähtee vaihtoalueelta. Mikään ei muutu ennen kuin valitset sen.",
   "Leg {current} of {total} · change at {stop} to line {line}":
     "Osuus {current}/{total} · vaihda pysäkillä {stop} linjalle {line}",
   "Leg {current} of {total} · continue on line {line}":

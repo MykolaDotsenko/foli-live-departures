@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 import { prepareExternalPlaceDestination } from "../utils/placeDestination";
-
 /** @import { DestinationIntent } from "../types/journey" */
 
 /**
@@ -56,7 +55,6 @@ export function destinationFromPlace(place) {
 export default function useDestinationIntent() {
   /** @type {[DestinationIntent | null, import("react").Dispatch<import("react").SetStateAction<DestinationIntent | null>>]} */
   const [destination, setDestination] = useState(null);
-
   const chooseStop = useCallback((stop) => {
     const next = destinationFromStop(stop);
     if (next) setDestination(next);

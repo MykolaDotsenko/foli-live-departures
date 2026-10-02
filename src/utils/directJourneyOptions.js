@@ -1,3 +1,4 @@
+import { compareJourneyTimeCandidates } from "./journeyTime";
 /** @import { DirectJourneyOption, NearbyFitMap, NearbyDepartureFit } from "../types/journey" */
 
 const MAX_ALTERNATIVE_DELAY_SEC = 10 * 60;
@@ -83,10 +84,17 @@ function optionId(stopId, departure) {
  * @param {{
  *   stops: readonly { id: string, name?: string, distanceMeters?: number }[],
  *   fitsByStop: NearbyFitMap,
+ *   timeConstraint?: import("../types/journey").JourneyTimeConstraint | null,
+ *   preference?: import("../types/journey").RoutingPreference | string,
  * }} input
  * @returns {DirectJourneyOption[]}
  */
-export function selectDirectJourneyOptions({ stops, fitsByStop }) {
+export function selectDirectJourneyOptions({
+  stops,
+  fitsByStop,
+  timeConstraint = null,
+  preference = "balanced",
+}) {
   const stopById = new Map(stops.map((stop) => [String(stop.id), stop]));
 
   /** @type {{ stopId: string, stopName: string, distanceMeters: number, departure: NearbyDepartureFit }[]} */
@@ -120,7 +128,11 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
 
   candidates.sort(
     (left, right) =>
-      arrivalRank(left.departure) - arrivalRank(right.departure) ||
+      compareJourneyTimeCandidates(
+        left.departure,
+        right.departure,
+        timeConstraint
+      ) ||
       catchabilityRank(left.departure) - catchabilityRank(right.departure) ||
       left.distanceMeters - right.distanceMeters
   );
@@ -132,7 +144,10 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
   const selected = [
     {
       id: optionId(fastest.stopId, fastest.departure),
-      label: "fastest",
+      label:
+        timeConstraint?.mode === "arrive-by"
+          ? "latest-departure"
+          : "fastest",
       stopId: fastest.stopId,
       stopName: fastest.stopName,
       distanceMeters: fastest.distanceMeters,
@@ -226,5 +241,23 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     });
   }
 
-  return selected.slice(0, 3);
+  const result = selected.slice(0, 3);
+
+  if (preference === "less-walking") {
+    result.sort(
+      (left, right) =>
+        totalApproxWalkingMeters(left) -
+          totalApproxWalkingMeters(right) ||
+        arrivalRank(left.departure) - arrivalRank(right.departure)
+    );
+  } else if (preference === "more-buffer") {
+    result.sort(
+      (left, right) =>
+        catchabilityRank(left.departure) -
+          catchabilityRank(right.departure) ||
+        arrivalRank(left.departure) - arrivalRank(right.departure)
+    );
+  }
+
+  return result;
 }

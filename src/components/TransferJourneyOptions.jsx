@@ -78,22 +78,33 @@ export default function TransferJourneyOptions({
   options,
   destinationLabel,
   onSelectJourney,
+  mode = "default",
 }) {
   useLanguage();
   if (!Array.isArray(options) || options.length === 0) return null;
 
   const maxTransfers = Math.max(...options.map(transferCount));
+  const recovery = mode === "recovery";
+  const headingId = recovery
+    ? "recovery-transfer-journey-options-title"
+    : "transfer-journey-options-title";
 
   return (
     <section
       className={styles.wrapper}
-      aria-labelledby="transfer-journey-options-title"
+      aria-labelledby={headingId}
     >
       <div className={styles.headingRow}>
         <div>
-          <p className={styles.kicker}>{t("Transfer options")}</p>
-          <h3 id="transfer-journey-options-title">
-            {maxTransfers > 1
+          <p className={styles.kicker}>
+            {recovery ? t("Fresh transfer options") : t("Transfer options")}
+          </p>
+          <h3 id={headingId} tabIndex={recovery ? -1 : undefined}>
+            {recovery
+              ? t("Continue to {destination} with a new connection", {
+                  destination: destinationLabel,
+                })
+              : maxTransfers > 1
               ? t("Ways to {destination} with up to two changes", {
                   destination: destinationLabel,
                 })
@@ -178,9 +189,13 @@ export default function TransferJourneyOptions({
       </div>
 
       <p className={styles.note}>
-        {t(
-          "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey."
-        )}
+        {recovery
+          ? t(
+              "This replacement starts from the transfer area. Nothing changes until you choose it."
+            )
+          : t(
+              "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey."
+            )}
       </p>
     </section>
   );

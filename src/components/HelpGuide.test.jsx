@@ -75,9 +75,11 @@ test("Escape closes the guide and Tab cannot leave the modal", () => {
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 });
 
-test("the quick start and full guide follow the selected interface language", () => {
+test("the quick start and full guide follow the selected interface language", async () => {
   render(<HelpGuide />);
-  act(() => setLanguage("fi"));
+  await act(async () => {
+    await setLanguage("fi");
+  });
 
   fireEvent.click(screen.getByRole("button", { name: "Käyttöohje" }));
 

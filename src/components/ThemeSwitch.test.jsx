@@ -48,9 +48,11 @@ test("still switches for the visit when storage is blocked", () => {
   }
 });
 
-test("follows the interface language", () => {
+test("follows the interface language", async () => {
   render(<ThemeSwitch />);
-  act(() => setLanguage("fi"));
+  await act(async () => {
+    await setLanguage("fi");
+  });
 
   expect(
     screen.getByRole("button", { name: "Käytä tummaa teemaa" })

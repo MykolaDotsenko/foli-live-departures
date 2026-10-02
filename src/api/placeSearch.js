@@ -302,7 +302,11 @@ function normalizeResult(row) {
     return null;
   }
 
-  const osmType = String(row?.osm_type || "").trim().toLowerCase();
+  const rawOsmType = String(row?.osm_type || "").trim().toLowerCase();
+  const osmType =
+    rawOsmType === "node" || rawOsmType === "way" || rawOsmType === "relation"
+      ? rawOsmType
+      : "";
   const osmId = String(row?.osm_id || "").trim();
   const placeId = String(row?.place_id || "").trim();
   const id = osmType && osmId ? `${osmType}:${osmId}` : `place:${placeId}`;
@@ -334,6 +338,25 @@ function normalizeResult(row) {
 
   if (!title) return null;
 
+  const rawBounds = Array.isArray(row?.boundingbox) ? row.boundingbox : [];
+  const south = finite(rawBounds[0]);
+  const north = finite(rawBounds[1]);
+  const west = finite(rawBounds[2]);
+  const east = finite(rawBounds[3]);
+  const boundingBox =
+    south !== null &&
+    north !== null &&
+    west !== null &&
+    east !== null &&
+    south >= -90 &&
+    north <= 90 &&
+    west >= -180 &&
+    east <= 180 &&
+    south <= north &&
+    west <= east
+      ? { south, north, west, east }
+      : null;
+
   const subtitleParts =
     parts[0]?.toLocaleLowerCase() === title.toLocaleLowerCase()
       ? parts.slice(1)
@@ -347,6 +370,8 @@ function normalizeResult(row) {
     lon,
     category: String(row?.category || row?.class || ""),
     type: String(row?.addresstype || row?.type || ""),
+    osmType,
+    boundingBox,
     provider: "nominatim",
     licence: String(row?.licence || ""),
   };

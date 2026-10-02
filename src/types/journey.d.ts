@@ -1,3 +1,24 @@
+export type JourneyMode = "leave-now" | "leave-at" | "arrive-by";
+
+export type RoutingPreference =
+  | "balanced"
+  | "fewer-transfers"
+  | "less-walking"
+  | "more-buffer";
+
+export interface JourneyPlan {
+  mode: JourneyMode;
+  targetTimeSec: number | null;
+  preference: RoutingPreference;
+}
+
+export type JourneyTimeMode = "leave-now" | "leave-at" | "arrive-by";
+
+export interface JourneyTimeConstraint {
+  mode: JourneyTimeMode;
+  targetTimeSec: number | null;
+}
+
 export interface DestinationIntent {
   id: string;
   kind: "saved-place" | "public-stop" | "external-place";
@@ -10,6 +31,13 @@ export interface DestinationIntent {
   source?: "osm-nominatim";
 }
 
+export interface PlaceSearchBoundingBox {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
 export interface PlaceSearchResult {
   id: string;
   title: string;
@@ -18,6 +46,8 @@ export interface PlaceSearchResult {
   lon: number;
   category: string;
   type: string;
+  osmType?: "node" | "way" | "relation" | "";
+  boundingBox?: PlaceSearchBoundingBox | null;
   provider: "nominatim";
   licence: string;
 }
@@ -136,6 +166,7 @@ export interface NearbyStopFit {
 
 export type DirectJourneyLabel =
   | "fastest"
+  | "latest-departure"
   | "less-walking"
   | "easier-to-catch";
 
