@@ -1,3 +1,17 @@
+export type JourneyMode = "leave-now" | "leave-at" | "arrive-by";
+
+export type RoutingPreference =
+  | "balanced"
+  | "fewer-transfers"
+  | "less-walking"
+  | "more-buffer";
+
+export interface JourneyPlan {
+  mode: JourneyMode;
+  targetTimeSec: number | null;
+  preference: RoutingPreference;
+}
+
 export interface DestinationIntent {
   id: string;
   kind: "saved-place" | "public-stop" | "external-place";
