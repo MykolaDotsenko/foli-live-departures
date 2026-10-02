@@ -135,7 +135,13 @@ const requiredReleaseEvidence = [
   "select(.head_sha == $sha)",
   "adb install -r",
   'PACKAGE_ID: io.github.mykoladotsenko.turkudepartures',
-  "permissions:\n  actions: read\n  contents: read",
+  "permissions:\n  actions: read\n  contents: read\n  pull-requests: read",
+  "Verify merged PR provenance before repository code",
+  "/commits/$CANDIDATE_SHA/pulls",
+  '.state == "closed"',
+  ".merged_at != null",
+  '.base.ref == "master"',
+  ".merge_commit_sha == $sha",
   "publish:",
   "needs: release",
   "contents: write",
@@ -162,6 +168,20 @@ if (!runner.includes('capacitor.config.json')) {
 if (releaseWorkflow.includes("jarsigner -verify -strict")) {
   failures.push(
     "AAB verification must not use jarsigner --strict because Android release certificates are normally self-signed."
+  );
+}
+
+const provenanceIndex = releaseWorkflow.indexOf(
+  "Verify merged PR provenance before repository code"
+);
+const checkoutIndex = releaseWorkflow.indexOf("Checkout verified master");
+if (
+  provenanceIndex < 0 ||
+  checkoutIndex < 0 ||
+  provenanceIndex > checkoutIndex
+) {
+  failures.push(
+    "Production Android must verify merged-PR provenance before checking out repository code."
   );
 }
 
