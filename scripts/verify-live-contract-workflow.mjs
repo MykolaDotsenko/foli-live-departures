@@ -40,5 +40,5 @@ if (failures.length) {
 }
 
 console.log(
-  "Live Föli smoke contract verified: every master push, daily schedule and manual dispatch; read-only and non-blocking."
+  "Live Föli smoke contract verified: master/daily/manual checks, telemetry-free summaries, sustained-failure deduplication and recovery closure."
 );
