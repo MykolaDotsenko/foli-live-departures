@@ -107,7 +107,7 @@ These came out of the verification round and are not yet re-scored.
 - Direct web address/POI lookup is policy-switchable, but **production now defaults it off**. Broad-promotion builds keep address/place text on-device and hand off to the official Turku journey planner; CI prevents accidental re-enabling of public Nominatim without an explicit policy change.
 
 **Owner decisions still open**
-1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
+1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move automatically; the app now provides an explicit privacy-safe backup/import path for portable local state before cutover.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
 3. **Ukrainian interface,** implemented as a full locale rather than partial translated copy; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
 4. **Swedish.**

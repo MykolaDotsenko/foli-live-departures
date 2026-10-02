@@ -37,6 +37,8 @@ function errorPhrase(error) {
       return "This backup version is not supported by this app.";
     case "backup-too-large":
       return "This backup file is unexpectedly large and was not opened.";
+    case "backup-storage-unavailable":
+      return "This browser would not allow access to local app data.";
     default:
       return "The backup could not be read. Nothing was changed.";
   }
@@ -52,12 +54,16 @@ export default function LocalStateBackup() {
   const downloadBackup = () => {
     setError("");
     setFeedback("");
-    triggerDownload(serializeLocalStateBackup());
-    setFeedback(
-      t(
-        "Backup downloaded. It contains saved places, favourites, line filters and explicit language/theme choices — never recent stops, GPS or ride history."
-      )
-    );
+    try {
+      triggerDownload(serializeLocalStateBackup());
+      setFeedback(
+        t(
+          "Backup downloaded. It contains saved places, favourites, line filters and explicit language/theme choices — never recent stops, GPS or ride history."
+        )
+      );
+    } catch {
+      setError(t("The backup could not be downloaded on this browser."));
+    }
   };
 
   const chooseFile = () => {
@@ -97,7 +103,11 @@ export default function LocalStateBackup() {
       );
       return preview;
     } catch {
-      setError(t("The backup could not be applied. Nothing else was changed."));
+      setError(
+        t(
+          "The backup could not be applied completely. Import stopped and the app tried to restore your previous local data."
+        )
+      );
       return null;
     }
   };
@@ -171,20 +181,39 @@ export default function LocalStateBackup() {
             <div>
               <dt>{t("Favourite stops")}</dt>
               <dd>
-                {t("{count} in backup · {added} new", {
-                  count: preview.favoriteCount,
-                  added: preview.favoritesAdded,
-                })}
+                {preview.favoritesSkipped > 0
+                  ? t(
+                      "{count} in backup · {added} new · {skipped} not imported because this browser is full",
+                      {
+                        count: preview.favoriteCount,
+                        added: preview.favoritesAdded,
+                        skipped: preview.favoritesSkipped,
+                      }
+                    )
+                  : t("{count} in backup · {added} new", {
+                      count: preview.favoriteCount,
+                      added: preview.favoritesAdded,
+                    })}
               </dd>
             </div>
             <div>
               <dt>{t("Line filters")}</dt>
               <dd>
-                {t("{count} in backup · {added} new · {updated} newer", {
-                  count: preview.lineFilterCount,
-                  added: preview.lineFiltersAdded,
-                  updated: preview.lineFiltersUpdated,
-                })}
+                {preview.lineFiltersSkipped > 0
+                  ? t(
+                      "{count} in backup · {added} new · {updated} newer · {skipped} not imported because this browser is full",
+                      {
+                        count: preview.lineFilterCount,
+                        added: preview.lineFiltersAdded,
+                        updated: preview.lineFiltersUpdated,
+                        skipped: preview.lineFiltersSkipped,
+                      }
+                    )
+                  : t("{count} in backup · {added} new · {updated} newer", {
+                      count: preview.lineFilterCount,
+                      added: preview.lineFiltersAdded,
+                      updated: preview.lineFiltersUpdated,
+                    })}
               </dd>
             </div>
             <div>

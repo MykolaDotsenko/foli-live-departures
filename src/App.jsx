@@ -9,6 +9,7 @@ import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import IosInstallHint from "./components/IosInstallHint";
 import LanguageSwitch from "./components/LanguageSwitch";
+import LocalStateBackup from "./components/LocalStateBackup";
 import JourneySearch from "./components/JourneySearch";
 import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
 import ThemeSwitch from "./components/ThemeSwitch";
@@ -1163,7 +1164,7 @@ function App() {
             </dd>
             <dd>
               {t(
-                "In the web app, if you press Search destination for an address or place, that text is sent to OpenStreetMap Nominatim, which sees your IP address and the search text. Nothing is sent there while you are only typing or choosing a Föli stop. The installed Android app does not send address/place text to Nominatim; it offers the official Turku journey planner instead."
+                "Direct address and place lookup is disabled in the production web app. Address and place text stays on this device, and the app offers the official Turku journey planner instead. Föli stop search remains available inside Turku Departures."
               )}
             </dd>
             <dd>
@@ -1174,6 +1175,7 @@ function App() {
             <dt>{t("What it doesn’t have")}</dt>
             <dd>{t("No account, no ads, no analytics.")}</dd>
           </dl>
+          <LocalStateBackup />
           </details>
         </div>
       </footer>
