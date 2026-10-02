@@ -498,3 +498,51 @@ test("same-time live revalidation is non-delayed and equal cloned evidence is id
     applyFutureLegRevalidation(updated, 1, { ...live })
   ).toBe(updated);
 });
+
+
+test("leg projection uses truthful fallbacks when optional provider identity fields are absent", () => {
+  const source = option();
+  const fallbackSecond = {
+    ...source.legs[1],
+    lineRef: "",
+    exitStopSequence: null,
+    aimedDepartureAt: null,
+    originAimedDepartureAt: null,
+    liveState: "",
+  };
+  const fallbackTransfer = {
+    ...source.transfers[0],
+    boardStopName: "",
+    walkingDistanceM: 0,
+  };
+  const twoLeg = {
+    ...source,
+    id: "fallback-two-leg",
+    legs: [source.legs[0], fallbackSecond],
+    transfers: [fallbackTransfer],
+    destinationStopId: fallbackSecond.exitStopId,
+    destinationArrivalAt: fallbackSecond.arrivalAt,
+    journeyArrivalAt: fallbackSecond.arrivalAt,
+  };
+  const first = activeJourneyFromItinerary(twoLeg, destination, 1_000_000);
+  const second = advanceItineraryAfterRide(
+    first,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+
+  expect(second).toMatchObject({
+    stopName: "501",
+    distanceMeters: 0,
+    lineRef: "",
+    destinationStopSequence: null,
+    departureAt: 2_400,
+    aimedDepartureAt: 2_400,
+    originAimedDepartureAt: null,
+    liveState: "schedule",
+  });
+});
