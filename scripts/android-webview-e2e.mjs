@@ -203,6 +203,115 @@ console.log("Android WebView capabilities:", results.capabilities);
 record("geolocation API is exposed", results.capabilities.geolocation === true);
 record("app starts online", results.capabilities.online === true);
 
+const ukrainianLocale = await retry(
+  "Android Ukrainian locale switch",
+  async () => {
+    const switched = await evaluate(`(() => {
+      const findButton = (label) =>
+        [...document.querySelectorAll("button")].find(
+          (button) => (button.textContent || "").trim() === label
+        );
+
+      const lang = document.documentElement.lang || "";
+      if (lang === "en") {
+        const toFinnish = findButton("Suomeksi");
+        if (!toFinnish) return { ready: false, lang, reason: "missing-Suomeksi" };
+        toFinnish.click();
+        return { ready: false, lang, action: "to-fi" };
+      }
+      if (lang === "fi") {
+        const toUkrainian = findButton("Українською");
+        if (!toUkrainian) {
+          return { ready: false, lang, reason: "missing-Ukrainian-switch" };
+        }
+        toUkrainian.click();
+        return { ready: false, lang, action: "to-uk" };
+      }
+
+      return {
+        ready:
+          lang === "uk" &&
+          localStorage.getItem("foli-language-v1") === "uk" &&
+          Boolean(findButton("In English")),
+        lang,
+        stored: localStorage.getItem("foli-language-v1"),
+        body: document.body.innerText.slice(0, 800)
+      };
+    })()`);
+    return switched?.ready ? switched : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+record(
+  "Android can select Ukrainian through the production language registry",
+  ukrainianLocale?.lang === "uk" && ukrainianLocale?.stored === "uk",
+  ukrainianLocale || {}
+);
+
+await evaluate("location.reload(); true");
+const ukrainianReload = await retry(
+  "Android Ukrainian locale reload",
+  async () => {
+    const snapshot = await evaluate(`(() => ({
+      ready: document.readyState === "complete",
+      lang: document.documentElement.lang || "",
+      stored: localStorage.getItem("foli-language-v1"),
+      hasEnglishSwitch: [...document.querySelectorAll("button")].some(
+        (button) => (button.textContent || "").trim() === "In English"
+      ),
+      hasUkrainianUi:
+        /Виберіть автобусну зупинку|Знайти найближчу зупинку|Відправлення/.test(
+          document.body.innerText
+        )
+    }))()`);
+    return snapshot.ready &&
+      snapshot.lang === "uk" &&
+      snapshot.stored === "uk" &&
+      snapshot.hasEnglishSwitch &&
+      snapshot.hasUkrainianUi
+      ? snapshot
+      : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+record(
+  "Ukrainian locale persists across Android WebView reload",
+  ukrainianReload?.lang === "uk" &&
+    ukrainianReload?.stored === "uk" &&
+    ukrainianReload?.hasUkrainianUi === true,
+  ukrainianReload || {}
+);
+
+// Keep the long-standing Android E2E assertions language-stable after proving
+// native persistence. Ukrainian's next registry entry is English.
+const restoredEnglish = await retry(
+  "Android locale reset to English",
+  async () => {
+    const snapshot = await evaluate(`(() => {
+      const button = [...document.querySelectorAll("button")].find(
+        (candidate) => (candidate.textContent || "").trim() === "In English"
+      );
+      if (document.documentElement.lang === "uk" && button) {
+        button.click();
+        return null;
+      }
+      return {
+        lang: document.documentElement.lang || "",
+        stored: localStorage.getItem("foli-language-v1")
+      };
+    })()`);
+    return snapshot?.lang === "en" && snapshot?.stored === "en"
+      ? snapshot
+      : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+record(
+  "Android locale cycle returns to English for the remaining E2E contract",
+  restoredEnglish?.lang === "en" && restoredEnglish?.stored === "en",
+  restoredEnglish || {}
+);
+
 const nativeJourneyInput = await retry("native journey destination input", async () =>
   evaluate(`Boolean(document.querySelector("#journey-destination"))`)
 );
