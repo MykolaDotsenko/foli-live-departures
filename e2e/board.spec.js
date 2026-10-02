@@ -9,7 +9,13 @@ test("Back keeps keyboard focus on the departure board", async ({ page }) => {
   // board for that dropped keyboard focus to the page, and replaced the live
   // region that announces the stop.
   await page.goto("/?stop=164");
-  await page.getByLabel("Find your stop").fill("4");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+  const stopSearch = page.getByLabel("Find your stop");
+  await expect(stopSearch).toHaveValue("Kauppatori");
+  await stopSearch.fill("4");
+  await expect(stopSearch).toHaveValue("4");
   await page.getByRole("button", { name: "Show departures" }).click();
   await expect(page).toHaveURL(/stop=4/);
 
