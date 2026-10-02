@@ -96,7 +96,7 @@ function selectedJourneyDepartureAction() {
 
 function firstJourneyOption() {
   const element = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
   );
   return element instanceof globalThis.HTMLElement ? element : null;
 }
@@ -934,7 +934,7 @@ function App() {
           transferRecoveryContext && (
             <TransferRecoveryPanel
               state={online ? transferRecovery.state : "offline"}
-              options={transferRecovery.options}
+              directOptions={transferRecovery.directOptions}
               transferOptions={transferRecovery.transferOptions}
               destination={journey.destination}
               onSelectJourney={selectJourneyOption}
