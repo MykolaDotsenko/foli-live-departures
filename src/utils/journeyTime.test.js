@@ -244,3 +244,200 @@ describe("journey time constraints", () => {
     ).toBeGreaterThan(0);
   });
 });
+
+
+describe("journey time fail-closed edge matrix", () => {
+  const now = 20_000;
+
+  test("rejects malformed and impossible datetime-local values", () => {
+    expect(parseServiceDateTimeLocal("")).toBeNull();
+    expect(parseServiceDateTimeLocal("2026-10-02 18:30")).toBeNull();
+    expect(parseServiceDateTimeLocal("2026-02-30T12:00")).toBeNull();
+    expect(parseServiceDateTimeLocal("2026-13-01T12:00")).toBeNull();
+  });
+
+  test("formats only positive finite epoch seconds", () => {
+    expect(formatServiceDateTimeLocal(null)).toBe("");
+    expect(formatServiceDateTimeLocal(0)).toBe("");
+    expect(formatServiceDateTimeLocal(-1)).toBe("");
+    expect(formatServiceDateTimeLocal(Number.NaN)).toBe("");
+  });
+
+  test("fall-back overlap can deliberately choose the later physical instant", () => {
+    const early = parseServiceDateTimeLocal("2026-10-25T03:30");
+    const late = parseServiceDateTimeLocal("2026-10-25T03:30", {
+      prefer: "latest",
+    });
+    expect(late - early).toBe(3600);
+  });
+
+  test("unknown mode becomes leave-now and invalid now falls back to real time", () => {
+    const normalized = normalizeJourneyTimeConstraint(
+      { mode: "teleport", targetTimeSec: 99_999 },
+      Number.NaN
+    );
+    expect(normalized.mode).toBe("leave-now");
+    expect(normalized.valid).toBe(true);
+    expect(normalized.targetTimeSec).toBeNull();
+    expect(normalized.referenceTimeSec).toBeGreaterThan(0);
+    expect(normalized.earliestDepartureAt).toBe(normalized.referenceTimeSec);
+  });
+
+  test("scheduled targets exactly inside the 30-second grace remain valid", () => {
+    expect(
+      normalizeJourneyTimeConstraint(
+        { mode: "leave-at", targetTimeSec: now - 30 },
+        now
+      ).valid
+    ).toBe(true);
+    expect(
+      normalizeJourneyTimeConstraint(
+        { mode: "leave-at", targetTimeSec: now - 31 },
+        now
+      ).valid
+    ).toBe(false);
+  });
+
+  test("near arrive-by target never searches before now", () => {
+    const target = now + 30 * 60;
+    const normalized = normalizeJourneyTimeConstraint(
+      { mode: "arrive-by", targetTimeSec: target },
+      now
+    );
+    expect(normalized.referenceTimeSec).toBe(now);
+    expect(normalized.earliestDepartureAt).toBe(now);
+    expect(normalized.arriveByTimeSec).toBe(target);
+  });
+
+  test("invalid arrive-by target preserves fail-closed deadline metadata", () => {
+    expect(
+      normalizeJourneyTimeConstraint(
+        { mode: "arrive-by", targetTimeSec: null },
+        now
+      )
+    ).toMatchObject({
+      mode: "arrive-by",
+      valid: false,
+      targetTimeSec: null,
+      earliestDepartureAt: null,
+      arriveByTimeSec: null,
+    });
+  });
+
+  test("candidate filtering rejects missing or non-positive times", () => {
+    const leaveNow = { mode: "leave-now" };
+    expect(journeyTimeAllows({}, leaveNow, now)).toBe(false);
+    expect(
+      journeyTimeAllows(
+        { departureAt: now + 60, journeyArrivalAt: 0 },
+        leaveNow,
+        now
+      )
+    ).toBe(false);
+    expect(
+      journeyTimeAllows(
+        { departureAt: 0, journeyArrivalAt: now + 600 },
+        leaveNow,
+        now
+      )
+    ).toBe(false);
+  });
+
+  test("departure grace accepts 30 seconds early but rejects anything earlier", () => {
+    const plan = { mode: "leave-at", targetTimeSec: now + 600 };
+    expect(
+      journeyTimeAllows(
+        {
+          departureAt: now + 570,
+          destinationArrivalAt: now + 1200,
+        },
+        plan,
+        now
+      )
+    ).toBe(true);
+    expect(
+      journeyTimeAllows(
+        {
+          departureAt: now + 569,
+          destinationArrivalAt: now + 1200,
+        },
+        plan,
+        now
+      )
+    ).toBe(false);
+  });
+
+  test("destination arrival is a valid fallback when door arrival is absent", () => {
+    expect(
+      journeyTimeAllows(
+        {
+          departureAt: now + 60,
+          destinationArrivalAt: now + 600,
+        },
+        { mode: "arrive-by", targetTimeSec: now + 600 },
+        now
+      )
+    ).toBe(true);
+  });
+
+  test("arrive-by tie breaks equal departures by earlier arrival", () => {
+    const earlierArrival = {
+      departureAt: now + 300,
+      journeyArrivalAt: now + 900,
+    };
+    const laterArrival = {
+      departureAt: now + 300,
+      journeyArrivalAt: now + 1000,
+    };
+    expect(
+      compareJourneyTimeCandidates(
+        earlierArrival,
+        laterArrival,
+        { mode: "arrive-by" }
+      )
+    ).toBeLessThan(0);
+  });
+
+  test("leave modes rank earlier arrival, then earlier departure", () => {
+    const earlierArrival = {
+      departureAt: now + 500,
+      journeyArrivalAt: now + 900,
+    };
+    const laterArrival = {
+      departureAt: now + 100,
+      journeyArrivalAt: now + 1000,
+    };
+    expect(
+      compareJourneyTimeCandidates(earlierArrival, laterArrival, {
+        mode: "leave-at",
+      })
+    ).toBeLessThan(0);
+
+    const earlyDeparture = {
+      departureAt: now + 100,
+      destinationArrivalAt: now + 900,
+    };
+    const lateDeparture = {
+      departureAt: now + 200,
+      destinationArrivalAt: now + 900,
+    };
+    expect(
+      compareJourneyTimeCandidates(earlyDeparture, lateDeparture, {
+        mode: "leave-now",
+      })
+    ).toBeLessThan(0);
+  });
+
+  test("comparison remains deterministic with missing candidate timestamps", () => {
+    expect(
+      compareJourneyTimeCandidates({}, {}, { mode: "leave-now" })
+    ).toBe(0);
+    expect(
+      compareJourneyTimeCandidates(
+        {},
+        { departureAt: now + 1, destinationArrivalAt: now + 10 },
+        { mode: "arrive-by" }
+      )
+    ).toBeGreaterThan(0);
+  });
+});
