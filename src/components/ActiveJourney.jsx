@@ -26,24 +26,6 @@ function itineraryContext(journey) {
     };
   }
 
-  if (journey?.transferPlan) {
-    const legacyIndex = journey.transferLeg === 2 ? 1 : 0;
-    return {
-      activeIndex: legacyIndex,
-      totalLegs: 2,
-      current:
-        legacyIndex === 0
-          ? journey.transferPlan.first || null
-          : journey.transferPlan.second || null,
-      previousTransfer:
-        legacyIndex === 1 ? journey.transferPlan.transfer || null : null,
-      nextTransfer:
-        legacyIndex === 0 ? journey.transferPlan.transfer || null : null,
-      next:
-        legacyIndex === 0 ? journey.transferPlan.second || null : null,
-    };
-  }
-
   return null;
 }
 
