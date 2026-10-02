@@ -62,7 +62,7 @@ In the verification round, 21 of 23 screens scored 80 or more on a phone. The tw
 
 The first product review averaged about 41, and the re-audit about 56, on a coarser list of areas.
 
-Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-02, PR #140 has repaired the inherited bundle regression on `master` without raising the budget. Automated release verification is now separated from the still-open downstream production Pages deployment and the explicit manual/domain/field-validation gates in `PRODUCTION_READINESS.md`.
+Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-02, PR #140 has repaired the inherited bundle regression on `master` without raising the budget, and merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e` completed the repository's automated CI/browser/PWA/Android/live-contract/test-APK/production-deployment path. Broad promotion remains blocked by unfinished pre-field scope plus the explicit manual/domain/field-validation gates in `PRODUCTION_READINESS.md`.
 
 ## Fixed after the verification round
 
@@ -150,7 +150,7 @@ Every pull request to `master` runs:
 
 After a successful `master` CI run, production Pages deployment stamps the exact CI SHA and does not finish green until the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision are verified.
 
-**Current gate status (2026-10-02):** PR #140 restored the unchanged JS/CSS gate at **578,177 raw / 161,897 gzip bytes** versus **625,000 / 180,000** limits. On merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e`, unit-build/bundle/PWA/CSP, Android build/E2E, live Föli smoke and tested Android APK publication are green. Production Pages deployment and manual/field gates remain separate evidence and are not inferred from those green checks.
+**Current gate status (2026-10-02):** PR #140 restored the unchanged JS/CSS gate at **578,177 raw / 161,897 gzip bytes** versus **625,000 / 180,000** limits. On merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e`, CI including cross-browser/accessibility, bundle/PWA/CSP, Android build/E2E, live Föli smoke, tested Android APK publication and production Pages deployment with exact-revision smoke are green. Manual/field/domain/signing gates remain separate evidence and are not inferred from those automated checks.
 
 ## Product principle
 
