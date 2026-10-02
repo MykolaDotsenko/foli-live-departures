@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import LocalStateBackup from "./LocalStateBackup";
 import {
@@ -146,7 +146,9 @@ test("invalid input fails closed without changing current local state", async ()
 
 test("the full backup flow follows Finnish immediately", () => {
   render(<LocalStateBackup />);
-  setLanguage("fi");
+  act(() => {
+    setLanguage("fi");
+  });
 
   expect(
     screen.getByRole("heading", { name: "Varmuuskopio ja siirto" })
