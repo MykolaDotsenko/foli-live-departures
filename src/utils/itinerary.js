@@ -157,10 +157,13 @@ export function itineraryTransfer(option, index) {
   return normalized.transfers[index] || null;
 }
 
+/** @param {MultiLegJourneyOption} itinerary */
 function minimumTransferSlack(itinerary) {
   const values = itinerary.transfers
-    .map((transfer) => Number(transfer?.feasibility?.slackSec))
-    .filter((value) => Number.isFinite(value));
+    .map((/** @type {ItineraryTransfer} */ transfer) =>
+      Number(transfer?.feasibility?.slackSec)
+    )
+    .filter((/** @type {number} */ value) => Number.isFinite(value));
   return values.length > 0 ? Math.min(...values) : Number.POSITIVE_INFINITY;
 }
 
