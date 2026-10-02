@@ -121,6 +121,10 @@ export default function JourneySearch({
         setError(
           t("Stop locations are still loading. Try again in a moment.")
         );
+      } else if (coordinatesStatus !== "ready") {
+        setError(
+          t("Stop locations are temporarily unavailable. Search manually instead.")
+        );
       } else if (prepared?.reason === "outside-service-area") {
         setError(
           t(
