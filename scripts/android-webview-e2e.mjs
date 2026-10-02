@@ -550,14 +550,20 @@ const activeRideRequest = await evaluate(`(async () => {
     cap.getPlatform?.() !== "android" ||
     cap.isNativePlatform?.() !== true ||
     cap.isPluginAvailable?.("ActiveRide") !== true ||
-    typeof cap.registerPlugin !== "function"
+    !cap.Plugins?.ActiveRide
   ) {
-    return { supported: false };
+    return {
+      supported: false,
+      platform: cap?.getPlatform?.() || "",
+      native: cap?.isNativePlatform?.() === true,
+      available: cap?.isPluginAvailable?.("ActiveRide") === true,
+      pluginNames: Object.keys(cap?.Plugins || {})
+    };
   }
 
   const plugin =
     window.__foliActiveRideE2E ||
-    (window.__foliActiveRideE2E = cap.registerPlugin("ActiveRide"));
+    (window.__foliActiveRideE2E = cap.Plugins.ActiveRide);
   const rideId = "android-e2e-active-ride";
   const expiresAt = Date.now() + 10 * 60 * 1000;
   const started = await plugin.start({

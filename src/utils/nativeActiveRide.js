@@ -35,8 +35,9 @@ export function createNativeActiveRideBridge(options = {}) {
     if (capacitor.getPlatform?.() !== "android") return null;
     if (capacitor.isNativePlatform?.() !== true) return null;
     if (capacitor.isPluginAvailable?.("ActiveRide") !== true) return null;
-    if (typeof capacitor.registerPlugin !== "function") return null;
-    plugin ||= capacitor.registerPlugin("ActiveRide");
+    const nativePlugin = capacitor.Plugins?.ActiveRide;
+    if (!nativePlugin || typeof nativePlugin !== "object") return null;
+    plugin ||= nativePlugin;
     return plugin;
   }
 

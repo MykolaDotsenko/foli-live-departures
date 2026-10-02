@@ -60,14 +60,13 @@ describe("createNativeActiveRideBridge", () => {
       serviceType: "location",
       restartPolicy: "not-sticky",
     }));
-    const registerPlugin = vi.fn(() => ({ start, stop, status }));
     const bridge = createNativeActiveRideBridge({
       nativeBuild: true,
       capacitor: {
         getPlatform: () => "android",
         isNativePlatform: () => true,
         isPluginAvailable: (name) => name === "ActiveRide",
-        registerPlugin,
+        Plugins: { ActiveRide: { start, stop, status } },
       },
     });
 
@@ -84,8 +83,6 @@ describe("createNativeActiveRideBridge", () => {
     });
     expect(JSON.stringify(start.mock.calls[0][0])).not.toContain("destination");
     expect(JSON.stringify(start.mock.calls[0][0])).not.toContain("secret");
-    expect(registerPlugin).toHaveBeenCalledTimes(1);
-
     await expect(bridge.status()).resolves.toMatchObject({
       active: true,
       serviceType: "location",
