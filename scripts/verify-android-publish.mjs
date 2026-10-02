@@ -47,7 +47,9 @@ const requiredPublishEvidence = [
   "sha256sum -c apk-sha256.txt",
   "github.event.workflow_run.head_sha",
   'gh release view "$tag" --repo "$GITHUB_REPOSITORY"',
-  'gh release delete "$tag" --repo "$GITHUB_REPOSITORY"',
+  'gh release delete "$tag" --repo "$GITHUB_REPOSITORY" --yes',
+  '"/repos/$GITHUB_REPOSITORY/git/refs/tags/$tag"',
+  ">/dev/null 2>&1 || true",
   'gh release create "$tag"',
   '--repo "$GITHUB_REPOSITORY"',
 ];
