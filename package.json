@@ -21,13 +21,15 @@
     "verify:native-boundary": "node scripts/verify-native-provider-boundary.mjs",
     "verify:api-reference": "node scripts/verify-foli-api-reference.mjs",
     "verify:brand": "node scripts/verify-branding.mjs",
-    "verify:deployment": "node scripts/verify-deploy-workflow.mjs",
+    "verify:deployment": "node scripts/verify-deploy-workflow.mjs && node --test scripts/verify-production-site.test.mjs",
     "verify:workflow-pins": "node scripts/verify-workflow-pins.mjs",
     "verify:architecture": "node scripts/verify-backendless.mjs",
     "verify:android-release": "node scripts/verify-android-release.mjs",
     "verify:android-publish": "node scripts/verify-android-publish.mjs",
     "verify:place-search-policy": "node scripts/verify-place-search-policy.mjs",
-    "verify:live-contract": "node scripts/verify-live-contract-workflow.mjs"
+    "verify:live-contract": "node scripts/verify-live-contract-workflow.mjs",
+    "stamp:deployment": "node scripts/stamp-deployment.mjs",
+    "verify:production-site": "node scripts/verify-production-site.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
