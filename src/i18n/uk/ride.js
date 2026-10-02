@@ -1,4 +1,4 @@
-import { stops, stopsAway } from "./runtime";
+import { stops, stopsAway } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
