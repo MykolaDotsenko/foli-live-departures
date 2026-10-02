@@ -156,6 +156,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The WebView scenario includes persisted Ukrainian/Swedish locale
+      # selection/reload checks before returning to English for legacy flow QA.
       - name: Run Android emulator E2E
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
         with:
