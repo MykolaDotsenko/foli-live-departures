@@ -5,6 +5,7 @@ import {
   BACKUP_KIND,
   BACKUP_VERSION,
   LOCAL_STATE_KEYS,
+  MAX_BACKUP_BYTES,
 } from "../utils/localStateBackup";
 import { resetLanguageForTests, setLanguage } from "../i18n";
 
@@ -102,6 +103,23 @@ test("shows a review before import and only applies after explicit confirmation"
     JSON.parse(localStorage.getItem(LOCAL_STATE_KEYS.savedStops)).favorites
   ).toEqual([{ id: "32", name: "Puistokatu" }]);
   expect(screen.getByRole("status")).toHaveTextContent("Backup imported");
+});
+
+test("rejects an oversized backup before opening it", async () => {
+  render(<LocalStateBackup />);
+  fireEvent.change(screen.getByLabelText("Backup file"), {
+    target: {
+      files: [
+        new File(["x".repeat(MAX_BACKUP_BYTES + 1)], "too-large.json", {
+          type: "application/json",
+        }),
+      ],
+    },
+  });
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "This backup file is unexpectedly large and was not opened"
+  );
 });
 
 test("invalid input fails closed without changing current local state", async () => {
