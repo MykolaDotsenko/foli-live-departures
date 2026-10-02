@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   directPlaceSearchSupported,
+  loadPlaceSearchConfig,
   searchPlaces,
 } from "../api/placeSearch";
 
 /** @import { PlaceSearchResult } from "../types/journey" */
 
 export default function usePlaceSearch() {
-  const [directEnabled, setDirectEnabled] = useState(() =>
-    directPlaceSearchSupported()
+  const directSupportedRef = useRef(directPlaceSearchSupported());
+  const [directEnabled, setDirectEnabled] = useState(
+    () => directSupportedRef.current
   );
   /** @type {[PlaceSearchResult[], import("react").Dispatch<import("react").SetStateAction<PlaceSearchResult[]>>]} */
   const [results, setResults] = useState([]);
@@ -77,12 +79,38 @@ export default function usePlaceSearch() {
     }
   }, []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const policyController = new AbortController();
+
+    // Runtime policy is fetched from the same origin and is deliberately not
+    // precached. This lets production disable public address/POI lookup
+    // immediately without shipping a new JavaScript bundle or contacting the
+    // external provider first.
+    if (directSupportedRef.current) {
+      loadPlaceSearchConfig(policyController.signal)
+        .then((config) => {
+          if (!policyController.signal.aborted && config.enabled !== true) {
+            setDirectEnabled(false);
+          }
+        })
+        .catch((policyError) => {
+          if (
+            !policyController.signal.aborted &&
+            policyError?.name !== "AbortError"
+          ) {
+            // A missing/malformed policy must fail closed. Local Föli stop
+            // search remains available and the UI exposes the official
+            // journey-planner handoff.
+            setDirectEnabled(false);
+          }
+        });
+    }
+
+    return () => {
+      policyController.abort();
       controllerRef.current?.abort();
-    },
-    []
-  );
+    };
+  }, []);
 
   return { results, status, error, search, clear, directEnabled };
 }

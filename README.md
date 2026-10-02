@@ -45,7 +45,7 @@ An installable Android sideload build is published from `master`:
 
 The APK uses the same web application and Android permissions exercised by the repository's Android emulator E2E workflow. It is a GitHub-built prerelease for direct installation, not a Google Play release. Android may ask you to allow installs from your browser or file manager.
 
-The downloadable APK is currently a debug-signed sideload build. Because CI runners do not hold a persistent production signing key, a later APK may require uninstalling the previous sideload build before installation.
+The `android-latest` download remains a debug-signed sideload build for testing. The repository now also contains a separate production-release workflow that uses the independent package ID `io.github.mykoladotsenko.turkudepartures`, persistent signing secrets, APK + AAB output, SHA-256 checksums and emulator verification of the exact signed APK before an immutable version release. It intentionally cannot publish a production build until the owner configures the signing environment and secrets described in [Android release](docs/ANDROID_RELEASE.md).
 
 ## What the app does
 
@@ -150,7 +150,7 @@ The code explicitly handles:
 | Build | Vite 8 |
 | Types | TypeScript strict `checkJs` over JSDoc for the data layer (`src/api`, `src/utils`, `src/types`) |
 | Transit data | Föli SIRI, GTFS, service alerts |
-| HTTP | Axios |
+| HTTP | Browser `fetch` through a small timeout/cancellation client |
 | Local state | React hooks, Web Storage |
 | Browser APIs | Geolocation, History, Service Worker, Notifications, Wake Lock, Web Audio |
 | Testing | Vitest, Testing Library, Playwright, axe |
@@ -182,14 +182,17 @@ The verification suite covers:
 - axe accessibility checks;
 - 320–430 px mobile layouts and horizontal-overflow regression;
 - 200% text scaling and touch-target checks;
-- production bundle budget;
+- production JS/CSS bundle budgets for both raw parse footprint and deterministic gzip transfer size;
 - live Föli API contract smoke tests;
-- branding/reference consistency.
+- branding/reference consistency;
+- high/critical runtime dependency audit;
+- Android package/signing/release-contract invariants.
 
 CI follows the same path:
 
 ```text
-lint → typecheck → brand/reference checks → tests + coverage
+runtime dependency audit → lint → typecheck → brand/reference checks
+→ Android release-contract verification → tests + coverage
 → production build → PWA + bundle verification
 → cross-browser E2E → accessibility
 ```
@@ -234,3 +237,15 @@ npm run test:e2e
 Transit/timetable data is maintained by Turku region public transport and distributed through data.foli.fi under **CC BY 4.0**.
 
 Application source code is under the **MIT License**.
+
+
+## Production readiness
+
+The codebase is suitable for a quiet web/PWA production release, but city-wide promotion has explicit manual gates that automation cannot honestly replace. See:
+
+- [Production readiness](docs/PRODUCTION_READINESS.md)
+- [Real-bus field validation](docs/FIELD_VALIDATION.md)
+- [Android production release](docs/ANDROID_RELEASE.md)
+- [Finnish native-language review](docs/FINNISH_NATIVE_REVIEW.md)
+
+These checklists deliberately keep external/manual gates visible instead of marking them complete because CI is green.

@@ -7,6 +7,7 @@ import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
+import IosInstallHint from "./components/IosInstallHint";
 import LanguageSwitch from "./components/LanguageSwitch";
 import JourneySearch from "./components/JourneySearch";
 import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
@@ -843,6 +844,11 @@ function App() {
 
       <main className="app-main">
         <ConnectivityStatus online={online} />
+        {/* Installation education must never push a live departure board or
+            Ride Mode below the first phone viewport. Offer it only before a
+            stop has been opened; returning/active journeys keep transit
+            information visually authoritative. */}
+        {!ride.session && !stopId && <IosInstallHint />}
 
         {ride.session && (
           <RideMode

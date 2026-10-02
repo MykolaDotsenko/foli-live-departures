@@ -1,6 +1,25 @@
-import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, expect, test, vi } from "vitest";
 import BusStopDisplay from "./BusStopDisplay";
+
+const timetableApi = vi.hoisted(() => ({
+  fetchScheduledLineDepartures: vi.fn(() => new Promise(() => {})),
+}));
+
+vi.mock("../api/foliApi", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    fetchScheduledLineDepartures: timetableApi.fetchScheduledLineDepartures,
+  };
+});
+
+afterEach(() => {
+  localStorage.removeItem("foli-line-filter-v1");
+  timetableApi.fetchScheduledLineDepartures
+    .mockReset()
+    .mockImplementation(() => new Promise(() => {}));
+});
 
 const NOW = Math.floor(Date.now() / 1000);
 
@@ -48,6 +67,7 @@ test("a first load that failed says so instead of claiming there are no departur
 
   expect(screen.getByText("Couldn’t load departures.")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
 
@@ -105,6 +125,7 @@ test("an empty live answer with an unchecked timetable does not claim the day is
     screen.getByText(/timetable could not be checked/i)
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
 
@@ -245,4 +266,45 @@ test("going offline rewords the board's status in place", () => {
   rerender(board({ ...failed, online: false }));
 
   expect(screen.getByText(/^Offline · last updated/)).toBe(status);
+});
+
+
+test("a filtered-line failure shows Try again without a competing header Refresh", async () => {
+  timetableApi.fetchScheduledLineDepartures.mockRejectedValueOnce(
+    new Error("timetable unavailable")
+  );
+  localStorage.setItem(
+    "foli-line-filter-v1",
+    JSON.stringify({
+      "164": { lines: ["32"], savedAt: Date.now() },
+    })
+  );
+
+  render(
+    board({
+      arrivals: [departure],
+      serverTime: NOW,
+      receivedAtMs: Date.now(),
+      error: true,
+    })
+  );
+
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument()
+  );
+  expect(screen.getByRole("button", { name: "Show all lines" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Refresh" })).not.toBeInTheDocument();
+});
+
+test("a healthy board keeps one explicit Refresh action", () => {
+  render(
+    board({
+      arrivals: [departure],
+      serverTime: NOW,
+      receivedAtMs: Date.now(),
+    })
+  );
+
+  expect(screen.getByRole("button", { name: "Refresh" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
 });

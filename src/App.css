@@ -233,6 +233,38 @@ input:focus-visible,
   white-space: nowrap;
 }
 
+.ios-install-hint {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 11px 12px;
+  border: 1px solid #b8d4d7;
+  border-radius: 14px;
+  background: #f7fbfb;
+  color: #294851;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.ios-install-hint p {
+  margin: 3px 0 0;
+}
+
+.ios-install-hint button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  border: 1px solid #b8d4d7;
+  border-radius: 9px;
+  background: #fff;
+  color: #00656f;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .search-panel {
   position: relative;
   z-index: 3;
@@ -477,6 +509,16 @@ input:focus-visible,
     letter-spacing: -0.035em;
   }
 
+  .ios-install-hint {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ios-install-hint button {
+    min-height: 44px;
+    align-self: flex-start;
+  }
+
   .search-panel {
     padding: 11px;
     border-radius: 15px;
@@ -595,6 +637,18 @@ input:focus-visible,
   :root[data-theme="dark"] .language-switch:focus-visible,
   :root[data-theme="dark"] .theme-switch:focus-visible {
     outline-color: var(--dm-focus);
+  }
+
+  :root[data-theme="dark"] .ios-install-hint {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-surface);
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .ios-install-hint button {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+    color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .search-panel {

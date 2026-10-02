@@ -326,6 +326,15 @@ function BusStopDisplay({
 
   const filterable = linesOnOffer.length > 1 && upcomingArrivals.length > 0;
   const showAllLines = () => setFollowedLines([]);
+  const stateOwnsRetry =
+    (upcomingCount === 0 &&
+      ((error && !answerWasEmpty) ||
+        scheduleFailed ||
+        scheduleIncomplete)) ||
+    (visibleArrivals.length === 0 &&
+      followedLines.length > 0 &&
+      lineTimetable.status !== "loading" &&
+      (error || lineTimetable.status === "error"));
   const toggleRideSetup = (rideKey) =>
     setRideCandidateKey((current) => (current === rideKey ? "" : rideKey));
   const closeRideSetup = () => setRideCandidateKey("");
@@ -351,6 +360,7 @@ function BusStopDisplay({
         onToggleLineFilter={() => setLineFilterOpen((open) => !open)}
         onRefresh={onRefresh}
         unknownStop={unknownStop}
+        showRefresh={!stateOwnsRetry}
       />
 
       {upcomingCount > 0 && (

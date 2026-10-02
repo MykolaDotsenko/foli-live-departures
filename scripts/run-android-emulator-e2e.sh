@@ -4,7 +4,10 @@ set -euo pipefail
 mkdir -p artifacts/android-e2e
 
 APK="android/app/build/outputs/apk/debug/app-debug.apk"
-PACKAGE="fi.turku.folilivedepartures"
+PACKAGE="$(
+  node -e 'const fs=require("fs"); const cfg=JSON.parse(fs.readFileSync("capacitor.config.json","utf8")); process.stdout.write(String(cfg.appId||""));'
+)"
+test -n "$PACKAGE"
 
 # Android emulator cold boots occasionally accept `geo fix` while the system
 # location service is still disabled/not-ready. Make provider readiness an
@@ -164,7 +167,7 @@ adb pull /sdcard/window-final.xml artifacts/android-e2e/window-final.xml || true
 adb exec-out screencap -p > artifacts/android-e2e/final-state.png
 
 adb logcat -d > artifacts/android-e2e/logcat.txt
-if grep -E "FATAL EXCEPTION|Process: fi\.turku\.folilivedepartures" \
+if grep -E "FATAL EXCEPTION|Process: ${PACKAGE//./\\.}" \
   artifacts/android-e2e/logcat.txt; then
   echo "Detected fatal Android runtime crash"
   exit 1

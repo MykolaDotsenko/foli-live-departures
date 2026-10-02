@@ -452,11 +452,6 @@
   line-height: 1.4;
 }
 
-.confirmSafe input {
-  flex: 0 0 auto;
-  margin-top: 2px;
-}
-
 
 .mobileSummary {
   display: none;

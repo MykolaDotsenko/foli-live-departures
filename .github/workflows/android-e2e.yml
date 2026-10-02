@@ -13,6 +13,7 @@ on:
       - "index.html"
       - "package.json"
       - "package-lock.json"
+      - "capacitor.config.json"
       - "vite.config.*"
 
 permissions:
@@ -59,22 +60,6 @@ jobs:
       - name: Verify native provider trust boundary
         run: npm run verify:native-boundary
 
-      - name: Configure Capacitor
-        run: |
-          cat > capacitor.config.json <<'JSON'
-          {
-            "appId": "fi.turku.folilivedepartures",
-            "appName": "Turku Departures",
-            "webDir": "dist",
-            "server": {
-              "androidScheme": "https"
-            },
-            "android": {
-              "allowMixedContent": false
-            }
-          }
-          JSON
-
       - name: Create Android project
         run: |
           npx cap add android
@@ -115,10 +100,10 @@ jobs:
           manifest.write_text(text)
 
           main = Path(
-              "android/app/src/main/java/fi/turku/folilivedepartures/MainActivity.java"
+              "android/app/src/main/java/io/github/mykoladotsenko/turkudepartures/MainActivity.java"
           )
           main.write_text(
-              """package fi.turku.folilivedepartures;
+              """package io.github.mykoladotsenko.turkudepartures;
 
           import android.os.Bundle;
           import android.webkit.WebView;

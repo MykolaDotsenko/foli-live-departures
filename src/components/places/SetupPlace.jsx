@@ -26,8 +26,6 @@ export default function SetupPlace({
   const [primaryStopId, setPrimaryStopId] = useState(
     shouldPreselectFirst ? candidates[0]?.id || "" : ""
   );
-  const [confirmedSafe, setConfirmedSafe] = useState(false);
-
   const toggleStop = (stopId) => {
     const next = toggleStopSelection(
       selectedIds,
@@ -35,7 +33,6 @@ export default function SetupPlace({
       stopId,
       candidates
     );
-    setConfirmedSafe(false);
     setPrimaryStopId(next.primaryStopId);
     setSelectedIds(next.selectedIds);
   };
@@ -133,56 +130,51 @@ export default function SetupPlace({
                 </span>
               </label>
 
-              {/* Every radio was called "Main stop", so a screen reader
-                  going through them could not tell which stop each one
-                  made the main one. The stop's name is added out of
-                  sight, after the words on screen. */}
-              <label className={styles.primaryChoice}>
-                <input
-                  type="radio"
-                  name={`primary-${preset.id}`}
-                  checked={primaryStopId === stop.id}
-                  disabled={!checked}
-                  onChange={() => setPrimaryStopId(stop.id)}
-                />
-                {t("Main stop")}
-                <span className={styles.srOnly}>
-                  : <StopName stop={stop} />
-                </span>
-              </label>
+              {/* A single selected stop is necessarily the main stop, so
+                  do not make the passenger confirm the same decision twice.
+                  The main-stop choice appears only when backups make the
+                  distinction meaningful. */}
+              {checked && selectedStops.length > 1 && (
+                <label className={styles.primaryChoice}>
+                  <input
+                    type="radio"
+                    name={`primary-${preset.id}`}
+                    checked={primaryStopId === stop.id}
+                    onChange={() => setPrimaryStopId(stop.id)}
+                  />
+                  {t("Main stop")}
+                  <span className={styles.srOnly}>
+                    : <StopName stop={stop} />
+                  </span>
+                </label>
+              )}
             </div>
           );
         })}
       </div>
 
-      <label className={styles.confirmSafe}>
-        <input
-          type="checkbox"
-          checked={confirmedSafe}
-          onChange={(event) => setConfirmedSafe(event.target.checked)}
-        />
-        <span>{confirmationLabel}</span>
-      </label>
+      {/* Save is the explicit confirmation. Keeping the sentence visible
+          preserves the safety cue without forcing a second checkbox for a
+          decision the passenger has already made. */}
+      {selectedStops.length > 0 && (
+        <p className={styles.confirmSafe}>{confirmationLabel}</p>
+      )}
 
       <div className={styles.setupActions}>
-        {(selectedStops.length === 0 || !primaryStopId || !confirmedSafe) && (
+        {selectedStops.length === 0 && (
           <p id={`setup-${preset.id}-needs`} className={styles.saveHint}>
-            {selectedStops.length === 0
-              ? t("Tick at least one stop to save.")
-              : t("Confirm the stop above to save.")}
+            {t("Tick at least one stop to save.")}
           </p>
         )}
         <button
           type="button"
           className={styles.primaryButton}
           aria-describedby={
-            selectedStops.length === 0 || !primaryStopId || !confirmedSafe
+            selectedStops.length === 0
               ? `setup-${preset.id}-needs`
               : undefined
           }
-          disabled={
-            selectedStops.length === 0 || !primaryStopId || !confirmedSafe
-          }
+          disabled={selectedStops.length === 0 || !primaryStopId}
           onClick={() =>
             onSave({
               id: preset.id,

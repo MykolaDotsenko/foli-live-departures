@@ -11,10 +11,11 @@ on:
       - "index.html"
       - "package.json"
       - "package-lock.json"
+      - "capacitor.config.json"
       - "vite.config.*"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-apk:
@@ -55,22 +56,6 @@ jobs:
 
       - name: Verify native provider trust boundary
         run: npm run verify:native-boundary
-
-      - name: Configure Capacitor
-        run: |
-          cat > capacitor.config.json <<'JSON'
-          {
-            "appId": "fi.turku.folilivedepartures",
-            "appName": "Turku Departures",
-            "webDir": "dist",
-            "server": {
-              "androidScheme": "https"
-            },
-            "android": {
-              "allowMixedContent": false
-            }
-          }
-          JSON
 
       - name: Create Android project
         run: |
@@ -187,25 +172,3 @@ jobs:
             Turku-Departures.apk.sha256
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publish stable Android download
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          tag="android-latest"
-
-          if gh release view "$tag" >/dev/null 2>&1; then
-            gh release delete "$tag" --cleanup-tag --yes
-          else
-            git push origin ":refs/tags/$tag" >/dev/null 2>&1 || true
-          fi
-
-          gh release create "$tag" \
-            Turku-Departures.apk \
-            Turku-Departures.apk.sha256 \
-            --target "$GITHUB_SHA" \
-            --title "Turku Departures Android APK" \
-            --prerelease \
-            --notes "Installable Android sideload build from commit \`$GITHUB_SHA\`. Built automatically from \`master\`. This is not a Google Play release."
