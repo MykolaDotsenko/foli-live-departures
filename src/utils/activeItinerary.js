@@ -1,4 +1,4 @@
-import { normalizeItineraryOption, withLegacyTransferAliases } from "./itinerary";
+import { normalizeItineraryOption } from "./itinerary";
 import { assessTransfer } from "./transferFeasibility";
 
 /** @import { ActiveDirectJourney, DestinationIntent, MultiLegJourneyOption } from "../types/journey" */
