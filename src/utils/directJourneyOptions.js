@@ -83,10 +83,11 @@ function optionId(stopId, departure) {
  * @param {{
  *   stops: readonly { id: string, name?: string, distanceMeters?: number }[],
  *   fitsByStop: NearbyFitMap,
+ *   preference?: import("../types/journey").RoutingPreference | string,
  * }} input
  * @returns {DirectJourneyOption[]}
  */
-export function selectDirectJourneyOptions({ stops, fitsByStop }) {
+export function selectDirectJourneyOptions({ stops, fitsByStop, preference = "balanced" }) {
   const stopById = new Map(stops.map((stop) => [String(stop.id), stop]));
 
   /** @type {{ stopId: string, stopName: string, distanceMeters: number, departure: NearbyDepartureFit }[]} */
@@ -226,5 +227,23 @@ export function selectDirectJourneyOptions({ stops, fitsByStop }) {
     });
   }
 
-  return selected.slice(0, 3);
+  const result = selected.slice(0, 3);
+
+  if (preference === "less-walking") {
+    result.sort(
+      (left, right) =>
+        totalApproxWalkingMeters(left) -
+          totalApproxWalkingMeters(right) ||
+        arrivalRank(left.departure) - arrivalRank(right.departure)
+    );
+  } else if (preference === "more-buffer") {
+    result.sort(
+      (left, right) =>
+        catchabilityRank(left.departure) -
+          catchabilityRank(right.departure) ||
+        arrivalRank(left.departure) - arrivalRank(right.departure)
+    );
+  }
+
+  return result;
 }
