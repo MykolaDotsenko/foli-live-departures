@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "storeIcon": {
+    "source": "public/icon-512.png",
+    "width": 512,
+    "height": 512
+  },
+  "featureGraphic": {
+    "generated": "artifacts/play-store/feature-graphic.jpg",
+    "width": 1024,
+    "height": 500
+  },
+  "phoneScreenshots": [
+    "artifacts/play-store/phone-01-board.png",
+    "artifacts/play-store/phone-02-ride-setup.png",
+    "artifacts/play-store/phone-03-ride-now.png",
+    "artifacts/play-store/phone-04-privacy.png"
+  ],
+  "phoneScreenshotMinimum": {
+    "width": 1080,
+    "ratio": "9:16"
+  }
+}

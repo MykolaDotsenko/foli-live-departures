@@ -67,6 +67,9 @@ jobs:
       - name: Verify Android active-ride bridge contract
         run: npm run verify:android-active-ride
 
+      - name: Verify Google Play release surface
+        run: npm run verify:play-release
+
       - name: Verify tested Android artifact publication
         run: npm run verify:android-publish
 
@@ -125,6 +128,12 @@ jobs:
       - name: Cross-browser E2E and accessibility
         run: npm run test:e2e
 
+      - name: Build Google Play marketing assets
+        run: npm run build:play-store-assets
+
+      - name: Verify Google Play marketing assets
+        run: npm run verify:play-assets
+
       - name: Upload browser report
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -144,3 +153,12 @@ jobs:
           path: artifacts/screenshots
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Upload Google Play assets
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: google-play-assets
+          path: artifacts/play-store
+          if-no-files-found: error
+          retention-days: 30

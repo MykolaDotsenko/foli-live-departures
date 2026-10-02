@@ -1,0 +1,27 @@
+Turku Departures is an independent, privacy-first transit companion for Turku and Åbo.
+
+SEE WHAT LEAVES NEXT
+• Live and scheduled bus departures with clear realtime, planned, stale and unknown states.
+• Relevant disruption notices next to the journey decision they affect.
+• Favourite stops, recent stops and local saved places built from public stop identities.
+
+KNOW WHEN TO PRESS STOP
+Ride Mode follows the exact trip stop order and can combine Föli realtime evidence with optional on-device location. It gives conservative prompts such as “get ready” and “get off now” only when the available evidence supports them.
+
+On Android, you can separately opt in for the active ride to use a foreground companion. It keeps a visible system notification while that ride is active. The app does not request background-location permission, and device-dependent locked-phone behaviour is not guaranteed.
+
+RECOVER WHEN THINGS GO WRONG
+Useful local state, recent same-stop departures, backup stops, driver cards and route hand-offs remain available when connectivity or the normal trip flow degrades.
+
+PRIVACY BY DEFAULT
+• No account.
+• No advertising SDK.
+• No analytics SDK.
+• Saved places use public stop numbers/names rather than street addresses.
+• Optional device location is processed on the device and is not sent by Turku Departures to the developer or to Föli.
+• Direct address/place lookup is disabled in the production app.
+
+Turku Departures uses Föli open data and is not made by or affiliated with Föli or the City of Turku. For tickets and official journey planning, use Föli's own services.
+
+Privacy policy:
+https://mykoladotsenko.github.io/foli-live-departures/privacy.html

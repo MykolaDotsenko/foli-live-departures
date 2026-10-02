@@ -67,6 +67,9 @@ jobs:
       - name: Configure Android active-ride bridge
         run: npm run configure:android-active-ride
 
+      - name: Verify Google Play API target and permission surface
+        run: npm run verify:android-play-target
+
       - name: Apply Turku Departures launcher icon
         run: |
           sudo apt-get update

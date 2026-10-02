@@ -30,6 +30,7 @@ export default {
   "Report a problem (GitHub)": "Rapportera ett problem (GitHub)",
   "Source code": "Källkod",
   "About & privacy": "Om appen och integritet",
+  "Privacy policy": "Integritetspolicy",
   Release: "Utgåva",
   "Version {version}": "Version {version}",
   "Build {revision}": "Bygge {revision}",

@@ -872,17 +872,16 @@ Start is fail-closed unless the dedicated native opt-in is true, notification pe
 
 ## PR-E03 — Google Play release surface
 
+**Implementation status:** automated release surface implemented; Play Console publication remains a manual gate.
+
 **Priority:** 62/100  
 **Dependency:** A09.
 
-### Scope
+The repository now owns a verified default store listing, public same-origin privacy policy, conservative Data Safety worksheet, support/contact contract, release notes, reproducible 512×512 icon / 1024×500 feature graphic / four >=1080px 9:16 screenshots, and an AAB upload procedure. Generated Android projects are checked against the current Google Play API-36 target baseline.
 
-- store listing;
-- screenshots;
-- privacy/data-safety answers;
-- support/contact links;
-- AAB upload procedure;
-- release notes.
+Localized store listings are intentionally not marked publish-ready before the existing native Finnish/Ukrainian/Swedish review gates. Data Safety remains a pre-submission worksheet until current third-party retention/classification is rechecked in Play Console.
+
+Actual Play Console creation, developer verification, production signing secrets, physical upgrade QA, AAB upload/review and track promotion remain manual evidence and must not be marked completed from repository automation alone.
 
 No tracker/SDK is added merely for store presence.
 

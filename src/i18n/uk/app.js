@@ -29,6 +29,7 @@ export default {
   "Report a problem (GitHub)": "Повідомити про проблему (GitHub)",
   "Source code": "Вихідний код",
   "About & privacy": "Про застосунок і приватність",
+  "Privacy policy": "Політика конфіденційності",
   Release: "Реліз",
   "Version {version}": "Версія {version}",
   "Build {revision}": "Збірка {revision}",

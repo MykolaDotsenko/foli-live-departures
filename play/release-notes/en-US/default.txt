@@ -1,0 +1,1 @@
+Initial Android release. Includes live and scheduled departures, disruption context, saved stops, recovery tools and Ride Mode get-off alerts. Android Ride Mode can optionally use a foreground location companion for the active ride. No account, advertising SDK or analytics SDK.
