@@ -390,6 +390,7 @@ function App() {
       runtime: ride.runtime,
       gps: ride.gps,
       transferRevalidation,
+      futureLegRevalidations: futureLegWatch.states,
     });
   }, [
     ride.fieldDiagnosticsEnabled,
@@ -397,6 +398,7 @@ function App() {
     ride.runtime,
     ride.session,
     transferRevalidation,
+    futureLegWatch.states,
   ]);
 
   const selectedJourneyArrival = useMemo(() => {
