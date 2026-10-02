@@ -79,8 +79,8 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 - your location is not stored;
 - your location during a ride stays on the phone;
 - GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
-- in the web PWA, an address/place query is sent to OpenStreetMap Nominatim only after you press **Search**; typing and Föli-stop selection stay local, and repeated place searches are cached only for the browser session;
-- the packaged Android app does **not** call public Nominatim directly; address/POI lookup is handed off to the official Turku journey planner while local Föli-stop search remains available;
+- direct public address/POI lookup is disabled by default in production; address/place text stays on this device and the app hands that task to the official Turku journey planner, while local Föli-stop search remains available;
+- the packaged Android app follows the same fail-closed rule and does **not** call public Nominatim directly;
 - a Content-Security-Policy lets the page run only its own code and talk only to its approved Föli and web place-search origins; it is checked on every build and in every browser test.
 
 A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
@@ -226,6 +226,7 @@ npm run test:e2e
 ### Documentation
 
 - [Product audit](docs/PRODUCT_AUDIT.md)
+- [Production roadmap](docs/PRODUCTION_ROADMAP.md)
 - [Journey Assistant specification](docs/JOURNEY_ASSISTANT_SPEC.md)
 - [Journey Assistant UX implementation audit](docs/JOURNEY_ASSISTANT_UX_AUDIT.md)
 - [Destination-aware Nearby design appendix](docs/DESTINATION_AWARE_NEARBY_SPEC.md)
@@ -244,6 +245,7 @@ Application source code is under the **MIT License**.
 The codebase is suitable for a quiet web/PWA production release, but city-wide promotion has explicit manual gates that automation cannot honestly replace. See:
 
 - [Production readiness](docs/PRODUCTION_READINESS.md)
+- [Full PR-by-PR production roadmap](docs/PRODUCTION_ROADMAP.md)
 - [Real-bus field validation](docs/FIELD_VALIDATION.md)
 - [Android production release](docs/ANDROID_RELEASE.md)
 - [Finnish native-language review](docs/FINNISH_NATIVE_REVIEW.md)
