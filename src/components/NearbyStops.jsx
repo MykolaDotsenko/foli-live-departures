@@ -166,7 +166,9 @@ function NearbyStops({
   online = true,
   searchEdits = () => 0,
   destination = null,
-  journeyPlan = null,
+  timeConstraint = null,
+  timeValid = true,
+  routingPreference = "balanced",
   excludedJourney = null,
   onSelectJourney = null,
   onSelectTransferJourney = null,
@@ -206,7 +208,7 @@ function NearbyStops({
     stops: nearbyStops,
     destination,
     positionAccuracy: position?.accuracy ?? null,
-    journeyPlan,
+    timeConstraint: timeValid ? timeConstraint : null,
   });
 
   const destinationLabel = shownDestinationLabel(destination);
@@ -217,7 +219,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: baseNearbyStops,
       fitsByStop,
-      preference: journeyPlan?.preference,
+      preference: routingPreference,
     });
     return excludedJourney
       ? options.filter(
@@ -263,7 +265,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: nearbyStops,
       fitsByStop,
-      preference: journeyPlan?.preference,
+      preference: routingPreference,
     });
     return excludedJourney
       ? options.filter(
@@ -287,7 +289,7 @@ function NearbyStops({
     (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
 
   const preferenceWantsAlternatives = ["less-walking", "more-buffer"].includes(
-    String(journeyPlan?.preference || "")
+    String(routingPreference || "")
   );
   const shouldSearchTransfers =
     Boolean(onSelectTransferJourney) &&
@@ -302,7 +304,8 @@ function NearbyStops({
       allStops: stops,
       destination,
       positionAccuracy: position?.accuracy ?? null,
-      journeyPlan,
+      timeConstraint: timeValid ? timeConstraint : null,
+      routingPreference,
     });
 
   const destinationSortedStops = useMemo(() => {
