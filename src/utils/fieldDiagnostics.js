@@ -22,11 +22,6 @@ function positive(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** @param {unknown} value @returns {any} */
-function safeJson(value) {
-  return JSON.parse(JSON.stringify(value));
-}
-
 /** @returns {any | null} */
 function readTrace() {
   try {
@@ -173,7 +168,7 @@ export function startFieldDiagnostics(session, build = {}) {
     ],
   };
   writeTrace(trace);
-  return safeJson(trace);
+  return trace;
 }
 
 /** @param {any} event */
@@ -184,7 +179,7 @@ function appendEvent(event) {
   events.push(event);
   const next = { ...trace, events };
   writeTrace(next);
-  return safeJson(next);
+  return next;
 }
 
 /**
@@ -205,14 +200,15 @@ export function recordFieldDiagnosticObservation({
   futureLegRevalidations = [],
   type = "observation",
 } = {}) {
-  if (!session || !readTrace()) return null;
+  const trace = readTrace();
+  if (!session || !trace) return null;
   const evidence = sanitizedEvidence(
     runtime,
     gps,
     transferRevalidation,
     futureLegRevalidations
   );
-  const previous = readTrace()?.events?.at(-1);
+  const previous = trace.events?.at(-1);
   const nextComparable = JSON.stringify({
     stage: session.stage,
     reason: session.stageReason,
@@ -229,7 +225,7 @@ export function recordFieldDiagnosticObservation({
     : "";
 
   if (type === "observation" && nextComparable === previousComparable) {
-    return readTrace();
+    return trace;
   }
 
   return appendEvent({
@@ -260,8 +256,7 @@ export function finishFieldDiagnostics({
   futureLegRevalidations = [],
   outcome = "ended",
 } = {}) {
-  if (!readTrace()) return null;
-  recordFieldDiagnosticObservation({
+  const trace = recordFieldDiagnosticObservation({
     session,
     runtime,
     gps,
@@ -269,7 +264,6 @@ export function finishFieldDiagnostics({
     futureLegRevalidations,
     type: "ride-end",
   });
-  const trace = readTrace();
   if (!trace) return null;
   const next = {
     ...trace,
