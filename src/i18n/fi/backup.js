@@ -35,8 +35,6 @@ export default {
     "{count} varmuuskopiossa · {added} uutta · {updated} uudempaa",
   "{count} in backup · {added} new":
     "{count} varmuuskopiossa · {added} uutta",
-  "{count} in backup · {added} new · {skipped} not imported because this browser is full":
-    "{count} varmuuskopiossa · {added} uutta · {skipped} jäi tuomatta, koska tämän selaimen tila on täynnä",
   "{count} in backup · {added} new · {updated} newer · {skipped} not imported because this browser is full":
     "{count} varmuuskopiossa · {added} uutta · {updated} uudempaa · {skipped} jäi tuomatta, koska tämän selaimen tila on täynnä",
   "Language and theme": "Kieli ja teema",
