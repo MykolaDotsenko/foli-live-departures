@@ -1710,7 +1710,12 @@ test("a reloaded ride waits for live data before the timetable can say press STO
 
 test("a ride nobody ended is not brought back hours after its stop", () => {
   mocks.announceRideStage.mockClear();
-  const nowSec = Math.floor(Date.now() / 1000);
+  // One clock sample keeps the stored lifetime exactly six hours. Two
+  // Date.now() calls could straddle a millisecond and accidentally make
+  // expiresAt > startedAt + RIDE_TTL_MS, turning this into a flaky corrupt-
+  // record test instead of the intended long-over-but-still-live record.
+  const nowMs = Date.now();
+  const nowSec = Math.floor(nowMs / 1000);
   localStorage.setItem(
     "foli-active-ride-v1",
     JSON.stringify({
@@ -1720,8 +1725,8 @@ test("a ride nobody ended is not brought back hours after its stop", () => {
       stage: "next",
       stageReason: "planned-stop-count",
       stageConfidence: "schedule",
-      startedAt: Date.now() - 4.5 * 3600_000,
-      expiresAt: Date.now() + 1.5 * 3600_000,
+      startedAt: nowMs - 4.5 * 3600_000,
+      expiresAt: nowMs + 1.5 * 3600_000,
     })
   );
 
