@@ -31,6 +31,8 @@ export default {
     "Varmuuskopio tuotu. Uudemmat paikalliset asetukset säilytettiin, suosikit yhdistettiin ja viimeksi käytetyt pysäkit jäivät vain tähän selaimeen.",
   "Review before importing": "Tarkista ennen tuontia",
   "What this backup can add": "Mitä tämä varmuuskopio voi lisätä",
+  "Favourite stops": "Suosikkipysäkit",
+  "Line filters": "Linjasuodattimet",
   "{count} in backup · {added} new · {updated} newer":
     "{count} varmuuskopiossa · {added} uutta · {updated} uudempaa",
   "{count} in backup · {added} new":
