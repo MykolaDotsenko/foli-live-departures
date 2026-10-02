@@ -147,7 +147,8 @@ Every pull request to `master` runs:
 6. a Chromium PWA project that installs the real service worker and reopens offline
 7. the README's and the install sheet's screenshots, taken by the same flows
 8. a fail-on-high/critical runtime dependency audit and an Android production-release contract gate
-9. production Pages deployment stamps the exact CI SHA and then verifies the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision
+
+After a successful `master` CI run, production Pages deployment stamps the exact CI SHA and does not finish green until the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision are verified.
 
 ## Product principle
 
