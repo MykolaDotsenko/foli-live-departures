@@ -217,6 +217,90 @@ test("builds a concrete bounded two-transfer journey", async () => {
   });
 });
 
+test("recovery leg cap prevents a second new transfer from being explored", async () => {
+  api.fetchScheduledStopDepartures.mockImplementation(async (stopId) => {
+    if (String(stopId) === "500") {
+      return {
+        departures: [scheduled("second", "7", 2_050)],
+        complete: true,
+      };
+    }
+    if (String(stopId) === "700") {
+      return {
+        departures: [scheduled("third", "18", 3_050)],
+        complete: true,
+      };
+    }
+    return { departures: [], complete: true };
+  });
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "first") {
+      return [
+        time("100", 1, "10:00:00"),
+        time("500", 2, "10:10:00"),
+      ];
+    }
+    if (tripId === "second") {
+      return [
+        time("500", 1, "10:20:00"),
+        time("700", 2, "10:30:00"),
+      ];
+    }
+    if (tripId === "third") {
+      return [
+        time("700", 1, "10:40:00"),
+        time("900", 2, "10:55:00"),
+      ];
+    }
+    return [];
+  });
+
+  const options = await loadTransferJourneyOptions({
+    originStops: [{ id: "100", name: "Origin", distanceMeters: 20 }],
+    allStops: [
+      { id: "100", name: "Origin" },
+      { id: "500", name: "First hub" },
+      { id: "700", name: "Second hub" },
+      { id: "900", name: "Destination" },
+    ],
+    destination,
+    positionAccuracy: 10,
+    maxTransitLegs: 2,
+  });
+
+  expect(options).toEqual([]);
+  expect(
+    api.fetchScheduledStopDepartures.mock.calls.some(
+      ([stopId]) => String(stopId) === "700"
+    )
+  ).toBe(false);
+});
+
+test("excluded failed run cannot return as a recovery connection", async () => {
+  const options = await loadTransferJourneyOptions({
+    originStops: [{ id: "100", name: "Origin", distanceMeters: 20 }],
+    allStops: [
+      { id: "100", name: "Origin" },
+      { id: "500", name: "Hub" },
+      { id: "900", name: "Destination" },
+    ],
+    destination,
+    positionAccuracy: 10,
+    maxTransitLegs: 2,
+    excludedRun: {
+      tripRef: "second",
+      originAimedDepartureAt: 1_750,
+    },
+  });
+
+  expect(options).toEqual([]);
+  expect(api.fetchTripStopTimes).not.toHaveBeenCalledWith(
+    "second",
+    expect.anything()
+  );
+});
+
 test("two-transfer expansion never exceeds the combined timetable request budget", async () => {
   api.fetchScheduledStopDepartures.mockImplementation(async (stopId) => ({
     departures: String(stopId).startsWith("7")
