@@ -65,6 +65,11 @@ export default defineConfig(({ mode }) => ({
     license: true,
     rolldownOptions: {
       output: {
+        // Rolldown uses the same built-in Oxc minifier as Vite. Full output
+        // minification performs compression/DCE without adding an optional
+        // external minifier dependency, so web and Android stay identical.
+        minify: true,
+        minifyInternalExports: true,
         legalComments: "none",
       },
     },
