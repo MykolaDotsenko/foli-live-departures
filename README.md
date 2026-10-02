@@ -83,7 +83,7 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 - GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
 - direct public address/POI lookup is disabled by default in production; address/place text stays on this device and the app hands that task to the official Turku journey planner, while local Föli-stop search remains available;
 - the packaged Android app follows the same fail-closed rule and does **not** call public Nominatim directly;
-- a Content-Security-Policy lets the page run only its own code and talk only to its approved Föli and web place-search origins; it is checked on every build and in every browser test.
+- a Content-Security-Policy lets the page run only its own code and talk only to same-origin assets and approved Föli endpoints; the dormant public place-search provider is not in production `connect-src`; the policy is checked on every build and in every browser test.
 
 A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
 
