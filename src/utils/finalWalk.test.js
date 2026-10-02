@@ -212,3 +212,106 @@ test("multi-leg journey cannot release final walking from an intermediate bus", 
     })
   ).toBeNull();
 });
+
+
+test("fails closed when final-walk ride identity is incomplete or stale", () => {
+  const cases = [
+    {
+      journey: null,
+      destination,
+      rideConfig: rideConfig(),
+    },
+    {
+      journey: { ...journey, destinationId: "other-destination" },
+      destination,
+      rideConfig: rideConfig(),
+    },
+    {
+      journey,
+      destination,
+      rideConfig: rideConfig({ targetStop: { id: "", name: "" } }),
+    },
+    {
+      journey: { ...journey, destinationStopId: "901" },
+      destination,
+      rideConfig: rideConfig(),
+    },
+  ];
+
+  for (const input of cases) {
+    expect(finalWalkFromRideSelection(input)).toBeNull();
+  }
+});
+
+test("origin-time matching allows only the documented tolerance", () => {
+  expect(
+    finalWalkFromRideSelection({
+      journey: { ...journey, originAimedDepartureAt: 1_500 },
+      destination,
+      rideConfig: rideConfig({ originAimedDepartureTime: 1_530 }),
+    })
+  ).toMatchObject({ fromStopId: "900" });
+
+  expect(
+    finalWalkFromRideSelection({
+      journey: { ...journey, originAimedDepartureAt: null },
+      destination,
+      rideConfig: rideConfig({ originAimedDepartureTime: null }),
+    })
+  ).toMatchObject({ fromStopId: "900" });
+
+  expect(
+    finalWalkFromRideSelection({
+      journey: { ...journey, originAimedDepartureAt: 1_500 },
+      destination,
+      rideConfig: rideConfig({ originAimedDepartureTime: 1_531 }),
+    })
+  ).toBeNull();
+});
+
+test("validates destination coordinates and final-walk distance fallbacks", () => {
+  for (const invalidDestination of [
+    { ...destination, lat: Number.NaN },
+    { ...destination, lat: -91 },
+    { ...destination, lon: 181 },
+    { ...destination, lon: Number.POSITIVE_INFINITY },
+  ]) {
+    expect(
+      finalWalkFromRideSelection({
+        journey,
+        destination: invalidDestination,
+        rideConfig: rideConfig(),
+      })
+    ).toBeNull();
+  }
+
+  const mapped = finalWalkFromRideSelection({
+    journey: { ...journey, finalWalkDistanceM: -1 },
+    destination,
+    rideConfig: rideConfig({ targetStop: { id: "900", name: "" } }),
+  });
+  expect(mapped).toMatchObject({
+    fromStopId: "900",
+    fromStopName: "900",
+    distanceMeters: 180,
+  });
+
+  const unknown = finalWalkFromRideSelection({
+    journey: { ...journey, finalWalkDistanceM: Number.NaN },
+    destination: {
+      ...destination,
+      finalWalkDistanceByStop: { "900": -5 },
+    },
+    rideConfig: rideConfig(),
+  });
+  expect(unknown?.distanceMeters).toBeNull();
+});
+
+test("completed final walk stays null without a pending handoff", () => {
+  expect(
+    completedFinalWalk(null, {
+      stage: "now",
+      targetStop: { id: "900" },
+    })
+  ).toBeNull();
+});
