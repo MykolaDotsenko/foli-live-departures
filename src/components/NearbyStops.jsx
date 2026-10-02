@@ -233,6 +233,7 @@ function NearbyStops({
     excludedJourney,
     fitState,
     fitsByStop,
+    journeyPlan?.preference,
     searchExpanded,
   ]);
 
@@ -278,6 +279,7 @@ function NearbyStops({
     excludedJourney,
     fitState,
     fitsByStop,
+    journeyPlan?.preference,
     nearbyStops,
   ]);
 
