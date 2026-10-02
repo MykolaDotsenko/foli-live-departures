@@ -173,17 +173,16 @@ export function rideStageSignals({
     targetPassedConfirmed: confirmations.targetPassedConfirmed,
     // MISSED is normally terminal. A correction is allowed only if the
     // provider has produced a distinct matched target observation after the
-    // miss was entered. targetSeenAt advances only when the SIRI snapshot
-    // itself advances (or after a real disappearance/reappearance), so an
-    // HTTP refresh that repeats stale transit data cannot reopen the alert.
+    // miss was entered. Compare the provider snapshot itself, not Date.now()
+    // ordering: two real events can share one millisecond on a fast phone.
+    // A pre-fix stored MISSED ride has no baseline signature; its first live
+    // observation keeps the previous safe behaviour and may correct it.
     liveTargetObservedAfterMiss:
       current.stage === RIDE_STAGE.MISSED &&
       nextRuntime.targetListed === true &&
-      Number.isFinite(Number(nextRuntime.targetSeenAt)) &&
-      Number(nextRuntime.targetSeenAt) > 0 &&
-      Number.isFinite(Number(current.stageChangedAt)) &&
-      Number(current.stageChangedAt) > 0 &&
-      Number(nextRuntime.targetSeenAt) > Number(current.stageChangedAt),
+      Boolean(nextRuntime.targetSnapshotSignature) &&
+      nextRuntime.targetSnapshotSignature !==
+        (current.missedTargetSnapshotSignature || ""),
     gpsMovedAwayAfterNear: confirmations.gpsMovedAway,
     // A reloaded ride waits for its first poll to answer, or fail. And
     // the timetable says nothing about a bus that is not due to have

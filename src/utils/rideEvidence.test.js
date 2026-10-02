@@ -179,6 +179,36 @@ describe("rideStageSignals", () => {
       remainingStops: 2,
     });
   });
+
+  it("uses distinct provider snapshots, not millisecond ordering, to reopen a false miss", () => {
+    const missed = session({
+      stage: RIDE_STAGE.MISSED,
+      stageChangedAt: NOW,
+      missedTargetSnapshotSignature: "snapshot-a",
+    });
+
+    const sameSnapshot = rideStageSignals({
+      ...evidence,
+      session: missed,
+      runtime: runtime({
+        targetListed: true,
+        targetSeenAt: NOW,
+        targetSnapshotSignature: "snapshot-a",
+      }),
+    });
+    expect(sameSnapshot.liveTargetObservedAfterMiss).toBe(false);
+
+    const newerSnapshotSameMillisecond = rideStageSignals({
+      ...evidence,
+      session: missed,
+      runtime: runtime({
+        targetListed: true,
+        targetSeenAt: NOW,
+        targetSnapshotSignature: "snapshot-b",
+      }),
+    });
+    expect(newerSnapshotSameMillisecond.liveTargetObservedAfterMiss).toBe(true);
+  });
 });
 
 describe("locationRideProgress", () => {
