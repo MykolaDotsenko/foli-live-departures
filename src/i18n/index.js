@@ -57,9 +57,27 @@ const RUNTIME_LOADERS = {
 };
 
 /**
- * String translations live in same-origin JSON packs so large English source
- * keys are not duplicated inside executable JS. Function-valued translations
- * (plural/count grammar) stay in tiny lazy runtime modules.
+ * String translations live in same-origin JSON packs. English source phrases
+ * are stored once in a shared key table, while each locale contains only its
+ * aligned values. This keeps adding another language from duplicating hundreds
+ * of long English keys. Function-valued plural/count grammar stays in the same
+ * small lazy runtime modules.
+ * @param {string} relativePath
+ * @param {string} label
+ * @returns {Promise<unknown>}
+ */
+async function fetchLocaleJson(relativePath, label) {
+  const response = await globalThis.fetch(
+    `${import.meta.env.BASE_URL}${relativePath}`,
+    { cache: "force-cache" }
+  );
+  if (!response.ok) {
+    throw new Error(`Could not load ${label} (${response.status}).`);
+  }
+  return response.json();
+}
+
+/**
  * @param {Language} language
  * @returns {Promise<Dictionary>}
  */
@@ -68,26 +86,42 @@ async function loadDictionary(language) {
   const runtimeLoader = RUNTIME_LOADERS[language];
   if (!relativePath || !runtimeLoader) return {};
 
-  const response = await globalThis.fetch(`${import.meta.env.BASE_URL}${relativePath}`, {
-    cache: "force-cache",
-  });
-  if (!response.ok) {
-    throw new Error(`Could not load ${language} locale pack (${response.status}).`);
+  const [keys, values, runtime] = await Promise.all([
+    fetchLocaleJson("locales/keys.json", "locale key pack"),
+    fetchLocaleJson(relativePath, `${language} locale pack`),
+    runtimeLoader(),
+  ]);
+
+  if (!Array.isArray(keys) || !Array.isArray(values)) {
+    throw new Error(`Invalid ${language} locale pack structure.`);
+  }
+  if (keys.length !== values.length) {
+    throw new Error(
+      `Invalid ${language} locale pack length: ${values.length} values for ${keys.length} keys.`
+    );
   }
 
-  const payload = await response.json();
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error(`Invalid ${language} locale pack.`);
-  }
+  const dictionary = {};
+  const seen = new Set();
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index];
+    const value = values[index];
 
-  for (const value of Object.values(payload)) {
-    if (typeof value !== "string") {
-      throw new Error(`Invalid ${language} locale pack entry.`);
+    if (typeof key !== "string" || key.length === 0 || seen.has(key)) {
+      throw new Error(`Invalid locale key pack entry at index ${index}.`);
     }
+    seen.add(key);
+
+    // null is reserved for a function-valued translation supplied by the
+    // locale's runtime module. Any other non-string value is malformed.
+    if (value === null) continue;
+    if (typeof value !== "string") {
+      throw new Error(`Invalid ${language} locale pack entry at index ${index}.`);
+    }
+    dictionary[key] = value;
   }
 
-  const runtime = await runtimeLoader();
-  return Object.freeze({ ...payload, ...(runtime.default || {}) });
+  return Object.freeze({ ...dictionary, ...(runtime.default || {}) });
 }
 
 /** @type {Partial<Record<Language, () => Promise<Dictionary>>>} */
