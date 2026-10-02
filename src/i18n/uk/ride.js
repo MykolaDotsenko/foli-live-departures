@@ -160,6 +160,9 @@ export default {
   "Times the alerts to where you really are, not only to the timetable. Your location stays on this phone and is forgotten when the ride ends.":
     "Прив’язує сповіщення до вашого реального положення, а не лише до розкладу. Місцезнаходження залишається на телефоні й забувається після завершення поїздки.",
   "Also show notifications": "Також показувати системні сповіщення",
+  "Keep Ride Mode active on Android": "Зберігати режим поїздки активним на Android",
+  "For this ride only, Android keeps a private persistent notification and a foreground location companion. Your route and location stay on this phone. This does not guarantee alerts on every locked phone.":
+    "Лише під час цієї поїздки Android підтримує приватне постійне сповіщення та foreground-супровід геолокації. Ваш маршрут і місцезнаходження залишаються на цьому телефоні. Це не гарантує сповіщень на кожному заблокованому телефоні.",
   "Only while this page is open. A locked phone often pauses it.":
     "Лише поки ця сторінка відкрита. Заблокований телефон часто призупиняє її.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). Sound and vibration work here as long as this page stays open.":

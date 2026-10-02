@@ -126,6 +126,9 @@ export default function RideSetup({
   // prompt and the test sound together, as the bus pulled in, for alerts
   // that only work while this page is open anyway.
   const [notifications, setNotifications] = useState(false);
+  const nativeAndroidBuild =
+    String(import.meta.env.VITE_NATIVE_BUILD || "") === "true";
+  const [nativeForeground, setNativeForeground] = useState(false);
   const [startError, setStartError] = useState("");
   const panelRef = useRef(null);
   // The Start bar is fixed to the bottom of a phone: what is focused below
@@ -348,6 +351,8 @@ export default function RideSetup({
       options: {
         locationBackup,
         notifications: notificationsAvailable === "supported" && notifications,
+        nativeForeground:
+          nativeAndroidBuild && locationBackup && nativeForeground,
       },
     });
   };
@@ -489,7 +494,11 @@ export default function RideSetup({
                 <input
                   type="checkbox"
                   checked={locationBackup}
-                  onChange={(event) => setLocationBackup(event.target.checked)}
+                  onChange={(event) => {
+                    const checked = event.target.checked;
+                    setLocationBackup(checked);
+                    if (!checked) setNativeForeground(false);
+                  }}
                 />
                 <span>
                   <strong>{t("Follow my location (recommended)")}</strong>
@@ -518,6 +527,27 @@ export default function RideSetup({
                   </span>
                 </label>
               )}
+              {nativeAndroidBuild && (
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={nativeForeground}
+                    disabled={!locationBackup}
+                    onChange={(event) =>
+                      setNativeForeground(event.target.checked)
+                    }
+                  />
+                  <span>
+                    <strong>{t("Keep Ride Mode active on Android")}</strong>
+                    <small>
+                      {t(
+                        "For this ride only, Android keeps a private persistent notification and a foreground location companion. Your route and location stay on this phone. This does not guarantee alerts on every locked phone."
+                      )}
+                    </small>
+                  </span>
+                </label>
+              )}
+
               {notificationsAvailable === "home-screen-only" && (
                 <p className={styles.optionNote}>
                   {vibrates

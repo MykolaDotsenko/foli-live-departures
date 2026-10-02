@@ -14,7 +14,7 @@ export function nativeRideCompanionEligible(session, gps) {
   return Boolean(
     session?.id &&
       session?.options?.locationBackup === true &&
-      session?.options?.notifications !== false &&
+      session?.options?.nativeForeground === true &&
       READY_GPS_STATES.has(String(gps?.status || "")),
   );
 }
@@ -42,7 +42,7 @@ export function createNativeActiveRideBridge(options = {}) {
   }
 
   /**
-   * @param {"start" | "stop" | "status"} method
+   * @param {"prepare" | "start" | "stop" | "status"} method
    * @param {Record<string, string>} [payload]
    */
   async function safeCall(method, payload = {}) {
@@ -74,6 +74,28 @@ export function createNativeActiveRideBridge(options = {}) {
 
   return {
     supported: () => resolvePlugin() !== null,
+    /**
+     * Prepare native notification permission. Restored rides pass request=false
+     * so an app reload never opens a permission prompt without a user gesture.
+     * @param {{request?: boolean}} [options]
+     */
+    async prepare(options = {}) {
+      const target = resolvePlugin();
+      if (!target || typeof target.prepare !== "function") {
+        return { ready: false, reason: "unsupported" };
+      }
+      try {
+        const result = await target.prepare({
+          request: options.request === true,
+        });
+        return {
+          ready: result?.ready === true,
+          reason: String(result?.reason || ""),
+        };
+      } catch {
+        return { ready: false, reason: "native-call-failed" };
+      }
+    },
     /**
      * @param {{id?: unknown, expiresAt?: unknown}} session
      */

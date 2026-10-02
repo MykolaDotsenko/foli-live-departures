@@ -8,7 +8,11 @@ function session(overrides = {}) {
   return {
     id: "ride-1",
     expiresAt: Date.now() + 60_000,
-    options: { locationBackup: true, notifications: true },
+    options: {
+      locationBackup: true,
+      notifications: false,
+      nativeForeground: true,
+    },
     ...overrides,
   };
 }
@@ -21,16 +25,34 @@ describe("nativeRideCompanionEligible", () => {
     expect(nativeRideCompanionEligible(session(), { status: "off-route" })).toBe(true);
     expect(
       nativeRideCompanionEligible(
+        session({ options: { locationBackup: true, nativeForeground: false } }),
+        { status: "active" },
+      ),
+    ).toBe(false);
+    expect(
+      nativeRideCompanionEligible(
+        session({ options: { locationBackup: true } }),
+        { status: "active" },
+      ),
+    ).toBe(false);
+    expect(
+      nativeRideCompanionEligible(
         session({ options: { locationBackup: false, notifications: true } }),
         { status: "active" },
       ),
     ).toBe(false);
     expect(
       nativeRideCompanionEligible(
-        session({ options: { locationBackup: true, notifications: false } }),
+        session({
+          options: {
+            locationBackup: true,
+            notifications: false,
+            nativeForeground: true,
+          },
+        }),
         { status: "active" },
       ),
-    ).toBe(false);
+    ).toBe(true);
   });
 });
 
@@ -48,6 +70,10 @@ describe("createNativeActiveRideBridge", () => {
   });
 
   it("passes only opaque id and expiry to the registered native plugin", async () => {
+    const prepare = vi.fn(async ({ request }) => ({
+      ready: request === true,
+      reason: request ? "ready" : "notification-permission-required",
+    }));
     const start = vi.fn(async (payload) => ({
       active: false,
       reason: "requested",
@@ -66,7 +92,7 @@ describe("createNativeActiveRideBridge", () => {
         getPlatform: () => "android",
         isNativePlatform: () => true,
         isPluginAvailable: (name) => name === "ActiveRide",
-        Plugins: { ActiveRide: { start, stop, status } },
+        Plugins: { ActiveRide: { prepare, start, stop, status } },
       },
     });
 
@@ -74,6 +100,17 @@ describe("createNativeActiveRideBridge", () => {
       targetStop: { id: "32", name: "Private destination" },
       plan: { secret: "not-native" },
     });
+    await expect(bridge.prepare({ request: false })).resolves.toEqual({
+      ready: false,
+      reason: "notification-permission-required",
+    });
+    await expect(bridge.prepare({ request: true })).resolves.toEqual({
+      ready: true,
+      reason: "ready",
+    });
+    expect(prepare).toHaveBeenNthCalledWith(1, { request: false });
+    expect(prepare).toHaveBeenNthCalledWith(2, { request: true });
+
     const started = await bridge.start(fullSession);
 
     expect(started).toMatchObject({ requested: true, rideId: "ride-1" });

@@ -291,6 +291,8 @@ export type RideExitInstruction = RequestStopInstruction | PrepareExitInstructio
 export interface RideOptions {
   locationBackup?: boolean;
   notifications?: boolean;
+  /** Explicit Android-only consent for the native foreground companion. */
+  nativeForeground?: boolean;
 }
 
 /** What RideSetup hands to startRide(). */

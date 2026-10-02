@@ -204,11 +204,69 @@ import android.os.Build;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
+import com.getcapacitor.PermissionState;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.getcapacitor.annotation.Permission;
+import com.getcapacitor.annotation.PermissionCallback;
 
-@CapacitorPlugin(name = "ActiveRide")
+@CapacitorPlugin(
+    name = "ActiveRide",
+    permissions = {
+        @Permission(
+            alias = "notifications",
+            strings = { Manifest.permission.POST_NOTIFICATIONS }
+        )
+    }
+)
 public class ActiveRidePlugin extends Plugin {
+    @PluginMethod
+    public void prepare(PluginCall call) {
+        Activity activity = getActivity();
+        if (
+            activity == null ||
+            activity.isFinishing() ||
+            activity.isDestroyed() ||
+            !activity.hasWindowFocus()
+        ) {
+            call.resolve(preparation(false, "activity-not-visible"));
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            call.resolve(preparation(true, "ready"));
+            return;
+        }
+
+        if (getPermissionState("notifications") == PermissionState.GRANTED) {
+            call.resolve(preparation(true, "ready"));
+            return;
+        }
+
+        if (Boolean.TRUE.equals(call.getBoolean("request", false))) {
+            requestPermissionForAlias(
+                "notifications",
+                call,
+                "notificationPermissionCallback"
+            );
+            return;
+        }
+
+        call.resolve(preparation(false, "notification-permission-required"));
+    }
+
+    @PermissionCallback
+    private void notificationPermissionCallback(PluginCall call) {
+        boolean ready =
+            getPermissionState("notifications") == PermissionState.GRANTED;
+        call.resolve(
+            preparation(
+                ready,
+                ready ? "ready" : "notification-permission-denied"
+            )
+        );
+    }
+
     @PluginMethod
     public void start(PluginCall call) {
         Activity activity = getActivity();
@@ -301,6 +359,13 @@ public class ActiveRidePlugin extends Plugin {
     private static JSObject result(boolean active, String reason) {
         JSObject response = new JSObject();
         response.put("active", active);
+        response.put("reason", reason);
+        return response;
+    }
+
+    private static JSObject preparation(boolean ready, String reason) {
+        JSObject response = new JSObject();
+        response.put("ready", ready);
         response.put("reason", reason);
         return response;
     }
@@ -468,6 +533,11 @@ export function verifyAndroidActiveRide(
   }
   for (const token of [
     '@CapacitorPlugin(name = "ActiveRide")',
+    'name = "ActiveRide"',
+    '@Permission(',
+    'alias = "notifications"',
+    "requestPermissionForAlias(",
+    "@PermissionCallback",
     "activity.hasWindowFocus()",
     "location-permission-required",
     "notification-permission-required",

@@ -564,18 +564,20 @@ const activeRideRequest = await evaluate(`(async () => {
   const plugin =
     window.__foliActiveRideE2E ||
     (window.__foliActiveRideE2E = cap.Plugins.ActiveRide);
+  const prepared = await plugin.prepare({ request: false });
   const rideId = "android-e2e-active-ride";
   const expiresAt = Date.now() + 10 * 60 * 1000;
   const started = await plugin.start({
     rideId,
     expiresAt: String(expiresAt)
   });
-  return { supported: true, rideId, started };
+  return { supported: true, rideId, prepared, started };
 })()`, { awaitPromise: true });
 
 record(
   "Android exposes ActiveRide only after foreground location is ready",
   activeRideRequest?.supported === true &&
+    activeRideRequest?.prepared?.ready === true &&
     activeRideRequest?.started?.reason === "requested",
   activeRideRequest || {}
 );

@@ -849,7 +849,7 @@ These are not v1 blockers and may intentionally change product architecture.
 **Priority:** 60/100  
 **Architecture impact:** medium/high.
 
-The Capacitor Android wrapper now has a typed `location` foreground-service companion that is started only from a visible Activity after Ride Mode has obtained a real location fix. Android's required `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION` permissions are declared; `ACCESS_BACKGROUND_LOCATION` remains deliberately absent.
+The Capacitor Android wrapper now has a typed `location` foreground-service companion. It is guarded by a dedicated Android-only Ride Mode opt-in (default OFF), prepares notification permission from that user gesture, and starts only from a visible Activity after Ride Mode has obtained a real location fix. Android's required `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION` permissions are declared; `ACCESS_BACKGROUND_LOCATION` remains deliberately absent.
 
 The service is battery- and stale-state-bounded: `START_NOT_STICKY`, task-removal stop, hard ride TTL, explicit End Ride stop, and no boot/background auto-start. Its persistent notification is neutral and contains no destination, route or GPS data.
 
@@ -866,7 +866,7 @@ Automated API-35 emulator evidence proves native registration, successful foregr
 
 The bridge receives only an opaque `rideId` and `expiresAt`. JS Ride Mode remains authoritative for `boarded/soon/next/now/missed`, provider evidence, GPS, destination and route state. Native code persists none of that state and cannot silently change or end the JS itinerary.
 
-Start is fail-closed unless the Activity is visible, foreground location permission exists and Android location services are enabled. Web/PWA builds have an unsupported/no-op bridge.
+Start is fail-closed unless the dedicated native opt-in is true, notification permission is granted, the Activity is visible, foreground location permission exists and Android location services are enabled. Restored rides only check existing permission and never open a permission prompt without a new user gesture. Web/PWA builds have an unsupported/no-op bridge.
 
 ---
 

@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   repeatNowRideSignal: vi.fn(),
   primeRideVoices: vi.fn(() => true),
   unlockRideAudio: vi.fn(() => Promise.resolve(true)),
+  nativeRidePrepare: vi.fn(() =>
+    Promise.resolve({ ready: true, reason: "ready" })
+  ),
   nativeRideStart: vi.fn(() =>
     Promise.resolve({ active: false, requested: true, reason: "requested" })
   ),
@@ -48,6 +51,7 @@ vi.mock("../utils/nativeActiveRide", () => ({
         ["active", "weak", "off-route"].includes(String(gps?.status || ""))
     ),
   nativeActiveRideBridge: {
+    prepare: mocks.nativeRidePrepare,
     start: mocks.nativeRideStart,
     stop: mocks.nativeRideStop,
   },
@@ -115,6 +119,7 @@ beforeEach(() => {
   mocks.fetchTripShape.mockClear();
   mocks.runRideTestAlert.mockClear();
   mocks.stopRideAlerts.mockClear();
+  mocks.nativeRidePrepare.mockClear();
   mocks.nativeRideStart.mockClear();
   mocks.nativeRideStop.mockClear();
 
@@ -169,11 +174,18 @@ test("starts the Android companion only after a GPS fix and stops it with the ri
   act(() => {
     result.current.startRide({
       ...rideConfig,
-      options: { locationBackup: true, notifications: true },
+      options: {
+        locationBackup: true,
+        notifications: false,
+        nativeForeground: true,
+      },
     });
   });
 
   await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
+  await waitFor(() =>
+    expect(mocks.nativeRidePrepare).toHaveBeenCalledWith({ request: true })
+  );
   expect(mocks.nativeRideStart).not.toHaveBeenCalled();
 
   act(() => releaseGpsFix());
@@ -196,11 +208,16 @@ test("does not start the Android companion when location backup is disabled", as
   act(() => {
     result.current.startRide({
       ...rideConfig,
-      options: { locationBackup: false, notifications: true },
+      options: {
+        locationBackup: false,
+        notifications: false,
+        nativeForeground: true,
+      },
     });
   });
 
   await Promise.resolve();
+  expect(mocks.nativeRidePrepare).toHaveBeenCalledWith({ request: true });
   expect(mocks.nativeRideStart).not.toHaveBeenCalled();
 
   act(() => result.current.endRide());
