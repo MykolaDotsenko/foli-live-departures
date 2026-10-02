@@ -9,7 +9,7 @@ import {
   rideMatchesCurrentItineraryLeg,
 } from "./activeItinerary";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferJourneyOption, TransferRevalidationState } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferRevalidationState } from "../types/journey" */
 
 const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
@@ -155,7 +155,7 @@ export function activeJourneyFromOption(
 }
 
 /**
- * @param {TransferJourneyOption | MultiLegJourneyOption} option
+ * @param {MultiLegJourneyOption} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
