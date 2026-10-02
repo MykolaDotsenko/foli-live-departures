@@ -5,6 +5,8 @@
 //
 // The English text is the key, so the code reads as the screen does and a
 // phrase missing from a dictionary falls back to English instead of breaking.
+// Production string values are generated into same-origin locale packs; the
+// canonical source dictionaries remain the testable translation source.
 // A dictionary entry is either a template ("Stop {id}") or, where word forms
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
