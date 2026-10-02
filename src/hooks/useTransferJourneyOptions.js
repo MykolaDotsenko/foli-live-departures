@@ -11,10 +11,10 @@ import {
 } from "../utils/destinationTripFit";
 import { compareItineraries } from "../utils/itinerary";
 import {
-  compareJourneyTimeCandidates,
-  journeyTimeAllows,
-  normalizeJourneyTimeConstraint,
-} from "../utils/journeyTime";
+  compareJourneyOptions,
+  journeyPlanAllowsOption,
+} from "../utils/journeyPlanning";
+import { normalizeJourneyTimeConstraint } from "../utils/journeyTime";
 import { estimateFinalWalkSeconds } from "../utils/placeDestination";
 import { getDepartureTime } from "../utils/time";
 import {
@@ -23,7 +23,7 @@ import {
 } from "../utils/transferTopology";
 import { assessTransfer } from "../utils/transferFeasibility";
 
-/** @import { DestinationIntent, JourneyTimeConstraint, LiveState, MultiLegJourneyOption } from "../types/journey" */
+/** @import { DestinationIntent, JourneyPlan, JourneyTimeConstraint, LiveState, MultiLegJourneyOption } from "../types/journey" */
 
 const REFRESH_MS = 30_000;
 const MAX_FIRST_DEPARTURES_PER_STOP = 4;
@@ -125,23 +125,21 @@ function itineraryTimeCandidate(option) {
   };
 }
 
-function finalizeOptions(candidates, timeConstraint) {
-  const filtered = timeConstraint
+/**
+ * @param {MultiLegJourneyOption[]} candidates
+ * @param {JourneyPlan | JourneyTimeConstraint | null | undefined} plan
+ */
+function finalizeOptions(candidates, plan) {
+  const filtered = plan
     ? candidates.filter((candidate) =>
-        journeyTimeAllows(itineraryTimeCandidate(candidate), timeConstraint)
+        journeyPlanAllowsOption(candidate, plan)
       )
     : [...candidates];
 
-  filtered.sort(
-    (left, right) =>
-      (timeConstraint
-        ? compareJourneyTimeCandidates(
-            itineraryTimeCandidate(left),
-            itineraryTimeCandidate(right),
-            timeConstraint
-          )
-        : 0) ||
-      compareItineraries(left, right)
+  filtered.sort((left, right) =>
+    plan
+      ? compareJourneyOptions(left, right, plan)
+      : compareItineraries(left, right)
   );
 
   return filtered.slice(0, MAX_OPTIONS);
@@ -158,6 +156,7 @@ function finalizeOptions(candidates, timeConstraint) {
  *   positionAccuracy?: number | null,
  *   maxTransitLegs?: 2 | 3,
  *   excludedRun?: {tripRef?: string, originAimedDepartureAt?: number | null} | null,
+ *   journeyPlan?: JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
  *   signal?: AbortSignal,
  * }} input
@@ -170,6 +169,7 @@ export async function loadTransferJourneyOptions({
   positionAccuracy = null,
   maxTransitLegs = 3,
   excludedRun = null,
+  journeyPlan = null,
   timeConstraint = null,
   signal,
 }) {
@@ -178,10 +178,11 @@ export async function loadTransferJourneyOptions({
   const networkStops = Array.isArray(allStops) ? allStops : [];
   if (!destination || origins.length === 0) return [];
 
-  const normalizedTime = normalizeJourneyTimeConstraint(timeConstraint);
-  if (timeConstraint && !normalizedTime.valid) return [];
+  const effectivePlan = journeyPlan || timeConstraint;
+  const normalizedTime = normalizeJourneyTimeConstraint(effectivePlan);
+  if (effectivePlan && !normalizedTime.valid) return [];
   const scheduledPlanning =
-    Boolean(timeConstraint) && normalizedTime.mode !== "leave-now";
+    Boolean(effectivePlan) && normalizedTime.mode !== "leave-now";
 
   const monitorResults = await Promise.allSettled(
     origins.map(async (stop) => {
@@ -566,7 +567,7 @@ export async function loadTransferJourneyOptions({
   }
 
   if (legLimit === 2) {
-    return finalizeOptions(candidates, timeConstraint);
+    return finalizeOptions(candidates, effectivePlan);
   }
 
   // Build a strictly bounded second-transfer frontier from the already
@@ -864,7 +865,7 @@ export async function loadTransferJourneyOptions({
     });
   }
 
-  return finalizeOptions(candidates, timeConstraint);
+  return finalizeOptions(candidates, effectivePlan);
 }
 
 /**
@@ -874,6 +875,7 @@ export async function loadTransferJourneyOptions({
  *   allStops: readonly any[],
  *   destination: DestinationIntent | null,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
  * }} input
  */
@@ -883,18 +885,21 @@ export default function useTransferJourneyOptions({
   allStops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
   timeConstraint = null,
 }) {
   /** @type {[MultiLegJourneyOption[], import("react").Dispatch<import("react").SetStateAction<MultiLegJourneyOption[]>>]} */
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
+  const effectivePlan = journeyPlan || timeConstraint;
   const requestRef = useRef({
     enabled,
     originStops,
     allStops,
     destination,
     positionAccuracy,
-    timeConstraint,
+    journeyPlan,
+    timeConstraint: effectivePlan,
   });
   requestRef.current = {
     enabled,
@@ -902,7 +907,8 @@ export default function useTransferJourneyOptions({
     allStops,
     destination,
     positionAccuracy,
-    timeConstraint,
+    journeyPlan,
+    timeConstraint: effectivePlan,
   };
 
   const signature = useMemo(
@@ -914,8 +920,11 @@ export default function useTransferJourneyOptions({
             ...destination.acceptableStopIds,
             originStops.map((stop) => stop.id).join(","),
             Math.round(Number(positionAccuracy) || 0),
-            timeConstraint?.mode || "leave-now",
-            timeConstraint?.targetTimeSec || "",
+            effectivePlan?.mode || "leave-now",
+            effectivePlan?.targetTimeSec || "",
+            "preference" in (effectivePlan || {})
+              ? effectivePlan?.preference || "balanced"
+              : "balanced",
           ].join("|")
         : "",
     [
@@ -923,8 +932,9 @@ export default function useTransferJourneyOptions({
       enabled,
       originStops,
       positionAccuracy,
-      timeConstraint?.mode,
-      timeConstraint?.targetTimeSec,
+      effectivePlan?.mode,
+      effectivePlan?.targetTimeSec,
+      "preference" in (effectivePlan || {}) ? effectivePlan?.preference : null,
     ]
   );
 
@@ -952,6 +962,7 @@ export default function useTransferJourneyOptions({
           allStops: request.allStops,
           destination: request.destination,
           positionAccuracy: request.positionAccuracy,
+          journeyPlan: request.journeyPlan,
           timeConstraint: request.timeConstraint,
           signal: controller.signal,
         });
