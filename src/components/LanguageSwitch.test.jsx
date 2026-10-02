@@ -1,10 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import LanguageSwitch from "./LanguageSwitch";
 import BusStopDisplay from "./BusStopDisplay";
 import BusStopForm from "./BusStopForm";
 import ServiceAlerts from "./ServiceAlerts";
 import { resetLanguageForTests } from "../i18n";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 afterEach(() => {
   resetLanguageForTests("en");
@@ -220,4 +221,20 @@ test("names are marked with the language they are written in", () => {
   );
   const heading = screen.getByRole("heading", { name: "Stop 164" });
   expect(heading.querySelector("[lang]")).toBeNull();
+});
+
+
+test("applies an imported language immediately when this origin had no explicit choice", () => {
+  resetLanguageForTests("en");
+  render(<LanguageSwitch />);
+
+  localStorage.setItem("foli-language-v1", "fi");
+  act(() => {
+    window.dispatchEvent(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  });
+
+  expect(document.documentElement.lang).toBe("fi");
+  expect(
+    screen.getByRole("button", { name: "In English" })
+  ).toBeInTheDocument();
 });
