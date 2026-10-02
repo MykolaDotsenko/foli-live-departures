@@ -310,7 +310,12 @@ export function createLocalStateBackup({
 
 /** @param {{ storage?: StorageLike, now?: number }} [options] */
 export function serializeLocalStateBackup(options) {
-  return JSON.stringify(createLocalStateBackup(options), null, 2);
+  const text = JSON.stringify(createLocalStateBackup(options), null, 2);
+  if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) {
+    // Never hand the passenger a backup file this same version would reject.
+    throw new Error("backup-export-too-large");
+  }
+  return text;
 }
 
 /** @param {any} payload @returns {IncomingState} */

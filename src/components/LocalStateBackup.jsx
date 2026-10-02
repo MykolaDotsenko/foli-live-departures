@@ -62,8 +62,14 @@ export default function LocalStateBackup() {
           "Backup downloaded. It contains saved places, favourites, line filters and explicit language/theme choices — never recent stops, GPS or ride history."
         )
       );
-    } catch {
-      setError(t("The backup could not be downloaded on this browser."));
+    } catch (downloadError) {
+      setError(
+        downloadError?.message === "backup-export-too-large"
+          ? t(
+              "There is too much saved data for this backup format. Nothing was downloaded."
+            )
+          : t("The backup could not be downloaded on this browser.")
+      );
     }
   };
 

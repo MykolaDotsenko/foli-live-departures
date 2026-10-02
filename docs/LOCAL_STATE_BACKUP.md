@@ -23,7 +23,7 @@ The backup never reads or exports:
 - place-search session cache;
 - browser/device identifiers.
 
-The format is versioned as `turku-departures-local-state` v1 and capped at 128 KB on import.
+The format is versioned as `turku-departures-local-state` v1 and capped at 128 KB. Export verifies the serialized document against the same limit, so the app never downloads a file this version would reject on import.
 
 ## Import semantics
 

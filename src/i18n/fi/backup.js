@@ -14,6 +14,8 @@ export default {
     "Varmuuskopio ladattu. Se sisältää tallennetut paikat, suosikit, linjasuodattimet sekä erikseen valitut kieli- ja teema-asetukset — ei koskaan viimeksi käytettyjä pysäkkejä, GPS-sijaintia tai matkahistoriaa.",
   "The backup could not be downloaded on this browser.":
     "Varmuuskopiota ei voitu ladata tällä selaimella.",
+  "There is too much saved data for this backup format. Nothing was downloaded.":
+    "Tallennettuja tietoja on liikaa tähän varmuuskopioon. Mitään ei ladattu.",
   "The backup file is empty.": "Varmuuskopiotiedosto on tyhjä.",
   "This is not a Turku Departures backup file.":
     "Tämä ei ole Turku Departures -varmuuskopiotiedosto.",

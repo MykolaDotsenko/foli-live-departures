@@ -54,6 +54,27 @@ test("downloads only the privacy-safe backup surface", () => {
   ).toBeInTheDocument();
 });
 
+test("does not download a self-incompatible oversized export", () => {
+  localStorage.setItem(
+    LOCAL_STATE_KEYS.savedStops,
+    JSON.stringify({
+      favorites: Array.from({ length: 2_000 }, (_, index) => ({
+        id: String(index + 1),
+        name: "X".repeat(80),
+      })),
+      recents: [],
+    })
+  );
+
+  render(<LocalStateBackup />);
+  fireEvent.click(screen.getByRole("button", { name: "Download backup" }));
+
+  expect(URL.createObjectURL).not.toHaveBeenCalled();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "There is too much saved data for this backup format. Nothing was downloaded."
+  );
+});
+
 test("shows a review before import and only applies after explicit confirmation", async () => {
   const backup = {
     kind: BACKUP_KIND,

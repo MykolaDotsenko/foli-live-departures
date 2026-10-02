@@ -289,6 +289,18 @@ describe("validation", () => {
   });
 });
 
+test("serializer never creates a file this version would reject as oversized", () => {
+  seed(LOCAL_STATE_KEYS.savedStops, {
+    favorites: Array.from({ length: 2_000 }, (_, index) => ({
+      id: String(index + 1),
+      name: "X".repeat(80),
+    })),
+    recents: [],
+  });
+
+  expect(() => serializeLocalStateBackup()).toThrow("backup-export-too-large");
+});
+
 test("serializer produces a stable inspectable JSON document", () => {
   seed(LOCAL_STATE_KEYS.savedStops, {
     favorites: [{ id: "10", name: "Kauppatori" }],
