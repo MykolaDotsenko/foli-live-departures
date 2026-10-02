@@ -187,11 +187,14 @@ export async function loadTransferJourneyOptions({
   const scheduledPlanning =
     Boolean(effectivePlan) && normalizedTime.mode !== "leave-now";
 
-  const monitorResults = await Promise.allSettled(
-    origins.map(async (stop) => {
-      if (!scheduledPlanning) {
-        return fetchStopMonitor(String(stop.id), signal);
-      }
+  const monitorTasks = origins.map((stop) => {
+    if (!scheduledPlanning) {
+      // Keep synchronous adapter/programming failures visible to the hook.
+      // Normal network/provider failures are promises and are still isolated
+      // below with allSettled so one bad origin cannot poison the search.
+      return fetchStopMonitor(String(stop.id), signal);
+    }
+    return (async () => {
       const schedule = await fetchScheduledStopDepartures(
         String(stop.id),
         normalizedTime.referenceTimeSec,
@@ -206,8 +209,9 @@ export async function loadTransferJourneyOptions({
         scheduleFailed: false,
         scheduleIncomplete: schedule.complete === false,
       };
-    })
-  );
+    })();
+  });
+  const monitorResults = await Promise.allSettled(monitorTasks);
   throwIfAborted(signal);
 
   const firstCandidates = [];
