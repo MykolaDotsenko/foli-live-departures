@@ -12,6 +12,13 @@ export interface JourneyPlan {
   preference: RoutingPreference;
 }
 
+export type JourneyTimeMode = "leave-now" | "leave-at" | "arrive-by";
+
+export interface JourneyTimeConstraint {
+  mode: JourneyTimeMode;
+  targetTimeSec: number | null;
+}
+
 export interface DestinationIntent {
   id: string;
   kind: "saved-place" | "public-stop" | "external-place";
