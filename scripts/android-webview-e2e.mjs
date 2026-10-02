@@ -282,8 +282,80 @@ record(
   ukrainianReload || {}
 );
 
+const switchedToSwedish = await retry(
+  "Android Swedish locale switch",
+  async () => {
+    const snapshot = await evaluate(`(() => {
+      const button = [...document.querySelectorAll("button")].find(
+        (candidate) => (candidate.textContent || "").trim() === "På svenska"
+      );
+      if (document.documentElement.lang === "uk" && button) {
+        button.click();
+        return null;
+      }
+      return {
+        lang: document.documentElement.lang || "",
+        stored: localStorage.getItem("foli-language-v1"),
+        hasEnglishSwitch: [...document.querySelectorAll("button")].some(
+          (candidate) => (candidate.textContent || "").trim() === "In English"
+        ),
+        hasSwedishUi:
+          /Välj en busshållplats|Hitta närmaste hållplats|Avgår/.test(
+            document.body.innerText
+          )
+      };
+    })()`);
+    return snapshot?.lang === "sv" &&
+      snapshot?.stored === "sv" &&
+      snapshot?.hasEnglishSwitch &&
+      snapshot?.hasSwedishUi
+      ? snapshot
+      : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+record(
+  "Android can select Swedish through the production language registry",
+  switchedToSwedish?.lang === "sv" && switchedToSwedish?.stored === "sv",
+  switchedToSwedish || {}
+);
+
+await evaluate("location.reload(); true");
+const swedishReload = await retry(
+  "Android Swedish locale reload",
+  async () => {
+    const snapshot = await evaluate(`(() => ({
+      ready: document.readyState === "complete",
+      lang: document.documentElement.lang || "",
+      stored: localStorage.getItem("foli-language-v1"),
+      hasEnglishSwitch: [...document.querySelectorAll("button")].some(
+        (candidate) => (candidate.textContent || "").trim() === "In English"
+      ),
+      hasSwedishUi:
+        /Välj en busshållplats|Hitta närmaste hållplats|Avgår/.test(
+          document.body.innerText
+        )
+    }))()`);
+    return snapshot.ready &&
+      snapshot.lang === "sv" &&
+      snapshot.stored === "sv" &&
+      snapshot.hasEnglishSwitch &&
+      snapshot.hasSwedishUi
+      ? snapshot
+      : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+record(
+  "Swedish locale persists across Android WebView reload",
+  swedishReload?.lang === "sv" &&
+    swedishReload?.stored === "sv" &&
+    swedishReload?.hasSwedishUi === true,
+  swedishReload || {}
+);
+
 // Keep the long-standing Android E2E assertions language-stable after proving
-// native persistence. The registry continues Ukrainian → Swedish → English.
+// native persistence. The registry continues Swedish → English.
 const restoredEnglish = await retry(
   "Android locale reset to English",
   async () => {
@@ -293,10 +365,6 @@ const restoredEnglish = await retry(
           (candidate) => (candidate.textContent || "").trim() === label
         );
       const lang = document.documentElement.lang || "";
-      if (lang === "uk") {
-        findButton("På svenska")?.click();
-        return null;
-      }
       if (lang === "sv") {
         findButton("In English")?.click();
         return null;
