@@ -1,11 +1,12 @@
 # Localization
 
-The locale registry currently contains **English (`en`)**, **Finnish (`fi`)** and
-**Ukrainian (`uk`)**. It follows the first browser language the app supports
-on a first visit and then keeps the passenger's explicit choice on the phone.
-Finnish and Ukrainian **string translations** are generated from the canonical
-source dictionaries into same-origin lazy JSON packs so repeated English source
-keys do not inflate executable JS. Function-valued plural/count grammar remains
+The locale registry currently contains **English (`en`)**, **Finnish (`fi`)**,
+**Ukrainian (`uk`)** and **Swedish (`sv`)**. It follows the first browser
+language the app supports on a first visit and then keeps the passenger's
+explicit choice on the phone. Finnish, Ukrainian and Swedish **string
+translations** are generated from the canonical source dictionaries into
+same-origin lazy JSON packs so repeated English source keys do not inflate
+executable JS. Function-valued plural/count grammar remains
 in small lazy runtime modules. The generated locale packs have their own
 raw/gzip bundle budgets, so this split cannot hide translation growth.
 
@@ -13,14 +14,18 @@ Current implementation state:
 
 - **Ukrainian (`uk`)** was implemented in PR #139 across Ride Mode, Journey
   Assistant, recovery, offline/degraded states, Places, privacy/help and the
-  rest of the passenger UI. PR #140 added generated lazy locale packs,
-  fail-closed locale-loader tests and a cross-browser `fi → uk → en` locale
-  cycle that asserts Ukrainian UI is actually rendered. Native-language,
-  VoiceOver/TalkBack, speech and full Ukrainian-specific layout/offline/Android
-  review remain release gates; code presence does not mark those reviews
-  complete.
-- **Swedish (`sv`)** remains the next locale expansion. Turku is bilingual
-  and Föli publishes relevant provider text in Finnish, Swedish and English.
+  rest of the passenger UI. PR #140 added generated lazy locale packs and
+  fail-closed locale loading. PR #142 adds dedicated Ride/recovery safety
+  coverage, cross-browser axe, 320/360/412 px + 200% text + dark-theme reflow,
+  production PWA offline reopen and Android WebView persistence.
+- **Swedish (`sv`)** is implemented in PR #142 as a full first-class locale:
+  canonical dictionary, lazy pack, count grammar, first-visit `sv-FI`,
+  Swedish provider-text precedence, Ride/recovery safety coverage, browser
+  accessibility/reflow, PWA offline reopen and Android persistence.
+
+For both Ukrainian and Swedish, native-language review, physical
+VoiceOver/TalkBack, speech pronunciation and real-bus validation remain manual
+release gates; automated coverage does not claim those reviews happened.
 
 The detailed Ukrainian acceptance and remaining review plan is in
 [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
@@ -48,11 +53,11 @@ The detailed Ukrainian acceptance and remaining review plan is in
 `src/i18n/i18n.test.js` protects dictionary completeness, placeholders,
 stale/unused keys, plural behavior and fail-closed lazy-pack loading for the
 implemented locales. Source-level tests also reject literal English accessible
-labels that bypass the translator. Browser QA now exercises the registry cycle
-from Finnish through Ukrainian to English across the configured browser/device
-projects. Full Ukrainian-specific layout, 200% text, dark-theme, offline/PWA,
-Ride/recovery and Android persistence coverage is still part of item 17 rather
-than being inferred from dictionary completeness.
+labels that bypass the translator. Browser QA exercises the full registry cycle
+`en → fi → uk → sv → en` and dedicated Ukrainian/Swedish production flows.
+Both added locales have explicit layout, 200% text, dark-theme, axe,
+offline/PWA, Ride/recovery and Android persistence coverage rather than relying
+on dictionary completeness alone.
 
 ## Rules
 
@@ -155,3 +160,27 @@ Key rules:
 
 See [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md) for the staged
 implementation and release criteria.
+
+
+## Swedish locale — implemented, review gates open
+
+Swedish follows the same safety and provenance rules as the other first-class
+locales.
+
+Key rules:
+
+- locale code: `sv`; formatting/speech preference: `sv-FI`;
+- first-visit language detection recognizes `sv` / `sv-*`, while a stored
+  passenger choice remains authoritative;
+- provider-owned text prefers Föli's own Swedish (`sv`) value, then provider
+  English if Swedish is unavailable; the app never fabricates a Swedish
+  translation of provider text;
+- stop names and route signs retain their provider/source language metadata;
+- Ride Mode keeps certainty identical to English/Finnish/Ukrainian: timetable
+  evidence may warn early but does not become a stronger “Stig av nu” claim;
+- transfer recovery never commits another journey until the passenger chooses
+  one explicitly;
+- Swedish must pass the same phone-width, 200% text, dark-mode, PWA/offline,
+  Android, keyboard and axe gates as the other locales;
+- native Swedish, physical VoiceOver/TalkBack and speech review remain manual
+  pre-release gates.
