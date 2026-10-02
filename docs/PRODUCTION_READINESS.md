@@ -40,7 +40,7 @@ Every pull request to `master` must prove:
 - PWA precache, CSP and bundle budget pass;
 - Chromium, Firefox, mobile WebKit and mobile Chromium E2E/accessibility pass.
 
-Production Pages deployment is downstream of successful `master` CI. Its artifact is stamped with the exact CI SHA, and the deployment is not green until a post-deploy live smoke verifies that exact revision plus the HTML entrypoint, module asset, manifest, service worker and fail-closed place-search policy. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
+Production Pages deployment is downstream of successful `master` CI. Its artifact is stamped with the exact CI SHA. The privileged deploy job runs only the pinned Pages deployment action; repository code is then checked out in a separate read-only smoke job, and the workflow is not green until that smoke verifies the exact revision plus the HTML entrypoint, module asset, manifest, service worker and fail-closed place-search policy. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
 
 ## Android
 

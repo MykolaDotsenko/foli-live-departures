@@ -72,9 +72,10 @@ jobs:
   deploy:
     needs: build
     permissions:
-      contents: read
       pages: write
       id-token: write
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -84,6 +85,12 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
 
+  smoke:
+    needs: deploy
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout exact deployed revision for live smoke
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -97,6 +104,6 @@ jobs:
 
       - name: Verify exact production deployment
         env:
-          PRODUCTION_SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          PRODUCTION_SITE_URL: ${{ needs.deploy.outputs.page_url }}
           EXPECTED_DEPLOYMENT_SHA: ${{ github.event.workflow_run.head_sha }}
         run: npm run verify:production-site
