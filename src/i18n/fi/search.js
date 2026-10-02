@@ -212,6 +212,19 @@ export default {
   "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
     "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
+  "Journey timing and preference": "Matkan aika ja reittitoive",
+  "Leave now": "Lähde nyt",
+  "Leave at": "Lähde klo",
+  "Arrive by": "Perillä viimeistään",
+  "Turku local time": "Turun paikallisaika",
+  "Route preference": "Reittitoive",
+  "Balanced": "Tasapainoinen",
+  "Fewer transfers": "Vähemmän vaihtoja",
+  "More transfer time": "Enemmän vaihtoaikaa",
+  "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh.":
+    "Tulevan ajan haut käyttävät Fölin julkaistuja aikatauluja. Nyt lähdettäessä käytetään tuoreita reaaliaika-arvioita.",
+  "That local time does not exist because of the daylight-saving clock change. Choose another time.":
+    "Tätä paikallista kellonaikaa ei ole kesäaikaan siirtymisen vuoksi. Valitse toinen aika.",
   "Fresh transfer options": "Uudet vaihtovaihtoehdot",
   "Continue to {destination}": "Jatka kohteeseen {destination}",
   "Checking fresh buses from this transfer area…":
