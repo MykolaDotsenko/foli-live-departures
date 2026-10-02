@@ -9,7 +9,7 @@ import {
   revalidateFutureJourneyLeg,
 } from "../utils/activeJourney";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, TransferJourneyOption } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption } from "../types/journey" */
 
 export default function useActiveJourney() {
   /** @type {[ActiveDirectJourney | null, import("react").Dispatch<import("react").SetStateAction<ActiveDirectJourney | null>>]} */
@@ -46,7 +46,7 @@ export default function useActiveJourney() {
   );
 
   /**
-   * @param {TransferJourneyOption} option
+   * @param {MultiLegJourneyOption} option
    * @param {DestinationIntent} destination
    */
   const selectTransferJourney = useCallback(
