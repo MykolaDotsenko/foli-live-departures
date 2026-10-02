@@ -159,7 +159,7 @@ test("renders every leg and both changes for a bounded two-transfer option", () 
           ...option,
           id: "two-transfer",
           legs: [
-            { ...option.first, lineRef: "1" },
+            { ...option.legs[0], lineRef: "1" },
             {
               tripRef: "middle",
               lineRef: "7",
@@ -178,7 +178,7 @@ test("renders every leg and both changes for a bounded two-transfer option", () 
             },
           ],
           transfers: [
-            option.transfer,
+            option.transfers[0],
             {
               alightStopId: "300",
               alightStopSequence: 8,
