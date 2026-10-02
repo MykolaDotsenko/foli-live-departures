@@ -34,6 +34,11 @@ export default {
   "Report a problem (GitHub)": "Ilmoita ongelmasta (GitHub)",
   "Source code": "Lähdekoodi",
   "About & privacy": "Tietoa ja tietosuoja",
+  Release: "Julkaisu",
+  "Version {version}": "Versio {version}",
+  "Build {revision}": "Koonti {revision}",
+  "Local build": "Paikallinen koonti",
+  "Source revision {revision}": "Lähdekoodiversio {revision}",
   "Who makes it": "Kuka sovelluksen tekee",
   "Turku Departures is an independent project by Mykola Dotsenko. It uses Föli open data but is not made by or affiliated with Föli or the City of Turku. For tickets and official journey planning, use Föli’s own services.":
     "Turku Departures on Mykola Dotsenkon itsenäinen projekti. Se käyttää Fölin avointa dataa, mutta sovellus ei ole Fölin tai Turun kaupungin tekemä eikä niihin sidoksissa. Lippuja ja virallista reittiopasta varten käytä Fölin omia palveluja.",

@@ -3,6 +3,7 @@ import "./App.css";
 import ActiveJourney from "./components/ActiveJourney";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
+import BuildIdentity from "./components/BuildIdentity";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
 import FieldTestReport from "./components/FieldTestReport";
@@ -1167,6 +1168,8 @@ function App() {
                 {t("Föli’s website")}
               </a>
             </dd>
+            <dt>{t("Release")}</dt>
+            <BuildIdentity />
             <dt>{t("Where the times come from")}</dt>
             <dd>
               {t(

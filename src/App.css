@@ -418,6 +418,17 @@ input:focus-visible,
   margin: 0;
 }
 
+.build-identity {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+.build-identity a {
+  font-family:
+    ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-weight: 700;
+}
+
 .about p {
   margin: 0;
 }
