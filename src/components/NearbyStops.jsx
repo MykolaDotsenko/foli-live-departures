@@ -233,7 +233,7 @@ function NearbyStops({
     excludedJourney,
     fitState,
     fitsByStop,
-    journeyPlan?.preference,
+    routingPreference,
     searchExpanded,
   ]);
 
@@ -279,7 +279,7 @@ function NearbyStops({
     excludedJourney,
     fitState,
     fitsByStop,
-    journeyPlan?.preference,
+    routingPreference,
     nearbyStops,
   ]);
 
@@ -306,8 +306,13 @@ function NearbyStops({
       allStops: stops,
       destination,
       positionAccuracy: position?.accuracy ?? null,
-      timeConstraint: timeValid ? timeConstraint : null,
-      routingPreference,
+      journeyPlan: timeValid
+        ? {
+            mode: timeConstraint?.mode || "leave-now",
+            targetTimeSec: timeConstraint?.targetTimeSec ?? null,
+            preference: routingPreference,
+          }
+        : null,
     });
 
   const destinationSortedStops = useMemo(() => {
