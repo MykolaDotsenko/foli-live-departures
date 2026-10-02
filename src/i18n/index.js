@@ -9,6 +9,7 @@
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
 import fi from "./fi";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 /**
  * A language the interface speaks.
@@ -94,6 +95,12 @@ let current = storedLanguage() || preferredLanguage();
 /** @type {Set<() => void>} */
 const listeners = new Set();
 applyToDocument(current);
+
+globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
+  const next = storedLanguage() || preferredLanguage();
+  if (next !== current) switchTo(next);
+  else applyToDocument(next);
+});
 
 /** @returns {Language} */
 export function getLanguage() {
