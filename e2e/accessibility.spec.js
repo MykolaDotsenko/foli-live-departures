@@ -364,11 +364,17 @@ test.describe("on a Finnish phone", () => {
       .analyze();
     expect(results.violations).toEqual([]);
 
-    // Locale switching follows the registry order: Finnish → Ukrainian → English.
+    // Locale switching follows the registry order: Finnish → Ukrainian → Swedish → English.
     await page.getByRole("button", { name: "Українською" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "uk");
     await expect(
       page.getByRole("columnheader", { name: "Відправлення" })
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "På svenska" }).click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+    await expect(
+      page.getByRole("columnheader", { name: "Avgår" })
     ).toBeVisible();
 
     await page.getByRole("button", { name: "In English" }).click();
@@ -570,7 +576,7 @@ test("Ukrainian reflows at 320, 360 and 412 px with 200 percent text in dark mod
       page.getByRole("columnheader", { name: "Відправлення" })
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "In English" })
+      page.getByRole("button", { name: "På svenska" })
     ).toBeVisible();
 
     const state = await horizontalOverflow(page);
