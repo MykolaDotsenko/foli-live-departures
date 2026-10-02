@@ -106,11 +106,12 @@ jobs:
         run: |
           set -euo pipefail
           releases="$RUNNER_TEMP/production-releases.json"
-          gh api \
+          gh api --paginate \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/$GITHUB_REPOSITORY/releases?per_page=100" \
-            > "$releases"
+            --jq '.[]' \
+            | jq -s '.' > "$releases"
           node scripts/android-release-metadata.mjs \
             check-version "$VERSION_CODE" "$releases"
 
