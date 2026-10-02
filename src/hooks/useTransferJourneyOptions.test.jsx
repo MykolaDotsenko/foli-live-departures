@@ -148,6 +148,125 @@ test("builds a concrete same-stop one-transfer journey", async () => {
   });
 });
 
+
+test("builds a concrete bounded two-transfer journey", async () => {
+  api.fetchScheduledStopDepartures.mockImplementation(async (stopId) => {
+    if (String(stopId) === "500") {
+      return {
+        departures: [scheduled("second", "7", 2_050)],
+        complete: true,
+      };
+    }
+    if (String(stopId) === "700") {
+      return {
+        departures: [scheduled("third", "18", 3_050)],
+        complete: true,
+      };
+    }
+    return { departures: [], complete: true };
+  });
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "first") {
+      return [
+        time("100", 1, "10:00:00"),
+        time("500", 2, "10:10:00"),
+      ];
+    }
+    if (tripId === "second") {
+      return [
+        time("500", 1, "10:20:00"),
+        time("700", 2, "10:30:00"),
+      ];
+    }
+    if (tripId === "third") {
+      return [
+        time("700", 1, "10:40:00"),
+        time("900", 2, "10:55:00"),
+      ];
+    }
+    return [];
+  });
+
+  const options = await loadTransferJourneyOptions({
+    originStops: [{ id: "100", name: "Origin", distanceMeters: 20 }],
+    allStops: [
+      { id: "100", name: "Origin" },
+      { id: "500", name: "First hub" },
+      { id: "700", name: "Second hub" },
+      { id: "900", name: "Destination" },
+    ],
+    destination,
+    positionAccuracy: 10,
+  });
+
+  const twoTransfer = options.find((candidate) => candidate.legs?.length === 3);
+  expect(twoTransfer).toBeTruthy();
+  expect(twoTransfer).toMatchObject({
+    originStopId: "100",
+    destinationStopId: "900",
+    legs: [
+      { tripRef: "first", boardStopId: "100", exitStopId: "500" },
+      { tripRef: "second", boardStopId: "500", exitStopId: "700" },
+      { tripRef: "third", boardStopId: "700", exitStopId: "900" },
+    ],
+    transfers: [
+      { alightStopId: "500", boardStopId: "500" },
+      { alightStopId: "700", boardStopId: "700" },
+    ],
+  });
+});
+
+test("two-transfer expansion never exceeds the combined timetable request budget", async () => {
+  api.fetchScheduledStopDepartures.mockImplementation(async (stopId) => ({
+    departures: String(stopId).startsWith("7")
+      ? [scheduled(`third-${stopId}`, "18", 3_500)]
+      : [scheduled("second", "7", 2_050)],
+    complete: true,
+  }));
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "first") {
+      return [
+        time("100", 1, "10:00:00"),
+        time("500", 2, "10:10:00"),
+      ];
+    }
+    if (tripId === "second") {
+      return [
+        time("500", 1, "10:20:00"),
+        ...Array.from({ length: 12 }, (_, index) =>
+          time(String(700 + index), index + 2, `10:${String(25 + index).padStart(2, "0")}:00`)
+        ),
+      ];
+    }
+    if (String(tripId).startsWith("third-")) {
+      const board = String(tripId).slice("third-".length);
+      return [
+        time(board, 1, "11:00:00"),
+        time("900", 2, "11:15:00"),
+      ];
+    }
+    return [];
+  });
+
+  await loadTransferJourneyOptions({
+    originStops: [{ id: "100", distanceMeters: 20 }],
+    allStops: [
+      { id: "500", name: "Hub" },
+      ...Array.from({ length: 12 }, (_, index) => ({
+        id: String(700 + index),
+        name: `Hub ${index + 1}`,
+      })),
+    ],
+    destination,
+    positionAccuracy: 10,
+  });
+
+  expect(api.fetchScheduledStopDepartures.mock.calls.length).toBeLessThanOrEqual(
+    16
+  );
+});
+
 test("rejects a connection with insufficient transfer margin", async () => {
   api.fetchScheduledStopDepartures.mockResolvedValue({
     departures: [scheduled("second", "7", 1_930)],
