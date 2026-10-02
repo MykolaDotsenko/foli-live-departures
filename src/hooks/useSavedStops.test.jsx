@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, test } from "vitest";
 import useSavedStops, { stopToReopen } from "./useSavedStops";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 beforeEach(() => {
   localStorage.clear();
@@ -123,4 +124,25 @@ test("takes in a favourite saved in another tab before writing its own change", 
   expect(
     JSON.parse(localStorage.getItem("foli-saved-stops-v1")).favorites
   ).toEqual([{ id: "32", name: "Puistokatu" }]);
+});
+
+
+test("refreshes favourites immediately after a same-tab backup import", () => {
+  const { result } = renderHook(() => useSavedStops());
+
+  localStorage.setItem(
+    "foli-saved-stops-v1",
+    JSON.stringify({
+      favorites: [{ id: "32", name: "Puistokatu" }],
+      recents: [],
+    })
+  );
+
+  act(() => {
+    window.dispatchEvent(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  });
+
+  expect(result.current.favorites).toEqual([
+    { id: "32", name: "Puistokatu" },
+  ]);
 });
