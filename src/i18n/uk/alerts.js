@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { moreUpdates, serviceUpdates } from "./runtime";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
@@ -42,13 +42,11 @@ export default {
   "Emergency notice": "Термінове повідомлення",
   "Service updates": "Зміни в русі",
   "1 service update": "1 зміна в русі",
-  "{count} service updates": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "зміна", few: "зміни", many: "змін" })} в русі`,
+  "{count} service updates": serviceUpdates,
   "Update failed": "Оновлення не вдалося",
   "Service updates may be out of date": "Дані про зміни в русі можуть бути застарілими",
   "Show fewer updates": "Показати менше",
   "Hide service updates": "Сховати зміни в русі",
   "Show 1 more update": "Показати ще 1 повідомлення",
-  "Show {count} more updates": ({ count }) =>
-    `Показати ще ${count} ${ukPlural(count, { one: "повідомлення", few: "повідомлення", many: "повідомлень" })}`,
+  "Show {count} more updates": moreUpdates,
 };
