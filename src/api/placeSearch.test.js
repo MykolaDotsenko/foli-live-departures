@@ -79,6 +79,8 @@ test("loads runtime config then performs one explicit Nominatim search", async (
       lon: 22.3,
       category: "shop",
       type: "shop",
+      osmType: "node",
+      boundingBox: null,
       provider: "nominatim",
       licence: "Data © OpenStreetMap contributors",
     },
