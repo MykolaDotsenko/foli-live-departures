@@ -208,7 +208,7 @@ function NearbyStops({
     stops: nearbyStops,
     destination,
     positionAccuracy: position?.accuracy ?? null,
-    timeConstraint: timeValid ? timeConstraint : null,
+    timeConstraint,
   });
 
   const destinationLabel = shownDestinationLabel(destination);
@@ -297,6 +297,7 @@ function NearbyStops({
     Boolean(onSelectTransferJourney) &&
     Boolean(destination) &&
     Boolean(position) &&
+    timeValid &&
     (directSearchComplete || preferenceWantsAlternatives);
 
   const { options: transferJourneyOptions, state: transferState } =
@@ -306,13 +307,8 @@ function NearbyStops({
       allStops: stops,
       destination,
       positionAccuracy: position?.accuracy ?? null,
-      journeyPlan: timeValid
-        ? {
-            mode: timeConstraint?.mode || "leave-now",
-            targetTimeSec: timeConstraint?.targetTimeSec ?? null,
-            preference: routingPreference,
-          }
-        : null,
+      timeConstraint,
+      routingPreference,
     });
 
   const destinationSortedStops = useMemo(() => {
