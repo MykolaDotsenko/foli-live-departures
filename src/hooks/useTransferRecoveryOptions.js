@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { loadDestinationAwareNearby } from "./useDestinationAwareNearby";
-import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import { loadTransferJourneyOptions } from "./useTransferJourneyOptions";
+import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import {
   canSearchTransferRecovery,
-  failedRecoveryLeg,
+  failedTransferRunIdentity,
+  transferRecoveryContext,
   transferRecoveryOriginStops,
   withoutFailedTransferRun,
 } from "../utils/transferRecovery";
@@ -14,6 +15,9 @@ import {
 const REFRESH_MS = 30_000;
 
 /**
+ * Recovery may offer either a direct replacement or one more transfer.
+ * Both searches are bounded and neither commits a journey automatically.
+ *
  * @param {{
  *   journey?: ActiveDirectJourney | null,
  *   destination?: DestinationIntent | null,
@@ -37,13 +41,13 @@ export async function loadTransferRecoveryOptions({
     return { directOptions: [], transferOptions: [] };
   }
 
-  const failed = failedRecoveryLeg(journey);
+  const excludedRun = failedTransferRunIdentity(journey);
   const [directResult, transferResult] = await Promise.allSettled([
     loadDestinationAwareNearby({
       stops: originStops,
       destination,
-      // Stop-to-stop transfer geometry is known from the static catalogue; no
-      // device-location uncertainty is involved in this recovery search.
+      // Stop-to-stop recovery geometry is catalogue geometry, not a device
+      // location estimate.
       positionAccuracy: 0,
       signal,
     }),
@@ -52,16 +56,10 @@ export async function loadTransferRecoveryOptions({
       allStops,
       destination,
       positionAccuracy: 0,
-      // The original journey already consumed at least one transit leg.
-      // Recovery may add one further transfer, but never exceed the product's
-      // overall two-transfer ceiling.
+      // Recovery is intentionally narrower than initial planning: at most
+      // one new transfer from the authoritative recovery area.
       maxTransitLegs: 2,
-      excludedRun: failed
-        ? {
-            tripRef: failed.tripRef,
-            originAimedDepartureAt: failed.originAimedDepartureAt,
-          }
-        : null,
+      excludedRun,
       signal,
     }),
   ]);
@@ -70,6 +68,10 @@ export async function loadTransferRecoveryOptions({
     const error = new Error("The request was cancelled.");
     error.name = "AbortError";
     throw error;
+  }
+
+  if (directResult.status === "rejected" && transferResult.status === "rejected") {
+    throw directResult.reason || transferResult.reason || new Error("Recovery search failed.");
   }
 
   const directOptions =
@@ -81,24 +83,21 @@ export async function loadTransferRecoveryOptions({
       : [];
 
   const transferOptions =
-    transferResult.status === "fulfilled" ? transferResult.value : [];
-
-  // If both providers failed, expose a real error. A partial success remains
-  // useful and truthful: direct and transfer recovery are independent paths.
-  if (
-    directResult.status === "rejected" &&
-    transferResult.status === "rejected"
-  ) {
-    throw directResult.reason || transferResult.reason || new Error("Recovery search failed.");
-  }
+    transferResult.status === "fulfilled"
+      ? transferResult.value.filter(
+          (option) =>
+            Array.isArray(option?.legs) &&
+            option.legs.length === 2
+        )
+      : [];
 
   return { directOptions, transferOptions };
 }
 
 /**
- * Auto-searches fresh direct alternatives after a transfer failure only when
- * Ride Mode has authoritatively established that the passenger reached the
- * transfer area. Search prepares choices; it never commits one automatically.
+ * Auto-searches fresh alternatives after a committed transfer failure only
+ * when Ride Mode has already established the recovery area. Search prepares
+ * choices; the passenger still selects a replacement explicitly.
  *
  * @param {{
  *   enabled?: boolean,
@@ -114,7 +113,7 @@ export default function useTransferRecoveryOptions({
   allStops = [],
 } = {}) {
   /** @type {[DirectJourneyOption[], import("react").Dispatch<import("react").SetStateAction<DirectJourneyOption[]>>]} */
-  const [options, setOptions] = useState([]);
+  const [directOptions, setDirectOptions] = useState([]);
   /** @type {[MultiLegJourneyOption[], import("react").Dispatch<import("react").SetStateAction<MultiLegJourneyOption[]>>]} */
   const [transferOptions, setTransferOptions] = useState([]);
   const [state, setState] = useState("idle");
@@ -122,36 +121,45 @@ export default function useTransferRecoveryOptions({
   const requestRef = useRef({ journey, destination, allStops });
   requestRef.current = { journey, destination, allStops };
 
-  const active = Boolean(
-    enabled &&
-      destination &&
-      canSearchTransferRecovery(journey)
+  const context = transferRecoveryContext(journey);
+  const failedRun = failedTransferRunIdentity(journey);
+  const active = Boolean(enabled && destination && context);
+
+  const identityKey = useMemo(
+    () =>
+      active
+        ? [
+            journey?.id || "",
+            journey?.recoveryReason || "",
+            context?.activeIndex ?? "",
+            journey?.stopId || "",
+            journey?.atStopConfirmedAt || "",
+            context?.previousTransfer?.alightStopId || "",
+            context?.previousTransfer?.boardStopId || "",
+            failedRun?.tripRef || "",
+            failedRun?.originAimedDepartureAt || "",
+            destination?.id || "",
+          ].join("|")
+        : "",
+    [
+      active,
+      context?.activeIndex,
+      context?.previousTransfer?.alightStopId,
+      context?.previousTransfer?.boardStopId,
+      destination?.id,
+      failedRun?.originAimedDepartureAt,
+      failedRun?.tripRef,
+      journey?.atStopConfirmedAt,
+      journey?.id,
+      journey?.recoveryReason,
+      journey?.stopId,
+    ]
   );
-  const identityKey = useMemo(() => {
-    if (!active) return "";
-    const index = Number(journey?.activeLegIndex);
-    const transfer =
-      Number.isInteger(index) && index > 0
-        ? journey?.itinerary?.transfers?.[index - 1]
-        : null;
-    const failed = failedRecoveryLeg(journey);
-    return [
-      journey?.id || "",
-      journey?.recoveryReason || "",
-      Number.isInteger(index) ? index : "",
-      journey?.stopId || "",
-      journey?.atStopConfirmedAt || "",
-      transfer?.alightStopId || "",
-      transfer?.boardStopId || "",
-      failed?.tripRef || "",
-      failed?.originAimedDepartureAt || "",
-      destination?.id || "",
-    ].join("|");
-  }, [
-    active,
-    destination?.id,
-    journey,
-  ]);
+
+  const clearOptions = useCallback(() => {
+    setDirectOptions([]);
+    setTransferOptions([]);
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!active) return null;
@@ -169,7 +177,7 @@ export default function useTransferRecoveryOptions({
         signal: controller.signal,
       });
       if (controller.signal.aborted) return null;
-      setOptions(next.directOptions);
+      setDirectOptions(next.directOptions);
       setTransferOptions(next.transferOptions);
       setState("ready");
       return next;
@@ -181,17 +189,15 @@ export default function useTransferRecoveryOptions({
       ) {
         return null;
       }
-      setOptions([]);
-      setTransferOptions([]);
+      clearOptions();
       setState("error");
       return null;
     }
-  }, [active]);
+  }, [active, clearOptions]);
 
   useEffect(() => {
     abortRef.current?.abort();
-    setOptions([]);
-    setTransferOptions([]);
+    clearOptions();
 
     if (!active) {
       setState("idle");
@@ -219,11 +225,9 @@ export default function useTransferRecoveryOptions({
     const refreshNow = async () => {
       if (!mounted || document.visibilityState !== "visible") return;
       window.clearTimeout(timeoutId);
-      // Returning to a previously hidden tab can leave time-sensitive bus
-      // options minutes out of date. Fail closed: hide them until a fresh
-      // provider response proves which replacements are still catchable.
-      setOptions([]);
-      setTransferOptions([]);
+      // Recovery choices are time-sensitive. Hide stale cards until a fresh
+      // provider response proves they are still usable.
+      clearOptions();
       setState("loading");
       await refresh();
       scheduleNext();
@@ -240,7 +244,14 @@ export default function useTransferRecoveryOptions({
       window.removeEventListener("online", refreshNow);
       abortRef.current?.abort();
     };
-  }, [active, identityKey, refresh]);
+  }, [active, clearOptions, identityKey, refresh]);
 
-  return { options, transferOptions, state, refresh };
+  return {
+    // Compatibility alias while callers migrate.
+    options: directOptions,
+    directOptions,
+    transferOptions,
+    state,
+    refresh,
+  };
 }
