@@ -315,6 +315,14 @@ export function applyFutureLegRevalidation(
     return journey;
   }
 
+  const previous = journey.futureLegRevalidations?.[index];
+  if (
+    previous === revalidation ||
+    (previous && JSON.stringify(previous) === JSON.stringify(revalidation))
+  ) {
+    return journey;
+  }
+
   const futureLegRevalidations = {
     ...(journey.futureLegRevalidations || {}),
     [index]: revalidation,
