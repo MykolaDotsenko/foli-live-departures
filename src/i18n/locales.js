@@ -2,7 +2,7 @@
  * Locale metadata is the single source of truth for every interface language.
  * A dictionary is enabled only when its code appears here and in i18n/index.js.
  *
- * @typedef {"en" | "fi"} Language
+ * @typedef {"en" | "fi" | "uk"} Language
  * @typedef {{
  *   code: Language,
  *   nativeLabel: string,
