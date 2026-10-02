@@ -1,4 +1,4 @@
-import { scheduledCount, upcoming } from "./runtime";
+import { scheduledCount, upcoming } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
