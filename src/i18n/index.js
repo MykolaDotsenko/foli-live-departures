@@ -40,6 +40,7 @@ export const LANGUAGES = LANGUAGE_CODES;
 const DICTIONARIES = { en: {} };
 const STORAGE_KEY = "foli-language-v1";
 
+/** @type {Readonly<Partial<Record<Language, string>>>} */
 const LOCALE_PACKS = Object.freeze({
   fi: "locales/fi.json",
   uk: "locales/uk.json",
