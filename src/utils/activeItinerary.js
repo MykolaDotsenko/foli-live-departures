@@ -3,44 +3,62 @@ import { assessTransfer } from "./transferFeasibility";
 
 /** @import { ActiveDirectJourney, DestinationIntent, MultiLegJourneyOption } from "../types/journey" */
 
+/** @param {unknown} value */
 function positive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** @param {DestinationIntent | null | undefined} destination */
 function destinationLabel(destination) {
   return String(destination?.label || "").trim();
 }
 
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function currentItineraryIndex(journey) {
   const index = Number(journey?.activeLegIndex);
   return Number.isInteger(index) && index >= 0 ? index : null;
 }
 
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function currentItineraryLeg(journey) {
   const index = currentItineraryIndex(journey);
   return index === null ? null : journey?.itinerary?.legs?.[index] || null;
 }
 
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function nextItineraryTransfer(journey) {
   const index = currentItineraryIndex(journey);
   return index === null ? null : journey?.itinerary?.transfers?.[index] || null;
 }
 
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function nextItineraryLeg(journey) {
   const index = currentItineraryIndex(journey);
   return index === null ? null : journey?.itinerary?.legs?.[index + 1] || null;
 }
 
+/** @param {ActiveDirectJourney | null | undefined} journey */
 export function itineraryHasFutureLeg(journey) {
   return Boolean(nextItineraryTransfer(journey) && nextItineraryLeg(journey));
 }
 
+/**
+ * @param {MultiLegJourneyOption | null | undefined} itinerary
+ * @param {number} activeLegIndex
+ * @returns {{transferPlan: import("../types/journey").TransferJourneyOption | null, transferLeg: 1 | 2 | null}}
+ */
 function legacyAliases(itinerary, activeLegIndex) {
   if (!itinerary || itinerary.legs.length !== 2) {
     return { transferPlan: null, transferLeg: null };
   }
-  const legacy = withLegacyTransferAliases(itinerary);
+  /** @type {import("../types/journey").TransferJourneyOption} */
+  const legacy = {
+    ...itinerary,
+    first: itinerary.legs[0],
+    transfer: itinerary.transfers[0],
+    second: itinerary.legs[1],
+  };
   return {
     transferPlan: legacy,
     transferLeg: activeLegIndex === 0 ? 1 : 2,
@@ -51,6 +69,11 @@ function legacyAliases(itinerary, activeLegIndex) {
  * Build active state from a generic itinerary. The final door ETA remains
  * stable while the currently boarded leg changes; current-leg identity lives
  * in the top-level fields consumed by the existing board/Ride Mode surfaces.
+ *
+ * @param {MultiLegJourneyOption | import("../types/journey").TransferJourneyOption | any} option
+ * @param {DestinationIntent} destination
+ * @param {number} [nowMs]
+ * @returns {ActiveDirectJourney | null}
  */
 export function activeJourneyFromItinerary(
   option,
@@ -112,6 +135,10 @@ export function activeJourneyFromItinerary(
   };
 }
 
+/**
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {any} rideSession
+ */
 export function rideMatchesCurrentItineraryLeg(journey, rideSession) {
   const leg = currentItineraryLeg(journey);
   if (
@@ -133,6 +160,10 @@ export function rideMatchesCurrentItineraryLeg(journey, rideSession) {
   );
 }
 
+/**
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {any} rideSession
+ */
 export function rideReachedCurrentTransfer(journey, rideSession) {
   return (
     itineraryHasFutureLeg(journey) &&
@@ -141,6 +172,14 @@ export function rideReachedCurrentTransfer(journey, rideSession) {
   );
 }
 
+/**
+ * @param {ActiveDirectJourney} journey
+ * @param {number} index
+ * @param {number} nowMs
+ * @param {import("../types/journey").ActiveJourneyPhase} phase
+ * @param {import("../types/journey").ActiveJourneyRecoveryReason} recoveryReason
+ * @returns {ActiveDirectJourney | null}
+ */
 function projectLeg(journey, index, nowMs, phase, recoveryReason) {
   const itinerary = journey?.itinerary;
   const leg = itinerary?.legs?.[index];
@@ -184,6 +223,11 @@ function projectLeg(journey, index, nowMs, phase, recoveryReason) {
 /**
  * Ride Mode owns the current transit leg. Only authoritative NOW at the exact
  * selected occurrence can advance to the next committed leg.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {any} rideSession
+ * @param {number} [nowMs]
+ * @returns {ActiveDirectJourney | null}
  */
 export function advanceItineraryAfterRide(
   journey,
@@ -238,6 +282,11 @@ export function advanceItineraryAfterRide(
  * Ending Ride Mode before authoritative transfer arrival never advances the
  * itinerary. If NOW was reached while a future-leg failure was already known,
  * move to that next leg only as recovery context.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {any} rideSession
+ * @param {number} [nowMs]
+ * @returns {ActiveDirectJourney | null}
  */
 export function recoverItineraryAfterRide(
   journey,
@@ -297,6 +346,11 @@ export function recoverItineraryAfterRide(
  * retained as uncertainty. A live delay updates the concrete leg and shifts
  * that leg's planned arrival by the same amount, without fabricating changes
  * to later independent buses.
+ *
+ * @param {ActiveDirectJourney | null} journey
+ * @param {number} legIndex
+ * @param {import("../types/journey").TransferRevalidationState | null | undefined} revalidation
+ * @returns {ActiveDirectJourney | null}
  */
 export function applyFutureLegRevalidation(
   journey,
@@ -305,10 +359,12 @@ export function applyFutureLegRevalidation(
 ) {
   const itinerary = journey?.itinerary;
   const index = Number(legIndex);
+  const currentIndex = currentItineraryIndex(journey);
   if (
     !itinerary ||
+    currentIndex === null ||
     !Number.isInteger(index) ||
-    index <= currentItineraryIndex(journey) ||
+    index <= currentIndex ||
     index >= itinerary.legs.length ||
     !revalidation
   ) {
@@ -366,7 +422,7 @@ export function applyFutureLegRevalidation(
     itinerary: nextItinerary,
     futureLegRevalidations,
     transferRevalidation:
-      index === currentItineraryIndex(journey) + 1
+      index === currentIndex + 1
         ? revalidation
         : journey.transferRevalidation,
   };
