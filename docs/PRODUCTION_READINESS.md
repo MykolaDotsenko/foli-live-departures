@@ -49,7 +49,7 @@ The continuously published `android-latest` artifact is a debug-signed testing/s
 A production Android release additionally requires:
 
 - protected `android-production` environment;
-- persistent signing key and secrets;
+- persistent signing key and secrets, exposed only to the validation/decode/signing steps and cleaned from the runner immediately after signing;
 - unique monotonically increasing version code;
 - semantic version name;
 - production release workflow success;

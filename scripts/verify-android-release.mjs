@@ -18,6 +18,86 @@ const config = JSON.parse(rawConfig);
 const EXPECTED_ID = "io.github.mykoladotsenko.turkudepartures";
 const failures = [];
 
+
+const signingSecretRefs = [
+  "secrets.ANDROID_KEYSTORE_BASE64",
+  "secrets.ANDROID_KEYSTORE_PASSWORD",
+  "secrets.ANDROID_KEY_ALIAS",
+  "secrets.ANDROID_KEY_PASSWORD",
+];
+
+const releaseJobEnv =
+  releaseWorkflow.match(
+    /\n  release:\n[\s\S]*?\n    env:\n([\s\S]*?)\n\n    steps:/m
+  )?.[1] || "";
+
+for (const secretRef of signingSecretRefs) {
+  if (releaseJobEnv.includes(secretRef)) {
+    failures.push(
+      `Production signing secret ${secretRef} must not be exposed at job scope.`
+    );
+  }
+}
+
+const validationStep =
+  releaseWorkflow.match(
+    /- name: Validate release inputs and signing material\n([\s\S]*?)(?=\n      - name:)/
+  )?.[1] || "";
+for (const secretRef of signingSecretRefs) {
+  if (!validationStep.includes(secretRef)) {
+    failures.push(
+      `Signing validation step is missing step-scoped ${secretRef}.`
+    );
+  }
+}
+
+const decodeStep =
+  releaseWorkflow.match(
+    /- name: Decode production signing key\n([\s\S]*?)(?=\n      - name:)/
+  )?.[1] || "";
+if (!decodeStep.includes("secrets.ANDROID_KEYSTORE_BASE64")) {
+  failures.push(
+    "Keystore decode step must receive ANDROID_KEYSTORE_BASE64 only at step scope."
+  );
+}
+for (const secretRef of signingSecretRefs.slice(1)) {
+  if (decodeStep.includes(secretRef)) {
+    failures.push(
+      `Keystore decode step must not receive unrelated signing secret ${secretRef}.`
+    );
+  }
+}
+
+const signStep =
+  releaseWorkflow.match(
+    /- name: Sign and verify exact release artifacts\n([\s\S]*?)(?=\n      - name:)/
+  )?.[1] || "";
+for (const secretRef of signingSecretRefs.slice(1)) {
+  if (!signStep.includes(secretRef)) {
+    failures.push(
+      `Signing step is missing step-scoped ${secretRef}.`
+    );
+  }
+}
+if (signStep.includes("secrets.ANDROID_KEYSTORE_BASE64")) {
+  failures.push(
+    "Signing step must not receive the base64 keystore after it has been decoded."
+  );
+}
+
+const cleanupStep =
+  releaseWorkflow.match(
+    /- name: Remove production signing key\n([\s\S]*?)(?=\n      - name:)/
+  )?.[1] || "";
+if (
+  !cleanupStep.includes("if: always()") ||
+  !cleanupStep.includes('rm -rf "$RUNNER_TEMP/turku-signing"')
+) {
+  failures.push(
+    "Production signing keystore must be removed with an always-running cleanup step."
+  );
+}
+
 if (config.appId !== EXPECTED_ID) {
   failures.push(
     `Capacitor appId must remain ${EXPECTED_ID}; got ${String(config.appId)}.`
@@ -108,5 +188,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Android release contract verified: independent app identity, green-master gating, least-privilege signing, persistent production signing inputs, exact signed-APK emulator verification and immutable version publishing are enforced."
+  "Android release contract verified: independent app identity, green-master gating, step-scoped signing secrets, signing-key cleanup, least-privilege signing, exact signed-APK emulator verification and immutable version publishing are enforced."
 );
