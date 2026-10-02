@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { t, useLanguage } from "../i18n";
-import styles from "./FieldTestReport.module.css";
+import styles from "./LocalStateBackup.module.css";
 
 function downloadReport(report) {
   const blob = new Blob([report], { type: "application/json" });
@@ -34,22 +34,22 @@ export default function FieldTestReport({ report }) {
       <div>
         <p className={styles.kicker}>{t("Field-test diagnostics")}</p>
         <h2 id="field-test-report-title">{t("Field-test report ready")}</h2>
-        <p className={styles.copy}>
+        <p className={styles.privacy}>
           {t(
             "This local report contains the build, public trip/stop identifiers and sanitized live-data states. It does not include GPS coordinates, saved-place labels or device identifiers."
           )}
         </p>
       </div>
       <div className={styles.actions}>
-        <button type="button" onClick={copy}>
+        <button type="button" className={styles.secondary} onClick={copy}>
           {t("Copy report")}
         </button>
-        <button type="button" onClick={() => downloadReport(report)}>
+        <button type="button" className={styles.primary} onClick={() => downloadReport(report)}>
           {t("Download report")}
         </button>
       </div>
       {status && (
-        <p className={styles.status} role="status">
+        <p className={styles.feedback} role="status">
           {status}
         </p>
       )}
