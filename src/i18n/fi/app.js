@@ -98,13 +98,13 @@ export default {
   "Got it": "Selvä",
   "Field-test diagnostics": "Kenttätestin diagnostiikka",
   "Field-test report ready": "Kenttätestiraportti on valmis",
-  "This local report contains the build, public trip/stop identifiers and sanitized live-data states. It does not include GPS coordinates, saved-place labels or device identifiers.":
-    "Tämä paikallinen raportti sisältää sovellusversion, julkiset vuoro- ja pysäkkitunnisteet sekä puhdistetut reaaliaikatilojen tiedot. Se ei sisällä GPS-koordinaatteja, tallennettujen paikkojen nimiä eikä laitetunnisteita.",
+  "Local report: build, public trip/stop IDs and sanitized live-data states. No GPS coordinates, saved-place labels or device IDs.":
+    "Paikallinen raportti: sovellusversio, julkiset vuoro- ja pysäkkitunnisteet sekä puhdistetut reaaliaikatilat. Ei GPS-koordinaatteja, tallennettujen paikkojen nimiä eikä laitetunnisteita.",
   "Copy report": "Kopioi raportti",
   "Download report": "Lataa raportti",
   "Field-test report copied.": "Kenttätestiraportti kopioitiin.",
-  "Could not copy the report. Download it instead.":
-    "Raporttia ei voitu kopioida. Lataa se sen sijaan.",
+  "Copy failed. Download the report instead.":
+    "Kopiointi epäonnistui. Lataa raportti sen sijaan.",
 
   // Connection and error screens
   Offline: "Ei yhteyttä",
