@@ -1,0 +1,416 @@
+import { normalizedPastTimestamp } from "./cacheTime";
+import { realStopName } from "./stopNames";
+import { LOCAL_STATE_IMPORTED_EVENT } from "./localStateEvents";
+
+export const BACKUP_KIND = "turku-departures-local-state";
+export const BACKUP_VERSION = 1;
+export const MAX_BACKUP_BYTES = 128_000;
+
+export const LOCAL_STATE_KEYS = Object.freeze({
+  places: "foli-my-places-v1",
+  savedStops: "foli-saved-stops-v1",
+  lineFilters: "foli-line-filter-v1",
+  language: "foli-language-v1",
+  theme: "foli-theme-v1",
+});
+
+const PLACE_PRESETS = Object.freeze({
+  home: "Home",
+  school: "School",
+  work: "Work",
+});
+const PLACE_IDS = new Set(Object.keys(PLACE_PRESETS));
+const LANGUAGES = new Set(["en", "fi"]);
+const THEMES = new Set(["light", "dark"]);
+const MAX_PLACE_STOPS = 3;
+const MAX_FAVORITES = 50;
+const MAX_FILTER_STOPS = 20;
+const MAX_LINE_LENGTH = 12;
+const MAX_STOP_NAME_LENGTH = 80;
+
+function parseJson(value, fallback) {
+  try {
+    return JSON.parse(value ?? "");
+  } catch {
+    return fallback;
+  }
+}
+
+function cleanStopName(value) {
+  return realStopName(
+    String(value || "")
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, MAX_STOP_NAME_LENGTH)
+  );
+}
+
+function normalizeStop(stop) {
+  if (!stop || typeof stop !== "object") return null;
+  const id = String(stop.id || "").trim();
+  if (!/^\d+$/.test(id)) return null;
+  return { id, name: cleanStopName(stop.name) };
+}
+
+function uniqueStops(stops, limit) {
+  const seen = new Set();
+  const result = [];
+  for (const source of Array.isArray(stops) ? stops : []) {
+    const stop = normalizeStop(source);
+    if (!stop || seen.has(stop.id)) continue;
+    seen.add(stop.id);
+    result.push(stop);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+
+function normalizePlace(place) {
+  if (!place || typeof place !== "object") return null;
+  const id = String(place.id || "").trim();
+  if (!PLACE_IDS.has(id)) return null;
+  const stops = uniqueStops(place.stops, MAX_PLACE_STOPS);
+  if (stops.length === 0) return null;
+  const requestedPrimary = String(place.primaryStopId || "");
+  const primaryStopId = stops.some((stop) => stop.id === requestedPrimary)
+    ? requestedPrimary
+    : stops[0].id;
+  return {
+    id,
+    label: PLACE_PRESETS[id],
+    stops,
+    primaryStopId,
+    updatedAt: normalizedPastTimestamp(place.updatedAt),
+    validatedAt: 0,
+    needsReview: false,
+  };
+}
+
+function normalizePlaces(places) {
+  const byId = new Map();
+  for (const source of Array.isArray(places) ? places : []) {
+    const place = normalizePlace(source);
+    if (!place) continue;
+    const existing = byId.get(place.id);
+    if (!existing || place.updatedAt > existing.updatedAt) {
+      byId.set(place.id, place);
+    }
+  }
+  return [...byId.values()];
+}
+
+function normalizeFavorites(favorites) {
+  return uniqueStops(favorites, MAX_FAVORITES);
+}
+
+function normalizeRecentStops(recents) {
+  return uniqueStops(recents, 5)
+    .map((stop) => {
+      const source = Array.isArray(recents)
+        ? recents.find((item) => String(item?.id || "") === stop.id)
+        : null;
+      const viewedAt = normalizedPastTimestamp(source?.viewedAt);
+      return viewedAt > 0 ? { ...stop, viewedAt } : stop;
+    });
+}
+
+function normalizeLines(lines) {
+  return [
+    ...new Set(
+      (Array.isArray(lines) ? lines : [])
+        .map((line) => String(line ?? "").trim())
+        .filter((line) => line && line.length <= MAX_LINE_LENGTH)
+    ),
+  ];
+}
+
+function normalizeFilterEntries(value) {
+  const source = Array.isArray(value)
+    ? value
+    : value && typeof value === "object"
+      ? Object.entries(value).map(([stopId, entry]) => ({ stopId, ...entry }))
+      : [];
+  const byStop = new Map();
+
+  for (const entry of source) {
+    if (!entry || typeof entry !== "object") continue;
+    const stopId = String(entry.stopId || "").trim();
+    if (!/^\d+$/.test(stopId)) continue;
+    const lines = normalizeLines(entry.lines);
+    if (lines.length === 0) continue;
+    const normalized = {
+      stopId,
+      lines,
+      savedAt: normalizedPastTimestamp(entry.savedAt),
+    };
+    const existing = byStop.get(stopId);
+    if (!existing || normalized.savedAt > existing.savedAt) {
+      byStop.set(stopId, normalized);
+    }
+  }
+
+  return [...byStop.values()]
+    .sort((a, b) => b.savedAt - a.savedAt)
+    .slice(0, MAX_FILTER_STOPS);
+}
+
+function normalizeLanguage(value) {
+  const language = String(value || "");
+  return LANGUAGES.has(language) ? language : null;
+}
+
+function normalizeTheme(value) {
+  const theme = String(value || "");
+  return THEMES.has(theme) ? theme : null;
+}
+
+function currentState(storage) {
+  const places = normalizePlaces(
+    parseJson(storage?.getItem(LOCAL_STATE_KEYS.places), [])
+  );
+  const savedStopsRaw = parseJson(
+    storage?.getItem(LOCAL_STATE_KEYS.savedStops),
+    {}
+  );
+  const favorites = normalizeFavorites(savedStopsRaw?.favorites);
+  const recents = normalizeRecentStops(savedStopsRaw?.recents);
+  const lineFilters = normalizeFilterEntries(
+    parseJson(storage?.getItem(LOCAL_STATE_KEYS.lineFilters), {})
+  );
+  const language = normalizeLanguage(
+    storage?.getItem(LOCAL_STATE_KEYS.language)
+  );
+  const theme = normalizeTheme(storage?.getItem(LOCAL_STATE_KEYS.theme));
+
+  return { places, favorites, recents, lineFilters, language, theme };
+}
+
+function exportablePlace(place) {
+  return {
+    id: place.id,
+    stops: place.stops,
+    primaryStopId: place.primaryStopId,
+    updatedAt: place.updatedAt,
+  };
+}
+
+function exportableFilter(entry) {
+  return {
+    stopId: entry.stopId,
+    lines: entry.lines,
+    savedAt: entry.savedAt,
+  };
+}
+
+export function createLocalStateBackup({
+  storage = globalThis.localStorage,
+  now = Date.now(),
+} = {}) {
+  const state = currentState(storage);
+  return {
+    kind: BACKUP_KIND,
+    version: BACKUP_VERSION,
+    exportedAt: new Date(now).toISOString(),
+    data: {
+      places: state.places.map(exportablePlace),
+      favorites: state.favorites,
+      lineFilters: state.lineFilters.map(exportableFilter),
+      preferences: {
+        language: state.language,
+        theme: state.theme,
+      },
+    },
+  };
+}
+
+export function serializeLocalStateBackup(options) {
+  return JSON.stringify(createLocalStateBackup(options), null, 2);
+}
+
+function normalizeIncoming(payload) {
+  if (!payload || typeof payload !== "object") {
+    throw new Error("backup-not-object");
+  }
+  if (payload.kind !== BACKUP_KIND) {
+    throw new Error("backup-wrong-kind");
+  }
+  if (payload.version !== BACKUP_VERSION) {
+    throw new Error("backup-unsupported-version");
+  }
+
+  const data =
+    payload.data && typeof payload.data === "object" ? payload.data : {};
+
+  return {
+    places: normalizePlaces(data.places),
+    favorites: normalizeFavorites(data.favorites),
+    lineFilters: normalizeFilterEntries(data.lineFilters),
+    language: normalizeLanguage(data.preferences?.language),
+    theme: normalizeTheme(data.preferences?.theme),
+  };
+}
+
+function mergePlaces(current, incoming) {
+  const byId = new Map(current.map((place) => [place.id, place]));
+  let added = 0;
+  let updated = 0;
+  let kept = 0;
+
+  for (const place of incoming) {
+    const existing = byId.get(place.id);
+    if (!existing) {
+      byId.set(place.id, place);
+      added += 1;
+    } else if (place.updatedAt > existing.updatedAt) {
+      byId.set(place.id, place);
+      updated += 1;
+    } else {
+      kept += 1;
+    }
+  }
+
+  return { value: [...byId.values()], added, updated, kept };
+}
+
+function mergeFavorites(current, incoming) {
+  const byId = new Map(current.map((stop) => [stop.id, stop]));
+  let added = 0;
+
+  for (const stop of incoming) {
+    const existing = byId.get(stop.id);
+    if (!existing) {
+      byId.set(stop.id, stop);
+      added += 1;
+    } else if (!existing.name && stop.name) {
+      byId.set(stop.id, stop);
+    }
+  }
+
+  return { value: [...byId.values()].slice(0, MAX_FAVORITES), added };
+}
+
+function mergeFilters(current, incoming) {
+  const byStop = new Map(current.map((entry) => [entry.stopId, entry]));
+  let added = 0;
+  let updated = 0;
+  let kept = 0;
+
+  for (const entry of incoming) {
+    const existing = byStop.get(entry.stopId);
+    if (!existing) {
+      byStop.set(entry.stopId, entry);
+      added += 1;
+    } else if (entry.savedAt > existing.savedAt) {
+      byStop.set(entry.stopId, entry);
+      updated += 1;
+    } else {
+      kept += 1;
+    }
+  }
+
+  const value = [...byStop.values()]
+    .sort((a, b) => b.savedAt - a.savedAt)
+    .slice(0, MAX_FILTER_STOPS);
+
+  return { value, added, updated, kept };
+}
+
+export function prepareLocalStateImport(
+  text,
+  { storage = globalThis.localStorage } = {}
+) {
+  if (typeof text !== "string" || text.length === 0) {
+    throw new Error("backup-empty");
+  }
+  if (new TextEncoder().encode(text).byteLength > MAX_BACKUP_BYTES) {
+    throw new Error("backup-too-large");
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error("backup-invalid-json");
+  }
+
+  const incoming = normalizeIncoming(payload);
+  const current = currentState(storage);
+  const places = mergePlaces(current.places, incoming.places);
+  const favorites = mergeFavorites(current.favorites, incoming.favorites);
+  const filters = mergeFilters(current.lineFilters, incoming.lineFilters);
+
+  const languageWillImport =
+    current.language === null && incoming.language !== null;
+  const themeWillImport = current.theme === null && incoming.theme !== null;
+
+  return {
+    incoming,
+    preview: {
+      placeCount: incoming.places.length,
+      favoriteCount: incoming.favorites.length,
+      lineFilterCount: incoming.lineFilters.length,
+      placesAdded: places.added,
+      placesUpdated: places.updated,
+      placesKept: places.kept,
+      favoritesAdded: favorites.added,
+      lineFiltersAdded: filters.added,
+      lineFiltersUpdated: filters.updated,
+      lineFiltersKept: filters.kept,
+      language: incoming.language,
+      theme: incoming.theme,
+      languageWillImport,
+      themeWillImport,
+    },
+    next: {
+      places: places.value,
+      savedStops: {
+        favorites: favorites.value,
+        recents: current.recents,
+      },
+      lineFilters: filters.value,
+      language: languageWillImport ? incoming.language : current.language,
+      theme: themeWillImport ? incoming.theme : current.theme,
+    },
+  };
+}
+
+function filtersForStorage(entries) {
+  return Object.fromEntries(
+    entries.map((entry) => [
+      entry.stopId,
+      { lines: entry.lines, savedAt: entry.savedAt },
+    ])
+  );
+}
+
+export function applyPreparedLocalStateImport(
+  prepared,
+  { storage = globalThis.localStorage, target = globalThis } = {}
+) {
+  if (!prepared?.next) throw new Error("backup-not-prepared");
+
+  storage.setItem(
+    LOCAL_STATE_KEYS.places,
+    JSON.stringify(prepared.next.places)
+  );
+  storage.setItem(
+    LOCAL_STATE_KEYS.savedStops,
+    JSON.stringify(prepared.next.savedStops)
+  );
+  storage.setItem(
+    LOCAL_STATE_KEYS.lineFilters,
+    JSON.stringify(filtersForStorage(prepared.next.lineFilters))
+  );
+
+  if (prepared.next.language) {
+    storage.setItem(LOCAL_STATE_KEYS.language, prepared.next.language);
+  }
+  if (prepared.next.theme) {
+    storage.setItem(LOCAL_STATE_KEYS.theme, prepared.next.theme);
+  }
+
+  target?.dispatchEvent?.(new Event(LOCAL_STATE_IMPORTED_EVENT));
+
+  return prepared.preview;
+}
