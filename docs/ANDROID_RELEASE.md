@@ -33,6 +33,8 @@ Inputs:
 - `version_code`: positive monotonically increasing integer;
 - `publish`: false for a dry verification run, true to create the immutable GitHub release.
 
+The workflow keeps production signing secrets out of dependency installation, web/native builds and emulator checks. Secret values are injected only into the validation/decode/signing steps; the decoded keystore is removed with an always-running cleanup step immediately after signing.
+
 The workflow:
 
 1. installs dependencies and runs the high/critical runtime audit;
@@ -40,7 +42,7 @@ The workflow:
 3. generates the Android project from canonical `capacitor.config.json`;
 4. sets version code/name;
 5. builds release APK + AAB;
-6. signs both with the persistent production key;
+6. injects signing secrets only for validation/decode/signing, signs both with the persistent production key, and removes the decoded keystore immediately afterwards;
 7. verifies signatures;
 8. writes SHA-256 checksums;
 9. installs the exact signed APK on Android API 35 and verifies the app process/UI launches;
