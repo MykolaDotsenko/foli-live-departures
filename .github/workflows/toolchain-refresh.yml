@@ -1,4 +1,5 @@
 name: One-shot supported toolchain refresh
+# Retry after compact locale-pack budget repair.
 
 on:
   push:
