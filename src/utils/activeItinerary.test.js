@@ -181,7 +181,15 @@ test("revalidates any committed future leg without trusting stale uncertainty", 
     arrivalAt: 3_860,
     liveState: "delayed",
   });
-  expect(delayed.phase).toBe("walking-to-stop");
+  expect(delayed).toMatchObject({
+    phase: "walking-to-stop",
+    destinationArrivalAt: 3_860,
+    journeyArrivalAt: 3_860,
+  });
+  expect(delayed.itinerary).toMatchObject({
+    destinationArrivalAt: 3_860,
+    journeyArrivalAt: 3_860,
+  });
 
   const stale = applyFutureLegRevalidation(delayed, 1, {
     providerState: "stale",
@@ -199,7 +207,31 @@ test("revalidates any committed future leg without trusting stale uncertainty", 
     feasibility: null,
     missingSinceMs: null,
   });
+
+  // A broken third leg is recorded immediately, but must not interrupt the
+  // first bus. Ride Mode stays authoritative until the passenger reaches the
+  // next real transfer point.
   expect(cancelled).toMatchObject({
+    activeLegIndex: 0,
+    phase: "walking-to-stop",
+  });
+  expect(cancelled.futureLegRevalidations[2]).toMatchObject({
+    providerState: "cancelled",
+    decision: "cancelled",
+  });
+
+  const atFirstTransfer = advanceItineraryAfterRide(
+    cancelled,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(atFirstTransfer).toMatchObject({
+    activeLegIndex: 1,
+    tripRef: "second",
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
   });
