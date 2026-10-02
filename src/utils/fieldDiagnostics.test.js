@@ -12,7 +12,7 @@ import {
 } from "./fieldDiagnostics";
 
 beforeEach(() => {
-  sessionStorage.clear();
+  globalThis.sessionStorage.clear();
   window.history.replaceState({}, "", "/");
 });
 
@@ -138,6 +138,6 @@ test("deduplicates unchanged observations and can be cleared", () => {
   expect(parsed.events).toHaveLength(2);
 
   clearFieldDiagnostics();
-  expect(sessionStorage.getItem(FIELD_DIAGNOSTICS_STORAGE_KEY)).toBeNull();
+  expect(globalThis.sessionStorage.getItem(FIELD_DIAGNOSTICS_STORAGE_KEY)).toBeNull();
   expect(buildFieldDiagnosticReport()).toBe("");
 });
