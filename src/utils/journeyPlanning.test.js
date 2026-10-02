@@ -366,3 +366,82 @@ test("comparison falls through to transfer, walking and departure tie-breaks", (
   });
   expect(compareJourneyOptions(base, laterDeparture, null)).toBeLessThan(0);
 });
+
+
+test("unknown transfer slack variants all fail closed", () => {
+  for (const slackSec of [null, undefined, "", "not-a-number"]) {
+    expect(
+      minimumTransferSlackSec({
+        transfers: [{ feasibility: { slackSec } }],
+      })
+    ).toBe(Number.NEGATIVE_INFINITY);
+  }
+  expect(
+    minimumTransferSlackSec({
+      transfers: [{ feasibility: { slackSec: "360" } }],
+    })
+  ).toBe(360);
+});
+
+test("walking metrics cover partial direct data and absent totals", () => {
+  expect(
+    journeyWalkingMeters({
+      distanceMeters: 125,
+      departure: { finalWalkDistanceM: undefined },
+    })
+  ).toBe(125);
+  expect(
+    journeyWalkingMeters({
+      distanceMeters: undefined,
+      departure: { finalWalkDistanceM: 75 },
+    })
+  ).toBe(75);
+  expect(journeyWalkingMeters({})).toBe(Number.POSITIVE_INFINITY);
+});
+
+test("preference comparison falls back safely when arrival or metrics are unknown", () => {
+  const unknown = {
+    legs: [{ departureAt: 2_000 }],
+    transfers: [{ feasibility: { slackSec: null } }],
+  };
+  const known = {
+    legs: [{ departureAt: 2_100 }],
+    transfers: [{ feasibility: { slackSec: 600 } }],
+    journeyArrivalAt: 3_000,
+    totalWalkingDistanceM: 100,
+  };
+
+  // Missing door arrival makes the preference trade-off unbounded, so time
+  // semantics/fallback ordering wins rather than pretending the option is
+  // comparable.
+  expect(
+    compareJourneyOptions(unknown, known, {
+      preference: "less-walking",
+    })
+  ).toBeGreaterThan(0);
+  expect(
+    compareJourneyOptions(unknown, known, {
+      preference: "more-buffer",
+    })
+  ).toBeGreaterThan(0);
+});
+
+test("more-buffer accepts direct journeys with no transfer constraint", () => {
+  expect(
+    journeyPlanAllowsOption(
+      {
+        legs: [{ departureAt: 2_000 }],
+        journeyArrivalAt: 3_000,
+        transfers: [],
+      },
+      { mode: "leave-now", preference: "more-buffer" },
+      1_000
+    )
+  ).toBe(true);
+});
+
+test("option accessors handle empty leg collections and invalid arrivals", () => {
+  expect(firstDepartureAt({ legs: [] })).toBeNull();
+  expect(finalArrivalAt({ journeyArrivalAt: 0, destinationArrivalAt: -1 })).toBeNull();
+  expect(journeyTransferCount({ legs: [] })).toBe(0);
+});
