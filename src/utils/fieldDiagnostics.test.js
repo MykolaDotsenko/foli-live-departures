@@ -90,6 +90,41 @@ test("evidence stores freshness classes but no GPS distances or coordinates", ()
   expect(serialized).not.toContain("22.26");
 });
 
+test("sanitizes and deterministically orders all future-leg states", () => {
+  const evidence = sanitizedEvidence(
+    { trackingHealth: "live", gpsAgeSec: null },
+    { status: "off" },
+    { providerState: "live", decision: "good" },
+    [
+      {
+        legIndex: 2,
+        state: {
+          providerState: "cancelled",
+          decision: "cancelled",
+          rawProviderPayload: { secret: "must-not-leak" },
+        },
+      },
+      {
+        legIndex: 1,
+        state: {
+          providerState: "stale",
+          decision: "unknown",
+          departureAt: 12345,
+        },
+      },
+    ]
+  );
+
+  expect(evidence.futureLegs).toEqual([
+    { legIndex: 1, providerState: "stale", decision: "unknown" },
+    { legIndex: 2, providerState: "cancelled", decision: "cancelled" },
+  ]);
+  const serialized = JSON.stringify(evidence);
+  expect(serialized).not.toContain("rawProviderPayload");
+  expect(serialized).not.toContain("must-not-leak");
+  expect(serialized).not.toContain("12345");
+});
+
 test("records a bounded deterministic local trace and explicit finish", () => {
   startFieldDiagnostics(session, {
     version: "1.0.0-rc",
