@@ -1,4 +1,4 @@
-import { upcoming, scheduledCount } from "./runtime.js";
+import { liveCount, upcoming, scheduledCount } from "./runtime.js";
 
 /** @import { Dictionary } from "../index" */
 
@@ -73,7 +73,7 @@ export default {
   "Other lines are leaving from this stop.":
     "Andra linjer avgår från den här hållplatsen.",
   "Show all lines": "Visa alla linjer",
-  live: ({ count }) => (Number(count) === 1 ? "realtid" : "realtid"),
+  live: liveCount,
   "{count} scheduled": scheduledCount,
   "Live update failed": "Realtidsuppdateringen misslyckades",
   "Offline · last updated {time}": "Offline · senast uppdaterad {time}",
