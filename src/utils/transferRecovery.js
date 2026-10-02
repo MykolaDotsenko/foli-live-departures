@@ -10,11 +10,50 @@ function positive(value) {
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** @param {any} state */
+function strongFutureFailure(state) {
+  return ["cancelled", "missed", "unsafe"].includes(
+    String(state?.decision || "")
+  );
+}
+
 /**
- * Resolve the concrete failed committed leg and the transfer that placed the
- * passenger at its boarding area. Recovery is allowed only after Ride Mode
- * has authoritatively advanced to that leg; a failure observed farther ahead
- * while the passenger is still riding never unlocks this search.
+ * Resolve the concrete failed committed leg. A farther committed leg may be
+ * the actual failure that caused recovery at the current safe transfer
+ * boundary, so do not blindly exclude the current leg.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ */
+export function failedRecoveryLeg(journey) {
+  const itinerary = journey?.itinerary;
+  const activeIndex = Number(journey?.activeLegIndex);
+  if (
+    !itinerary ||
+    !Array.isArray(itinerary.legs) ||
+    !Number.isInteger(activeIndex) ||
+    activeIndex < 0 ||
+    activeIndex >= itinerary.legs.length
+  ) {
+    return null;
+  }
+
+  const states = journey?.futureLegRevalidations || {};
+  for (let index = activeIndex; index < itinerary.legs.length; index += 1) {
+    if (strongFutureFailure(states[index])) {
+      return itinerary.legs[index] || null;
+    }
+  }
+
+  // Transfer-risk can also be created by authoritative transfer-feasibility
+  // evidence at the boundary before a per-leg provider state exists.
+  return itinerary.legs[activeIndex] || null;
+}
+
+/**
+ * Resolve the transfer area from which a passenger may explicitly recover.
+ * Recovery is allowed only after Ride Mode has authoritatively advanced to a
+ * later transit leg; a failure observed while still on leg 1 does not unlock
+ * this search.
  *
  * @param {ActiveDirectJourney | null | undefined} journey
  */
@@ -40,8 +79,8 @@ export function transferRecoveryContext(journey) {
     return null;
   }
 
-  const failedLeg = itinerary.legs[activeIndex];
   const previousTransfer = itinerary.transfers[activeIndex - 1];
+  const failedLeg = failedRecoveryLeg(journey);
   if (!failedLeg || !previousTransfer) return null;
 
   return { activeIndex, failedLeg, previousTransfer };
