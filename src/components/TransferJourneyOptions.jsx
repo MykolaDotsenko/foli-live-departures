@@ -189,9 +189,13 @@ export default function TransferJourneyOptions({
       </div>
 
       <p className={styles.note}>
-        {t(
-          "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey."
-        )}
+        {recovery
+          ? t(
+              "This replacement starts from the transfer area. Nothing changes until you choose it."
+            )
+          : t(
+              "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey."
+            )}
       </p>
     </section>
   );
