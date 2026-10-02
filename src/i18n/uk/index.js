@@ -1,10 +1,10 @@
-import alerts from "./alerts";
-import app from "./app";
-import backup from "./backup";
-import board from "./board";
-import places from "./places";
-import ride from "./ride";
-import search from "./search";
+import alerts from "./alerts.js";
+import app from "./app.js";
+import backup from "./backup.js";
+import board from "./board.js";
+import places from "./places.js";
+import ride from "./ride.js";
+import search from "./search.js";
 
 /** @import { Dictionary } from "../index" */
 
