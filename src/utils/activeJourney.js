@@ -9,7 +9,7 @@ import {
   rideMatchesCurrentItineraryLeg,
 } from "./activeItinerary";
 
-/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, TransferJourneyOption } from "../types/journey" */
+/** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, MultiLegJourneyOption, TransferJourneyOption, TransferRevalidationState } from "../types/journey" */
 
 const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
@@ -71,6 +71,7 @@ export function activeJourneyFromOption(
   const finalWalkSecEstimate = Number(option?.departure?.finalWalkSecEstimate);
   const destinationStopId = String(option?.departure?.destinationStopId || "");
 
+  /** @type {MultiLegJourneyOption | null} */
   const itinerary =
     destinationArrivalAt !== null && destinationStopId
       ? {
@@ -156,7 +157,7 @@ export function activeJourneyFromOption(
 }
 
 /**
- * @param {TransferJourneyOption} option
+ * @param {TransferJourneyOption | MultiLegJourneyOption} option
  * @param {DestinationIntent} destination
  * @param {number} [nowMs]
  * @returns {ActiveDirectJourney | null}
@@ -173,6 +174,10 @@ export function activeJourneyFromTransferOption(
  * Preserve a committed itinerary into Ride Mode only when the exact current
  * leg and exact selected alighting occurrence match. This now works for leg
  * 1 or leg 2 of a three-leg itinerary.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {any} rideConfig
+ * @returns {ActiveDirectJourney | null}
  */
 export function transferJourneyForRideSelection(journey, rideConfig) {
   if (
@@ -191,6 +196,11 @@ export function transferJourneyForRideSelection(journey, rideConfig) {
 /**
  * Backward-compatible name; implementation is generic for any current leg
  * with a committed future leg.
+ *
+ * @param {ActiveDirectJourney | null | undefined} pending
+ * @param {any} rideSession
+ * @param {number} [nowMs]
+ * @returns {ActiveDirectJourney | null}
  */
 export function completedTransferJourney(
   pending,
@@ -203,6 +213,11 @@ export function completedTransferJourney(
 /**
  * Backward-compatible name; preserves current-leg authority for N-leg
  * itineraries and never silently skips a leg.
+ *
+ * @param {ActiveDirectJourney | null | undefined} pending
+ * @param {any} rideSession
+ * @param {number} [nowMs]
+ * @returns {ActiveDirectJourney | null}
  */
 export function recoverTransferJourneyAfterRide(
   pending,
@@ -215,6 +230,11 @@ export function recoverTransferJourneyAfterRide(
 /**
  * Apply live evidence to any concrete committed future leg. Existing callers
  * that omit legIndex continue to target the immediate next leg.
+ *
+ * @param {ActiveDirectJourney | null} journey
+ * @param {TransferRevalidationState | null | undefined} revalidation
+ * @param {number | null} [legIndex]
+ * @returns {ActiveDirectJourney | null}
  */
 export function revalidateFutureJourneyLeg(
   journey,
