@@ -47,6 +47,10 @@ function connectSources(env) {
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
+    // Release QA targets current Chromium, Firefox and mobile WebKit. ES2022
+    // is exercised by Playwright on every pull request and avoids unnecessary
+    // compatibility transforms in both the web and Android payloads.
+    target: "es2022",
     // Lightning CSS is already part of Vite's locked toolchain. Use it for
     // production styles while keeping Vite's default JS minifier, avoiding an
     // extra optional Terser dependency in native/release workflows.
