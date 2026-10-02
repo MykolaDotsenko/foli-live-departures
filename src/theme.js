@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { LOCAL_STATE_IMPORTED_EVENT } from "./utils/localStateEvents";
 
 const STORAGE_KEY = "foli-theme-v1";
 const THEMES = ["light", "dark"];
@@ -65,6 +66,11 @@ function followSystem(event) {
 }
 
 media?.addEventListener?.("change", followSystem);
+
+globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
+  preference = readPreference();
+  publish(preference || systemTheme());
+});
 
 export function getTheme() {
   return current;
