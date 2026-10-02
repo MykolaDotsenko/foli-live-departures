@@ -48,7 +48,7 @@ export function normalizeJourneyPlan(plan) {
   const preference = ROUTING_PREFERENCES.includes(
     /** @type {any} */ (plan?.preference)
   )
-    ? /** @type {RoutingPreference} */ (plan.preference)
+    ? /** @type {RoutingPreference} */ (plan?.preference)
     : "balanced";
   return {
     mode,
@@ -124,8 +124,10 @@ export function journeyWalkingMeters(option) {
 export function minimumTransferSlackSec(option) {
   const transfers = Array.isArray(option?.transfers) ? option.transfers : [];
   if (transfers.length === 0) return Number.POSITIVE_INFINITY;
-  const values = transfers.map((item) => Number(item?.feasibility?.slackSec));
-  if (values.some((value) => !Number.isFinite(value))) {
+  const values = transfers.map((/** @type {any} */ item) =>
+    Number(item?.feasibility?.slackSec)
+  );
+  if (values.some((/** @type {number} */ value) => !Number.isFinite(value))) {
     return Number.NEGATIVE_INFINITY;
   }
   return Math.min(...values);
