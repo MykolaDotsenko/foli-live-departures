@@ -1,7 +1,5 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
 import test from "node:test";
 
 test("production build metadata records the exact versioned origin/base path", async () => {
