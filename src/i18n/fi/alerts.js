@@ -1,4 +1,4 @@
-import { moreUpdates, serviceUpdates } from "./runtime";
+import { moreUpdates, serviceUpdates } from "./runtime.js";
 
 // Service updates: Föli's notices, their labels and the panel around them.
 // The notices' own text comes from Föli in the chosen language where Föli
