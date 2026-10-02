@@ -430,7 +430,7 @@ export default function useRideMode() {
   // route/GPS/stage data or decides Ride Mode state.
   useEffect(() => {
     const current = sessionRef.current;
-    if (!nativeRideCompanionEligible(current, gps)) {
+    if (!nativeRideCompanionEligible(current, { status: gps.status })) {
       const nativeRideId = nativeRideIdRef.current;
       nativeRideIdRef.current = "";
       if (nativeRideId) {
