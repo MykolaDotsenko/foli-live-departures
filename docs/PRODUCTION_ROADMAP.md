@@ -110,6 +110,8 @@ Browser storage cannot be migrated automatically between `github.io` and a new d
 
 ## PR-A02 — Complete local-state backup for origin migration
 
+**Implementation status:** implemented on `master` with versioned, privacy-safe export/import and browser regression coverage.
+
 **Priority:** 96/100  
 **Dependency:** can be implemented before A01; should merge before domain cutover.
 
@@ -142,6 +144,8 @@ Do **not** export transient Ride Mode/live journey state.
 ---
 
 ## PR-A03 — Field-validation support bundle
+
+**Implementation status (PR #137):** implemented and merged; the report remains local/user-triggered and excludes raw coordinates/saved-place labels.
 
 **Priority:** 100/100  
 **Dependency:** none.
@@ -274,6 +278,8 @@ A passenger can complete these without sight:
 ---
 
 ## PR-A07 — Master protection / repository governance
+
+**Implementation status (PR #137):** repository-side governance contract is implemented. The actual owner/admin branch-protection settings remain an explicit manual blocker because the connected GitHub app cannot verify or enforce them.
 
 **Priority:** 94/100  
 **Dependency:** owner/admin GitHub settings; current connector cannot enforce it.
@@ -467,7 +473,7 @@ Provider-owned stop/destination/service text remains provider text.
 - axe;
 - speech pronunciation review.
 
-Only this PR adds Ukrainian to the visible language selector.
+PR #139 already made Ukrainian reachable through the generic pre-field language switch so the full flow can be exercised. This item now owns the automated QA hardening and release-readiness evidence; native-language/physical-device accessibility/speech review remains a later manual gate and is not marked complete here.
 
 ---
 
@@ -700,7 +706,7 @@ Each committed future transit leg gets the same conservative principles already 
 **Priority:** 86/100  
 **Dependency:** D04.
 
-Current recovery deliberately returns bounded direct replacements. Extend it only after multi-leg orchestration is reliable.
+Recovery is now generalized: it remains bounded and explicit and may offer one additional transfer when needed. The destination is preserved and the passenger must explicitly choose any replacement.
 
 ### Acceptance
 
