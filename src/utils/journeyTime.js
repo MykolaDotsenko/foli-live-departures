@@ -15,7 +15,9 @@ import { SERVICE_TIME_ZONE } from "./time";
 
 /** @typedef {{year:number, month:number, day:number, hour:number, minute:number, second:number}} ServiceWallParts */
 
-export const ARRIVE_BY_LOOKBACK_SEC = 6 * 60 * 60;
+// Eight hours covers a normal same-day trip while keeping client-side
+// timetable enumeration strictly bounded.
+export const ARRIVE_BY_LOOKBACK_SEC = 8 * 60 * 60;
 export const JOURNEY_TIME_MODES = Object.freeze([
   "leave-now",
   "leave-at",
