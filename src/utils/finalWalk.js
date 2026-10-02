@@ -26,7 +26,18 @@ export function finalWalkFromRideSelection({
   rideConfig,
 }) {
   const targetStopId = String(rideConfig?.targetStop?.id || "");
-  if (journey?.transferPlan && journey.transferLeg === 1) return null;
+  const activeLegIndex = Number(journey?.activeLegIndex);
+  const hasFutureItineraryLeg =
+    journey?.itinerary &&
+    Number.isInteger(activeLegIndex) &&
+    activeLegIndex >= 0 &&
+    Boolean(journey.itinerary.legs?.[activeLegIndex + 1]);
+  if (
+    hasFutureItineraryLeg ||
+    (journey?.transferPlan && journey.transferLeg === 1)
+  ) {
+    return null;
+  }
 
   if (
     !journey ||
