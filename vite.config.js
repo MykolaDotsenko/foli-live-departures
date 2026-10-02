@@ -51,6 +51,15 @@ export default defineConfig(({ mode }) => ({
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
     modulePreload: { polyfill: false },
+    // Keep third-party licence text available without repeating legal
+    // comments inside the executable JS bundle. The generated file ships
+    // with the static site and is outside the JS/CSS performance budget.
+    license: true,
+    rolldownOptions: {
+      output: {
+        legalComments: "none",
+      },
+    },
   },
   css: {
     modules: {
