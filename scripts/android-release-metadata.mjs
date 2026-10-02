@@ -30,7 +30,19 @@ export function assertIncreasingVersionCode(candidate, releases) {
   if (!Number.isSafeInteger(code) || code <= 0) {
     throw new Error("versionCode must be a positive safe integer.");
   }
-  const previous = highestPublishedVersionCode(releases);
+  const production = (Array.isArray(releases) ? releases : []).filter(
+    (release) =>
+      release?.draft !== true &&
+      release?.prerelease !== true &&
+      /^v\d+\.\d+\.\d+/.test(String(release?.tag_name || ""))
+  );
+  const parsed = versionCodesFromReleases(production);
+  if (production.length !== parsed.length) {
+    throw new Error(
+      "A published production release is missing exactly one Android-Version-Code marker; refusing to guess release ordering."
+    );
+  }
+  const previous = highestPublishedVersionCode(production);
   if (code <= previous) {
     throw new Error(
       `versionCode ${code} must be greater than the highest published production code ${previous}.`
