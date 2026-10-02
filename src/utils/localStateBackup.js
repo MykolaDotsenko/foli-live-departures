@@ -1,6 +1,7 @@
 import { normalizedPastTimestamp } from "./cacheTime";
 import { realStopName } from "./stopNames";
 import { LOCAL_STATE_IMPORTED_EVENT } from "./localStateEvents";
+import { isSupportedLanguage } from "../i18n/locales";
 
 /** @typedef {{ id: string, name: string }} BackupStop */
 /** @typedef {BackupStop & { viewedAt?: number }} RecentStop */
@@ -81,7 +82,6 @@ const PLACE_PRESETS = Object.freeze({
   work: "Work",
 });
 const PLACE_IDS = new Set(Object.keys(PLACE_PRESETS));
-const LANGUAGES = new Set(["en", "fi"]);
 const THEMES = new Set(["light", "dark"]);
 const MAX_PLACE_STOPS = 3;
 const MAX_FILTER_STOPS = 20;
@@ -234,7 +234,7 @@ function normalizeFilterEntries(value) {
 /** @param {unknown} value @returns {InterfaceLanguage | null} */
 function normalizeLanguage(value) {
   const language = String(value || "");
-  return LANGUAGES.has(language)
+  return isSupportedLanguage(language)
     ? /** @type {InterfaceLanguage} */ (language)
     : null;
 }

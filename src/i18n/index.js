@@ -9,12 +9,14 @@
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
 import fi from "./fi";
+import {
+  LANGUAGE_CODES,
+  isSupportedLanguage,
+  localeDefinition,
+} from "./locales";
 import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
-/**
- * A language the interface speaks.
- * @typedef {"en" | "fi"} Language
- */
+/** @typedef {import("./locales").Language} Language */
 
 /**
  * The values a phrase's placeholders are filled from, by placeholder name.
@@ -33,7 +35,7 @@ import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
  */
 
 /** @type {readonly Language[]} */
-export const LANGUAGES = Object.freeze(["en", "fi"]);
+export const LANGUAGES = LANGUAGE_CODES;
 
 /** @type {Record<Language, Dictionary>} */
 const DICTIONARIES = { en: {}, fi };
@@ -44,8 +46,7 @@ const STORAGE_KEY = "foli-language-v1";
  * @returns {value is Language}
  */
 function isLanguage(value) {
-  // Widened only for the lookup: any value may be asked about.
-  return /** @type {readonly unknown[]} */ (LANGUAGES).includes(value);
+  return isSupportedLanguage(value);
 }
 
 /** @returns {readonly string[]} */
@@ -203,7 +204,18 @@ export function tc(context, key, params) {
  * @returns {"fi-FI" | "en-GB"}
  */
 export function intlLocale(language = current) {
-  return language === "fi" ? "fi-FI" : "en-GB";
+  return localeDefinition(language).intlLocale;
+}
+
+/**
+ * Speech APIs need a full BCP-47 locale even though document.lang stays the
+ * short interface code.
+ *
+ * @param {Language} [language]
+ * @returns {string}
+ */
+export function speechLocale(language = current) {
+  return localeDefinition(language).speechLocale;
 }
 
 // Which of Föli's own texts to show: its notices and destination names come
@@ -217,7 +229,7 @@ export function intlLocale(language = current) {
  * @returns {string[]}
  */
 export function providerLanguages(language = current) {
-  if (language === "fi") return ["fi"];
+  if (localeDefinition(language).providerMode === "finnish") return ["fi"];
   return [
     ...browserLanguages().filter(
       (tag) => tag && !/^fi\b/i.test(String(tag))

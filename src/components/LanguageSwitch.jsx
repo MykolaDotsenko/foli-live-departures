@@ -1,15 +1,9 @@
 import { setLanguage, useLanguage } from "../i18n";
-
-// Each language is offered in its own words, so the way out of a language
-// the passenger cannot read is one they can.
-const OTHER = {
-  en: { code: "fi", label: "Suomeksi" },
-  fi: { code: "en", label: "In English" },
-};
+import { nextLocaleDefinition } from "../i18n/locales";
 
 export default function LanguageSwitch() {
   const language = useLanguage();
-  const other = OTHER[language] || OTHER.en;
+  const other = nextLocaleDefinition(language);
 
   return (
     <button
@@ -18,7 +12,7 @@ export default function LanguageSwitch() {
       lang={other.code}
       onClick={() => setLanguage(other.code)}
     >
-      {other.label}
+      {other.switchLabel}
     </button>
   );
 }

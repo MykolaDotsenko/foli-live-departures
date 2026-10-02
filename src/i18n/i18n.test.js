@@ -9,9 +9,16 @@ import {
   resetLanguageForTests,
   providerLanguages,
   setLanguage,
+  speechLocale,
+  intlLocale,
   t,
   tc,
 } from ".";
+import {
+  LANGUAGE_CODES,
+  localeDefinition,
+  nextLocaleDefinition,
+} from "./locales";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -207,6 +214,20 @@ test("follows the first language the phone lists that the app speaks", () => {
   expect(preferredLanguage(["de-DE"])).toBe("en");
   expect(preferredLanguage([])).toBe("en");
   expect(preferredLanguage([undefined, null, ""])).toBe("en");
+});
+
+test("locale registry is the source of truth for formatting, speech and switching", () => {
+  expect(LANGUAGE_CODES).toEqual(["en", "fi"]);
+  expect(localeDefinition("fi")).toMatchObject({
+    nativeLabel: "Suomi",
+    intlLocale: "fi-FI",
+    speechLocale: "fi-FI",
+  });
+  expect(intlLocale("fi")).toBe("fi-FI");
+  expect(intlLocale("en")).toBe("en-GB");
+  expect(speechLocale("fi")).toBe("fi-FI");
+  expect(nextLocaleDefinition("en").code).toBe("fi");
+  expect(nextLocaleDefinition("fi").code).toBe("en");
 });
 
 test("switching language updates the page, remembers the choice and tells listeners", () => {
