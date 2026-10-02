@@ -17,12 +17,12 @@ progress is **17/47**.
   **625,000 / 180,000** limits;
 - generated FI/UK locale packs: **161,165 raw / 43,526 gzip bytes** vs their
   independent **180,000 / 55,000** limits;
-- production Pages deployment remains a separate downstream exact-revision
-  gate and is not claimed complete until that workflow succeeds for this SHA.
+- production Pages deployment and its exact-revision post-deploy smoke: green.
 
 PR #140 fixed the inherited bundle regression without raising the existing
-JS/CSS budget. The remaining batch 17–24 scope is still open unless explicitly
-listed as implemented below.
+JS/CSS budget. The exact merge SHA has now completed the full automated
+CI/browser/PWA/Android/live-contract/test-APK/deployment path. The remaining
+batch 17–24 scope is still open unless explicitly listed as implemented below.
 
 ## Release classes
 
