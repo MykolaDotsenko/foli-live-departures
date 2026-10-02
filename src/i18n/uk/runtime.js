@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { ukPlural } from "./plural.js";
 
 /** @import { Dictionary } from "../index" */
 
