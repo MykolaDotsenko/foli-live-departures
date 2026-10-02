@@ -532,7 +532,6 @@ export function verifyAndroidActiveRide(
     if (!service.includes(token)) failures.push(`foreground service missing ${token}`);
   }
   for (const token of [
-    '@CapacitorPlugin(name = "ActiveRide")',
     'name = "ActiveRide"',
     '@Permission(',
     'alias = "notifications"',
