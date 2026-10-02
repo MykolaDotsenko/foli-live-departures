@@ -45,6 +45,7 @@ import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
 import { realStopName } from "./utils/stopNames";
+import { recordFieldDiagnosticObservation } from "./utils/fieldDiagnostics";
 import {
   completedFinalWalk,
   finalWalkFromRideSelection,
@@ -371,6 +372,28 @@ function App() {
     ride.session,
     selectedJourney,
     transferWatchJourney,
+  ]);
+
+  useEffect(() => {
+    if (
+      !ride.fieldDiagnosticsEnabled ||
+      !ride.session ||
+      transferRevalidation.providerState === "idle"
+    ) {
+      return;
+    }
+    recordFieldDiagnosticObservation({
+      session: ride.session,
+      runtime: ride.runtime,
+      gps: ride.gps,
+      transferRevalidation,
+    });
+  }, [
+    ride.fieldDiagnosticsEnabled,
+    ride.gps,
+    ride.runtime,
+    ride.session,
+    transferRevalidation,
   ]);
 
   const selectedJourneyArrival = useMemo(() => {
