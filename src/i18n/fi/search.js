@@ -222,6 +222,8 @@ export default {
     "Korvaavan yhteyden haku ei ole tilapäisesti käytettävissä. Kohde säilyy valittuna.",
   "No reliable direct replacement is available from this transfer area right now.":
     "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa suoraa korvaavaa yhteyttä.",
+  "No reliable replacement with at most one new transfer is available from this transfer area right now.":
+    "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa korvaavaa yhteyttä enintään yhdellä uudella vaihdolla.",
   "These options start from the transfer area. Your journey changes only after you choose one.":
     "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
@@ -234,6 +236,8 @@ export default {
     "Vaihtoyhteyksien haku ei ole tilapäisesti käytettävissä. Lähipysäkit ovat edelleen käytettävissä.",
   "Transfer options": "Vaihtoyhteydet",
   "Ways to {destination} with one change": "Reitit kohteeseen {destination} yhdellä vaihdolla",
+  "Continue to {destination} with a new connection":
+    "Jatka kohteeseen {destination} uudella vaihtoyhteydellä",
   "Ways to {destination} with up to two changes":
     "Reitit kohteeseen {destination} enintään kahdella vaihdolla",
   "1 transfer": "1 vaihto",
@@ -250,6 +254,8 @@ export default {
   "about {minutes} min transfer margin": "noin {minutes} min vaihtoaikaa",
   "Future buses are rechecked against fresh live data. The app keeps each committed leg explicit and never silently switches you to another journey.":
     "Tulevat bussit tarkistetaan uudelleen tuoreista reaaliaikatiedoista. Sovellus pitää jokaisen valitun osuuden näkyvänä eikä koskaan vaihda matkaa taustalla toiseen.",
+  "This replacement starts from the transfer area. Nothing changes until you choose it.":
+    "Tämä korvaava yhteys lähtee vaihtoalueelta. Mikään ei muutu ennen kuin valitset sen.",
   "Leg {current} of {total} · change at {stop} to line {line}":
     "Osuus {current}/{total} · vaihda pysäkillä {stop} linjalle {line}",
   "Leg {current} of {total} · continue on line {line}":
