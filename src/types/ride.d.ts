@@ -327,6 +327,11 @@ export interface RideSession extends RideConfig {
   underway?: boolean;
   /** The bus has left the stop before the exit. Kept once known. */
   previousLeft?: boolean;
+  /**
+   * Provider snapshot already known when MISSED was entered. A false miss
+   * may reopen only after a different matched target snapshot arrives.
+   */
+  missedTargetSnapshotSignature?: string;
 }
 
 export type RideTrackingHealth = "live" | "delayed" | "schedule";

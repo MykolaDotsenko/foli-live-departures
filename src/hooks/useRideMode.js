@@ -245,7 +245,33 @@ export default function useRideMode() {
       );
       if (!transition) return;
 
-      const { nextSession, previousLeft, announceStage } = transition;
+      const {
+        nextSession: transitionedSession,
+        previousLeft,
+        announceStage,
+      } = transition;
+
+      // A false MISSED may be reopened only by provider evidence that is
+      // distinct from what was already known when MISSED was entered. Using
+      // millisecond wall-clock ordering here was racy: on a fast phone the
+      // MISSED transition and the genuinely newer SIRI response can share
+      // the same Date.now() value.
+      const enteredMissed =
+        current.stage !== RIDE_STAGE.MISSED &&
+        transitionedSession.stage === RIDE_STAGE.MISSED;
+      const leftMissed =
+        current.stage === RIDE_STAGE.MISSED &&
+        transitionedSession.stage !== RIDE_STAGE.MISSED;
+      const nextSession = enteredMissed
+        ? {
+            ...transitionedSession,
+            missedTargetSnapshotSignature:
+              nextRuntime.targetSnapshotSignature || "",
+          }
+        : leftMissed
+          ? { ...transitionedSession, missedTargetSnapshotSignature: "" }
+          : transitionedSession;
+
       sessionRef.current = nextSession;
       setSession(nextSession);
       persistRide(nextSession);
