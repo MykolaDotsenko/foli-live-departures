@@ -7,12 +7,13 @@ import {
   originOf,
 } from "./scripts/content-security-policy.mjs";
 import { createCssModuleScopedNameGenerator } from "./scripts/css-module-names.mjs";
+import { loadProductionSiteConfig } from "./scripts/production-site-config.mjs";
 
-// Link previews need absolute URLs. This is where production lives; a
-// deployment elsewhere sets VITE_SITE_URL, and index.html reads it as
-// %VITE_SITE_URL%.
-process.env.VITE_SITE_URL ||=
-  "https://mykoladotsenko.github.io/foli-live-departures/";
+// Link previews need the canonical production URL. The versioned config owns
+// that origin; local/E2E builds still keep their own base path unless the
+// production build wrapper explicitly supplies it.
+const PRODUCTION_SITE = loadProductionSiteConfig();
+process.env.VITE_SITE_URL ||= PRODUCTION_SITE.siteUrl;
 
 const PACKAGE_VERSION = String(
   JSON.parse(

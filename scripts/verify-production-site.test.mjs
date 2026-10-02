@@ -164,6 +164,22 @@ test("verifies the live static/PWA contract at the exact revision", async () => 
   });
 });
 
+test("fails closed when the deployed Pages URL diverges from the versioned production origin", async () => {
+  await withFixtureServer({}, async ({ siteUrl }) => {
+    await assert.rejects(
+      verifyProductionSite({
+        siteUrl,
+        expectedSiteUrl: "https://departures.example/",
+        expectedSha: EXPECTED_SHA,
+        attempts: 1,
+        retryDelayMs: 0,
+        fetchTimeoutMs: 1_000,
+      }),
+      /does not match configured production site/
+    );
+  });
+});
+
 test("retries while Pages still serves the previous revision", async () => {
   await withFixtureServer(
     { metadataShas: [STALE_SHA, EXPECTED_SHA] },
