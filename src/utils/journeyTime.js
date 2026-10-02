@@ -1,5 +1,20 @@
 import { SERVICE_TIME_ZONE } from "./time";
 
+/** @import { JourneyTimeConstraint, JourneyTimeMode } from "../types/journey" */
+
+/**
+ * @typedef {{
+ *   mode: JourneyTimeMode,
+ *   valid: boolean,
+ *   targetTimeSec: number | null,
+ *   referenceTimeSec: number,
+ *   earliestDepartureAt: number | null,
+ *   arriveByTimeSec: number | null,
+ * }} NormalizedJourneyTime
+ */
+
+/** @typedef {{year:number, month:number, day:number, hour:number, minute:number, second:number}} ServiceWallParts */
+
 export const ARRIVE_BY_LOOKBACK_SEC = 6 * 60 * 60;
 export const JOURNEY_TIME_MODES = Object.freeze([
   "leave-now",
@@ -7,17 +22,20 @@ export const JOURNEY_TIME_MODES = Object.freeze([
   "arrive-by",
 ]);
 
+/** @param {unknown} value */
 function positive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
 }
 
+/** @param {unknown} value @returns {JourneyTimeMode} */
 function validMode(value) {
-  return JOURNEY_TIME_MODES.includes(String(value))
-    ? String(value)
-    : "leave-now";
+  const requested = String(value || "");
+  if (requested === "leave-at" || requested === "arrive-by") return requested;
+  return "leave-now";
 }
 
+/** @param {number} epochMs @returns {ServiceWallParts} */
 function serviceParts(epochMs) {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: SERVICE_TIME_ZONE,
@@ -45,6 +63,7 @@ function serviceParts(epochMs) {
   };
 }
 
+/** @param {ServiceWallParts} parts @param {Omit<ServiceWallParts, "second">} target */
 function sameWallTime(parts, target) {
   return (
     parts.year === target.year &&
@@ -55,6 +74,7 @@ function sameWallTime(parts, target) {
   );
 }
 
+/** @param {unknown} value @returns {Omit<ServiceWallParts, "second"> | null} */
 function parseLocalValue(value) {
   const match = String(value || "").match(
     /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/
@@ -93,12 +113,16 @@ function parseLocalValue(value) {
 /**
  * Parse one Helsinki wall-clock datetime-local value to epoch seconds.
  * Non-existent spring-forward times fail closed. Ambiguous fall-back times
- * resolve to the earlier physical instant deterministically.
+ * are deterministic and may select the earlier or later physical instant.
  *
- * @param {string} value
+ * @param {unknown} value
+ * @param {{prefer?: "earliest" | "latest"}} [options]
  * @returns {number | null}
  */
-export function parseServiceDateTimeLocal(value) {
+export function parseServiceDateTimeLocal(
+  value,
+  { prefer = "earliest" } = {}
+) {
   const target = parseLocalValue(value);
   if (!target) return null;
 
@@ -110,7 +134,7 @@ export function parseServiceDateTimeLocal(value) {
     target.minute
   );
 
-  // Iterate from the naive UTC wall time to a Helsinki-zone solution.
+  // Iterate from the naive UTC wall time to one Helsinki-zone solution.
   let guess = desiredWallMs;
   for (let index = 0; index < 4; index += 1) {
     const actual = serviceParts(guess);
@@ -124,7 +148,8 @@ export function parseServiceDateTimeLocal(value) {
     guess += desiredWallMs - actualWallMs;
   }
 
-  // Search the nearby DST ambiguity window and select the earlier occurrence.
+  // Search the DST ambiguity window and retain only exact round trips.
+  /** @type {number[]} */
   const candidates = [];
   for (const delta of [-7_200_000, -3_600_000, 0, 3_600_000, 7_200_000]) {
     const candidate = guess + delta;
@@ -133,18 +158,21 @@ export function parseServiceDateTimeLocal(value) {
     }
   }
   if (candidates.length === 0) return null;
-  return Math.floor(Math.min(...candidates) / 1000);
+  const selected =
+    prefer === "latest" ? Math.max(...candidates) : Math.min(...candidates);
+  return Math.floor(selected / 1000);
 }
 
 /**
  * Format epoch seconds for a datetime-local input in Helsinki wall time.
  *
- * @param {number | null | undefined} epochSeconds
+ * @param {unknown} epochSeconds
  */
 export function formatServiceDateTimeLocal(epochSeconds) {
   const seconds = positive(epochSeconds);
   if (seconds === null) return "";
   const parts = serviceParts(seconds * 1000);
+  /** @param {number} value */
   const pad = (value) => String(value).padStart(2, "0");
   return [
     String(parts.year).padStart(4, "0"),
@@ -160,11 +188,9 @@ export function formatServiceDateTimeLocal(epochSeconds) {
 }
 
 /**
- * @param {{
- *   mode?: string,
- *   targetTimeSec?: number | null,
- * } | null | undefined} constraint
+ * @param {Partial<JourneyTimeConstraint> | null | undefined} constraint
  * @param {number} [nowSec]
+ * @returns {NormalizedJourneyTime}
  */
 export function normalizeJourneyTimeConstraint(
   constraint,
@@ -223,7 +249,7 @@ export function normalizeJourneyTimeConstraint(
  *   journeyArrivalAt?: number | null,
  *   destinationArrivalAt?: number | null,
  * }} candidate
- * @param {any} constraint
+ * @param {Partial<JourneyTimeConstraint> | null | undefined} constraint
  * @param {number} [nowSec]
  */
 export function journeyTimeAllows(
@@ -262,9 +288,9 @@ export function journeyTimeAllows(
  * Arrive-by prefers the latest viable departure; other modes prefer the
  * earliest destination arrival.
  *
- * @param {any} left
- * @param {any} right
- * @param {any} constraint
+ * @param {{departureAt?:number|null, journeyArrivalAt?:number|null, destinationArrivalAt?:number|null}} left
+ * @param {{departureAt?:number|null, journeyArrivalAt?:number|null, destinationArrivalAt?:number|null}} right
+ * @param {Partial<JourneyTimeConstraint> | null | undefined} constraint
  */
 export function compareJourneyTimeCandidates(left, right, constraint) {
   const mode = validMode(constraint?.mode);
