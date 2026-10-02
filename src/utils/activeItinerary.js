@@ -306,7 +306,7 @@ export function advanceItineraryAfterRide(
         ? missed
           ? "transfer-missed"
           : "transfer-risk"
-        : downstreamFailure.reason
+        : downstreamFailure?.reason ?? null
       : null;
 
   return projectLeg(
