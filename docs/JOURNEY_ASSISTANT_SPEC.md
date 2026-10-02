@@ -1674,6 +1674,8 @@ approximate walking plus explicit external handoff rather than unverified
 turn-by-turn routing.
 
 Remaining pre-field work is now quality/release hardening: Ukrainian QA,
-Swedish, exact/approximate Next-stops semantics, bundle headroom,
-health/CSP/toolchain work, then native/background feasibility and the explicit
-physical/manual release gates.
+Swedish, exact/approximate Next-stops semantics, health/CSP/toolchain work,
+further performance optimization toward the stretch target, then
+native/background feasibility and the explicit physical/manual release gates.
+The blocking complete-app bundle regression was repaired in PR #140 without
+raising the JS/CSS budget.
