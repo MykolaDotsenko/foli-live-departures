@@ -50,6 +50,7 @@ const generateScopedName = createCssModuleScopedNameGenerator();
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
+    manifest: true,
     // Release QA targets current Chromium, Firefox and mobile WebKit. ES2022
     // is exercised by Playwright on every pull request and avoids unnecessary
     // compatibility transforms in both the web and Android payloads.
