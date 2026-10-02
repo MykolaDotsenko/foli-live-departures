@@ -216,6 +216,7 @@ function chooseBestDeparture(candidates, timeConstraint = null) {
  *   stops: readonly ({ id: string, distanceMeters?: number } & Record<string, any>)[],
  *   destination: DestinationIntent,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: import("../types/journey").JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
  *   signal?: AbortSignal,
  * }} input
@@ -225,13 +226,15 @@ export async function loadDestinationAwareNearby({
   stops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
   timeConstraint = null,
   signal,
 }) {
   const candidates = Array.isArray(stops) ? stops : [];
   if (!destination || candidates.length === 0) return {};
 
-  const normalizedTime = normalizeJourneyTimeConstraint(timeConstraint);
+  const effectiveTimeConstraint = journeyPlan || timeConstraint;
+  const normalizedTime = normalizeJourneyTimeConstraint(effectiveTimeConstraint);
   if (!normalizedTime.valid) return {};
   const scheduledPlanning = normalizedTime.mode !== "leave-now";
 
@@ -479,9 +482,9 @@ export async function loadDestinationAwareNearby({
     }
 
     const timeCompatible = compatible.filter((candidate) =>
-      journeyTimeAllows(candidate, timeConstraint, nowSec)
+      journeyTimeAllows(candidate, effectiveTimeConstraint, nowSec)
     );
-    const best = chooseBestDeparture(timeCompatible, timeConstraint);
+    const best = chooseBestDeparture(timeCompatible, effectiveTimeConstraint);
     /** @type {import("../types/journey").NearbyFitStatus} */
     let status = "no-direct";
     if (best) {
@@ -508,7 +511,7 @@ export async function loadDestinationAwareNearby({
       departures: timeCompatible
         .slice()
         .sort((left, right) =>
-          compareJourneyTimeCandidates(left, right, timeConstraint) ||
+          compareJourneyTimeCandidates(left, right, effectiveTimeConstraint) ||
           journeyArrivalRank(left) - journeyArrivalRank(right)
         ),
       additionalCount: Math.max(
@@ -527,6 +530,7 @@ export async function loadDestinationAwareNearby({
  *   stops: readonly any[],
  *   destination: DestinationIntent | null,
  *   positionAccuracy?: number | null,
+ *   journeyPlan?: import("../types/journey").JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
  * }} input
  */
@@ -534,22 +538,26 @@ export default function useDestinationAwareNearby({
   stops,
   destination,
   positionAccuracy = null,
+  journeyPlan = null,
   timeConstraint = null,
 }) {
   /** @type {[NearbyFitMap, import("react").Dispatch<import("react").SetStateAction<NearbyFitMap>>]} */
   const [fitsByStop, setFitsByStop] = useState({});
   const [state, setState] = useState("idle");
+  const effectiveTimeConstraint = journeyPlan || timeConstraint;
   const requestRef = useRef({
     stops,
     destination,
     positionAccuracy,
-    timeConstraint,
+    journeyPlan,
+    timeConstraint: effectiveTimeConstraint,
   });
   requestRef.current = {
     stops,
     destination,
     positionAccuracy,
-    timeConstraint,
+    journeyPlan,
+    timeConstraint: effectiveTimeConstraint,
   };
 
   const signature = useMemo(
@@ -561,11 +569,17 @@ export default function useDestinationAwareNearby({
             ...destination.acceptableStopIds,
             stops.map((stop) => stop.id).join(","),
             Math.round(Number(positionAccuracy) || 0),
-            timeConstraint?.mode || "leave-now",
-            timeConstraint?.targetTimeSec || "",
+            effectiveTimeConstraint?.mode || "leave-now",
+            effectiveTimeConstraint?.targetTimeSec || "",
           ].join("|")
         : "",
-    [destination, positionAccuracy, stops, timeConstraint?.mode, timeConstraint?.targetTimeSec]
+    [
+      destination,
+      positionAccuracy,
+      stops,
+      effectiveTimeConstraint?.mode,
+      effectiveTimeConstraint?.targetTimeSec,
+    ]
   );
 
   useEffect(() => {
