@@ -32,6 +32,7 @@ adb shell pm path "$PACKAGE" | tee artifacts/android-e2e/package-path.txt
 
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_COARSE_LOCATION
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_FINE_LOCATION
+adb shell pm grant "$PACKAGE" android.permission.POST_NOTIFICATIONS
 adb shell appops set "$PACKAGE" android:coarse_location allow \
   >/dev/null 2>&1 || true
 adb shell appops set "$PACKAGE" android:fine_location allow \

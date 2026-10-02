@@ -174,7 +174,7 @@ public final class ActiveRideForegroundService extends Service {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE);
 
         if (contentIntent != null) {
             builder.setContentIntent(contentIntent);
@@ -225,6 +225,10 @@ public class ActiveRidePlugin extends Plugin {
         Context context = activity.getApplicationContext();
         if (!hasForegroundLocationPermission(context)) {
             call.resolve(result(false, "location-permission-required"));
+            return;
+        }
+        if (!hasVisibleNotificationPermission(context)) {
+            call.resolve(result(false, "notification-permission-required"));
             return;
         }
         if (!locationEnabled(context)) {
@@ -305,6 +309,12 @@ public class ActiveRidePlugin extends Plugin {
         return context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED
             || context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private static boolean hasVisibleNotificationPermission(Context context) {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+            || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED;
     }
 
@@ -460,6 +470,7 @@ export function verifyAndroidActiveRide(
     '@CapacitorPlugin(name = "ActiveRide")',
     "activity.hasWindowFocus()",
     "location-permission-required",
+    "notification-permission-required",
     "location-services-disabled",
     "context.startForegroundService(intent)",
     "ride-mismatch",
