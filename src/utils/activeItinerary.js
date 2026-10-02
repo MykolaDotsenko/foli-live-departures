@@ -14,6 +14,37 @@ function destinationLabel(destination) {
   return String(destination?.label || "").trim();
 }
 
+/**
+ * Only strong committed-leg failures are allowed to invalidate an itinerary.
+ * Unknown/stale/degraded evidence is deliberately not actionable.
+ *
+ * @param {import("../types/journey").TransferRevalidationState | null | undefined} revalidation
+ * @returns {import("../types/journey").ActiveJourneyRecoveryReason}
+ */
+function revalidationRecoveryReason(revalidation) {
+  if (revalidation?.decision === "cancelled") return "transfer-cancelled";
+  if (revalidation?.decision === "missed") return "transfer-missed";
+  if (revalidation?.decision === "unsafe") return "transfer-risk";
+  return null;
+}
+
+/**
+ * A failure farther ahead must not interrupt the bus the passenger is already
+ * riding. It becomes actionable at the next safe transfer boundary.
+ *
+ * @param {ActiveDirectJourney | null | undefined} journey
+ * @param {number} afterLegIndex
+ */
+function firstKnownDownstreamFailure(journey, afterLegIndex) {
+  const states = journey?.futureLegRevalidations || {};
+  const max = journey?.itinerary?.legs?.length || 0;
+  for (let index = afterLegIndex + 1; index < max; index += 1) {
+    const reason = revalidationRecoveryReason(states[index]);
+    if (reason) return { index, reason };
+  }
+  return null;
+}
+
 /** @param {ActiveDirectJourney | null | undefined} journey */
 export function currentItineraryIndex(journey) {
   const index = Number(journey?.activeLegIndex);
@@ -261,12 +292,21 @@ export function advanceItineraryAfterRide(
     incomingLiveState: "live",
   });
   const missed = departureAt <= nowSec;
-  const phase = feasibility.recommendable ? "walking-to-stop" : "recovery";
+  const downstreamFailure = firstKnownDownstreamFailure(
+    journey,
+    currentIndex + 1
+  );
+  const phase =
+    !feasibility.recommendable || downstreamFailure
+      ? "recovery"
+      : "walking-to-stop";
   const recoveryReason =
     phase === "recovery"
-      ? missed
-        ? "transfer-missed"
-        : "transfer-risk"
+      ? !feasibility.recommendable
+        ? missed
+          ? "transfer-missed"
+          : "transfer-risk"
+        : downstreamFailure.reason
       : null;
 
   return projectLeg(
@@ -406,29 +446,44 @@ export function applyFutureLegRevalidation(
           }
         : leg
     );
-    nextItinerary = { ...itinerary, legs };
+    const finalLegChanged = index === itinerary.legs.length - 1;
+    nextItinerary = {
+      ...itinerary,
+      legs,
+      destinationArrivalAt: finalLegChanged
+        ? Number(itinerary.destinationArrivalAt) + shift
+        : itinerary.destinationArrivalAt,
+      journeyArrivalAt: finalLegChanged
+        ? Number(itinerary.journeyArrivalAt) + shift
+        : itinerary.journeyArrivalAt,
+    };
   }
 
-  const recoveryReason =
-    revalidation.decision === "cancelled"
-      ? "transfer-cancelled"
-      : revalidation.decision === "missed"
-        ? "transfer-missed"
-        : revalidation.decision === "unsafe"
-          ? "transfer-risk"
-          : null;
-
+  const recoveryReason = revalidationRecoveryReason(revalidation);
+  const aliases = legacyAliases(nextItinerary, currentIndex);
   const next = {
     ...journey,
     itinerary: nextItinerary,
+    destinationArrivalAt: nextItinerary.destinationArrivalAt,
+    journeyArrivalAt: nextItinerary.journeyArrivalAt,
     futureLegRevalidations,
     transferRevalidation:
       index === currentIndex + 1
         ? revalidation
         : journey.transferRevalidation,
+    ...aliases,
   };
 
-  if (journey.phase === "recovery" || !recoveryReason) return next;
+  // A problem on a later committed bus is important, but it must not steal
+  // control from the current ride. Store it now and surface recovery only at
+  // the next authoritative transfer boundary.
+  if (
+    journey.phase === "recovery" ||
+    !recoveryReason ||
+    index !== currentIndex + 1
+  ) {
+    return next;
+  }
 
   return {
     ...next,
