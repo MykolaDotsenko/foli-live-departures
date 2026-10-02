@@ -167,11 +167,8 @@ adb pull /sdcard/window-final.xml artifacts/android-e2e/window-final.xml || true
 adb exec-out screencap -p > artifacts/android-e2e/final-state.png
 
 adb logcat -d > artifacts/android-e2e/logcat.txt
-if grep -E "FATAL EXCEPTION|Process: ${PACKAGE//./\\.}" \
-  artifacts/android-e2e/logcat.txt; then
-  echo "Detected fatal Android runtime crash"
-  exit 1
-fi
+node scripts/verify-android-app-log.mjs \
+  artifacts/android-e2e/logcat.txt "$PACKAGE"
 
 adb shell dumpsys package "$PACKAGE" \
   > artifacts/android-e2e/package-dump.txt
