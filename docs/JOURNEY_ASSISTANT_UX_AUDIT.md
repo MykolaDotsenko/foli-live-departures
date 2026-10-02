@@ -1,6 +1,6 @@
 # Journey Assistant UX implementation audit
 
-**Status:** implementation priority audit  
+**Status:** historical implementation-priority audit; current source has progressed through pre-field batches #137 and #139  
 **Canonical product spec:** [JOURNEY_ASSISTANT_SPEC.md](JOURNEY_ASSISTANT_SPEC.md)  
 **Detailed edge-case appendix:** [DESTINATION_AWARE_NEARBY_SPEC.md](DESTINATION_AWARE_NEARBY_SPEC.md)
 
@@ -722,49 +722,25 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-01): bounded one-transfer routing, live second-leg revalidation, explicit automatic direct-replacement recovery and next-action transfer guidance are implemented through PR #120.**
+**Status (2026-10-02): implemented through PR #137 and generalized/recovery-expanded in PR #139.**
 
-Implemented:
-- transfer topology;
-- transfer walking;
-- conservative buffers;
-- concrete trip commitment for both legs;
-- Ride Mode handoff between legs;
-- fail-closed premature/missed-transfer recovery.
-
-Live revalidation acceptance criteria:
-- only the selected second trip is monitored;
-- fresh SIRI may improve or reduce the transfer margin;
-- a cancelled second leg enters recovery even when its row disappeared;
-- stale repeated SIRI cannot remain “live” forever;
-- a failed provider check is degraded/unknown, never false missed;
-- one missing response is insufficient to declare a miss;
-- committed recovery cannot be undone by later Ride Mode completion.
-
-Automatic recovery acceptance criteria:
-- recovery alternatives appear only after authoritative transfer-area evidence;
-- the destination stays selected;
-- the failed concrete second run is excluded before ranking;
-- nearby-platform distance is derived from stop geometry, not a fabricated device position;
-- stale cards are removed after returning from a hidden tab until fresh provider evidence arrives;
-- ordinary board refreshes do not flicker/reset verified recovery cards;
-- replacement choices are direct-only in this slice;
-- nothing changes until the passenger explicitly selects a replacement.
-
-Next-action acceptance criteria:
-- during leg 1, Ride Mode names the transfer stop, committed next line and fresh transfer margin when known;
-- at the transfer stop, “Get off now” remains the primary urgent instruction;
-- immediately after that instruction, same-stop transfers say to wait there, while cross-platform transfers name the concrete boarding stop and approximate walk;
-- if the boarding platform identity is missing, the app fails closed to transfer-area recovery instead of inventing directions;
-- a broken committed second leg never keeps promising the old line;
-- Finnish and English expose the same transfer actions;
-- Active Journey leg 2 continues with one immediate instruction: stay, walk, or wait for the selected line.
+Current implementation:
+- bounded direct, one-transfer and two-transfer itinerary search;
+- concrete trip and exact stop-occurrence identity on every leg;
+- conservative same-stop/cross-platform transfer walking/buffers;
+- authoritative Ride Mode handoff leg by leg;
+- fresh-only live revalidation for every committed future leg;
+- distant future-leg failure is recorded without interrupting the active Ride Mode;
+- recovery is explicit, destination-preserving and may include one additional bounded transfer;
+- no cancellation, disappearance, delay or recovery path silently switches the committed journey.
 
 ---
 
 ## P2.2 — Multi-leg Journey Mode
 
-Use Ride Mode independently for each transit leg.
+**Status (PR #137): implemented.**
+
+Ride Mode is used independently for each committed transit leg.
 
 Example:
 
@@ -776,7 +752,7 @@ Active UI still shows only the next action.
 
 ## P2.3 — Arrive-by / leave-at
 
-Advanced control.
+**Status (PR #139): implemented.**
 
 Default remains:
 
@@ -788,18 +764,21 @@ Do not clutter first run.
 
 ## P2.4 — User routing preferences
 
-Potential later settings:
+**Status (PR #139): implemented for the bounded preferences the engine can faithfully honor.**
+
+Current settings:
 
 - less walking;
 - fewer transfers;
-- maximum walking;
-- accessibility constraints where data is trustworthy.
+- larger transfer buffer.
 
 Default ranking should work without configuration.
 
 ---
 
 ## P2.5 — Entrance-aware POI routing
+
+**Status (PR #139): implemented when trustworthy provider geometry/bounds are available; otherwise the app keeps the explicit fail-closed external handoff.**
 
 Useful for:
 
@@ -963,23 +942,25 @@ At the same time, an experienced passenger who only wants a departure board shou
 **The new product must be more capable without feeling heavier.**
 
 
-### One-transfer journey UX — 2026-10-01
+### Multi-leg journey UX — 2026-10-02
 
-Status: implemented as a bounded fallback after direct journey search.
+Status: implemented as a bounded fallback after direct journey search, with up
+to two transfers and explicit multi-leg recovery.
 
 Passenger sequence:
 1. direct journey options are checked first;
-2. when no meaningful direct option exists, the app checks conservative one-transfer options;
-3. cards show both line numbers, transfer stop/platform, walking allowance, total walking and transfer-risk wording;
-4. selecting one locks the concrete first and second trips;
-5. Active Journey shows leg 1 of 2;
-6. Ride Mode controls the first boarded leg to the selected transfer occurrence;
-7. only authoritative arrival at that occurrence may advance the journey to leg 2;
-8. premature Ride Mode termination enters recovery instead of silently continuing;
-9. while leg 1 is active, Ride Mode shows the next committed transfer action without competing with the current get-off instruction;
-10. at the transfer, same-stop journeys say to stay, while cross-platform journeys name the concrete next platform/stop and approximate walk;
-11. leg 2 repeats the existing explicit at-stop / selected-departure / Ride Mode handoff;
-12. final walking guidance is possible only after the final leg.
+2. bounded one-transfer and then two-transfer candidates are considered when needed;
+3. cards expose the committed lines, transfer context, walking allowance and reliability trade-offs;
+4. selecting an option locks concrete trip/stop occurrences for every leg;
+5. Active Journey shows the current leg within the ordered itinerary;
+6. Ride Mode controls only the boarded/current leg;
+7. only authoritative arrival at the exact committed alighting occurrence advances a handoff;
+8. premature termination enters recovery instead of silently continuing;
+9. every future committed leg is revalidated from fresh-only SIRI evidence;
+10. a distant future-leg problem cannot displace the current urgent Ride Mode action;
+11. at each transfer, same-stop/cross-platform instructions use the committed stop context;
+12. a failed connection may offer bounded recovery choices, but nothing changes until the passenger explicitly selects one;
+13. final walking guidance is possible only after the final leg.
 
 UX constraints:
 - never hide the full nearby-stop list;
