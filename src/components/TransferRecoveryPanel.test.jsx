@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import TransferRecoveryPanel from "./TransferRecoveryPanel";\nimport { resetLanguageForTests } from "../i18n";
+import TransferRecoveryPanel from "./TransferRecoveryPanel";
+import { resetLanguageForTests } from "../i18n";
 
 const destination = {
   id: "stop:900",
