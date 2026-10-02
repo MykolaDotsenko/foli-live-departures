@@ -1,6 +1,6 @@
 # Production roadmap
 
-**Planning baseline:** `master@7a76521aa71c`  
+**Planning baseline:** rolling verified `master`; exact revision is recorded by CI/deployment metadata rather than hard-coded here  
 **Updated:** 2026-10-02  
 **Purpose:** ordered PR-by-PR plan from the current production-grade baseline to a broadly promoted, multilingual and more capable Turku Departures without weakening the static, backendless, privacy-first architecture.
 
@@ -14,8 +14,9 @@ Already implemented and considered part of the baseline:
 - service alerts, line filters, Nearby and destination-aware Nearby;
 - saved Home / Work / School stops, backups, Get me Home and Show to driver;
 - Ride Mode / Get-off alert with exact trip identity, route-order awareness, live SIRI, GPS fail-closed rules, persisted recovery and false-MISSED correction;
-- direct Journey Assistant plus conservative one-transfer journeys;
-- live revalidation of the committed second leg and explicit transfer recovery without silent auto-switching;
+- direct Journey Assistant plus bounded itineraries with up to two transfers;
+- generic ordered itinerary state, multi-leg Active Journey orchestration and fresh live revalidation of every committed future transit leg;
+- explicit transfer recovery without silent auto-switching (further multi-leg recovery expansion remains in the next batch);
 - PWA/offline shell, GitHub Pages deployment, CSP and backendless architecture gates;
 - iPhone install discovery that never displaces an active departure board or Ride Mode;
 - independent Android package ID `io.github.mykoladotsenko.turkudepartures`;
@@ -594,9 +595,13 @@ Expose a small build/version identifier in About & privacy / diagnostics so fiel
 
 # Track D — Journey Assistant expansion
 
-Do not start this track until Track A safety/manual blockers are substantially closed. Feature breadth must not outrun field trust.
+Under the current pre-field policy, planned product breadth is completed before
+real-bus validation. Expansion still must preserve the same fail-closed safety
+contracts and may not weaken Ride Mode authority.
 
 ## PR-D01 — Generalized N-leg itinerary model
+
+**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
 
 **Priority:** 88/100  
 **Risk:** high.
@@ -615,6 +620,8 @@ Refactor the current direct/one-transfer representation into a generic ordered i
 ---
 
 ## PR-D02 — Bounded two-transfer topology search
+
+**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
 
 **Priority:** 78/100  
 **Dependency:** D01.
@@ -639,6 +646,8 @@ Add **at most two transfers**, with hard caps for:
 
 ## PR-D03 — Multi-leg Active Journey orchestration
 
+**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
+
 **Priority:** 82/100  
 **Dependency:** D02.
 
@@ -653,6 +662,8 @@ Urgent current-leg instructions always outrank future-leg information.
 ---
 
 ## PR-D04 — Future-leg live revalidation
+
+**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
 
 **Priority:** 90/100  
 **Dependency:** D03.
@@ -806,36 +817,29 @@ These should not become accidental backlog items:
 
 ---
 
-# Recommended merge order
+# Current pre-field execution order
 
-## Release-critical sequence
+The current project policy supersedes the older “field first, expansion later”
+sequence: real-bus rides are the final acceptance layer after the planned
+product is complete.
 
-1. **PR-B00** — Ukrainian localization design contract on `master`.
-2. **PR-A02** — full local-state backup/import.
-3. **PR-A03** — field-validation support bundle.
-4. **Manual field rides → PR-A04** — remediation.
-5. **PR-A05** — native Finnish safety-copy remediation.
-6. **PR-A06** — VoiceOver/TalkBack remediation.
-7. **PR-A01** — final domain cutover once owner chooses domain.
-8. **PR-A07** — branch/environment governance.
-9. **PR-A08** — Android production-signing dry run.
-10. **PR-A09** — immutable Android v1.0.0.
-11. **PR-A10** — full public-release re-audit.
+Work is merged in verified batches of eight checklist items:
 
-## Then quality/localization
-
-12. **PR-C04** — tighten dormant provider CSP.
-13. **PR-C02** — recover bundle headroom.
-14. **PR-C01/C03/C05/C06** — smaller polish/operations.
-15. **PR-B01 → B04** — Ukrainian implementation and enablement.
-16. **PR-B05 → B06** — Swedish.
-
-## Then routing expansion
-
-17. **PR-D01 → D05** — generalized multi-leg + live safety/recovery.
-18. **PR-D06 → D08** — time controls/preferences/POI.
-19. **PR-D09** — walking-routing decision.
-20. Optional **Track E** only after v1 is stable in real use.
+1. **Batch 1 / PR #137:** release provenance, Android release monotonicity,
+   repository-governance contract, privacy-safe field diagnostics, generalized
+   itinerary model, bounded two-transfer search, multi-leg Active Journey and
+   future-leg live revalidation.
+2. **Batch 2:** multi-leg recovery, leave-now/leave-at/arrive-by, routing
+   preferences, entrance-aware destinations, pedestrian-routing decision,
+   generic locale architecture, Ukrainian safety layer and full Ukrainian UI.
+3. Subsequent batches close Ukrainian/Swedish QA, quality/performance/CSP and
+   health monitoring, Android native background feasibility/implementation,
+   physical-device/accessibility/language review, domain/Play/release
+   readiness and the final pre-field audit.
+4. Freeze one exact release-candidate SHA only after all planned pre-field
+   gates are closed.
+5. Run real-bus validation after that freeze; subsequent changes are remediation
+   fixes with deterministic regression coverage, not new feature scope.
 
 ---
 
@@ -867,4 +871,4 @@ In addition:
 
 ## Feature expansion readiness
 
-Only after the public-release safety gates are healthy should 2+ transfer routing or native background work become the top engineering priority.
+Two-transfer routing is now part of the pre-field baseline. Native background work remains a later pre-field batch and must not weaken the static/backendless web architecture.
