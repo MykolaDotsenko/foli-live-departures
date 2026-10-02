@@ -4,10 +4,12 @@ import fi from "../src/i18n/fi/index.js";
 import fiRuntime from "../src/i18n/fi/runtime.js";
 import uk from "../src/i18n/uk/index.js";
 import ukRuntime from "../src/i18n/uk/runtime.js";
+import sv from "../src/i18n/sv/index.js";
+import svRuntime from "../src/i18n/sv/runtime.js";
 
 const OUTPUT_DIR = path.resolve("public/locales");
-const dictionaries = { fi, uk };
-const runtimes = { fi: fiRuntime, uk: ukRuntime };
+const dictionaries = { fi, uk, sv };
+const runtimes = { fi: fiRuntime, uk: ukRuntime, sv: svRuntime };
 
 function buildPack(language, dictionary, runtime) {
   const strings = {};
