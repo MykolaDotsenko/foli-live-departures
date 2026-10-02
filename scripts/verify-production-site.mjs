@@ -8,7 +8,7 @@ const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
 class RetriableDeploymentError extends Error {}
 
 function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => globalThis.setTimeout(resolve, ms));
 }
 
 function normalizeSiteUrl(value) {
@@ -58,7 +58,7 @@ function cacheBusted(url, sha, attempt) {
 async function fetchRequired(url, { label, timeoutMs }) {
   let response;
   try {
-    response = await fetch(url, {
+    response = await globalThis.fetch(url, {
       redirect: "follow",
       cache: "no-store",
       headers: {
@@ -66,7 +66,7 @@ async function fetchRequired(url, { label, timeoutMs }) {
         "cache-control": "no-cache",
         pragma: "no-cache",
       },
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: globalThis.AbortSignal.timeout(timeoutMs),
     });
   } catch (cause) {
     throw new RetriableDeploymentError(
