@@ -430,6 +430,12 @@ jobs:
             echo "Release $tag already exists; refusing to overwrite a production version."
             exit 1
           fi
+          notes="$(
+            printf '%s\n\nAndroid-Version-Code: %s\nSource-Commit: %s\n' \
+              "Production-signed Android release from verified master commit \`$GITHUB_SHA\`. APK and AAB were signed with the persistent production key; the exact APK was installed and launch-smoke-tested on Android API 35 before publication." \
+              "$VERSION_CODE" \
+              "$GITHUB_SHA"
+          )"
           gh release create "$tag" \
             "release-assets/Turku-Departures-v$VERSION_NAME.apk" \
             "release-assets/Turku-Departures-v$VERSION_NAME.aab" \
@@ -437,7 +443,4 @@ jobs:
             "release-assets/Turku-Departures-v$VERSION_NAME.release.json" \
             --target "$GITHUB_SHA" \
             --title "Turku Departures v$VERSION_NAME" \
-            --notes "Production-signed Android release from verified master commit \`$GITHUB_SHA\`. APK and AAB were signed with the persistent production key; the exact APK was installed and launch-smoke-tested on Android API 35 before publication.
-
-Android-Version-Code: $VERSION_CODE
-Source-Commit: $GITHUB_SHA"
+            --notes "$notes"
