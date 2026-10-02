@@ -31,15 +31,15 @@ import useServiceBoundary from "./hooks/useServiceBoundary";
 import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
 import useStopMonitor from "./hooks/useStopMonitor";
-import useTransferLegRevalidation from "./hooks/useTransferLegRevalidation";
+import useFutureLegRevalidations from "./hooks/useFutureLegRevalidations";
 import useTransferRecoveryOptions from "./hooks/useTransferRecoveryOptions";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
   arrivalMatchesActiveJourney,
+  revalidateFutureJourneyLeg,
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
-import { applyTransferRevalidation } from "./utils/transferRevalidation";
 import { canSearchTransferRecovery } from "./utils/transferRecovery";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
@@ -294,115 +294,82 @@ function App() {
     [serviceAlerts]
   );
 
-  const transferWatchJourney =
-    selectedJourney?.transferPlan &&
-    selectedJourney.transferLeg === 1 &&
+  const selectedFutureJourney =
+    selectedJourney?.itinerary &&
+    Number.isInteger(Number(selectedJourney.activeLegIndex)) &&
+    Number(selectedJourney.activeLegIndex) <
+      selectedJourney.itinerary.legs.length - 1 &&
     selectedJourney.phase !== "recovery"
       ? selectedJourney
-      : ride.session &&
-          pendingTransferJourneyRef.current?.transferPlan &&
-          pendingTransferJourneyRef.current.transferLeg === 1 &&
-          pendingTransferJourneyRef.current.phase !== "recovery"
-        ? pendingTransferJourneyRef.current
-        : null;
-  const transferSecondLeg = transferWatchJourney?.transferPlan?.second || null;
-  const transferWatchStopId = String(transferSecondLeg?.boardStopId || "");
-  const transferWatchLineRefs = useMemo(
-    () =>
-      transferSecondLeg?.lineRef
-        ? [String(transferSecondLeg.lineRef)]
-        : [],
-    [transferSecondLeg?.lineRef]
-  );
-  const { alerts: transferServiceAlerts } = useStopAlerts(
-    transferWatchStopId,
-    transferWatchLineRefs,
-    routesById,
-    {
-      enabled: Boolean(transferWatchJourney),
-      // A five-minute service-alert cadence is fine for a normal stop board,
-      // but too slow for a committed connection that may disappear while the
-      // passenger is already on leg 1.
-      refreshIntervalMs: 60_000,
-    }
-  );
-  const transferCancellations = useMemo(
-    () =>
-      transferServiceAlerts.filter(
-        (alert) => alert.type === "cancellation"
-      ),
-    [transferServiceAlerts]
-  );
-  const transferCancellationProbe = transferSecondLeg
-    ? {
-        lineref: transferSecondLeg.lineRef,
-        aimeddeparturetime:
-          transferSecondLeg.aimedDepartureAt ||
-          transferSecondLeg.departureAt,
-        originaimeddeparturetime:
-          transferSecondLeg.originAimedDepartureAt || undefined,
-      }
-    : null;
-  const transferSecondCancelled =
-    transferCancellationProbe &&
-    isCancelledHere(transferCancellationProbe, transferCancellations);
+      : null;
+  const pendingFutureJourney =
+    pendingTransferJourneyRef.current?.itinerary &&
+    Number.isInteger(
+      Number(pendingTransferJourneyRef.current.activeLegIndex)
+    ) &&
+    Number(pendingTransferJourneyRef.current.activeLegIndex) <
+      pendingTransferJourneyRef.current.itinerary.legs.length - 1 &&
+    pendingTransferJourneyRef.current.phase !== "recovery"
+      ? pendingTransferJourneyRef.current
+      : null;
+  const transferWatchJourney =
+    selectedFutureJourney ||
+    (ride.session ? pendingFutureJourney : null);
 
   const ridingSelectedTransfer =
     Boolean(ride.session) &&
     Boolean(transferWatchJourney) &&
     pendingTransferJourneyRef.current?.id === transferWatchJourney?.id;
   const rideEtaSec = Number(ride.runtime?.etaSec);
-  const transferIncomingArrivalAt =
-    ridingSelectedTransfer &&
-    Number.isFinite(rideEtaSec) &&
-    rideEtaSec >= 0
-      ? Math.floor(Date.now() / 1000 + rideEtaSec)
-      : transferWatchJourney?.transferPlan?.first?.arrivalAt || null;
-  const transferIncomingLiveState = ridingSelectedTransfer
-    ? ride.runtime?.etaSource === "live"
-      ? "live"
-      : ride.runtime?.etaSource === "location"
-        ? "delayed"
-        : "schedule"
-    : transferWatchJourney?.transferPlan?.first?.liveState || "unknown";
 
-  const transferRevalidation = useTransferLegRevalidation({
+  const futureLegWatch = useFutureLegRevalidations({
     enabled: Boolean(transferWatchJourney),
     journey: transferWatchJourney,
-    incomingArrivalAt: transferIncomingArrivalAt,
-    incomingLiveState: transferIncomingLiveState,
-    cancelled: transferSecondCancelled === true,
+    routesById,
+    riding: ridingSelectedTransfer,
+    rideEtaSec:
+      ridingSelectedTransfer &&
+      Number.isFinite(rideEtaSec) &&
+      rideEtaSec >= 0
+        ? rideEtaSec
+        : null,
+    rideEtaSource: String(ride.runtime?.etaSource || ""),
   });
+  const transferRevalidation =
+    futureLegWatch.immediate || {
+      providerState: "idle",
+      decision: "unknown",
+      departureAt: null,
+      feasibility: null,
+      missingSinceMs: null,
+    };
 
   useEffect(() => {
-    if (
-      !transferWatchJourney ||
-      transferRevalidation.providerState === "idle"
-    ) {
+    if (!transferWatchJourney || futureLegWatch.states.length === 0) {
       return;
     }
 
-    if (
-      selectedJourney?.id === transferWatchJourney.id &&
-      selectedJourney.transferLeg === 1
-    ) {
-      revalidateTransfer(transferRevalidation);
-    }
+    for (const { legIndex, state } of futureLegWatch.states) {
+      if (selectedJourney?.id === transferWatchJourney.id) {
+        revalidateTransfer(state, legIndex);
+      }
 
-    if (
-      ride.session &&
-      pendingTransferJourneyRef.current?.id === transferWatchJourney.id
-    ) {
-      pendingTransferJourneyRef.current = applyTransferRevalidation(
-        pendingTransferJourneyRef.current,
-        transferRevalidation
-      );
+      if (
+        ride.session &&
+        pendingTransferJourneyRef.current?.id === transferWatchJourney.id
+      ) {
+        pendingTransferJourneyRef.current = revalidateFutureJourneyLeg(
+          pendingTransferJourneyRef.current,
+          state,
+          legIndex
+        );
+      }
     }
   }, [
+    futureLegWatch.states,
     revalidateTransfer,
     ride.session,
     selectedJourney,
-    transferRevalidation,
     transferWatchJourney,
   ]);
 
