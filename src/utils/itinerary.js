@@ -63,12 +63,17 @@ export function normalizeItineraryOption(option) {
     }
   }
 
-  const originStopId = String(option?.originStopId || legs[0]?.boardStopId || "");
+  /** @type {TransferTransitLeg[]} */
+  const typedLegs = legs;
+  /** @type {ItineraryTransfer[]} */
+  const typedTransfers = transfers;
+
+  const originStopId = String(option?.originStopId || typedLegs[0]?.boardStopId || "");
   const destinationStopId = String(
-    option?.destinationStopId || legs.at(-1)?.exitStopId || ""
+    option?.destinationStopId || typedLegs.at(-1)?.exitStopId || ""
   );
   const destinationArrivalAt =
-    positive(option?.destinationArrivalAt) ?? positive(legs.at(-1)?.arrivalAt);
+    positive(option?.destinationArrivalAt) ?? positive(typedLegs.at(-1)?.arrivalAt);
   const journeyArrivalAt =
     positive(option?.journeyArrivalAt) ?? destinationArrivalAt;
 
@@ -84,15 +89,15 @@ export function normalizeItineraryOption(option) {
   return {
     id: String(
       option?.id ||
-        legs
+        typedLegs
           .map((leg) => [leg.tripRef, leg.boardStopId, leg.exitStopId].join(":"))
           .join("|")
     ),
     originStopId,
     originStopName: String(option?.originStopName || originStopId),
     originDistanceMeters: nonNegative(option?.originDistanceMeters) ?? 0,
-    legs: legs.map((leg) => ({ ...leg })),
-    transfers: transfers.map((transfer) => ({ ...transfer })),
+    legs: typedLegs.map((leg) => ({ ...leg })),
+    transfers: typedTransfers.map((transfer) => ({ ...transfer })),
     destinationStopId,
     destinationArrivalAt,
     finalWalkDistanceM: nonNegative(option?.finalWalkDistanceM),
@@ -101,7 +106,7 @@ export function normalizeItineraryOption(option) {
     totalWalkingDistanceM:
       nonNegative(option?.totalWalkingDistanceM) ??
       (nonNegative(option?.originDistanceMeters) ?? 0) +
-        transfers.reduce(
+        typedTransfers.reduce(
           (sum, transfer) => sum + (nonNegative(transfer.walkingDistanceM) ?? 0),
           0
         ) +
@@ -154,6 +159,10 @@ export function itineraryTransfer(option, index) {
 /**
  * Prefer fewer transfers when arrivals are near-equivalent, but allow a
  * materially earlier two-transfer itinerary to win.
+ *
+ * @param {any} left
+ * @param {any} right
+ * @param {number} [nearEquivalentSec]
  */
 export function compareItineraries(left, right, nearEquivalentSec = 120) {
   const a = normalizeItineraryOption(left);
