@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 import useLineFilter, { normalizeLines } from "./useLineFilter";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 const STORAGE_KEY = "foli-line-filter-v1";
 
@@ -92,4 +93,22 @@ test("keeps at most the twenty most recently saved stop filters", () => {
   expect(stored).toHaveProperty("21");
 
   dateNow.mockRestore();
+});
+
+
+test("refreshes the current stop filter immediately after a same-tab backup import", () => {
+  const { result } = renderHook(() => useLineFilter("164"));
+
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      164: { lines: ["32"], savedAt: Date.now() },
+    })
+  );
+
+  act(() => {
+    window.dispatchEvent(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  });
+
+  expect(result.current[0]).toEqual(["32"]);
 });
