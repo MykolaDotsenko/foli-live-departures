@@ -83,6 +83,7 @@ export function sanitizedRideIdentity(session) {
  * @param {any} runtime
  * @param {any} gps
  * @param {import("../types/journey").TransferRevalidationState | null} [transferRevalidation]
+ * @param {{legIndex: number, state: import("../types/journey").TransferRevalidationState}[]} [futureLegRevalidations]
  */
 export function sanitizedEvidence(
   runtime,
@@ -192,6 +193,7 @@ function appendEvent(event) {
  *   runtime?: any,
  *   gps?: any,
  *   transferRevalidation?: import("../types/journey").TransferRevalidationState | null,
+ *   futureLegRevalidations?: {legIndex: number, state: import("../types/journey").TransferRevalidationState}[],
  *   type?: string
  * }} [input]
  */
@@ -246,6 +248,7 @@ export function recordFieldDiagnosticObservation({
  *   runtime?: any,
  *   gps?: any,
  *   transferRevalidation?: import("../types/journey").TransferRevalidationState | null,
+ *   futureLegRevalidations?: {legIndex: number, state: import("../types/journey").TransferRevalidationState}[],
  *   outcome?: string
  * }} [input]
  */
