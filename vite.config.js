@@ -47,6 +47,10 @@ function connectSources(env) {
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
+    // Release QA targets current Chromium, Firefox and mobile WebKit. ES2022
+    // is supported by those browsers and avoids compatibility transforms for
+    // syntax we already exercise in Playwright on every pull request.
+    target: "es2022",
     // The app has no dynamic imports, so the modulepreload compatibility
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
