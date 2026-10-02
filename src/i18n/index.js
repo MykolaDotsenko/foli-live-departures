@@ -103,6 +103,7 @@ async function loadDictionary(language) {
 
   const dictionary = {};
   const seen = new Set();
+  const functionSlots = new Set();
   for (let index = 0; index < keys.length; index += 1) {
     const key = keys[index];
     const value = values[index];
@@ -114,14 +115,33 @@ async function loadDictionary(language) {
 
     // null is reserved for a function-valued translation supplied by the
     // locale's runtime module. Any other non-string value is malformed.
-    if (value === null) continue;
+    if (value === null) {
+      functionSlots.add(key);
+      continue;
+    }
     if (typeof value !== "string") {
       throw new Error(`Invalid ${language} locale pack entry at index ${index}.`);
     }
     dictionary[key] = value;
   }
 
-  return Object.freeze({ ...dictionary, ...(runtime.default || {}) });
+  const runtimeDictionary = runtime.default || {};
+  for (const key of Object.keys(runtimeDictionary)) {
+    if (!functionSlots.delete(key)) {
+      throw new Error(
+        `Invalid ${language} runtime translation slot for ${JSON.stringify(key)}.`
+      );
+    }
+  }
+  if (functionSlots.size > 0) {
+    throw new Error(
+      `Invalid ${language} locale pack: missing runtime translation for ${JSON.stringify(
+        [...functionSlots][0]
+      )}.`
+    );
+  }
+
+  return Object.freeze({ ...dictionary, ...runtimeDictionary });
 }
 
 /** @type {Partial<Record<Language, () => Promise<Dictionary>>>} */
