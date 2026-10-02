@@ -265,3 +265,58 @@ test("shows a Ukrainian recovery option and commits it only after an explicit ta
   fireEvent.click(screen.getByRole("button", { name: /Маршрут 7/i }));
   expect(onSelect).toHaveBeenCalledWith(option);
 });
+
+test("renders Swedish recovery without silently choosing a replacement", () => {
+  resetLanguageForTests("sv");
+  const onSelect = vi.fn();
+
+  render(
+    <TransferRecoveryPanel
+      state="loading"
+      options={[]}
+      destination={{
+        id: "place:home",
+        kind: "saved-place",
+        label: "Home",
+      }}
+      onSelectJourney={onSelect}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Fortsätt till Hem" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Kontrollerar nya bussar från det här bytesområdet…")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Den misslyckade bussen är utesluten. Ingenting ändras förrän du väljer ett nytt alternativ."
+    )
+  ).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+});
+
+test("commits a Swedish recovery option only after an explicit tap", () => {
+  resetLanguageForTests("sv");
+  const onSelect = vi.fn();
+
+  render(
+    <TransferRecoveryPanel
+      state="ready"
+      options={[option]}
+      destination={{
+        id: "place:home",
+        kind: "saved-place",
+        label: "Home",
+      }}
+      onSelectJourney={onSelect}
+    />
+  );
+
+  expect(screen.getByText("Nya bytesalternativ")).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: /Linje 7/i }));
+  expect(onSelect).toHaveBeenCalledWith(option);
+});
