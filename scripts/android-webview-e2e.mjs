@@ -116,6 +116,9 @@ Runtime.exceptionThrown(({ exceptionDetails }) => {
   });
 });
 
+// Native production stays under the same dormant-provider boundary as the PWA:
+ // even a packaged WebView must never contact Nominatim while direct place
+ // search is disabled and omitted from the shipped CSP.
 Network.requestWillBeSent(({ request }) => {
   const url = String(request?.url || "");
   if (url.startsWith("https://nominatim.openstreetmap.org/")) {
