@@ -29,19 +29,19 @@ function triggerDownload(text) {
 function errorPhrase(error) {
   switch (error?.message) {
     case "backup-empty":
-      return "The backup file is empty.";
+      return t("The backup file is empty.");
     case "backup-invalid-json":
     case "backup-not-object":
     case "backup-wrong-kind":
-      return "This is not a Turku Departures backup file.";
+      return t("This is not a Turku Departures backup file.");
     case "backup-unsupported-version":
-      return "This backup version is not supported by this app.";
+      return t("This backup version is not supported by this app.");
     case "backup-too-large":
-      return "This backup file is unexpectedly large and was not opened.";
+      return t("This backup file is unexpectedly large and was not opened.");
     case "backup-storage-unavailable":
-      return "This browser would not allow access to local app data.";
+      return t("This browser would not allow access to local app data.");
     default:
-      return "The backup could not be read. Nothing was changed.";
+      return t("The backup could not be read. Nothing was changed.");
   }
 }
 
@@ -92,7 +92,7 @@ export default function LocalStateBackup() {
       const text = await file.text();
       setPrepared(prepareLocalStateImport(text));
     } catch (readError) {
-      setError(t(errorPhrase(readError)));
+      setError(errorPhrase(readError));
     }
   };
 
