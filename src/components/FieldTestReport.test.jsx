@@ -56,7 +56,7 @@ test("copy failure stays local and offers the download fallback", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Copy report" }));
 
   expect(
-    await screen.findByText("Could not copy the report. Download it instead.")
+    await screen.findByText("Copy failed. Download the report instead.")
   ).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Download report" })
