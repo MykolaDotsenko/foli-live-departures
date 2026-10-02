@@ -166,6 +166,7 @@ function NearbyStops({
   online = true,
   searchEdits = () => 0,
   destination = null,
+  journeyPlan = null,
   excludedJourney = null,
   onSelectJourney = null,
   onSelectTransferJourney = null,
@@ -205,6 +206,7 @@ function NearbyStops({
     stops: nearbyStops,
     destination,
     positionAccuracy: position?.accuracy ?? null,
+    journeyPlan,
   });
 
   const destinationLabel = shownDestinationLabel(destination);
@@ -215,6 +217,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: baseNearbyStops,
       fitsByStop,
+      preference: journeyPlan?.preference,
     });
     return excludedJourney
       ? options.filter(
@@ -260,6 +263,7 @@ function NearbyStops({
     const options = selectDirectJourneyOptions({
       stops: nearbyStops,
       fitsByStop,
+      preference: journeyPlan?.preference,
     });
     return excludedJourney
       ? options.filter(
@@ -282,15 +286,23 @@ function NearbyStops({
     directJourneyOptions.length === 0 &&
     (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
 
+  const preferenceWantsAlternatives = ["less-walking", "more-buffer"].includes(
+    String(journeyPlan?.preference || "")
+  );
+  const shouldSearchTransfers =
+    Boolean(onSelectTransferJourney) &&
+    Boolean(destination) &&
+    Boolean(position) &&
+    (directSearchComplete || preferenceWantsAlternatives);
+
   const { options: transferJourneyOptions, state: transferState } =
     useTransferJourneyOptions({
-      enabled:
-        Boolean(onSelectTransferJourney) &&
-        directSearchComplete,
+      enabled: shouldSearchTransfers,
       originStops: nearbyStops,
       allStops: stops,
       destination,
       positionAccuracy: position?.accuracy ?? null,
+      journeyPlan,
     });
 
   const destinationSortedStops = useMemo(() => {
@@ -549,7 +561,7 @@ function NearbyStops({
           )}
 
           {destination &&
-            directSearchComplete &&
+            shouldSearchTransfers &&
             transferState === "loading" && (
               <p className={styles.notice} role="status">
                 {t("No direct trip found nearby. Checking options with up to two transfers…")}
@@ -557,7 +569,7 @@ function NearbyStops({
             )}
 
           {destination &&
-            directSearchComplete &&
+            shouldSearchTransfers &&
             transferState === "ready" &&
             transferJourneyOptions.length > 0 && (
               <TransferJourneyOptions
@@ -568,16 +580,17 @@ function NearbyStops({
             )}
 
           {destination &&
-            directSearchComplete &&
+            shouldSearchTransfers &&
             transferState === "ready" &&
-            transferJourneyOptions.length === 0 && (
+            transferJourneyOptions.length === 0 &&
+            directJourneyOptions.length === 0 && (
               <p className={styles.notice} role="status">
                 {t("No reliable option with up to two transfers was found from the nearby stops.")}
               </p>
             )}
 
           {destination &&
-            directSearchComplete &&
+            shouldSearchTransfers &&
             transferState === "error" && (
               <p className={styles.notice} role="status">
                 {t("Transfer search is temporarily unavailable. Nearby stops remain available.")}
