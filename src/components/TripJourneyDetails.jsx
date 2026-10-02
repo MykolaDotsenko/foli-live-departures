@@ -106,6 +106,11 @@ export default function TripJourneyDetails({
       {expanded && (
         <div className={styles.panel}>
           <p className={styles.kicker}>{t("Next stops · timetable times")}</p>
+          <p className={styles.timeLegend}>
+            {t(
+              "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints."
+            )}
+          </p>
 
           {status === "loading" && (
             <p className={styles.status} role="status">
@@ -135,7 +140,15 @@ export default function TripJourneyDetails({
                   return (
                     <li key={`${item.stopId}-${item.stopSequence}`}>
                       <span><StopName stop={stopsById.get(item.stopId)} id={item.stopId} /></span>
-                      <small>
+                      <small
+                        data-time-kind={
+                          clock
+                            ? approximate
+                              ? "approximate"
+                              : "timepoint"
+                            : "unknown"
+                        }
+                      >
                         {clock
                           ? approximate
                             ? t("around {time}", { time: clock })
