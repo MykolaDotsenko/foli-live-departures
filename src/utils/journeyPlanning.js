@@ -124,9 +124,12 @@ export function journeyWalkingMeters(option) {
 export function minimumTransferSlackSec(option) {
   const transfers = Array.isArray(option?.transfers) ? option.transfers : [];
   if (transfers.length === 0) return Number.POSITIVE_INFINITY;
-  const values = transfers.map((/** @type {any} */ item) =>
-    Number(item?.feasibility?.slackSec)
-  );
+  const values = transfers.map((/** @type {any} */ item) => {
+    const raw = item?.feasibility?.slackSec;
+    return raw === null || raw === undefined || raw === ""
+      ? Number.NaN
+      : Number(raw);
+  });
   if (values.some((/** @type {number} */ value) => !Number.isFinite(value))) {
     return Number.NEGATIVE_INFINITY;
   }
