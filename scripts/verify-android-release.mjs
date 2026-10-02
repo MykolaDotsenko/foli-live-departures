@@ -130,6 +130,17 @@ const requiredReleaseEvidence = [
   "ANDROID_KEY_PASSWORD",
   "android-production",
   "actions: read",
+  "Require increasing production version code",
+  '"/repos/$GITHUB_REPOSITORY/releases?per_page=100"',
+  'android-release-metadata.mjs \\\n            check-version "$VERSION_CODE" "$releases"',
+  "ANDROID_CERT_SHA256",
+  "Signer #1 certificate SHA-256 digest",
+  "Write immutable release metadata",
+  ".release.json",
+  "APK_SHA256",
+  "AAB_SHA256",
+  "Android-Version-Code: $VERSION_CODE",
+  "Source-Commit: $GITHUB_SHA",
   "Require successful CI for this exact master commit",
   '--arg sha "$GITHUB_SHA"',
   "select(.head_sha == $sha)",
@@ -208,5 +219,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  "Android release contract verified: independent app identity, green-master gating, step-scoped signing secrets, signing-key cleanup, least-privilege signing, exact signed-APK emulator verification and immutable version publishing are enforced."
+  "Android release contract verified: independent app identity, merged-PR/green-master gating, monotonic versionCode metadata, step-scoped signing secrets, signing-key cleanup, least-privilege signing, exact signed-APK emulator verification and immutable version publishing are enforced."
 );
