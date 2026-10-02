@@ -8,6 +8,7 @@ on:
       - "scripts/android-webview-e2e.mjs"
       - "scripts/run-android-emulator-e2e.sh"
       - "scripts/build-sw.mjs"
+      - "scripts/configure-android-active-ride.mjs"
       - "src/**"
       - "public/**"
       - "index.html"
@@ -66,60 +67,8 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Configure Android permissions and WebView debugging
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          manifest = Path("android/app/src/main/AndroidManifest.xml")
-          text = manifest.read_text()
-
-          permissions = [
-              "android.permission.ACCESS_COARSE_LOCATION",
-              "android.permission.ACCESS_FINE_LOCATION",
-              "android.permission.ACCESS_NETWORK_STATE",
-              "android.permission.POST_NOTIFICATIONS",
-              "android.permission.VIBRATE",
-              "android.permission.WAKE_LOCK",
-          ]
-
-          marker = "<application"
-          lines = []
-          for permission in permissions:
-              token = f'android:name="{permission}"'
-              if token not in text:
-                  lines.append(
-                      f'    <uses-permission android:name="{permission}" />'
-                  )
-
-          if lines:
-              text = text.replace(
-                  marker,
-                  "\n".join(lines) + "\n\n    " + marker,
-                  1,
-              )
-          manifest.write_text(text)
-
-          main = Path(
-              "android/app/src/main/java/io/github/mykoladotsenko/turkudepartures/MainActivity.java"
-          )
-          main.write_text(
-              """package io.github.mykoladotsenko.turkudepartures;
-
-          import android.os.Bundle;
-          import android.webkit.WebView;
-          import com.getcapacitor.BridgeActivity;
-
-          public class MainActivity extends BridgeActivity {
-              @Override
-              protected void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  WebView.setWebContentsDebuggingEnabled(true);
-              }
-          }
-          """
-          )
-          PY
+      - name: Configure Android active-ride bridge and WebView debugging
+        run: npm run configure:android-active-ride -- --webview-debug
 
       - name: Build debug APK
         working-directory: android

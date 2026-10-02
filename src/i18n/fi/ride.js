@@ -184,6 +184,9 @@ export default {
   "Times the alerts to where you really are, not only to the timetable. Your location stays on this phone and is forgotten when the ride ends.":
     "Hälytys perustuu sijaintiisi eikä pelkkään aikatauluun. Sijainti pysyy puhelimessa ja unohtuu, kun matka päättyy.",
   "Also show notifications": "Näytä myös ilmoitukset",
+  "Keep Ride Mode active on Android": "Pidä Ajotila aktiivisena Androidissa",
+  "For this ride only, Android keeps a private persistent notification and a foreground location companion. Your route and location stay on this phone. This does not guarantee alerts on every locked phone.":
+    "Vain tämän matkan ajan Android pitää yksityisen pysyvän ilmoituksen ja etualan sijaintipalvelun aktiivisena. Reittisi ja sijaintisi pysyvät tässä puhelimessa. Tämä ei takaa hälytyksiä kaikilla lukituilla puhelimilla.",
   "Only while this page is open. A locked phone often pauses it.":
     "Toimii vain, kun tämä sivu on auki. Lukittu puhelin pysäyttää sivun usein.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). Sound and vibration work here as long as this page stays open.":

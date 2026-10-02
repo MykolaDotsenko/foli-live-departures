@@ -32,6 +32,7 @@ adb shell pm path "$PACKAGE" | tee artifacts/android-e2e/package-path.txt
 
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_COARSE_LOCATION
 adb shell pm grant "$PACKAGE" android.permission.ACCESS_FINE_LOCATION
+adb shell pm grant "$PACKAGE" android.permission.POST_NOTIFICATIONS
 adb shell appops set "$PACKAGE" android:coarse_location allow \
   >/dev/null 2>&1 || true
 adb shell appops set "$PACKAGE" android:fine_location allow \
@@ -177,6 +178,24 @@ grep -q "ACCESS_FINE_LOCATION: granted=true" \
   artifacts/android-e2e/package-dump.txt
 grep -q "ACCESS_COARSE_LOCATION: granted=true" \
   artifacts/android-e2e/package-dump.txt
+
+grep -q "android.permission.FOREGROUND_SERVICE" \
+  artifacts/android-e2e/package-dump.txt
+grep -q "android.permission.FOREGROUND_SERVICE_LOCATION" \
+  artifacts/android-e2e/package-dump.txt
+if grep -q "android.permission.ACCESS_BACKGROUND_LOCATION" \
+  artifacts/android-e2e/package-dump.txt; then
+  echo "Background location permission must remain absent."
+  exit 1
+fi
+
+adb shell dumpsys activity services "$PACKAGE" \
+  > artifacts/android-e2e/active-ride-services-final.txt || true
+if grep -q "ActiveRideForegroundService" \
+  artifacts/android-e2e/active-ride-services-final.txt; then
+  echo "ActiveRide foreground service leaked after explicit E2E stop."
+  exit 1
+fi
 
 if [[ "$E2E_STATUS" -ne 0 ]]; then
   echo "Android WebView E2E failed with exit code $E2E_STATUS"

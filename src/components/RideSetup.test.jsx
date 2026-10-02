@@ -4,6 +4,7 @@ import { resetLanguageForTests } from "../i18n";
 
 afterEach(() => {
   resetLanguageForTests("en");
+  vi.unstubAllEnvs();
 });
 
 const mocks = vi.hoisted(() => ({
@@ -118,6 +119,50 @@ test("prefers a saved Home stop and builds an exact trip/shape ride plan", async
   expect(config.targetStop.stopSequence).toBe(2);
   expect(config.targetStop.shapeDistTraveled).toBe(900);
   expect(config.plan.targetPredictedEpochSec).toBe(2_000_000_300);
+});
+
+test("native Android foreground companion requires an explicit per-ride opt-in", async () => {
+  vi.stubEnv("VITE_NATIVE_BUILD", "true");
+  mocks.fetchTripDetails.mockResolvedValue({
+    tripId: "trip-164-1",
+    routeId: "1",
+    shapeId: "shape-1",
+  });
+  mocks.fetchTripStopTimes.mockResolvedValue([
+    {
+      stopId: "164",
+      departureTime: "17:41:00",
+      stopSequence: 1,
+      dropOffType: 0,
+    },
+    {
+      stopId: "32",
+      arrivalTime: "17:46:00",
+      departureTime: "17:46:00",
+      stopSequence: 2,
+      dropOffType: 0,
+    },
+  ]);
+
+  const onStart = vi.fn();
+  renderSetup({ onStart });
+
+  const nativeOption = await screen.findByRole("checkbox", {
+    name: /Keep Ride Mode active on Android/i,
+  });
+  expect(nativeOption).not.toBeChecked();
+  expect(nativeOption).toBeEnabled();
+
+  fireEvent.click(screen.getByDisplayValue("2"));
+  fireEvent.click(nativeOption);
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+
+  expect(onStart).toHaveBeenCalledTimes(1);
+  expect(onStart.mock.calls[0][0].options).toMatchObject({
+    locationBackup: true,
+    nativeForeground: true,
+  });
+  expect(onStart.mock.calls[0][0].options.notifications).toBe(false);
 });
 
 // "route point 900 m" was shape_dist_traveled shown to a passenger. What is

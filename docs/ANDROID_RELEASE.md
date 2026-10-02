@@ -6,6 +6,19 @@ The production package identity is:
 
 The continuously published `android-latest` artifact remains a debug-signed test/sideload build. Do not treat it as the stable upgrade path.
 
+## Active Ride foreground companion
+
+Native Android builds configure one local Capacitor plugin, `ActiveRide`, and a typed `location` foreground service.
+
+- It has a dedicated Android-only Ride Mode checkbox, default OFF. The checkbox is independent from browser notifications and is stored only as part of that active ride.
+- Starting an opted-in ride may request Android notification permission from that explicit user action. Restored rides never prompt automatically.
+- It starts only after the WebView has received a real GPS fix, location backup is enabled and native notification permission is ready.
+- It receives only an opaque ride ID and expiry timestamp. Route, destination, GPS samples and Ride Mode stages stay in the authoritative JS layer.
+- The service is `START_NOT_STICKY`, stops with the task, has a hard six-hour maximum lifetime and is explicitly stopped by End Ride.
+- The persistent notification is intentionally neutral and contains no destination, stop or coordinate.
+- `ACCESS_BACKGROUND_LOCATION` is intentionally not requested. The service must be promoted while the app is visibly in the foreground with foreground location permission already granted.
+- API-35 emulator E2E proves promotion and teardown. Physical screen-off, lock-screen and OEM battery-policy behaviour remains a manual field gate and is not claimed by automation.
+
 ## One-time signing setup
 
 Create a long-lived Android signing key offline and keep its original keystore in a secure backup.

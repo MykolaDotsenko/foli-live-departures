@@ -36,6 +36,10 @@ import {
 } from "../utils/fieldDiagnostics";
 import { BUILD_IDENTITY } from "../utils/buildIdentity";
 import {
+  nativeActiveRideBridge,
+  nativeRideCompanionEligible,
+} from "../utils/nativeActiveRide";
+import {
   RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
@@ -84,6 +88,9 @@ export default function useRideMode() {
   const sessionRef = useRef(session);
   const runtimeRef = useRef(runtime);
   const gpsRef = useRef(gps);
+  const nativeRideIdRef = useRef("");
+  const nativePreparedRideIdRef = useRef("");
+  const [nativeCompanionReady, setNativeCompanionReady] = useState(false);
 
   const commitSession = useCallback((updater) => {
     setSession((current) => {
@@ -137,6 +144,13 @@ export default function useRideMode() {
       setFieldReport(buildFieldDiagnosticReport());
     }
     stopRideAlerts();
+    const nativeRideId = nativeRideIdRef.current || current?.id || "";
+    nativeRideIdRef.current = "";
+    nativePreparedRideIdRef.current = "";
+    setNativeCompanionReady(false);
+    if (nativeRideId) {
+      void nativeActiveRideBridge.stop(nativeRideId);
+    }
     shapeRef.current = null;
     commitSession(null);
     commitRuntime(emptyRuntime());
@@ -337,10 +351,21 @@ export default function useRideMode() {
       stopRideAlerts();
       commitRuntime(emptyRuntime());
       commitGps(emptyGps());
+      nativeRideIdRef.current = "";
+      nativePreparedRideIdRef.current =
+        nextSession.options?.nativeForeground === true ? nextSession.id : "";
+      setNativeCompanionReady(false);
       commitSession(nextSession);
       if (diagnosticsEnabledRef.current) {
         startFieldDiagnostics(nextSession, BUILD_IDENTITY);
         setFieldReport("");
+      }
+
+      if (nextSession.options?.nativeForeground === true) {
+        void nativeActiveRideBridge.prepare({ request: true }).then((result) => {
+          if (sessionRef.current?.id !== nextSession.id) return;
+          setNativeCompanionReady(result.ready === true);
+        });
       }
 
       const wantsNotifications =
@@ -414,6 +439,73 @@ export default function useRideMode() {
     setGpsState,
     applyProgress,
   });
+
+  // Restored rides never trigger a permission prompt. If Android notification
+  // permission is already granted, the companion can resume after the next
+  // real GPS fix. Otherwise it stays off until a fresh explicit opt-in.
+  useEffect(() => {
+    const current = sessionRef.current;
+    if (current?.options?.nativeForeground !== true) {
+      nativePreparedRideIdRef.current = "";
+      setNativeCompanionReady(false);
+      return;
+    }
+    if (nativePreparedRideIdRef.current === current.id) return;
+
+    nativePreparedRideIdRef.current = current.id;
+    void nativeActiveRideBridge.prepare({ request: false }).then((result) => {
+      if (sessionRef.current?.id !== current.id) return;
+      setNativeCompanionReady(result.ready === true);
+    });
+  }, [rideId, session?.options?.nativeForeground, sessionRef]);
+
+  // The Android foreground companion is a support layer only. It starts after
+  // the browser location watch has produced a real fix, and it never receives
+  // route/GPS/stage data or decides Ride Mode state.
+  useEffect(() => {
+    const current = sessionRef.current;
+    if (
+      !nativeCompanionReady ||
+      !nativeRideCompanionEligible(current, { status: gps.status })
+    ) {
+      const nativeRideId = nativeRideIdRef.current;
+      nativeRideIdRef.current = "";
+      if (nativeRideId) {
+        void nativeActiveRideBridge.stop(nativeRideId);
+      }
+      return;
+    }
+
+    if (nativeRideIdRef.current === current.id) return;
+
+    const nativeRideId = current.id;
+    nativeRideIdRef.current = nativeRideId;
+    void nativeActiveRideBridge.start(current).then((result) => {
+      if (!result.requested && !result.active) {
+        if (nativeRideIdRef.current === nativeRideId) {
+          nativeRideIdRef.current = "";
+        }
+        return;
+      }
+
+      // A fast End Ride can race the native start request. If the JS session
+      // changed while Android was promoting the service, stop that stale
+      // companion as soon as the request settles.
+      if (sessionRef.current?.id !== nativeRideId) {
+        void nativeActiveRideBridge.stop(nativeRideId);
+        if (nativeRideIdRef.current === nativeRideId) {
+          nativeRideIdRef.current = "";
+        }
+      }
+    });
+  }, [
+    gps.status,
+    nativeCompanionReady,
+    rideId,
+    session?.options?.locationBackup,
+    session?.options?.nativeForeground,
+    sessionRef,
+  ]);
 
   useEffect(() => {
     if (!rideActive) return undefined;

@@ -173,6 +173,9 @@ export default {
   "Times the alerts to where you really are, not only to the timetable. Your location stays on this phone and is forgotten when the ride ends.":
     "Anpassar larmen efter var du faktiskt är, inte bara efter tidtabellen. Din position stannar på telefonen och glöms när resan avslutas.",
   "Also show notifications": "Visa även notiser",
+  "Keep Ride Mode active on Android": "Håll Reseläget aktivt på Android",
+  "For this ride only, Android keeps a private persistent notification and a foreground location companion. Your route and location stay on this phone. This does not guarantee alerts on every locked phone.":
+    "Endast under den här resan håller Android en privat beständig avisering och en platsbaserad förgrundstjänst aktiv. Din rutt och plats stannar på telefonen. Detta garanterar inte aviseringar på alla låsta telefoner.",
   "Only while this page is open. A locked phone often pauses it.":
     "Endast medan sidan är öppen. En låst telefon pausar den ofta.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). Sound and vibration work here as long as this page stays open.":

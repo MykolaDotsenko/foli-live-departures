@@ -33,7 +33,9 @@
     "verify:release-provenance": "node --test scripts/release-provenance.test.mjs && node scripts/verify-release-provenance-workflows.mjs",
     "verify:android-e2e-log": "node --test scripts/verify-android-app-log.test.mjs",
     "predev": "node scripts/build-locale-packs.mjs",
-    "prebuild": "node scripts/build-locale-packs.mjs"
+    "prebuild": "node scripts/build-locale-packs.mjs",
+    "configure:android-active-ride": "node scripts/configure-android-active-ride.mjs",
+    "verify:android-active-ride": "node --test scripts/configure-android-active-ride.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
