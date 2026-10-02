@@ -271,7 +271,7 @@ export function finishFieldDiagnostics({
     outcome: text(outcome),
   };
   writeTrace(next);
-  return safeJson(next);
+  return next;
 }
 
 export function buildFieldDiagnosticReport() {
