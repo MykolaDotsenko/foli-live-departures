@@ -7,23 +7,11 @@ import useTransferLegRevalidation from "./useTransferLegRevalidation";
 
 function activeIndex(journey) {
   const value = Number(journey?.activeLegIndex);
-  if (Number.isInteger(value) && value >= 0) return value;
-  if (journey?.transferPlan && journey.transferLeg === 1) return 0;
-  if (journey?.transferPlan && journey.transferLeg === 2) return 1;
-  return null;
+  return Number.isInteger(value) && value >= 0 ? value : null;
 }
 
 function legAt(journey, index) {
-  if (journey?.itinerary?.legs?.[index]) {
-    return journey.itinerary.legs[index];
-  }
-  if (index === 0 && journey?.transferPlan?.first) {
-    return journey.transferPlan.first;
-  }
-  if (index === 1 && journey?.transferPlan?.second) {
-    return journey.transferPlan.second;
-  }
-  return null;
+  return journey?.itinerary?.legs?.[index] || null;
 }
 
 function projectedArrival(leg, state) {
