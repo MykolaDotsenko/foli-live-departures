@@ -72,5 +72,5 @@ export function localeDefinition(value) {
  */
 export function nextLocaleDefinition(current) {
   const index = LOCALES.findIndex((locale) => locale.code === current);
-  return LOCALES[(index + 1 + LOCALES.length) % LOCALES.length] || LOCALES[0];
+  return LOCALES[(index + 1 + LOCALES.length) % LOCALES.length];
 }
