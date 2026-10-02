@@ -84,11 +84,17 @@ function optionId(stopId, departure) {
  * @param {{
  *   stops: readonly { id: string, name?: string, distanceMeters?: number }[],
  *   fitsByStop: NearbyFitMap,
+ *   timeConstraint?: import("../types/journey").JourneyTimeConstraint | null,
  *   preference?: import("../types/journey").RoutingPreference | string,
  * }} input
  * @returns {DirectJourneyOption[]}
  */
-export function selectDirectJourneyOptions({ stops, fitsByStop, preference = "balanced" }) {
+export function selectDirectJourneyOptions({
+  stops,
+  fitsByStop,
+  timeConstraint = null,
+  preference = "balanced",
+}) {
   const stopById = new Map(stops.map((stop) => [String(stop.id), stop]));
 
   /** @type {{ stopId: string, stopName: string, distanceMeters: number, departure: NearbyDepartureFit }[]} */
