@@ -46,12 +46,14 @@ const STORAGE_KEY = "foli-language-v1";
 const LOCALE_PACKS = Object.freeze({
   fi: "locales/fi.json",
   uk: "locales/uk.json",
+  sv: "locales/sv.json",
 });
 
 /** @type {Partial<Record<Language, () => Promise<{default: Dictionary}>>>} */
 const RUNTIME_LOADERS = {
   fi: () => import("./fi/runtime.js"),
   uk: () => import("./uk/runtime.js"),
+  sv: () => import("./sv/runtime.js"),
 };
 
 /**
@@ -92,6 +94,7 @@ async function loadDictionary(language) {
 const DICTIONARY_LOADERS = {
   fi: () => loadDictionary("fi"),
   uk: () => loadDictionary("uk"),
+  sv: () => loadDictionary("sv"),
 };
 /** @type {Map<Language, Promise<Dictionary>>} */
 const dictionaryLoads = new Map();
@@ -349,6 +352,7 @@ export function speechLocale(language = current) {
  */
 export function providerLanguages(language = current) {
   if (localeDefinition(language).providerMode === "finnish") return ["fi"];
+  if (localeDefinition(language).providerMode === "swedish") return ["sv", "en"];
   return [
     ...browserLanguages().filter(
       (tag) => tag && !/^fi\b/i.test(String(tag))
