@@ -151,6 +151,7 @@ function finalizeOptions(candidates, plan) {
  *   excludedRun?: {tripRef?: string, originAimedDepartureAt?: number | null} | null,
  *   journeyPlan?: JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
+ *   routingPreference?: import("../types/journey").RoutingPreference | string,
  *   signal?: AbortSignal,
  * }} input
  * @returns {Promise<MultiLegJourneyOption[]>}
@@ -164,6 +165,7 @@ export async function loadTransferJourneyOptions({
   excludedRun = null,
   journeyPlan = null,
   timeConstraint = null,
+  routingPreference = "balanced",
   signal,
 }) {
   const origins = Array.isArray(originStops) ? originStops : [];
@@ -171,7 +173,15 @@ export async function loadTransferJourneyOptions({
   const networkStops = Array.isArray(allStops) ? allStops : [];
   if (!destination || origins.length === 0) return [];
 
-  const effectivePlan = journeyPlan || timeConstraint;
+  const effectivePlan =
+    journeyPlan ||
+    (timeConstraint || routingPreference !== "balanced"
+      ? {
+          mode: timeConstraint?.mode || "leave-now",
+          targetTimeSec: timeConstraint?.targetTimeSec ?? null,
+          preference: routingPreference,
+        }
+      : null);
   const normalizedTime = normalizeJourneyTimeConstraint(effectivePlan);
   if (effectivePlan && !normalizedTime.valid) return [];
   const scheduledPlanning =
@@ -870,6 +880,7 @@ export async function loadTransferJourneyOptions({
  *   positionAccuracy?: number | null,
  *   journeyPlan?: JourneyPlan | null,
  *   timeConstraint?: JourneyTimeConstraint | null,
+ *   routingPreference?: import("../types/journey").RoutingPreference | string,
  * }} input
  */
 export default function useTransferJourneyOptions({
@@ -880,11 +891,20 @@ export default function useTransferJourneyOptions({
   positionAccuracy = null,
   journeyPlan = null,
   timeConstraint = null,
+  routingPreference = "balanced",
 }) {
   /** @type {[MultiLegJourneyOption[], import("react").Dispatch<import("react").SetStateAction<MultiLegJourneyOption[]>>]} */
   const [options, setOptions] = useState([]);
   const [state, setState] = useState("idle");
-  const effectivePlan = journeyPlan || timeConstraint;
+  const effectivePlan =
+    journeyPlan ||
+    (timeConstraint || routingPreference !== "balanced"
+      ? {
+          mode: timeConstraint?.mode || "leave-now",
+          targetTimeSec: timeConstraint?.targetTimeSec ?? null,
+          preference: routingPreference,
+        }
+      : null);
   const effectivePreference =
     effectivePlan && "preference" in effectivePlan
       ? effectivePlan.preference || "balanced"
@@ -897,6 +917,7 @@ export default function useTransferJourneyOptions({
     positionAccuracy,
     journeyPlan,
     timeConstraint: effectivePlan,
+    routingPreference,
   });
   requestRef.current = {
     enabled,
@@ -906,6 +927,7 @@ export default function useTransferJourneyOptions({
     positionAccuracy,
     journeyPlan,
     timeConstraint: effectivePlan,
+    routingPreference,
   };
 
   const signature = useMemo(
@@ -959,6 +981,7 @@ export default function useTransferJourneyOptions({
           positionAccuracy: request.positionAccuracy,
           journeyPlan: request.journeyPlan,
           timeConstraint: request.timeConstraint,
+          routingPreference: request.routingPreference,
           signal: controller.signal,
         });
         if (!active || controller.signal.aborted) return;
