@@ -31,6 +31,14 @@ export const LOCALES = Object.freeze([
     speechLocale: "fi-FI",
     providerMode: "finnish",
   }),
+  Object.freeze({
+    code: "uk",
+    nativeLabel: "Українська",
+    switchLabel: "Українською",
+    intlLocale: "uk-UA",
+    speechLocale: "uk-UA",
+    providerMode: "translated",
+  }),
 ]);
 
 /** @type {readonly Language[]} */
