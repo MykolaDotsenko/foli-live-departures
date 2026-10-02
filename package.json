@@ -35,7 +35,11 @@
     "predev": "node scripts/build-locale-packs.mjs",
     "prebuild": "node scripts/build-locale-packs.mjs",
     "configure:android-active-ride": "node scripts/configure-android-active-ride.mjs",
-    "verify:android-active-ride": "node --test scripts/configure-android-active-ride.test.mjs"
+    "verify:android-active-ride": "node --test scripts/configure-android-active-ride.test.mjs",
+    "verify:play-release": "node scripts/verify-play-release.mjs && node --test scripts/verify-android-play-target.test.mjs",
+    "verify:android-play-target": "node scripts/verify-android-play-target.mjs",
+    "build:play-store-assets": "node scripts/build-play-store-assets.mjs",
+    "verify:play-assets": "node scripts/verify-play-assets.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -1145,6 +1145,9 @@ function App() {
             >
               {t("Source code")}
             </a>
+            <a href={`${import.meta.env.BASE_URL}privacy.html`}>
+              {t("Privacy policy")}
+            </a>
           </nav>
         </div>
 

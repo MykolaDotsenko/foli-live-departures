@@ -34,6 +34,7 @@ export default {
   "Report a problem (GitHub)": "Ilmoita ongelmasta (GitHub)",
   "Source code": "Lähdekoodi",
   "About & privacy": "Tietoa ja tietosuoja",
+  "Privacy policy": "Tietosuojakäytäntö",
   Release: "Julkaisu",
   "Version {version}": "Versio {version}",
   "Build {revision}": "Koonti {revision}",

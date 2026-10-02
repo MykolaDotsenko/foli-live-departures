@@ -6,6 +6,8 @@ The production package identity is:
 
 The continuously published `android-latest` artifact remains a debug-signed test/sideload build. Do not treat it as the stable upgrade path.
 
+Google Play listing/privacy/Data Safety sources and the exact AAB upload procedure live in `play/README.md`. The repository can verify the release surface and generated API-36 target, but Play Console publication remains manual evidence.
+
 ## Active Ride foreground companion
 
 Native Android builds configure one local Capacitor plugin, `ActiveRide`, and a typed `location` foreground service.

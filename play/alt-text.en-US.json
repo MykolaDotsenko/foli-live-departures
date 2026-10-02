@@ -1,0 +1,7 @@
+{
+  "feature-graphic": "Turku Departures with a Ride Mode card showing a next-stop alert for Puistokatu.",
+  "phone-01-board": "Live Kauppatori departures with realtime status, disruptions, saved-place recovery and get-off alert actions.",
+  "phone-02-ride-setup": "Get-off alert setup for choosing the exit stop and optional location guidance before starting Ride Mode.",
+  "phone-03-ride-now": "Ride Mode at the destination showing Get off now and the selected Puistokatu stop.",
+  "phone-04-privacy": "Turku Departures About and privacy panel explaining local storage, network requests and no analytics."
+}

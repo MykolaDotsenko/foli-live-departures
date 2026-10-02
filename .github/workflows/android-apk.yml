@@ -7,6 +7,15 @@ on:
       - ".github/workflows/android-apk.yml"
       - "scripts/build-sw.mjs"
       - "scripts/configure-android-active-ride.mjs"
+      - "scripts/verify-android-play-target.mjs"
+      - "scripts/verify-play-*.mjs"
+      - "scripts/build-play-store-assets.mjs"
+      - "e2e/play-store-screenshots.spec.js"
+      - "play/**"
+      - "docs/ANDROID_RELEASE.md"
+      - "docs/PRODUCTION_READINESS.md"
+      - "docs/PRODUCTION_ROADMAP.md"
+      # Release-governance docs participate in exact-SHA Android evidence.
       - "src/**"
       - "public/**"
       - "index.html"
@@ -66,6 +75,9 @@ jobs:
 
       - name: Configure Android active-ride bridge
         run: npm run configure:android-active-ride
+
+      - name: Verify Google Play API target and permission surface
+        run: npm run verify:android-play-target
 
       - name: Apply Turku Departures launcher icon
         run: |

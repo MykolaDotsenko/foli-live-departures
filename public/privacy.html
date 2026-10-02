@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="index,follow">
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src 'self'; img-src 'self'; connect-src 'none'; script-src 'none'; base-uri 'none'; form-action 'none'"
+  >
+  <title>Privacy policy · Turku Departures</title>
+  <meta
+    name="description"
+    content="Privacy policy for the independent Turku Departures web, PWA and Android app."
+  >
+  <link rel="stylesheet" href="./privacy.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Turku Departures</p>
+    <h1>Privacy policy</h1>
+    <p class="updated">Last updated: 3 October 2026</p>
+
+    <p>
+      Turku Departures is an independent transit companion made by
+      <a href="https://github.com/MykolaDotsenko">Mykola Dotsenko</a>.
+      It uses Föli open data but is not made by or affiliated with Föli or
+      the City of Turku.
+    </p>
+
+    <h2>Privacy in one sentence</h2>
+    <p>
+      There is no account. No advertising SDK or analytics SDK is included. Saved app state stays on your device; optional device location is processed on your device and is not sent by Turku Departures to the developer or to Föli.
+    </p>
+
+    <h2>Data stored on your device</h2>
+    <p>Depending on the features you use, the app can store locally:</p>
+    <ul>
+      <li>favourite and recent public stop identifiers;</li>
+      <li>line filters and My Places made from public stop numbers/names, not street addresses;</li>
+      <li>recent departure-board responses for a short offline-recovery window;</li>
+      <li>an active Ride Mode session for at most six hours;</li>
+      <li>local preferences and recent same-session search results.</li>
+    </ul>
+    <p>
+      Turku Departures does not operate an account database. You can remove
+      locally stored data by using the app's local-data controls, clearing the site's/app's storage, or uninstalling the Android app.
+    </p>
+
+    <h2>Device location</h2>
+    <p>
+      Location is optional. It is used to find nearby stops and, when you
+      enable location backup in Ride Mode, to compare your position with the
+      selected public-transit route. Raw device coordinates are not saved by
+      Turku Departures and are not sent by Turku Departures to the developer
+      or to Föli.
+    </p>
+    <p>
+      The Android build can additionally offer a per-ride foreground-service
+      companion. It is off by default, requires an explicit opt-in for that
+      ride, receives only an opaque ride identifier and expiry time, and does
+      not persist route, destination or GPS data. The app does not request Android background-location permission.
+    </p>
+
+    <h2>Network requests</h2>
+    <p>
+      The Android app bundles its web interface locally. The public web/PWA
+      version is served by GitHub Pages, so GitHub can receive ordinary web
+      request information such as an IP address under GitHub's own policies.
+    </p>
+    <p>
+      Transit data is requested over HTTPS from <code>data.foli.fi</code>.
+      Requests can contain public stop, route or trip identifiers, the stop
+      search text you submit, and during Ride Mode the selected exit stop and
+      nearby trip/stop identifiers needed to refresh transit evidence. Föli's
+      servers can receive the request and network information such as your IP
+      address. Turku Departures does not use those requests for advertising,
+      profiling or analytics.
+    </p>
+    <p>
+      Direct address/place lookup is disabled in the production app. Address
+      and place text entered there stays on the device; the app offers the
+      official Turku journey planner as an external link instead. Google Maps
+      is opened only when you explicitly tap a route link, after which Google's
+      own terms and privacy policy apply.
+    </p>
+
+    <h2>Diagnostics and reports</h2>
+    <p>
+      The app has no automatic crash-reporting or analytics service. Optional
+      field diagnostics are created locally. They leave the device only if you
+      explicitly choose to copy or send them. Problem-report and email links
+      likewise open an external service only after your action.
+    </p>
+
+    <h2>Security and retention</h2>
+    <p>
+      Automatic app network requests use HTTPS. Turku Departures does not sell
+      personal data. Because the developer does not run an account or analytics
+      backend for this app, there is no developer-side user profile to delete.
+      Third-party services named above handle their own server logs according
+      to their policies.
+    </p>
+
+    <h2>Contact</h2>
+    <p>
+      Privacy questions: <a href="mailto:docnikolaj1990@gmail.com">docnikolaj1990@gmail.com</a>.
+      You can also review the
+      <a href="https://github.com/MykolaDotsenko/foli-live-departures">source code</a>.
+    </p>
+
+    <p class="back"><a href="./">Back to Turku Departures</a></p>
+  </main>
+</body>
+</html>
