@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { normalizedPastTimestamp } from "../utils/cacheTime";
 import { realStopName } from "../utils/stopNames";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 const STORAGE_KEY = "foli-saved-stops-v1";
 const MAX_RECENTS = 5;
@@ -76,8 +77,13 @@ export default function useSavedStops() {
       if (event.key !== null && event.key !== STORAGE_KEY) return;
       setState(readStoredState());
     };
+    const takeImportedChanges = () => setState(readStoredState());
     window.addEventListener("storage", takeOtherTabChanges);
-    return () => window.removeEventListener("storage", takeOtherTabChanges);
+    window.addEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
+    return () => {
+      window.removeEventListener("storage", takeOtherTabChanges);
+      window.removeEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
+    };
   }, []);
 
   const commit = useCallback((updater) => {
