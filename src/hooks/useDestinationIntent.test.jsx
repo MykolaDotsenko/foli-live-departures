@@ -113,3 +113,79 @@ test("selects an external place only when nearby Föli stops can be resolved", (
   });
   expect(result.current.destination).toBeNull();
 });
+
+
+test("destination normalization covers empty names, malformed places and primary fallback", () => {
+  expect(destinationFromStop(undefined)).toBeNull();
+  expect(destinationFromStop({ id: " 42 ", name: "   " })).toEqual({
+    id: "stop:42",
+    kind: "public-stop",
+    label: "Stop 42",
+    primaryStopId: "42",
+    acceptableStopIds: ["42"],
+  });
+
+  expect(destinationFromPlace(undefined)).toBeNull();
+  expect(
+    destinationFromPlace({
+      id: "work",
+      label: "Work",
+      stops: "not-an-array",
+    })
+  ).toBeNull();
+  expect(
+    destinationFromPlace({
+      id: "",
+      label: "Work",
+      stops: [{ id: "100" }],
+    })
+  ).toBeNull();
+  expect(
+    destinationFromPlace({
+      id: "work",
+      label: "",
+      stops: [{ id: "100" }],
+    })
+  ).toBeNull();
+
+  expect(
+    destinationFromPlace({
+      id: "work",
+      label: "Work",
+      stops: [
+        null,
+        { id: "bad" },
+        { id: " 100 " },
+        { id: "100" },
+        { id: "101" },
+      ],
+      primaryStopId: "999",
+    })
+  ).toEqual({
+    id: "place:work",
+    kind: "saved-place",
+    label: "Work",
+    primaryStopId: "100",
+    acceptableStopIds: ["100", "101"],
+  });
+});
+
+test("invalid stop and place choices leave the current destination unchanged", () => {
+  const { result } = renderHook(() => useDestinationIntent());
+
+  act(() => {
+    result.current.chooseStop({ id: "164", name: "Kauppatori" });
+  });
+  const selected = result.current.destination;
+
+  act(() => {
+    result.current.chooseStop({ id: "bad", name: "Invalid" });
+    result.current.choosePlace({
+      id: "home",
+      label: "Home",
+      stops: [],
+    });
+  });
+
+  expect(result.current.destination).toEqual(selected);
+});
