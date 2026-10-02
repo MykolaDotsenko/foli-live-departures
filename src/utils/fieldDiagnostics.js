@@ -84,7 +84,12 @@ export function sanitizedRideIdentity(session) {
  * @param {any} gps
  * @param {import("../types/journey").TransferRevalidationState | null} [transferRevalidation]
  */
-export function sanitizedEvidence(runtime, gps, transferRevalidation = null) {
+export function sanitizedEvidence(
+  runtime,
+  gps,
+  transferRevalidation = null,
+  futureLegRevalidations = []
+) {
   const gpsAge = positive(runtime?.gpsAgeSec);
   const gpsState =
     gps?.status === "error"
@@ -118,6 +123,22 @@ export function sanitizedEvidence(runtime, gps, transferRevalidation = null) {
     gpsShapeUsable: Boolean(gps?.shapeUsable),
     transferProviderState: text(transferRevalidation?.providerState),
     transferDecision: text(transferRevalidation?.decision),
+    futureLegs: (Array.isArray(futureLegRevalidations)
+      ? futureLegRevalidations
+      : []
+    )
+      .map((entry) => ({
+        legIndex: Number(entry?.legIndex),
+        providerState: text(entry?.state?.providerState),
+        decision: text(entry?.state?.decision),
+      }))
+      .filter(
+        (entry) =>
+          Number.isInteger(entry.legIndex) &&
+          entry.legIndex >= 0 &&
+          (entry.providerState || entry.decision)
+      )
+      .sort((left, right) => left.legIndex - right.legIndex),
   };
 }
 
@@ -179,10 +200,16 @@ export function recordFieldDiagnosticObservation({
   runtime,
   gps,
   transferRevalidation = null,
+  futureLegRevalidations = [],
   type = "observation",
 } = {}) {
   if (!session || !readTrace()) return null;
-  const evidence = sanitizedEvidence(runtime, gps, transferRevalidation);
+  const evidence = sanitizedEvidence(
+    runtime,
+    gps,
+    transferRevalidation,
+    futureLegRevalidations
+  );
   const previous = readTrace()?.events?.at(-1);
   const nextComparable = JSON.stringify({
     stage: session.stage,
@@ -227,6 +254,7 @@ export function finishFieldDiagnostics({
   runtime,
   gps,
   transferRevalidation = null,
+  futureLegRevalidations = [],
   outcome = "ended",
 } = {}) {
   if (!readTrace()) return null;
@@ -235,6 +263,7 @@ export function finishFieldDiagnostics({
     runtime,
     gps,
     transferRevalidation,
+    futureLegRevalidations,
     type: "ride-end",
   });
   const trace = readTrace();
