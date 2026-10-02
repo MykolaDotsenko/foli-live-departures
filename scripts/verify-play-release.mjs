@@ -10,6 +10,7 @@ const fullDescription=read("play/listings/en-US/full-description.txt").trim();
 const releaseNotes=read("play/release-notes/en-US/default.txt").trim();
 const dataSafety=read("play/DATA_SAFETY.md");
 const privacy=read("public/privacy.html");
+const privacyText=privacy.replace(/\s+/g," ");
 const app=read("src/App.jsx");
 const releaseWorkflow=read(".github/workflows/android-release.yml");
 const apkWorkflow=read(".github/workflows/android-apk.yml");
@@ -48,7 +49,7 @@ for(const token of [
   "docnikolaj1990@gmail.com",
   "remove locally stored data"
 ]){
-  if(!privacy.includes(token)) failures.push(`Privacy policy missing: ${token}`);
+  if(!privacyText.includes(token)) failures.push(`Privacy policy missing: ${token}`);
 }
 if(!app.includes('privacy.html')) failures.push("In-app trust surface must link the public privacy policy.");
 
