@@ -62,7 +62,7 @@ In the verification round, 21 of 23 screens scored 80 or more on a phone. The tw
 
 The first product review averaged about 41, and the re-audit about 56, on a coarser list of areas.
 
-The product reviewer's verdict: ready for a quiet release now. Not ready to promote until the name and the domain are settled, and until the get-off alert has been ridden on real buses in the city centre.
+Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-02, the latest `master` fails the unchanged complete-app bundle budget, so the current build is not release-verified. Broad promotion also remains blocked on the explicit manual/domain/field-validation gates in `PRODUCTION_READINESS.md`.
 
 ## Fixed after the verification round
 
