@@ -411,6 +411,20 @@ test.describe("on a Finnish phone", () => {
   });
 });
 
+test("About & privacy exposes the canonical release identity", async ({ page }) => {
+  await page.goto("/");
+
+  const about = page.locator("details.about");
+  await about.getByText("About & privacy", { exact: true }).click();
+
+  const identity = about.locator("[data-build-version]");
+  await expect(identity).toHaveAttribute("data-build-version", "0.1.0");
+  await expect(identity).toHaveAttribute("data-build-platform", "web");
+  await expect(identity).toContainText("Version 0.1.0");
+  await expect(identity).toContainText("Local build");
+  await expect(identity).toHaveAttribute("data-build-sha", "");
+});
+
 test("200 percent text scaling keeps core mobile controls usable", async ({
   page,
 }, testInfo) => {

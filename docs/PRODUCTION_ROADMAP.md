@@ -648,9 +648,19 @@ PR #142 refreshes the lock within the repository's declared supported ranges to 
 
 ## PR-C06 — Release notes / version identity in UI
 
+**Implementation status:** implemented in the release-identity batch; merge and production verification remain governed by the exact-SHA release gates.
+
 **Priority:** 66/100
 
-Expose a small build/version identifier in About & privacy / diagnostics so field reports can name the exact release without adding analytics.
+A single canonical build identity now feeds both About & privacy and field diagnostics. The package version is the default app version, production/native workflows stamp the exact Git SHA, the passenger-facing UI shows a compact revision linked to the exact source commit, and unstamped development builds are labelled explicitly instead of pretending to be a release.
+
+### Acceptance
+
+- package version is the default version source; no duplicate hand-maintained version constant;
+- field diagnostics retain the full 40-character SHA and platform;
+- About & privacy exposes version plus a compact source revision without analytics;
+- malformed/non-Git revisions fail closed to an unstamped/local identity;
+- FI/UK/SV locale completeness, mobile reflow, accessibility and bundle gates remain unchanged.
 
 ---
 

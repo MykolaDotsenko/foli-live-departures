@@ -34,6 +34,7 @@ import {
   recordFieldDiagnosticObservation,
   startFieldDiagnostics,
 } from "../utils/fieldDiagnostics";
+import { BUILD_IDENTITY } from "../utils/buildIdentity";
 import {
   RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
@@ -53,12 +54,6 @@ import useRideShape from "./useRideShape";
 import useRideWakeLock from "./useRideWakeLock";
 
 const CLOCK_INTERVAL_MS = 10_000;
-const FIELD_BUILD = {
-  version: import.meta.env.VITE_APP_VERSION || "",
-  sha: import.meta.env.VITE_BUILD_SHA || "",
-  platform: import.meta.env.VITE_NATIVE_BUILD === "true" ? "android" : "web",
-};
-
 // Ride Mode's get-off alert: one ride at a time, carried across reloads, and
 // moved through its stages by every piece of evidence as it arrives, from
 // the live feed, the phone's location, and the clock. The hooks it calls
@@ -344,7 +339,7 @@ export default function useRideMode() {
       commitGps(emptyGps());
       commitSession(nextSession);
       if (diagnosticsEnabledRef.current) {
-        startFieldDiagnostics(nextSession, FIELD_BUILD);
+        startFieldDiagnostics(nextSession, BUILD_IDENTITY);
         setFieldReport("");
       }
 
