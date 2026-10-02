@@ -601,7 +601,7 @@ contracts and may not weaken Ride Mode authority.
 
 ## PR-D01 — Generalized N-leg itinerary model
 
-**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
+**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
 
 **Priority:** 88/100  
 **Risk:** high.
@@ -621,7 +621,7 @@ Refactor the current direct/one-transfer representation into a generic ordered i
 
 ## PR-D02 — Bounded two-transfer topology search
 
-**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
+**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
 
 **Priority:** 78/100  
 **Dependency:** D01.
@@ -646,7 +646,7 @@ Add **at most two transfers**, with hard caps for:
 
 ## PR-D03 — Multi-leg Active Journey orchestration
 
-**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
+**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
 
 **Priority:** 82/100  
 **Dependency:** D02.
@@ -663,7 +663,7 @@ Urgent current-leg instructions always outrank future-leg information.
 
 ## PR-D04 — Future-leg live revalidation
 
-**Implementation status (PR #137): implemented in pre-field batch 1; pending verified merge at the time of this document change.**
+**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
 
 **Priority:** 90/100  
 **Dependency:** D03.
