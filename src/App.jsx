@@ -907,11 +907,13 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
+            plan={journey.plan}
             coordinatesStatus={coordinatesStatus}
             online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
+            onPlanChange={journey.updatePlan}
             onClear={clearJourneyDestination}
           />
         )}
@@ -1043,6 +1045,7 @@ function App() {
           online={online}
           searchEdits={readSearchEdits}
           destination={journey.destination}
+          journeyPlan={journey.plan}
           excludedJourney={
             selectedJourney?.phase === "recovery" ? selectedJourney : null
           }
