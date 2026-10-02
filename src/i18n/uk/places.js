@@ -1,4 +1,4 @@
-import { backupStops } from "./runtime";
+import { backupStops } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
