@@ -152,3 +152,130 @@ test("prefers fewer transfers inside the near-equivalent arrival band", () => {
   const muchEarlier = { ...two, journeyArrivalAt: 1900, destinationArrivalAt: 1900 };
   expect(compareItineraries(muchEarlier, one)).toBeLessThan(0);
 });
+
+
+test("fails closed for every malformed leg and transfer identity field", () => {
+  const validFirst = leg("a", "100", "200", 1000, 1200);
+  const validSecond = leg("b", "201", "900", 1500, 2000);
+  const validTransfer = transfer("200", "201", 75);
+
+  for (const broken of [
+    { ...validFirst, tripRef: "" },
+    { ...validFirst, boardStopId: "" },
+    { ...validFirst, exitStopId: "" },
+    { ...validFirst, departureAt: 0 },
+    { ...validFirst, arrivalAt: null },
+  ]) {
+    expect(
+      normalizeItineraryOption({ legs: [broken], transfers: [] })
+    ).toBeNull();
+  }
+
+  for (const broken of [
+    { ...validTransfer, alightStopId: "" },
+    { ...validTransfer, boardStopId: "" },
+    { ...validTransfer, walkingDistanceM: -1 },
+    { ...validTransfer, alightStopId: "999" },
+    { ...validTransfer, boardStopId: "999" },
+  ]) {
+    expect(
+      normalizeItineraryOption({
+        legs: [validFirst, validSecond],
+        transfers: [broken],
+      })
+    ).toBeNull();
+  }
+
+  expect(normalizeItineraryOption({ legs: [], transfers: [] })).toBeNull();
+  expect(
+    normalizeItineraryOption({
+      legs: [validFirst, validSecond],
+      transfers: [],
+    })
+  ).toBeNull();
+});
+
+test("keeps unknown optional distances distinct from a real zero-distance value", () => {
+  const normalized = normalizeItineraryOption({
+    legs: [leg("direct", "100", "900", 1000, 1800)],
+    transfers: [],
+    originDistanceMeters: null,
+    finalWalkDistanceM: null,
+    finalWalkSecEstimate: undefined,
+    reliability: "unexpected",
+  });
+
+  expect(normalized).toMatchObject({
+    originStopId: "100",
+    originStopName: "100",
+    destinationStopId: "900",
+    destinationArrivalAt: 1800,
+    journeyArrivalAt: 1800,
+    originDistanceMeters: 0,
+    finalWalkDistanceM: null,
+    finalWalkSecEstimate: null,
+    totalWalkingDistanceM: 0,
+    reliability: "medium",
+  });
+  expect(normalized.id).toBe("direct:100:900");
+
+  const zeroWalk = normalizeItineraryOption({
+    legs: [leg("direct", "100", "900", 1000, 1800)],
+    transfers: [],
+    finalWalkDistanceM: 0,
+    finalWalkSecEstimate: 0,
+    reliability: "high",
+  });
+  expect(zeroWalk.finalWalkDistanceM).toBe(0);
+  expect(zeroWalk.finalWalkSecEstimate).toBe(0);
+  expect(zeroWalk.reliability).toBe("high");
+});
+
+test("access helpers and legacy aliases fail closed without inventing legs", () => {
+  const direct = normalizeItineraryOption({
+    legs: [leg("direct", "100", "900", 1000, 1800)],
+    transfers: [],
+  });
+  const directAliases = withLegacyTransferAliases(direct);
+
+  expect(directAliases.first).toBeUndefined();
+  expect(withLegacyTransferAliases({ legs: [] })).toEqual({ legs: [] });
+  expect(itineraryTransferCount(null)).toBe(0);
+  expect(itineraryLeg(null, 0)).toBeNull();
+  expect(itineraryTransfer(null, 0)).toBeNull();
+  expect(itineraryLeg(direct, 0.5)).toBeNull();
+  expect(itineraryTransfer(direct, 0.5)).toBeNull();
+  expect(itineraryLeg(direct, 4)).toBeNull();
+  expect(itineraryTransfer(direct, 0)).toBeNull();
+});
+
+test("comparison handles invalid inputs and deterministic walking/departure tie breakers", () => {
+  const base = normalizeItineraryOption({
+    id: "base",
+    legs: [leg("direct", "100", "900", 1000, 1800)],
+    transfers: [],
+    totalWalkingDistanceM: 100,
+  });
+  expect(compareItineraries(null, null)).toBe(0);
+  expect(compareItineraries(null, base)).toBe(1);
+  expect(compareItineraries(base, null)).toBe(-1);
+
+  const moreWalking = { ...base, id: "walk", totalWalkingDistanceM: 200 };
+  expect(compareItineraries(base, moreWalking)).toBeLessThan(0);
+
+  const laterDeparture = {
+    ...base,
+    id: "later",
+    legs: [{ ...base.legs[0], departureAt: 1100 }],
+  };
+  expect(compareItineraries(base, laterDeparture)).toBeLessThan(0);
+
+  const laterArrival = {
+    ...base,
+    id: "arrival",
+    destinationArrivalAt: 2000,
+    journeyArrivalAt: 2000,
+    legs: [{ ...base.legs[0], arrivalAt: 2000 }],
+  };
+  expect(compareItineraries(base, laterArrival, -1)).toBeLessThan(0);
+});

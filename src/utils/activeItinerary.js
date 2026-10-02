@@ -47,7 +47,13 @@ function firstKnownDownstreamFailure(journey, afterLegIndex) {
 
 /** @param {ActiveDirectJourney | null | undefined} journey */
 export function currentItineraryIndex(journey) {
-  const index = Number(journey?.activeLegIndex);
+  if (
+    journey?.activeLegIndex === null ||
+    journey?.activeLegIndex === undefined
+  ) {
+    return null;
+  }
+  const index = Number(journey.activeLegIndex);
   return Number.isInteger(index) && index >= 0 ? index : null;
 }
 

@@ -3,8 +3,11 @@ import {
   activeJourneyFromItinerary,
   advanceItineraryAfterRide,
   applyFutureLegRevalidation,
+  currentItineraryIndex,
   currentItineraryLeg,
   itineraryHasFutureLeg,
+  nextItineraryLeg,
+  nextItineraryTransfer,
   recoverItineraryAfterRide,
   rideMatchesCurrentItineraryLeg,
 } from "./activeItinerary";
@@ -235,4 +238,210 @@ test("revalidates any committed future leg without trusting stale uncertainty", 
     phase: "recovery",
     recoveryReason: "transfer-cancelled",
   });
+});
+
+
+test("null or malformed active-leg identity never aliases leg zero", () => {
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  expect(currentItineraryIndex(null)).toBeNull();
+  expect(currentItineraryIndex({ activeLegIndex: null })).toBeNull();
+  expect(currentItineraryIndex({ activeLegIndex: -1 })).toBeNull();
+  expect(currentItineraryIndex({ activeLegIndex: 1.5 })).toBeNull();
+  expect(currentItineraryLeg({ ...journey, activeLegIndex: null })).toBeNull();
+  expect(nextItineraryLeg({ ...journey, activeLegIndex: null })).toBeNull();
+  expect(nextItineraryTransfer({ ...journey, activeLegIndex: null })).toBeNull();
+});
+
+test("exact current-leg matching rejects wrong run, stop and repeated-stop occurrence", () => {
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  expect(rideMatchesCurrentItineraryLeg(journey, null)).toBe(false);
+  expect(
+    rideMatchesCurrentItineraryLeg(journey, {
+      tripRef: "wrong",
+      targetStop: { id: "500", stopSequence: 8 },
+    })
+  ).toBe(false);
+  expect(
+    rideMatchesCurrentItineraryLeg(journey, {
+      tripRef: "first",
+      targetStop: { id: "999", stopSequence: 8 },
+    })
+  ).toBe(false);
+  expect(
+    rideMatchesCurrentItineraryLeg(journey, {
+      tripRef: "first",
+      targetStop: { id: "500", stopSequence: 99 },
+    })
+  ).toBe(false);
+
+  const withoutSequence = {
+    ...journey,
+    itinerary: {
+      ...journey.itinerary,
+      legs: [
+        { ...journey.itinerary.legs[0], exitStopSequence: null },
+        ...journey.itinerary.legs.slice(1),
+      ],
+    },
+  };
+  expect(
+    rideMatchesCurrentItineraryLeg(withoutSequence, {
+      tripRef: "first",
+      targetStop: { id: "500", stopSequence: 99 },
+    })
+  ).toBe(true);
+});
+
+test("active-itinerary creation and advancement reject incomplete authority", () => {
+  expect(activeJourneyFromItinerary(null, destination, 1_000_000)).toBeNull();
+  expect(
+    activeJourneyFromItinerary(option(), { ...destination, id: "" }, 1_000_000)
+  ).toBeNull();
+  expect(
+    activeJourneyFromItinerary(option(), { ...destination, label: "" }, 1_000_000)
+  ).toBeNull();
+  expect(activeJourneyFromItinerary(option(), destination, 0)).toBeNull();
+
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  expect(
+    advanceItineraryAfterRide(
+      { ...journey, phase: "recovery" },
+      {
+        tripRef: "first",
+        stage: "now",
+        targetStop: { id: "500", stopSequence: 8 },
+      },
+      1_950_000
+    )
+  ).toBeNull();
+  expect(
+    advanceItineraryAfterRide(
+      journey,
+      {
+        tripRef: "first",
+        stage: "next",
+        targetStop: { id: "500", stopSequence: 8 },
+      },
+      1_950_000
+    )
+  ).toBeNull();
+});
+
+test("one-transfer generic itinerary preserves legacy aliases through the handoff", () => {
+  const source = option();
+  const twoLeg = {
+    ...source,
+    id: "two-leg",
+    legs: source.legs.slice(0, 2),
+    transfers: source.transfers.slice(0, 1),
+    destinationStopId: "700",
+    destinationArrivalAt: 2_800,
+    journeyArrivalAt: 2_800,
+  };
+  const first = activeJourneyFromItinerary(twoLeg, destination, 1_000_000);
+  expect(first).toMatchObject({ transferLeg: 1 });
+  expect(first.transferPlan.first.tripRef).toBe("first");
+
+  const second = advanceItineraryAfterRide(
+    first,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(second).toMatchObject({
+    activeLegIndex: 1,
+    transferLeg: 2,
+    tripRef: "second",
+  });
+  expect(itineraryHasFutureLeg(second)).toBe(false);
+});
+
+test("immediate future-leg failures enter recovery while invalid or duplicate evidence is inert", () => {
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  const cancelledState = {
+    providerState: "cancelled",
+    decision: "cancelled",
+    departureAt: 2_400,
+    feasibility: null,
+    missingSinceMs: null,
+  };
+
+  expect(applyFutureLegRevalidation(null, 1, cancelledState)).toBeNull();
+  expect(applyFutureLegRevalidation(journey, 0, cancelledState)).toBe(journey);
+  expect(applyFutureLegRevalidation(journey, 9, cancelledState)).toBe(journey);
+  expect(applyFutureLegRevalidation(journey, 1, null)).toBe(journey);
+
+  const cancelled = applyFutureLegRevalidation(journey, 1, cancelledState);
+  expect(cancelled).toMatchObject({
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+  expect(
+    applyFutureLegRevalidation(cancelled, 1, cancelled.futureLegRevalidations[1])
+  ).toBe(cancelled);
+
+  const missed = applyFutureLegRevalidation(
+    activeJourneyFromItinerary(option(), destination, 1_000_000),
+    1,
+    { ...cancelledState, providerState: "live", decision: "missed" }
+  );
+  expect(missed.recoveryReason).toBe("transfer-missed");
+
+  const unsafe = applyFutureLegRevalidation(
+    activeJourneyFromItinerary(option(), destination, 1_000_000),
+    1,
+    { ...cancelledState, providerState: "live", decision: "unsafe" }
+  );
+  expect(unsafe.recoveryReason).toBe("transfer-risk");
+});
+
+test("recovery never skips the current leg and only projects after authoritative NOW", () => {
+  const base = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  const failed = applyFutureLegRevalidation(base, 1, {
+    providerState: "cancelled",
+    decision: "cancelled",
+    departureAt: 2_400,
+    feasibility: null,
+    missingSinceMs: null,
+  });
+
+  const stillCurrent = recoverItineraryAfterRide(
+    failed,
+    {
+      tripRef: "first",
+      stage: "next",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(stillCurrent).toMatchObject({
+    activeLegIndex: 0,
+    tripRef: "first",
+    phase: "recovery",
+  });
+
+  const projected = recoverItineraryAfterRide(
+    failed,
+    {
+      tripRef: "first",
+      stage: "now",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(projected).toMatchObject({
+    activeLegIndex: 1,
+    tripRef: "second",
+    phase: "recovery",
+    recoveryReason: "transfer-cancelled",
+  });
+
+  const finalLeg = {
+    ...base,
+    activeLegIndex: 2,
+  };
+  expect(recoverItineraryAfterRide(finalLeg, null, 2_000_000)).toBeNull();
 });
