@@ -1,6 +1,6 @@
 # Production roadmap
 
-**Planning baseline:** rolling verified `master`; exact revision is recorded by CI/deployment metadata rather than hard-coded here  
+**Planning baseline:** rolling `master`; implementation state and verification state are tracked separately, and exact revisions are recorded by CI/deployment metadata  
 **Updated:** 2026-10-02  
 **Purpose:** ordered PR-by-PR plan from the current production-grade baseline to a broadly promoted, multilingual and more capable Turku Departures without weakening the static, backendless, privacy-first architecture.
 
@@ -16,7 +16,7 @@ Already implemented and considered part of the baseline:
 - Ride Mode / Get-off alert with exact trip identity, route-order awareness, live SIRI, GPS fail-closed rules, persisted recovery and false-MISSED correction;
 - direct Journey Assistant plus bounded itineraries with up to two transfers;
 - generic ordered itinerary state, multi-leg Active Journey orchestration and fresh live revalidation of every committed future transit leg;
-- explicit transfer recovery without silent auto-switching (further multi-leg recovery expansion remains in the next batch);
+- explicit bounded recovery that may include another transfer, while preserving the destination and requiring the passenger to choose any replacement;
 - PWA/offline shell, GitHub Pages deployment, CSP and backendless architecture gates;
 - iPhone install discovery that never displaces an active departure board or Ride Mode;
 - independent Android package ID `io.github.mykoladotsenko.turkudepartures`;
@@ -24,9 +24,16 @@ Already implemented and considered part of the baseline:
 - production Android APK/AAB signing workflow, gated on exact green master CI;
 - runtime high/critical dependency audit, Android release invariants and dual raw/gzip bundle budgets;
 - production direct address/POI search fail-closed by default, with official Turku journey-planner handoff;
+- leave-now / leave-at / arrive-by controls with deterministic day-boundary handling;
+- routing preferences for fewer transfers, less walking and larger transfer buffer;
+- entrance-aware destination normalization where trustworthy provider geometry is available, with fail-closed centroid/external-handoff fallback;
+- an explicit pedestrian-routing production decision: no unverified turn-by-turn routing is fabricated in the backendless client;
+- generic locale registry with lazy dictionaries and Ukrainian (`uk-UA`) implementation across the passenger UI;
 - live Föli contract smoke after each master merge and daily.
 
-The Ukrainian localization design is defined in [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md). Treat it as the localization design contract, not as the implementation itself.
+PR #137 (batch 1) and PR #139 (batch 2) are merged. The implementation count is therefore **16/47**. Verification is deliberately tracked separately: the current `master` merge SHA `f436b4d4dab2c46fc34b71010ece8340058d51f3` has green Android build/E2E and live Föli smoke, but CI is red because shipped JS/CSS is **739,109 raw bytes**, above the unchanged **625,000-byte** complete-app budget. The production deploy is therefore not considered verified, and batch 3 must first restore the existing budget rather than raise it.
+
+The Ukrainian localization implementation is present in code and currently reachable through the locale registry/language switch for pre-field testing. Native-language, physical-device accessibility and speech review remain explicit manual release gates; they are not inferred from the presence of the dictionary.
 
 ## Non-negotiable PR rules
 
@@ -372,13 +379,15 @@ Re-run the full product audit instead of editing old scores by intuition.
 ## PR-B00 — Ukrainian localization design contract
 
 **Priority:** 82/100  
-**Status:** complete once [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md) is present on `master`.
+**Status:** complete on `master`.
 
-The design remains documentation-only. Implementation starts in PR-B01 and must not expose a partial Ukrainian locale.
+The design contract is now accompanied by the implementation from PR #139. Remaining work is QA/review and release hardening, not initial dictionary creation.
 
 ---
 
 ## PR-B01 — Generalize locale registry
+
+**Implementation status (PR #139): implemented and merged.**
 
 **Priority:** 86/100  
 **Dependency:** B00.
@@ -403,6 +412,8 @@ English and Finnish behaviour is byte-for-byte/user-equivalent unless intentiona
 
 ## PR-B02 — Ukrainian safety-critical locale
 
+**Implementation status (PR #139): implemented and merged; native-language/speech review remains manual.**
+
 **Priority:** 84/100  
 **Dependency:** B01.
 
@@ -420,6 +431,8 @@ Do not expose the locale publicly yet.
 ---
 
 ## PR-B03 — Ukrainian full interface
+
+**Implementation status (PR #139): implemented and merged; broad-release QA is not yet closed.**
 
 **Priority:** 80/100  
 **Dependency:** B02.
@@ -601,7 +614,7 @@ contracts and may not weaken Ride Mode authority.
 
 ## PR-D01 — Generalized N-leg itinerary model
 
-**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
+**Implementation status (PR #137): implemented and merged in pre-field batch 1. The current master still contains the implementation; release verification remains governed by the current exact-SHA gates.**
 
 **Priority:** 88/100  
 **Risk:** high.
@@ -621,7 +634,7 @@ Refactor the current direct/one-transfer representation into a generic ordered i
 
 ## PR-D02 — Bounded two-transfer topology search
 
-**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
+**Implementation status (PR #137): implemented and merged in pre-field batch 1. The current master still contains the implementation; release verification remains governed by the current exact-SHA gates.**
 
 **Priority:** 78/100  
 **Dependency:** D01.
@@ -646,7 +659,7 @@ Add **at most two transfers**, with hard caps for:
 
 ## PR-D03 — Multi-leg Active Journey orchestration
 
-**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
+**Implementation status (PR #137): implemented and merged in pre-field batch 1. The current master still contains the implementation; release verification remains governed by the current exact-SHA gates.**
 
 **Priority:** 82/100  
 **Dependency:** D02.
@@ -663,7 +676,7 @@ Urgent current-leg instructions always outrank future-leg information.
 
 ## PR-D04 — Future-leg live revalidation
 
-**Implementation status (PR #137): implemented in pre-field batch 1; merge remains subject to the normal exact-head CI/Android/browser gates.**
+**Implementation status (PR #137): implemented and merged in pre-field batch 1. The current master still contains the implementation; release verification remains governed by the current exact-SHA gates.**
 
 **Priority:** 90/100  
 **Dependency:** D03.
@@ -682,6 +695,8 @@ Each committed future transit leg gets the same conservative principles already 
 
 ## PR-D05 — Recovery that may include one more transfer
 
+**Implementation status (PR #139): implemented and merged in pre-field batch 2.**
+
 **Priority:** 86/100  
 **Dependency:** D04.
 
@@ -694,6 +709,8 @@ Recovery search itself remains bounded and explicit. Passenger chooses the repla
 ---
 
 ## PR-D06 — Leave-at / arrive-by
+
+**Implementation status (PR #139): implemented and merged in pre-field batch 2.**
 
 **Priority:** 80/100  
 **Dependency:** generic itinerary timing model from D01.
@@ -712,6 +729,8 @@ Time-zone/day-boundary/after-midnight GTFS cases are deterministic and tested.
 
 ## PR-D07 — Routing preferences
 
+**Implementation status (PR #139): implemented and merged in pre-field batch 2.**
+
 **Priority:** 70/100  
 **Dependency:** D06 recommended.
 
@@ -727,6 +746,8 @@ Do not expose preferences that the routing engine cannot faithfully honor.
 
 ## PR-D08 — Entrance-aware POI destination
 
+**Implementation status (PR #139): implemented within the trustworthy provider geometry available to the static client, with fail-closed fallback.**
+
 **Priority:** 64/100
 
 Improve large malls/hospitals/campuses where centroid routing is misleading.
@@ -738,6 +759,8 @@ No confidential-key provider. If entrance data cannot be obtained reliably in th
 ---
 
 ## PR-D09 — Pedestrian-routing feasibility spike
+
+**Implementation status (PR #139): production boundary decided. The app keeps approximate walking plus explicit external handoff rather than shipping unverified client-side turn-by-turn routing.**
 
 **Priority:** 55/100
 
@@ -829,16 +852,25 @@ Work is merged in verified batches of eight checklist items:
    repository-governance contract, privacy-safe field diagnostics, generalized
    itinerary model, bounded two-transfer search, multi-leg Active Journey and
    future-leg live revalidation.
-2. **Batch 2:** multi-leg recovery, leave-now/leave-at/arrive-by, routing
-   preferences, entrance-aware destinations, pedestrian-routing decision,
-   generic locale architecture, Ukrainian safety layer and full Ukrainian UI.
-3. Subsequent batches close Ukrainian/Swedish QA, quality/performance/CSP and
-   health monitoring, Android native background feasibility/implementation,
-   physical-device/accessibility/language review, domain/Play/release
-   readiness and the final pre-field audit.
-4. Freeze one exact release-candidate SHA only after all planned pre-field
+2. **Batch 2 / PR #139:** multi-leg recovery, leave-now/leave-at/arrive-by,
+   routing preferences, entrance-aware destinations, pedestrian-routing
+   production boundary, generic locale architecture, Ukrainian safety layer
+   and full Ukrainian UI. The code is merged, but the batch is **not yet
+   verification-closed** because the current master fails the unchanged
+   complete-app bundle budget.
+3. **Batch 3 / items 17–24:** Ukrainian automated QA/enablement hardening,
+   Swedish dictionary, Swedish QA/enablement hardening, exact-vs-approximate
+   Next-stops semantics, bundle headroom restoration, external health alerting
+   without passenger analytics, dormant-provider CSP tightening, and the final
+   supported dependency/toolchain refresh. Item 21 (bundle headroom) is a
+   blocking repair for the current red master and may be completed before the
+   other batch items while remaining in the same batch PR.
+4. Later batches cover release/version identity polish, Android native
+   background feasibility/implementation, physical-device accessibility and
+   language review, domain/Play/release readiness and the final pre-field audit.
+5. Freeze one exact release-candidate SHA only after all planned pre-field
    gates are closed.
-5. Run real-bus validation after that freeze; subsequent changes are remediation
+6. Run real-bus validation after that freeze; subsequent changes are remediation
    fixes with deterministic regression coverage, not new feature scope.
 
 ---
