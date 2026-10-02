@@ -394,6 +394,7 @@ export function applyFutureLegRevalidation(
     const oldDepartureAt = positive(oldLeg.departureAt);
     const shift =
       oldDepartureAt === null ? 0 : newDepartureAt - oldDepartureAt;
+    /** @type {import("../types/journey").TransferTransitLeg[]} */
     const legs = itinerary.legs.map((leg, legIndexValue) =>
       legIndexValue === index
         ? {
