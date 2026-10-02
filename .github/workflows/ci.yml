@@ -52,6 +52,9 @@ jobs:
       - name: Verify production place-search policy
         run: npm run verify:place-search-policy
 
+      - name: Verify live Föli health-signal workflow
+        run: npm run verify:live-contract
+
       - name: Verify Android release contract
         run: npm run verify:android-release
 
