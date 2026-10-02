@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { msg, t } from "../i18n";
 import { normalizedPastTimestamp } from "../utils/cacheTime";
 import { realStopName } from "../utils/stopNames";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 const STORAGE_KEY = "foli-my-places-v1";
 
@@ -101,8 +102,13 @@ export default function useSavedPlaces() {
       if (event.key !== null && event.key !== STORAGE_KEY) return;
       setPlaces(readStoredPlaces());
     };
+    const takeImportedChanges = () => setPlaces(readStoredPlaces());
     window.addEventListener("storage", takeOtherTabChanges);
-    return () => window.removeEventListener("storage", takeOtherTabChanges);
+    window.addEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
+    return () => {
+      window.removeEventListener("storage", takeOtherTabChanges);
+      window.removeEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
+    };
   }, []);
 
   const commit = useCallback((updater) => {

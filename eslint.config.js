@@ -16,11 +16,18 @@ export default [
       },
       globals: {
         AbortController: "readonly",
+        Blob: "readonly",
         document: "readonly",
+        Event: "readonly",
+        EventTarget: "readonly",
+        File: "readonly",
+        HTMLAnchorElement: "readonly",
         window: "readonly",
         navigator: "readonly",
         localStorage: "readonly",
+        URL: "readonly",
         URLSearchParams: "readonly",
+        TextEncoder: "readonly",
         Intl: "readonly",
         process: "readonly",
         console: "readonly",
@@ -34,6 +41,14 @@ export default [
       "react/jsx-uses-vars": "error",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
+    },
+  },
+  {
+    files: ["e2e/**/*.js"],
+    languageOptions: {
+      globals: {
+        Buffer: "readonly",
+      },
     },
   },
   {

@@ -3,6 +3,7 @@ import { afterEach, expect, test, vi } from "vitest";
 import ThemeSwitch from "./ThemeSwitch";
 import { resetLanguageForTests, setLanguage } from "../i18n";
 import { resetThemeForTests } from "../theme";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 afterEach(() => {
   resetLanguageForTests("en");
@@ -54,4 +55,20 @@ test("follows the interface language", () => {
   expect(
     screen.getByRole("button", { name: "Käytä tummaa teemaa" })
   ).toHaveTextContent("Tumma");
+});
+
+
+test("applies an imported theme immediately when this origin had no explicit choice", () => {
+  resetThemeForTests("light");
+  render(<ThemeSwitch />);
+
+  localStorage.setItem("foli-theme-v1", "dark");
+  act(() => {
+    window.dispatchEvent(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  });
+
+  expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+  expect(
+    screen.getByRole("button", { name: "Use light theme" })
+  ).toBeInTheDocument();
 });

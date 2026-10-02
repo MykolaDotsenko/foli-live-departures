@@ -21,7 +21,7 @@ Do not promote broadly until all of these are explicitly closed:
 
 - [ ] real-bus field validation in [FIELD_VALIDATION.md](FIELD_VALIDATION.md);
 - [ ] native Finnish review in [FINNISH_NATIVE_REVIEW.md](FINNISH_NATIVE_REVIEW.md);
-- [ ] custom production domain is chosen and configured before significant installs/favourites are accumulated on the GitHub Pages origin;
+- [ ] custom production domain is chosen and configured before significant installs/favourites are accumulated on the GitHub Pages origin; complete local-state backup/export-import is already available for the unavoidable cross-origin migration;
 - [x] web place-search policy is fail-closed for broad promotion: `public/place-search-config.json` disables direct address/POI lookup by default, and the app hands off to the official Turku journey planner; CI prevents accidental re-enabling without an explicit policy change;
 - [ ] representative physical iPhone and Android lifecycle checks are complete;
 - [ ] TalkBack and VoiceOver manual smoke checks are complete.

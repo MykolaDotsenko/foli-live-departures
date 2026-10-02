@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test } from "vitest";
 import useSavedPlaces, { placeLabel } from "./useSavedPlaces";
 import { resetLanguageForTests } from "../i18n";
+import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 
 beforeEach(() => {
   localStorage.clear();
@@ -289,4 +290,33 @@ test("takes in a place saved in another tab before writing its own change", () =
   expect(
     JSON.parse(localStorage.getItem("foli-my-places-v1")).map((place) => place.id)
   ).toEqual(["school", "home"]);
+});
+
+
+test("refreshes saved places immediately after a same-tab backup import", () => {
+  const { result } = renderHook(() => useSavedPlaces());
+
+  localStorage.setItem(
+    "foli-my-places-v1",
+    JSON.stringify([
+      {
+        id: "home",
+        label: "Home",
+        stops: [{ id: "164", name: "Kauppatori" }],
+        primaryStopId: "164",
+        updatedAt: Date.now(),
+      },
+    ])
+  );
+
+  act(() => {
+    window.dispatchEvent(new Event(LOCAL_STATE_IMPORTED_EVENT));
+  });
+
+  expect(result.current.byId.get("home")).toEqual(
+    expect.objectContaining({
+      primaryStopId: "164",
+      stops: [{ id: "164", name: "Kauppatori" }],
+    })
+  );
 });
