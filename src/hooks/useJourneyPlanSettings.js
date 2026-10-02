@@ -13,6 +13,7 @@ const ROUTING_PREFERENCES = new Set([
   "more-buffer",
 ]);
 
+/** @param {unknown} mode @param {number} [nowSec] */
 function defaultTarget(mode, nowSec = Math.floor(Date.now() / 1000)) {
   const offset = mode === "arrive-by" ? 60 * 60 : 30 * 60;
   return Math.ceil((nowSec + offset) / (5 * 60)) * 5 * 60;
@@ -61,6 +62,7 @@ export default function useJourneyPlanSettings() {
     [targetTimeSec, timeMode]
   );
 
+  /** @param {unknown} mode */
   const setTimeMode = useCallback((mode) => {
     const next = ["leave-now", "leave-at", "arrive-by"].includes(mode)
       ? mode
@@ -72,10 +74,12 @@ export default function useJourneyPlanSettings() {
     );
   }, []);
 
+  /** @param {unknown} value */
   const setTimeLocalValue = useCallback((value) => {
     setTimeLocalValueState(String(value || ""));
   }, []);
 
+  /** @param {unknown} value */
   const setPreference = useCallback((value) => {
     setPreferenceState(normalizedPreference(value));
   }, []);
