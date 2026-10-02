@@ -22,6 +22,21 @@ async function switchToUkrainian(page) {
   ).toBeVisible();
 }
 
+
+async function switchToSwedish(page) {
+  const language = await page.locator("html").getAttribute("lang");
+  if (language !== "uk" && language !== "sv") {
+    await switchToUkrainian(page);
+  }
+  if ((await page.locator("html").getAttribute("lang")) === "uk") {
+    await page.getByRole("button", { name: "På svenska" }).click();
+  }
+  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await expect(
+    page.getByRole("columnheader", { name: "Avgår" })
+  ).toBeVisible();
+}
+
 async function horizontalOverflow(page) {
   return page.evaluate(() => {
     const overflow = document.documentElement.scrollWidth - window.innerWidth;
@@ -578,6 +593,86 @@ test("Ukrainian reflows at 320, 360 and 412 px with 200 percent text in dark mod
     await expect(
       page.getByRole("button", { name: "På svenska" })
     ).toBeVisible();
+
+    const state = await horizontalOverflow(page);
+    expect(
+      state.overflow,
+      `width=${width} offenders=${JSON.stringify(state.offenders, null, 2)}`
+    ).toBeLessThanOrEqual(1);
+  }
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(results.violations).toEqual([]);
+});
+
+test.describe("on a Swedish phone", () => {
+  test.use({ locale: "sv-FI" });
+
+  test("a first visit selects Swedish and uses Föli Swedish provider text", async ({
+    page,
+  }) => {
+    await page.goto("/?stop=164");
+
+    await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+    await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
+    await expect(page.getByLabel("Hitta din hållplats")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Trafikmeddelanden" })
+    ).toBeVisible();
+
+    // The mock exposes provider-owned Swedish destination text as "Hamnen".
+    await expect(page.getByText("Hamnen")).toBeVisible();
+    await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+});
+
+test("Swedish UI passes axe after a real language switch", async ({ page }) => {
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await switchToSwedish(page);
+
+  await openServiceUpdates(page);
+  const nextStops = page.getByRole("button", { name: "Nästa hållplatser" }).first();
+  if (await nextStops.isVisible()) {
+    await nextStops.click();
+    await expect(
+      page.getByText("Nästa hållplatser · tidtabellstider")
+    ).toBeVisible();
+  }
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+});
+
+test("Swedish reflows at 320, 360 and 412 px with 200 percent text in dark mode", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await switchToSwedish(page);
+  await scaleTextTo200Percent(page);
+
+  for (const width of [320, 360, 412]) {
+    await page.setViewportSize({ width, height: 820 });
+
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+    await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+    await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
 
     const state = await horizontalOverflow(page);
     expect(
