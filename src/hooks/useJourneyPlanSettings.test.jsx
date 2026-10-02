@@ -30,7 +30,7 @@ test("leave-at seeds a rounded future Turku wall time and keeps it stable", () =
   expect(result.current.timeConstraint.mode).toBe("leave-at");
   expect(result.current.timeLocalValue).toBe("2026-02-01T12:30");
   expect(result.current.timeConstraint.targetTimeSec).toBe(
-    Date.parse("2026-02-01T12:30:00Z") / 1000
+    Date.parse("2026-02-01T10:30:00Z") / 1000
   );
   expect(result.current.timeValid).toBe(true);
 
