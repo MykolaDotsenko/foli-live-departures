@@ -306,18 +306,12 @@ export function advanceItineraryAfterRide(
     journey,
     currentIndex + 1
   );
-  const phase =
-    !feasibility.recommendable || downstreamFailure
-      ? "recovery"
-      : "walking-to-stop";
-  const recoveryReason =
-    phase === "recovery"
-      ? !feasibility.recommendable
-        ? missed
-          ? "transfer-missed"
-          : "transfer-risk"
-        : downstreamFailure?.reason ?? null
-      : null;
+  const recoveryReason = !feasibility.recommendable
+    ? missed
+      ? "transfer-missed"
+      : "transfer-risk"
+    : downstreamFailure?.reason ?? null;
+  const phase = recoveryReason ? "recovery" : "walking-to-stop";
 
   return projectLeg(
     journey,
