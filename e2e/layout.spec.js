@@ -442,3 +442,35 @@ test("stop suggestions stay reachable when a mobile keyboard shrinks the viewpor
   );
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+
+test("iPhone install education never competes with an active departure board", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "webkit-mobile");
+
+  await page.goto("/");
+  await expect(page.getByText("Install on iPhone", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Share → Add to Home Screen/)
+  ).toBeVisible();
+
+  await page.goto("/?stop=164");
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+
+  // Installation education belongs on the landing/search screen. Once a stop
+  // is open, live transit information must remain visually authoritative.
+  await expect(
+    page.getByText("Install on iPhone", { exact: true })
+  ).toHaveCount(0);
+
+  const firstDeparture = page.locator("tbody tr").first();
+  await expect(firstDeparture).toBeVisible();
+  const metrics = await firstDeparture.evaluate((row) => ({
+    top: row.getBoundingClientRect().top,
+    viewportHeight: window.innerHeight,
+  }));
+  expect(metrics.top).toBeLessThan(metrics.viewportHeight);
+});
