@@ -65,7 +65,7 @@ if (
 }
 
 if (
-  !/deploy:\s*\n\s+needs: build\s*\n\s+permissions:\s*\n\s+pages: write\s*\n\s+id-token: write/m.test(
+  !/deploy:\s*\n\s+needs: build\s*\n\s+permissions:\s*\n\s+contents: read\s*\n\s+pages: write\s*\n\s+id-token: write/m.test(
     workflow
   )
 ) {
