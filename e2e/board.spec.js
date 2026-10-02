@@ -9,7 +9,15 @@ test("Back keeps keyboard focus on the departure board", async ({ page }) => {
   // board for that dropped keyboard focus to the page, and replaced the live
   // region that announces the stop.
   await page.goto("/?stop=164");
-  await page.getByLabel("Find your stop").fill("4");
+
+  // WebKit can finish page load before the asynchronously loaded stop
+  // catalogue has replaced the raw deep-link id with its resolved name.
+  // Editing during that initial sync makes this a race between the test and
+  // the app's legitimate 164 -> Kauppatori hydration, not a Back/focus test.
+  const search = page.getByLabel("Find your stop");
+  await expect(search).toHaveValue("Kauppatori");
+  await search.fill("4");
+  await expect(search).toHaveValue("4");
   await page.getByRole("button", { name: "Show departures" }).click();
   await expect(page).toHaveURL(/stop=4/);
 
