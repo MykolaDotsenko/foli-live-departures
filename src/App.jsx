@@ -5,6 +5,7 @@ import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
+import FieldTestReport from "./components/FieldTestReport";
 import HomeRecovery from "./components/HomeRecovery";
 import HelpGuide from "./components/HelpGuide";
 import IosInstallHint from "./components/IosInstallHint";
@@ -850,6 +851,10 @@ function App() {
             stop has been opened; returning/active journeys keep transit
             information visually authoritative. */}
         {!ride.session && !stopId && <IosInstallHint />}
+
+        {!ride.session &&
+          ride.fieldDiagnosticsEnabled &&
+          ride.fieldReport && <FieldTestReport report={ride.fieldReport} />}
 
         {ride.session && (
           <RideMode
