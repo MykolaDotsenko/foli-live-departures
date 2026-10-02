@@ -242,12 +242,16 @@ export function revalidateFutureJourneyLeg(
   legIndex = null
 ) {
   const currentIndex = currentItineraryIndex(journey);
-  const target =
-    Number.isInteger(Number(legIndex))
-      ? Number(legIndex)
-      : currentIndex === null
-        ? null
-        : currentIndex + 1;
+  const hasExplicitLegIndex =
+    legIndex !== null &&
+    legIndex !== undefined &&
+    Number.isInteger(Number(legIndex)) &&
+    Number(legIndex) >= 0;
+  const target = hasExplicitLegIndex
+    ? Number(legIndex)
+    : currentIndex === null
+      ? null
+      : currentIndex + 1;
   return target === null
     ? journey
     : applyFutureLegRevalidation(journey, target, revalidation);
@@ -472,7 +476,11 @@ export function observeActiveJourney(journey, observation) {
           : journey.journeyArrivalAt + departureShift;
     /** @type {import("../types/journey").LiveState} */
     const currentLegLiveState =
-      arrival.monitored === true ? "live" : "schedule";
+      arrival.monitored === true
+        ? "live"
+        : arrival.monitored === false
+          ? "schedule"
+          : itineraryCurrent?.liveState || journey.liveState || "unknown";
     const nextItinerary =
       itineraryCurrent && journey.itinerary && itineraryIndex !== null
         ? {
