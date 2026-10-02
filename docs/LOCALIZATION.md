@@ -3,12 +3,14 @@
 The locale registry currently contains **English (`en`)**, **Finnish (`fi`)**,
 **Ukrainian (`uk`)** and **Swedish (`sv`)**. It follows the first browser
 language the app supports on a first visit and then keeps the passenger's
-explicit choice on the phone. Finnish, Ukrainian and Swedish **string
-translations** are generated from the canonical source dictionaries into
-same-origin lazy JSON packs so repeated English source keys do not inflate
-executable JS. Function-valued plural/count grammar remains
-in small lazy runtime modules. The generated locale packs have their own
-raw/gzip bundle budgets, so this split cannot hide translation growth.
+explicit choice on the phone. Finnish, Ukrainian and Swedish **string translations** are generated from the
+canonical source dictionaries into same-origin lazy JSON packs. A shared
+`locales/keys.json` stores the English source phrases once, while each locale
+pack stores an aligned value array; function-valued plural/count grammar remains
+in small lazy runtime modules. Loader validation checks array shape, key
+uniqueness, alignment and runtime grammar slots fail closed. All shared keys and
+locale values remain inside the same aggregate raw/gzip locale budget, so the
+deduplication cannot hide translation growth.
 
 Current implementation state:
 
