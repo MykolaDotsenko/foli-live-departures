@@ -1,5 +1,6 @@
 /** @import { Dictionary } from "../index" */
 
+/** @param {string | number} count */
 const countOf = (count) => Number(count);
 
 /** @param {Record<string, string | number>} params */
