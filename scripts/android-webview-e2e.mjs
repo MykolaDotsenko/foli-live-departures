@@ -232,7 +232,7 @@ const ukrainianLocale = await retry(
         ready:
           lang === "uk" &&
           localStorage.getItem("foli-language-v1") === "uk" &&
-          Boolean(findButton("In English")),
+          Boolean(findButton("På svenska")),
         lang,
         stored: localStorage.getItem("foli-language-v1"),
         body: document.body.innerText.slice(0, 800)
@@ -267,7 +267,7 @@ const ukrainianReload = await retry(
     return snapshot.ready &&
       snapshot.lang === "uk" &&
       snapshot.stored === "uk" &&
-      snapshot.hasEnglishSwitch &&
+      snapshot.hasSwedishSwitch &&
       snapshot.hasUkrainianUi
       ? snapshot
       : null;
@@ -283,20 +283,26 @@ record(
 );
 
 // Keep the long-standing Android E2E assertions language-stable after proving
-// native persistence. Ukrainian's next registry entry is English.
+// native persistence. The registry continues Ukrainian → Swedish → English.
 const restoredEnglish = await retry(
   "Android locale reset to English",
   async () => {
     const snapshot = await evaluate(`(() => {
-      const button = [...document.querySelectorAll("button")].find(
-        (candidate) => (candidate.textContent || "").trim() === "In English"
-      );
-      if (document.documentElement.lang === "uk" && button) {
-        button.click();
+      const findButton = (label) =>
+        [...document.querySelectorAll("button")].find(
+          (candidate) => (candidate.textContent || "").trim() === label
+        );
+      const lang = document.documentElement.lang || "";
+      if (lang === "uk") {
+        findButton("På svenska")?.click();
+        return null;
+      }
+      if (lang === "sv") {
+        findButton("In English")?.click();
         return null;
       }
       return {
-        lang: document.documentElement.lang || "",
+        lang,
         stored: localStorage.getItem("foli-language-v1")
       };
     })()`);
