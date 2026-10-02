@@ -5,6 +5,7 @@ import {
   contentSecurityPolicyPlugin,
   originOf,
 } from "./scripts/content-security-policy.mjs";
+import { createCssModuleScopedNameGenerator } from "./scripts/css-module-names.mjs";
 
 // Link previews need absolute URLs. This is where production lives; a
 // deployment elsewhere sets VITE_SITE_URL, and index.html reads it as
@@ -44,6 +45,8 @@ function connectSources(env) {
   ];
 }
 
+const generateScopedName = createCssModuleScopedNameGenerator();
+
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
@@ -76,13 +79,10 @@ export default defineConfig(({ mode }) => ({
   },
   css: {
     modules: {
-      // Default CSS-module identifiers repeat file/local names in both the
-      // stylesheet and JS class map. A six-character content hash keeps
-      // module isolation while materially reducing the executable/style
-      // payload. Global class names are unaffected.
-      // Four base64 characters provide ~16.7M scoped identifiers while
-      // trimming repeated class-name bytes from both CSS and the JS module maps.
-      generateScopedName: "[hash:base64:4]",
+      // A build-local registry guarantees uniqueness while using compact
+      // names (_a, _b, …). The global stylesheet reserves this namespace and
+      // the bundle verifier tests that contract on every pull request.
+      generateScopedName,
     },
   },
   plugins: [
