@@ -236,6 +236,7 @@ function NearbyStops({
     fitsByStop,
     routingPreference,
     searchExpanded,
+    timeConstraint,
   ]);
 
   useEffect(() => {
@@ -283,6 +284,7 @@ function NearbyStops({
     fitsByStop,
     routingPreference,
     nearbyStops,
+    timeConstraint,
   ]);
 
   const directSearchComplete =
