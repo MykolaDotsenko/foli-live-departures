@@ -56,6 +56,8 @@ The `android-latest` download remains a debug-signed sideload build for testing.
 | Which stop is nearest? | Nearby stops from a one-time location check |
 | When should I press STOP? | A get-off alert that tells you when to get ready, press STOP and get off |
 | How do I get home? | Your saved Home stop, backup stops and Show to driver |
+| How do I get there? | Journey Assistant ranks direct and bounded one- or two-transfer itineraries, keeps the boarded leg authoritative, and requires an explicit choice before any recovery replacement |
+| When should I leave? | Leave now / leave at / arrive by controls, with bounded routing preferences |
 | What if the connection drops? | An installable app that says plainly what still works offline |
 
 ## Get-off alert
@@ -85,7 +87,7 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 
 A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
 
-Turku Departures is not a ticketing app and does not replace Föli's official journey planner.
+Turku Departures is not a ticketing app and does not replace Föli's official journey planner. Turn-by-turn pedestrian routing is intentionally not claimed: the backendless production build keeps walking approximate and hands off externally when precise pedestrian routing is needed.
 
 ## Suomeksi
 
@@ -199,6 +201,8 @@ runtime dependency audit → lint → typecheck → brand/reference checks
 
 The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
 
+**Current pre-field status (2026-10-02):** batches 1–16 are merged. Android build/E2E and the live Föli contract smoke are green for the latest master merge, but main CI is currently blocked by the unchanged complete-app bundle budget (739,109 raw JS/CSS bytes vs 625,000 allowed). The next batch reduces the shipped payload; the budget is not being raised.
+
 ### Run locally
 
 Requires Node.js 20.19+.
@@ -242,7 +246,7 @@ Application source code is under the **MIT License**.
 
 ## Production readiness
 
-The codebase is suitable for a quiet web/PWA production release, but city-wide promotion has explicit manual gates that automation cannot honestly replace. See:
+The architecture and safety model are suitable for controlled pre-field use, but the latest `master` is not currently release-verified because its bundle gate is red. City-wide promotion also has explicit manual gates that automation cannot honestly replace. See:
 
 - [Production readiness](docs/PRODUCTION_READINESS.md)
 - [Full PR-by-PR production roadmap](docs/PRODUCTION_ROADMAP.md)
@@ -250,4 +254,4 @@ The codebase is suitable for a quiet web/PWA production release, but city-wide p
 - [Android production release](docs/ANDROID_RELEASE.md)
 - [Finnish native-language review](docs/FINNISH_NATIVE_REVIEW.md)
 
-These checklists deliberately keep external/manual gates visible instead of marking them complete because CI is green.
+These checklists deliberately keep implementation, automated verification and external/manual gates separate instead of treating merged code as release completion.
