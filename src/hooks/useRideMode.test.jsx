@@ -1583,12 +1583,21 @@ test("a phone that reports no speed still catches a ride past the stop", async (
   // Browsers send a speed they do not have as null, which used to become
   // 0 m/s: standing still, however fast the bus was carrying them on.
   const { result, unmount, startMs, deliver } = await rideToGetOffNow();
+  const snapshotAtNow = result.current.runtime.targetSnapshotSignature;
+  expect(snapshotAtNow).not.toBe("");
 
   vi.setSystemTime(startMs + 60_000);
   deliver({ ...pastTheStop(0.2), speed: null });
 
   expect(result.current.gps.speedMps).toBeNull();
   expect(result.current.session?.stage).toBe("missed");
+  expect(result.current.session?.missedTargetSnapshotSignature).toBe(
+    snapshotAtNow
+  );
+  expect(
+    JSON.parse(localStorage.getItem("foli-active-ride-v1"))
+      .missedTargetSnapshotSignature
+  ).toBe(snapshotAtNow);
 
   act(() => result.current.endRide());
   unmount();
