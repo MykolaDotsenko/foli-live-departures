@@ -121,6 +121,8 @@ export default {
   // A narrow phone's labels, so a row's two actions share one line.
   "short|Next stops": "Pysäkit",
   "Next stops · timetable times": "Seuraavat pysäkit · aikataulun ajat",
+  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
+    "Pelkkä kellonaika on julkaistu aikataulun aikapiste. ”Noin” tarkoittaa aikapisteiden välistä likimääräistä aikaa.",
   "Loading planned stops…": "Ladataan pysäkkejä…",
   "Next stops are temporarily unavailable.":
     "Seuraavat pysäkit eivät ole juuri nyt saatavilla.",
