@@ -65,12 +65,22 @@ if (
 }
 
 if (
-  !/deploy:\s*\n\s+needs: build\s*\n\s+permissions:\s*\n\s+contents: read\s*\n\s+pages: write\s*\n\s+id-token: write/m.test(
+  !/deploy:\s*\n\s+needs: build\s*\n\s+permissions:\s*\n\s+pages: write\s*\n\s+id-token: write\s*\n\s+outputs:\s*\n\s+page_url: \$\{\{ steps\.deployment\.outputs\.page_url \}\}/m.test(
     workflow
   )
 ) {
   throw new Error(
-    "The deploy job must explicitly own contents:read, pages:write and id-token:write permissions."
+    "The deploy job must own only pages:write/id-token:write and expose the resulting page URL."
+  );
+}
+
+if (
+  !/smoke:\s*\n\s+needs: deploy\s*\n\s+permissions:\s*\n\s+contents: read/m.test(
+    workflow
+  )
+) {
+  throw new Error(
+    "The post-deploy smoke must run in its own read-only contents job."
   );
 }
 
@@ -104,7 +114,7 @@ if (deployActionIndex < 0 || liveSmokeIndex <= deployActionIndex) {
 }
 
 for (const required of [
-  "PRODUCTION_SITE_URL: ${{ steps.deployment.outputs.page_url }}",
+  "PRODUCTION_SITE_URL: ${{ needs.deploy.outputs.page_url }}",
   "EXPECTED_DEPLOYMENT_SHA: ${{ github.event.workflow_run.head_sha }}",
 ]) {
   if (!workflow.includes(required)) {
@@ -123,4 +133,33 @@ if (exactCheckoutRefs.length < 2 || nonPersistentCheckouts.length < 2) {
   throw new Error(
     "Both production build and post-deploy smoke must checkout the exact verified revision without persisted credentials."
   );
+}
+
+
+const deployJob =
+  workflow.match(/\n  deploy:\n([\s\S]*?)(?=\n  smoke:\n)/m)?.[1] || "";
+const smokeJob =
+  workflow.match(/\n  smoke:\n([\s\S]*)$/m)?.[1] || "";
+
+if (
+  deployJob.includes("actions/checkout@") ||
+  deployJob.includes("actions/setup-node@") ||
+  /\n\s+-?\s*run:/m.test(deployJob)
+) {
+  throw new Error(
+    "The privileged Pages deploy job must not checkout or execute repository code."
+  );
+}
+
+for (const required of [
+  "needs: deploy",
+  "permissions:\n      contents: read",
+  "run: npm run verify:production-site",
+  "PRODUCTION_SITE_URL: ${{ needs.deploy.outputs.page_url }}",
+]) {
+  if (!smokeJob.includes(required)) {
+    throw new Error(
+      `Read-only production smoke job is missing: ${required}`
+    );
+  }
 }
