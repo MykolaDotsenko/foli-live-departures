@@ -5,8 +5,10 @@ import { afterEach, expect, test, vi } from "vitest";
 import fi, { AREAS as FI_AREAS } from "./fi";
 import uk, { AREAS as UK_AREAS } from "./uk";
 import {
+  ensureLanguageDictionary,
   getLanguage,
   preferredLanguage,
+  registerDictionary,
   resetLanguageForTests,
   providerLanguages,
   setLanguage,
@@ -264,6 +266,23 @@ test("an unknown language is ignored", () => {
   setLanguage("xx");
 
   expect(getLanguage()).toBe("en");
+});
+
+test("locale registry guards duplicate, unsupported and missing-loader paths", async () => {
+  resetLanguageForTests("en");
+
+  await expect(setLanguage("en")).resolves.toBe(false);
+  await expect(setLanguage("xx")).resolves.toBe(false);
+  await expect(
+    ensureLanguageDictionary(/** @type {any} */ ("xx"))
+  ).resolves.toEqual({});
+
+  // English is the source phrase table and unsupported/missing dictionaries
+  // must never be registered over it.
+  registerDictionary("en", { Online: "Wrong" });
+  registerDictionary(/** @type {any} */ ("xx"), { Online: "Wrong" });
+  registerDictionary("fi", /** @type {any} */ (null));
+  expect(t("Online")).toBe("Online");
 });
 
 test("blocked storage still switches the language for the visit", () => {
