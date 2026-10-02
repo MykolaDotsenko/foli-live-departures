@@ -445,3 +445,56 @@ test("recovery never skips the current leg and only projects after authoritative
   };
   expect(recoverItineraryAfterRide(finalLeg, null, 2_000_000)).toBeNull();
 });
+
+
+test("recovery distinguishes an explicit missed ride and a still-catchable early end", () => {
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+
+  const missed = recoverItineraryAfterRide(
+    journey,
+    {
+      tripRef: "first",
+      stage: "missed",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(missed).toMatchObject({
+    activeLegIndex: 0,
+    phase: "recovery",
+    recoveryReason: "transfer-missed",
+  });
+
+  const risk = recoverItineraryAfterRide(
+    journey,
+    {
+      tripRef: "first",
+      stage: "boarded",
+      targetStop: { id: "500", stopSequence: 8 },
+    },
+    1_950_000
+  );
+  expect(risk.recoveryReason).toBe("transfer-risk");
+});
+
+test("same-time live revalidation is non-delayed and equal cloned evidence is idempotent", () => {
+  const journey = activeJourneyFromItinerary(option(), destination, 1_000_000);
+  const live = {
+    providerState: "live",
+    decision: "good",
+    departureAt: 2_400,
+    feasibility: { state: "comfortable", recommendable: true },
+    missingSinceMs: null,
+  };
+  const updated = applyFutureLegRevalidation(journey, 1, live);
+
+  expect(updated.itinerary.legs[1]).toMatchObject({
+    departureAt: 2_400,
+    arrivalAt: 2_800,
+    liveState: "live",
+  });
+  expect(updated.destinationArrivalAt).toBe(3_800);
+  expect(
+    applyFutureLegRevalidation(updated, 1, { ...live })
+  ).toBe(updated);
+});
