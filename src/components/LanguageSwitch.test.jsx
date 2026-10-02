@@ -32,6 +32,16 @@ test("cycles every enabled language in its own words and persists each choice", 
   await waitFor(() => {
     expect(document.documentElement.lang).toBe("uk");
     expect(localStorage.getItem("foli-language-v1")).toBe("uk");
+    expect(screen.getByRole("button", { name: "På svenska" })).not.toBeDisabled();
+  });
+
+  const toSwedish = screen.getByRole("button", { name: "På svenska" });
+  expect(toSwedish).toHaveAttribute("lang", "sv");
+  fireEvent.click(toSwedish);
+
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("sv");
+    expect(localStorage.getItem("foli-language-v1")).toBe("sv");
     expect(screen.getByRole("button", { name: "In English" })).not.toBeDisabled();
   });
 
