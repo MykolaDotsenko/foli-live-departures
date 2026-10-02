@@ -14,8 +14,11 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // Optional language packs may load on demand, but code splitting must not hide
 // unbounded growth. These caps cover the complete shipped JS/CSS set and each
 // individual lazy asset independently.
-const MAX_SHIPPED_JS_CSS_BYTES = 750_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 215_000;
+// The complete shipped app must remain within the original release budget;
+ // lazy locale splitting may reduce startup cost, but it must not be used to
+ // hide total bundle growth.
+const MAX_SHIPPED_JS_CSS_BYTES = 625_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 180_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 
