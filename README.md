@@ -201,7 +201,7 @@ runtime dependency audit → lint → typecheck → brand/reference checks
 
 The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
 
-**Current pre-field status (2026-10-02):** batches 1–16 are merged. Android build/E2E and the live Föli contract smoke are green for the latest master merge, but main CI is currently blocked by the unchanged complete-app bundle budget (739,109 raw JS/CSS bytes vs 625,000 allowed). The next batch reduces the shipped payload; the budget is not being raised.
+**Current pre-field status (2026-10-02):** items 1–16 plus item 21 (bundle headroom) are merged, so implementation progress is **17/47**. PR #140 restored the unchanged complete-app JS/CSS gate without raising it: the verified PR build shipped **578,177 raw / 161,897 gzip bytes** against **625,000 / 180,000** limits. Locale strings now ship as generated same-origin lazy JSON packs with their own **180,000 raw / 55,000 gzip** budgets; plural/count grammar remains in small lazy runtime modules. On merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e`, unit-build, bundle/PWA/CSP, Android build/E2E, live Föli smoke and the tested Android APK publication path are green. Production Pages deployment is still tracked separately and is not claimed verified until its downstream exact-revision workflow succeeds.
 
 ### Run locally
 
@@ -246,7 +246,7 @@ Application source code is under the **MIT License**.
 
 ## Production readiness
 
-The architecture and safety model are suitable for controlled pre-field use, but the latest `master` is not currently release-verified because its bundle gate is red. City-wide promotion also has explicit manual gates that automation cannot honestly replace. See:
+The architecture and safety model are suitable for controlled pre-field use. The inherited bundle blocker is fixed on the latest `master`, but release verification still depends on the downstream exact-revision production Pages deployment plus explicit manual/field gates that automation cannot honestly replace. See:
 
 - [Production readiness](docs/PRODUCTION_READINESS.md)
 - [Full PR-by-PR production roadmap](docs/PRODUCTION_ROADMAP.md)
