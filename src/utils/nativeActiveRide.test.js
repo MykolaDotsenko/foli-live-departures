@@ -128,4 +128,78 @@ describe("createNativeActiveRideBridge", () => {
     await bridge.stop("ride-1");
     expect(stop).toHaveBeenCalledWith({ rideId: "ride-1" });
   });
+
+  it("fails closed for malformed payloads and missing plugin methods", async () => {
+    const bridge = createNativeActiveRideBridge({
+      nativeBuild: true,
+      capacitor: {
+        getPlatform: () => "android",
+        isNativePlatform: () => true,
+        isPluginAvailable: () => true,
+        Plugins: { ActiveRide: {} },
+      },
+    });
+
+    await expect(bridge.prepare()).resolves.toEqual({
+      ready: false,
+      reason: "unsupported",
+    });
+    await expect(bridge.start({ id: "", expiresAt: Date.now() + 60_000 })).resolves.toMatchObject({
+      active: false,
+      reason: "invalid-ride",
+    });
+    await expect(bridge.start({ id: "ride-1", expiresAt: "not-a-number" })).resolves.toMatchObject({
+      active: false,
+      reason: "invalid-ride",
+    });
+    await expect(bridge.status()).resolves.toMatchObject({
+      active: false,
+      reason: "unsupported",
+    });
+    await expect(bridge.stop("ride-1")).resolves.toMatchObject({
+      active: false,
+      reason: "unsupported",
+    });
+  });
+
+  it("contains native plugin exceptions instead of leaking them into Ride Mode", async () => {
+    const boom = vi.fn(async () => {
+      throw new Error("native boom");
+    });
+    const bridge = createNativeActiveRideBridge({
+      nativeBuild: true,
+      capacitor: {
+        getPlatform: () => "android",
+        isNativePlatform: () => true,
+        isPluginAvailable: () => true,
+        Plugins: {
+          ActiveRide: {
+            prepare: boom,
+            start: boom,
+            stop: boom,
+            status: boom,
+          },
+        },
+      },
+    });
+
+    await expect(bridge.prepare({ request: true })).resolves.toEqual({
+      ready: false,
+      reason: "native-call-failed",
+    });
+    await expect(bridge.start(session())).resolves.toMatchObject({
+      active: false,
+      reason: "native-call-failed",
+    });
+    await expect(bridge.status()).resolves.toMatchObject({
+      active: false,
+      reason: "native-call-failed",
+    });
+    await expect(bridge.stop("ride-1")).resolves.toMatchObject({
+      active: false,
+      reason: "native-call-failed",
+    });
+    expect(boom).toHaveBeenCalledTimes(4);
+  });
+
 });
