@@ -387,7 +387,9 @@ test("a location message on screen writes its distance in the new language", asy
   expect(screen.getByRole("alert")).toHaveTextContent("(1.4 km)");
 
   try {
-    act(() => setLanguage("fi"));
+    await act(async () => {
+      await setLanguage("fi");
+    });
     expect(screen.getByRole("alert")).toHaveTextContent("(1,4 km)");
   } finally {
     resetLanguageForTests("en");
