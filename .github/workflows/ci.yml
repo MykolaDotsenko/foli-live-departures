@@ -46,6 +46,9 @@ jobs:
       - name: Verify deployment trust boundary
         run: npm run verify:deployment
 
+      - name: Verify production cutover and manual release-gate contract
+        run: npm run verify:release-readiness
+
       - name: Verify merged-PR release provenance contract
         run: npm run verify:release-provenance
 
@@ -94,13 +97,11 @@ jobs:
       - name: Verify Content-Security-Policy
         run: npm run verify:csp
 
-      # Production is served from a GitHub Pages subpath (deploy-pages.yml),
-      # and a path that only resolves at "/" passes every check above.
-      - name: Verify PWA under the production base path
-        env:
-          VITE_BASE_PATH: /foli-live-departures/
+      # The versioned production-site config owns the current origin/base path.
+      # CI and Pages deployment therefore exercise the same cutover contract.
+      - name: Verify PWA under the versioned production site config
         run: |
-          npm run build
+          npm run build:production-site
           npm run verify:pwa
           npm run verify:csp
 

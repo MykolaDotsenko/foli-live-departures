@@ -110,6 +110,17 @@ if (
   );
 }
 
+if (!workflow.includes("run: npm run build:production-site")) {
+  throw new Error(
+    "Production Pages must build through config/production-site.json rather than a hardcoded base path."
+  );
+}
+if (/VITE_BASE_PATH:\s*\/foli-live-departures\//.test(workflow)) {
+  throw new Error(
+    "Production Pages workflow still hardcodes the project base path instead of the versioned production-site config."
+  );
+}
+
 const buildIndex = workflow.indexOf("run: npm run build");
 const stampIndex = workflow.indexOf("run: npm run stamp:deployment");
 const uploadIndex = workflow.indexOf("uses: actions/upload-pages-artifact@");
