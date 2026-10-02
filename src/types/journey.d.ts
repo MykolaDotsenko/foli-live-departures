@@ -65,28 +65,39 @@ export interface TransferTransitLeg {
   liveState: LiveState;
 }
 
-export interface TransferJourneyOption {
+export interface ItineraryTransfer {
+  alightStopId: string;
+  alightStopSequence: number;
+  boardStopId: string;
+  boardStopName: string;
+  walkingDistanceM: number;
+  feasibility: TransferFeasibility;
+}
+
+export interface MultiLegJourneyOption {
   id: string;
   originStopId: string;
   originStopName: string;
   originDistanceMeters: number;
-  first: TransferTransitLeg;
-  transfer: {
-    alightStopId: string;
-    alightStopSequence: number;
-    boardStopId: string;
-    boardStopName: string;
-    walkingDistanceM: number;
-    feasibility: TransferFeasibility;
-  };
-  second: TransferTransitLeg;
+  legs: TransferTransitLeg[];
+  transfers: ItineraryTransfer[];
   destinationStopId: string;
   destinationArrivalAt: number;
   finalWalkDistanceM: number | null;
   finalWalkSecEstimate: number | null;
   journeyArrivalAt: number;
   totalWalkingDistanceM: number;
-  reliability: "medium" | "low";
+  reliability: "high" | "medium" | "low";
+}
+
+/**
+ * Compatibility shape for existing one-transfer callers. New orchestration
+ * must use legs[]/transfers[]; first/transfer/second are aliases only.
+ */
+export interface TransferJourneyOption extends MultiLegJourneyOption {
+  first: TransferTransitLeg;
+  transfer: ItineraryTransfer;
+  second: TransferTransitLeg;
 }
 
 export interface NearbyDepartureFit {
@@ -202,8 +213,15 @@ export interface ActiveDirectJourney {
   selectedAt: number;
   atStopConfirmedAt: number | null;
   lastSeenAt: number;
+  /** Generic itinerary source of truth, including direct journeys. */
+  itinerary: MultiLegJourneyOption | null;
+  /** Zero-based index of the currently authoritative transit leg. */
+  activeLegIndex: number | null;
+  /** Legacy one-transfer aliases retained while older component tests migrate. */
   transferPlan: TransferJourneyOption | null;
   transferLeg: 1 | 2 | null;
+  /** Live state for each committed future leg, keyed by zero-based leg index. */
+  futureLegRevalidations?: Record<number, TransferRevalidationState>;
   transferRevalidation?: TransferRevalidationState | null;
 }
 
