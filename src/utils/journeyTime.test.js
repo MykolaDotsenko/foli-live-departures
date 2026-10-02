@@ -283,13 +283,19 @@ describe("journey time fail-closed edge matrix", () => {
     expect(normalized.earliestDepartureAt).toBe(normalized.referenceTimeSec);
   });
 
-  test("scheduled targets exactly inside the 30-second grace remain valid", () => {
+  test("scheduled targets fail closed at the 30-second stale cutoff", () => {
+    expect(
+      normalizeJourneyTimeConstraint(
+        { mode: "leave-at", targetTimeSec: now - 29 },
+        now
+      ).valid
+    ).toBe(true);
     expect(
       normalizeJourneyTimeConstraint(
         { mode: "leave-at", targetTimeSec: now - 30 },
         now
       ).valid
-    ).toBe(true);
+    ).toBe(false);
     expect(
       normalizeJourneyTimeConstraint(
         { mode: "leave-at", targetTimeSec: now - 31 },
