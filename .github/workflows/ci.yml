@@ -64,6 +64,9 @@ jobs:
       - name: Verify Android E2E crash filter
         run: npm run verify:android-e2e-log
 
+      - name: Verify Android active-ride bridge contract
+        run: npm run verify:android-active-ride
+
       - name: Verify tested Android artifact publication
         run: npm run verify:android-publish
 

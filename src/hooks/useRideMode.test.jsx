@@ -16,6 +16,12 @@ const mocks = vi.hoisted(() => ({
   repeatNowRideSignal: vi.fn(),
   primeRideVoices: vi.fn(() => true),
   unlockRideAudio: vi.fn(() => Promise.resolve(true)),
+  nativeRideStart: vi.fn(() =>
+    Promise.resolve({ active: false, requested: true, reason: "requested" })
+  ),
+  nativeRideStop: vi.fn(() =>
+    Promise.resolve({ active: false, requested: false, reason: "stopping" })
+  ),
 }));
 
 vi.mock("../api/foliApi", () => ({
@@ -31,6 +37,20 @@ vi.mock("../utils/rideAlerts", () => ({
   stopRideAlerts: mocks.stopRideAlerts,
   primeRideVoices: mocks.primeRideVoices,
   unlockRideAudio: mocks.unlockRideAudio,
+}));
+
+vi.mock("../utils/nativeActiveRide", () => ({
+  nativeRideCompanionEligible: (session, gps) =>
+    Boolean(
+      session?.id &&
+        session?.options?.locationBackup === true &&
+        session?.options?.notifications !== false &&
+        ["active", "weak", "off-route"].includes(String(gps?.status || ""))
+    ),
+  nativeActiveRideBridge: {
+    start: mocks.nativeRideStart,
+    stop: mocks.nativeRideStop,
+  },
 }));
 
 import useRideMode from "./useRideMode";
@@ -95,6 +115,8 @@ beforeEach(() => {
   mocks.fetchTripShape.mockClear();
   mocks.runRideTestAlert.mockClear();
   mocks.stopRideAlerts.mockClear();
+  mocks.nativeRideStart.mockClear();
+  mocks.nativeRideStop.mockClear();
 
   originalGeolocation = navigator.geolocation;
   watchPosition = vi.fn((success) => {
@@ -126,6 +148,49 @@ afterEach(() => {
     value: originalGeolocation,
   });
   localStorage.clear();
+});
+
+test("starts the Android companion only after a GPS fix and stops it with the ride", async () => {
+  const { result, unmount } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      options: { locationBackup: true, notifications: true },
+    });
+  });
+
+  expect(mocks.nativeRideStart).not.toHaveBeenCalled();
+
+  await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(mocks.nativeRideStart).toHaveBeenCalledTimes(1));
+
+  const nativeSession = mocks.nativeRideStart.mock.calls[0][0];
+  expect(nativeSession.id).toBe(result.current.session?.id);
+  expect(nativeSession.targetStop?.name).toBe("Puistokatu");
+
+  act(() => result.current.endRide());
+  await waitFor(() =>
+    expect(mocks.nativeRideStop).toHaveBeenCalledWith(nativeSession.id)
+  );
+  unmount();
+});
+
+test("does not start the Android companion when location backup is disabled", async () => {
+  const { result, unmount } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      options: { locationBackup: false, notifications: true },
+    });
+  });
+
+  await Promise.resolve();
+  expect(mocks.nativeRideStart).not.toHaveBeenCalled();
+
+  act(() => result.current.endRide());
+  unmount();
 });
 
 test("persists the ride but never persists the device GPS sample", async () => {

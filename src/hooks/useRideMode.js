@@ -36,6 +36,10 @@ import {
 } from "../utils/fieldDiagnostics";
 import { BUILD_IDENTITY } from "../utils/buildIdentity";
 import {
+  nativeActiveRideBridge,
+  nativeRideCompanionEligible,
+} from "../utils/nativeActiveRide";
+import {
   RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
@@ -84,6 +88,7 @@ export default function useRideMode() {
   const sessionRef = useRef(session);
   const runtimeRef = useRef(runtime);
   const gpsRef = useRef(gps);
+  const nativeRideIdRef = useRef("");
 
   const commitSession = useCallback((updater) => {
     setSession((current) => {
@@ -137,6 +142,11 @@ export default function useRideMode() {
       setFieldReport(buildFieldDiagnosticReport());
     }
     stopRideAlerts();
+    const nativeRideId = nativeRideIdRef.current || current?.id || "";
+    nativeRideIdRef.current = "";
+    if (nativeRideId) {
+      void nativeActiveRideBridge.stop(nativeRideId);
+    }
     shapeRef.current = null;
     commitSession(null);
     commitRuntime(emptyRuntime());
@@ -414,6 +424,50 @@ export default function useRideMode() {
     setGpsState,
     applyProgress,
   });
+
+  // The Android foreground companion is a support layer only. It starts after
+  // the browser location watch has produced a real fix, and it never receives
+  // route/GPS/stage data or decides Ride Mode state.
+  useEffect(() => {
+    const current = sessionRef.current;
+    if (!nativeRideCompanionEligible(current, gps)) {
+      const nativeRideId = nativeRideIdRef.current;
+      nativeRideIdRef.current = "";
+      if (nativeRideId) {
+        void nativeActiveRideBridge.stop(nativeRideId);
+      }
+      return;
+    }
+
+    if (nativeRideIdRef.current === current.id) return;
+
+    const nativeRideId = current.id;
+    nativeRideIdRef.current = nativeRideId;
+    void nativeActiveRideBridge.start(current).then((result) => {
+      if (!result.requested && !result.active) {
+        if (nativeRideIdRef.current === nativeRideId) {
+          nativeRideIdRef.current = "";
+        }
+        return;
+      }
+
+      // A fast End Ride can race the native start request. If the JS session
+      // changed while Android was promoting the service, stop that stale
+      // companion as soon as the request settles.
+      if (sessionRef.current?.id !== nativeRideId) {
+        void nativeActiveRideBridge.stop(nativeRideId);
+        if (nativeRideIdRef.current === nativeRideId) {
+          nativeRideIdRef.current = "";
+        }
+      }
+    });
+  }, [
+    gps.status,
+    rideId,
+    session?.options?.locationBackup,
+    session?.options?.notifications,
+    sessionRef,
+  ]);
 
   useEffect(() => {
     if (!rideActive) return undefined;
