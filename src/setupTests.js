@@ -3,10 +3,12 @@ import { cleanup } from "@testing-library/react";
 import { afterEach } from "vitest";
 import fi from "./i18n/fi";
 import uk from "./i18n/uk";
+import sv from "./i18n/sv";
 import { registerDictionary, resetLanguageForTests } from "./i18n";
 
 registerDictionary("fi", fi);
 registerDictionary("uk", uk);
+registerDictionary("sv", sv);
 
 afterEach(() => {
   cleanup();

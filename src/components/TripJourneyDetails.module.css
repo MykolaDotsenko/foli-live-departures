@@ -52,6 +52,7 @@
 }
 
 .kicker,
+.timeLegend,
 .status,
 .more {
   margin: 0;
@@ -61,10 +62,14 @@
 }
 
 .kicker {
-  margin-bottom: 6px;
+  margin-bottom: 3px;
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.timeLegend {
+  margin-bottom: 8px;
 }
 
 .list {
@@ -117,6 +122,7 @@
   }
 
   :root[data-theme="dark"] .kicker,
+  :root[data-theme="dark"] .timeLegend,
   :root[data-theme="dark"] .status,
   :root[data-theme="dark"] .more,
   :root[data-theme="dark"] .list li small {

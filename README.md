@@ -83,7 +83,7 @@ The exact stop order is kept, including loop routes that visit the same stop mor
 - GitHub Pages and data.foli.fi receive the network requests needed to load the app and the bus data;
 - direct public address/POI lookup is disabled by default in production; address/place text stays on this device and the app hands that task to the official Turku journey planner, while local Föli-stop search remains available;
 - the packaged Android app follows the same fail-closed rule and does **not** call public Nominatim directly;
-- a Content-Security-Policy lets the page run only its own code and talk only to its approved Föli and web place-search origins; it is checked on every build and in every browser test.
+- a Content-Security-Policy lets the page run only its own code and talk only to same-origin assets and approved Föli endpoints; the dormant public place-search provider is not in production `connect-src`; the policy is checked on every build and in every browser test.
 
 A browser can pause a page in the background or on a locked phone, so the get-off alert does **not** promise lock-screen alerts. Reliable background alerts would need a server and Web Push.
 
@@ -201,7 +201,7 @@ runtime dependency audit → lint → typecheck → brand/reference checks
 
 The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
 
-**Current pre-field status (2026-10-02):** items 1–16 plus item 21 (bundle headroom) are merged, so implementation progress is **17/47**. PR #140 restored the unchanged complete-app JS/CSS gate without raising it: the verified PR build shipped **578,177 raw / 161,897 gzip bytes** against **625,000 / 180,000** limits. Locale strings now ship as generated same-origin lazy JSON packs with their own **180,000 raw / 55,000 gzip** budgets; plural/count grammar remains in small lazy runtime modules. On merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e`, CI (including cross-browser/accessibility), bundle/PWA/CSP, Android build/E2E, live Föli smoke, tested Android APK publication and the downstream production Pages deployment with exact-revision smoke are all green.
+**Current pre-field status (2026-10-02):** PR #142 completes implementation items **1–24 (24/47)**. Batch 3 adds Ukrainian automated QA hardening, Swedish, explicit GTFS exact/approximate Next-stops semantics, telemetry-free operator health alerting, a tighter dormant-provider CSP boundary and a supported dependency lock refresh; item 21 remains the bundle-headroom work from PR #140. The unchanged complete-app budgets remain **625,000 raw / 180,000 gzip JS/CSS**, and the unchanged aggregate locale-data budgets remain **180,000 raw / 55,000 gzip**. The supported-refresh gate measured **580,581 / 162,788 JS/CSS** and **166,793 / 42,478 locale data**. Automated completion does not close native-language, physical VoiceOver/TalkBack, real-bus, custom-domain, Android production-signing or physical-phone gates.
 
 ### Run locally
 

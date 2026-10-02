@@ -189,3 +189,96 @@ test("production PWA gives every home screen a real icon", async ({
       .filter((errorId) => errorId !== "in-incognito")
   ).toEqual([]);
 });
+
+test("production PWA reopens offline in persisted Ukrainian", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-pwa");
+
+  await page.goto("/?stop=164");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Suomeksi" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "fi");
+  await page.getByRole("button", { name: "Українською" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+  await expect(
+    page.getByRole("columnheader", { name: "Відправлення" })
+  ).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
+    )
+    .toBe("uk");
+
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true);
+
+  await page.unrouteAll({ behavior: "wait" });
+  await context.setOffline(true);
+  await page.evaluate(() => {
+    window.dispatchEvent(new globalThis.Event("offline"));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+  await expect(
+    page.getByRole("columnheader", { name: "Відправлення" })
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "På svenska" })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
+    )
+    .toBe("uk");
+
+  await context.setOffline(false);
+});
+
+test("production PWA reopens offline in persisted Swedish", async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-pwa");
+
+  await page.goto("/?stop=164");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Suomeksi" }).click();
+  await page.getByRole("button", { name: "Українською" }).click();
+  await page.getByRole("button", { name: "På svenska" }).click();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
+    )
+    .toBe("sv");
+
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await expect
+    .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+    .toBe(true);
+
+  await page.unrouteAll({ behavior: "wait" });
+  await context.setOffline(true);
+  await page.evaluate(() => {
+    window.dispatchEvent(new globalThis.Event("offline"));
+  });
+  await page.reload({ waitUntil: "domcontentloaded" });
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
+    )
+    .toBe("sv");
+
+  await context.setOffline(false);
+});

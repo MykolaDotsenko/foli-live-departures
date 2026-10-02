@@ -30,17 +30,13 @@ const FOLI_ENDPOINT_VARIABLES = [
   "VITE_FOLI_BOUNDARY_URL",
 ];
 
-const NATIVE_BUILD =
-  String(process.env.VITE_NATIVE_BUILD || "").trim().toLowerCase() === "true";
-
-const PLACE_SEARCH_CONNECT_SOURCES = NATIVE_BUILD
-  ? []
-  : ["https://nominatim.openstreetmap.org"];
-
+// Direct public place search is dormant in production. Its reviewed endpoint
+// remains in the runtime config, but CSP deliberately does not admit that
+// origin. Re-enabling it therefore requires an explicit CSP/code review rather
+// than a config-only switch.
 function connectSources(env) {
   return [
     ...FOLI_CONNECT_SOURCES,
-    ...PLACE_SEARCH_CONNECT_SOURCES,
     ...FOLI_ENDPOINT_VARIABLES.map((name) => originOf(env[name] || "")),
   ];
 }

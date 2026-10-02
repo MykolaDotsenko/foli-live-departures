@@ -61,10 +61,21 @@ test("loads the planned sequence only after the user opens Next stops", async ()
     await screen.findByText("Next stops · timetable times")
   ).toBeInTheDocument();
   expect(mocks.fetchTripStopTimes).toHaveBeenCalledTimes(1);
+  expect(
+    screen.getByText(
+      "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints."
+    )
+  ).toBeInTheDocument();
   expect(screen.getByText("Puistokatu")).toBeInTheDocument();
-  expect(screen.getByText("around 17:46")).toBeInTheDocument();
+  expect(screen.getByText("around 17:46")).toHaveAttribute(
+    "data-time-kind",
+    "approximate"
+  );
   expect(screen.getByText("Turun linna")).toBeInTheDocument();
-  expect(screen.getByText("01:05")).toBeInTheDocument();
+  expect(screen.getByText("01:05")).toHaveAttribute(
+    "data-time-kind",
+    "timepoint"
+  );
   expect(screen.queryByText("Kauppatori")).not.toBeInTheDocument();
 });
 

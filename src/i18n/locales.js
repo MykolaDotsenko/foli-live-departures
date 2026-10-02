@@ -2,14 +2,14 @@
  * Locale metadata is the single source of truth for every interface language.
  * A dictionary is enabled only when its code appears here and in i18n/index.js.
  *
- * @typedef {"en" | "fi" | "uk"} Language
+ * @typedef {"en" | "fi" | "uk" | "sv"} Language
  * @typedef {{
  *   code: Language,
  *   nativeLabel: string,
  *   switchLabel: string,
  *   intlLocale: string,
  *   speechLocale: string,
- *   providerMode: "finnish" | "translated",
+ *   providerMode: "finnish" | "swedish" | "translated",
  * }} LocaleDefinition
  */
 
@@ -41,6 +41,14 @@ export const LOCALES = Object.freeze([
     intlLocale: "uk-UA",
     speechLocale: "uk-UA",
     providerMode: "translated",
+  }),
+  Object.freeze({
+    code: "sv",
+    nativeLabel: "Svenska",
+    switchLabel: "På svenska",
+    intlLocale: "sv-FI",
+    speechLocale: "sv-FI",
+    providerMode: "swedish",
   }),
 ]);
 

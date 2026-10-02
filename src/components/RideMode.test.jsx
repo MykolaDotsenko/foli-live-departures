@@ -1306,3 +1306,114 @@ test("unknown cross-platform walking distance names the concrete stop without in
   ).toBeInTheDocument();
   expect(screen.queryByText(/Walk ≈/i)).not.toBeInTheDocument();
 });
+
+test("renders the safety-critical NEXT state in Ukrainian without weakening provider labels", () => {
+  resetLanguageForTests("uk");
+
+  render(
+    <RideMode
+      session={{ ...session("next"), previousLeft: true }}
+      runtime={{
+        trackingHealth: "live",
+        etaSec: 70,
+        remainingStops: 1,
+        targetMatchBy: "trip",
+      }}
+      gps={{
+        status: "active",
+        shapeUsable: true,
+        onRoute: true,
+        routeDistanceM: 420,
+        distanceM: 300,
+        error: "",
+      }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(document.documentElement.lang).toBe("uk");
+  expect(
+    screen.getByRole("heading", { name: "Ваша зупинка наступна" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Натисніть кнопку STOP зараз.")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Стежимо за вашим автобусом")
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Press the STOP button now.")).not.toBeInTheDocument();
+
+  const providerStop = screen.getAllByText("Puistokatu")[0];
+  expect(providerStop).toHaveAttribute("lang", "fi");
+});
+
+test("keeps the Ukrainian NOW state authoritative and removes contradictory countdown copy", () => {
+  resetLanguageForTests("uk");
+
+  render(
+    <RideMode
+      session={session("now")}
+      runtime={{
+        trackingHealth: "live",
+        etaSec: 120,
+        remainingStops: 1,
+        targetMatchBy: "trip",
+      }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Виходьте зараз" })
+  ).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Підійдіть до дверей і виходьте тут."
+  );
+  expect(screen.queryByLabelText("Хід поїздки")).not.toBeInTheDocument();
+  expect(screen.queryByText("1 зупинка")).not.toBeInTheDocument();
+  expect(screen.queryByText("~2 хв")).not.toBeInTheDocument();
+});
+
+test("renders the safety-critical NEXT state in Swedish without strengthening uncertainty", () => {
+  resetLanguageForTests("sv");
+
+  render(
+    <RideMode
+      session={{ ...session("next"), previousLeft: true }}
+      runtime={{
+        trackingHealth: "schedule",
+        etaSec: 70,
+        remainingStops: 1,
+        targetMatchBy: "",
+      }}
+      gps={{ status: "off", distanceM: null, error: "" }}
+      wakeLockState="active"
+      onTestAlert={() => {}}
+      onEndRide={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(document.documentElement.lang).toBe("sv");
+  expect(
+    screen.getByRole("heading", { name: "Din hållplats är nästa" })
+  ).toBeInTheDocument();
+  expect(screen.getByText("Tryck på STOP-knappen nu.")).toBeInTheDocument();
+  expect(screen.getByText("Följer tidtabellen")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      /vi säger inte ”stig av nu” enbart utifrån tidtabellen/i
+    )
+  ).toBeInTheDocument();
+  expect(screen.queryByText("Stig av nu")).not.toBeInTheDocument();
+
+  const providerStop = screen.getAllByText("Puistokatu")[0];
+  expect(providerStop).toHaveAttribute("lang", "fi");
+});

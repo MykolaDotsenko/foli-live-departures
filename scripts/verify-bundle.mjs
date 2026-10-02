@@ -116,7 +116,10 @@ let localeRaw = 0;
 let localeGzip = 0;
 
 for (const file of localeFiles) {
-  if (!/^[a-z]{2}\.json$/.test(file)) continue;
+  // Count the shared source-key table as part of the same unchanged locale
+  // budget. Deduplicating keys is an optimization, not a way to move bytes
+  // outside the release gate.
+  if (!/^(?:keys|[a-z]{2})\.json$/.test(file)) continue;
   const body = await readFile(path.join(localeDir, file));
   localeRaw += body.byteLength;
   localeGzip += gzipSync(body, { level: 9 }).byteLength;

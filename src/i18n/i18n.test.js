@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test, vi } from "vitest";
 import fi, { AREAS as FI_AREAS } from "./fi";
 import uk, { AREAS as UK_AREAS } from "./uk";
+import sv, { AREAS as SV_AREAS } from "./sv";
 import {
   ensureLanguageDictionary,
   getLanguage,
@@ -77,8 +78,8 @@ afterEach(() => {
   localStorage.clear();
 });
 
-const LOCALIZED_DICTIONARIES = { fi, uk };
-const LOCALIZED_AREAS = { fi: FI_AREAS, uk: UK_AREAS };
+const LOCALIZED_DICTIONARIES = { fi, uk, sv };
+const LOCALIZED_AREAS = { fi: FI_AREAS, uk: UK_AREAS, sv: SV_AREAS };
 
 for (const [language, dictionary] of Object.entries(LOCALIZED_DICTIONARIES)) {
   test(`every phrase the code shows has a ${language} translation`, () => {
@@ -215,7 +216,7 @@ test("the page's own title is the phrase the app translates", () => {
 test("follows the first language the phone lists that the app speaks", () => {
   expect(preferredLanguage(["fi-FI", "en-US"])).toBe("fi");
   expect(preferredLanguage(["uk-UA", "fi", "en"])).toBe("uk");
-  expect(preferredLanguage(["sv-FI", "uk", "fi"])).toBe("uk");
+  expect(preferredLanguage(["sv-FI", "uk", "fi"])).toBe("sv");
   expect(preferredLanguage(["en-US", "uk"])).toBe("en");
   expect(preferredLanguage(["de-DE"])).toBe("en");
   expect(preferredLanguage([])).toBe("en");
@@ -223,7 +224,7 @@ test("follows the first language the phone lists that the app speaks", () => {
 });
 
 test("locale registry is the source of truth for formatting, speech and switching", () => {
-  expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk"]);
+  expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk", "sv"]);
   expect(localeDefinition("fi")).toMatchObject({
     nativeLabel: "Suomi",
     intlLocale: "fi-FI",
@@ -231,14 +232,18 @@ test("locale registry is the source of truth for formatting, speech and switchin
   });
   expect(intlLocale("fi")).toBe("fi-FI");
   expect(intlLocale("uk")).toBe("uk-UA");
+  expect(intlLocale("sv")).toBe("sv-FI");
   expect(intlLocale("en")).toBe("en-GB");
   expect(speechLocale("fi")).toBe("fi-FI");
   expect(speechLocale("uk")).toBe("uk-UA");
+  expect(speechLocale("sv")).toBe("sv-FI");
   expect(nextLocaleDefinition("en").code).toBe("fi");
   expect(nextLocaleDefinition("fi").code).toBe("uk");
-  expect(nextLocaleDefinition("uk").code).toBe("en");
+  expect(nextLocaleDefinition("uk").code).toBe("sv");
+  expect(nextLocaleDefinition("sv").code).toBe("en");
   expect(isSupportedLanguage("en")).toBe(true);
   expect(isSupportedLanguage("uk")).toBe(true);
+  expect(isSupportedLanguage("sv")).toBe(true);
   expect(isSupportedLanguage("xx")).toBe(false);
   expect(localeDefinition("xx").code).toBe("en");
   expect(nextLocaleDefinition(/** @type {any} */ ("xx")).code).toBe("en");
@@ -257,6 +262,11 @@ test("switching language updates the page, remembers the choice and tells listen
   expect(localStorage.getItem("foli-language-v1")).toBe("uk");
   expect(t("Online")).toBe("Онлайн");
 
+  setLanguage("sv");
+  expect(document.documentElement.lang).toBe("sv");
+  expect(localStorage.getItem("foli-language-v1")).toBe("sv");
+  expect(t("Online")).toBe("Online");
+
   setLanguage("en");
   expect(document.documentElement.lang).toBe("en");
   expect(t("Online")).toBe("Online");
@@ -268,22 +278,49 @@ test("an unknown language is ignored", () => {
   expect(getLanguage()).toBe("en");
 });
 
-test("loads a locale string pack on demand and overlays runtime grammar", async () => {
+const FI_RUNTIME_KEYS = [
+  "{count} service updates",
+  "Show {count} more updates",
+  "live",
+  "{count} scheduled",
+];
+
+function compactFiFixture({
+  keys = ["Online", ...FI_RUNTIME_KEYS],
+  values = ["Yhteys toimii", null, null, null, null],
+  fiStatus = 200,
+} = {}) {
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+    const url = String(input);
+    const isKeys = /locales\/keys\.json$/.test(url);
+    const isFi = /locales\/fi\.json$/.test(url);
+
+    if (!isKeys && !isFi) {
+      throw new Error(`Unexpected locale request: ${url}`);
+    }
+
+    const status = isFi ? fiStatus : 200;
+    return /** @type {Response} */ ({
+      ok: status >= 200 && status < 300,
+      status,
+      json: async () => (isKeys ? keys : values),
+    });
+  });
+}
+
+test("loads compact locale values against the shared key pack and overlays runtime grammar", async () => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: true,
-        status: 200,
-        json: async () => ({ Online: "Yhteys toimii" }),
-      })
-    );
+  const fetchMock = compactFiFixture();
 
   try {
     const fresh = await import("./index.js");
     const dictionary = await fresh.ensureLanguageDictionary("fi");
 
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/locales\/keys\.json$/),
+      { cache: "force-cache" }
+    );
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/locales\/fi\.json$/),
       { cache: "force-cache" }
@@ -297,14 +334,7 @@ test("loads a locale string pack on demand and overlays runtime grammar", async 
 
 test("locale pack HTTP failure rejects instead of activating partial translations", async () => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: false,
-        status: 503,
-      })
-    );
+  const fetchMock = compactFiFixture({ fiStatus: 503 });
 
   try {
     const fresh = await import("./index.js");
@@ -317,24 +347,44 @@ test("locale pack HTTP failure rejects instead of activating partial translation
 });
 
 test.each([
-  ["array payload", []],
-  ["non-string entry", { Online: 42 }],
-])("rejects an invalid locale pack: %s", async (_label, payload) => {
+  ["key pack is not an array", {}, ["Yhteys toimii", null, null, null, null]],
+  ["value pack is not an array", ["Online", ...FI_RUNTIME_KEYS], {}],
+  ["key/value lengths differ", ["Online", ...FI_RUNTIME_KEYS], ["Yhteys toimii"]],
+  [
+    "key table contains a duplicate",
+    ["Online", "Online", ...FI_RUNTIME_KEYS],
+    ["Yhteys toimii", "Yhteys toimii", null, null, null, null],
+  ],
+  [
+    "value slot is neither text nor runtime null",
+    ["Online", ...FI_RUNTIME_KEYS],
+    [42, null, null, null, null],
+  ],
+])("rejects a malformed compact locale pack: %s", async (_label, keys, values) => {
   vi.resetModules();
-  const fetchMock = vi
-    .spyOn(globalThis, "fetch")
-    .mockResolvedValue(
-      /** @type {Response} */ ({
-        ok: true,
-        status: 200,
-        json: async () => payload,
-      })
-    );
+  const fetchMock = compactFiFixture({ keys, values });
 
   try {
     const fresh = await import("./index.js");
     await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
-      /Invalid fi locale pack/
+      /Invalid (?:fi locale pack|locale key pack)/
+    );
+  } finally {
+    fetchMock.mockRestore();
+  }
+});
+
+test("compact locale runtime slots must exactly match the locale grammar module", async () => {
+  vi.resetModules();
+  const fetchMock = compactFiFixture({
+    keys: ["Online", ...FI_RUNTIME_KEYS, "Unexpected runtime slot"],
+    values: ["Yhteys toimii", null, null, null, null, null],
+  });
+
+  try {
+    const fresh = await import("./index.js");
+    await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
+      /missing runtime translation for "Unexpected runtime slot"/
     );
   } finally {
     fetchMock.mockRestore();
@@ -382,6 +432,33 @@ test("Ukrainian plural forms use one, few and many correctly", () => {
   expect(t("{count} stops", { count: 25 })).toBe("25 зупинок");
 });
 
+test("Swedish count grammar covers singular and plural runtime branches", () => {
+  resetLanguageForTests("sv");
+
+  expect(t("{count} service updates", { count: 1 })).toBe("1 trafikmeddelande");
+  expect(t("{count} service updates", { count: 3 })).toBe("3 trafikmeddelanden");
+  expect(t("Show {count} more updates", { count: 1 })).toBe(
+    "Visa 1 meddelande till"
+  );
+  expect(t("Show {count} more updates", { count: 4 })).toBe(
+    "Visa 4 fler meddelanden"
+  );
+  expect(t("{count} upcoming", { count: 2 })).toBe("2 kommande");
+  expect(t("live", { count: 1 })).toBe("realtid");
+  expect(t("live", { count: 2 })).toBe("realtid");
+  expect(t("{count} scheduled", { count: 2 })).toBe("2 enligt tidtabell");
+  expect(t("{count} backup stops", { count: 1 })).toBe("1 reservhållplats");
+  expect(t("{count} backup stops", { count: 2 })).toBe("2 reservhållplatser");
+  expect(t("{count} stops", { count: 1 })).toBe("1 hållplats");
+  expect(t("{count} stops", { count: 2 })).toBe("2 hållplatser");
+  expect(t("{count} stops away", { count: 1 })).toBe("1 hållplats kvar");
+  expect(t("{count} stops away", { count: 3 })).toBe("3 hållplatser kvar");
+  expect(t("{count} options", { count: 1 })).toBe("1 alternativ");
+  expect(t("{count} options", { count: 2 })).toBe("2 alternativ");
+  expect(t("{count} transfers", { count: 1 })).toBe("1 byte");
+  expect(t("{count} transfers", { count: 2 })).toBe("2 byten");
+});
+
 test("a context keeps two meanings of one English phrase apart", () => {
   setLanguage("fi");
 
@@ -402,15 +479,17 @@ test("a phrase with no translation falls back to English, placeholders filled", 
   expect(t("Stop {id}", {})).toBe("Pysäkki {id}");
 });
 
-test("reads Föli's own texts in the Finnish original, or the phone's languages in English", () => {
+test("reads provider text in the selected local language without inventing translations", () => {
   const languages = vi.spyOn(navigator, "languages", "get");
   try {
     languages.mockReturnValue(["fi-FI", "en-US"]);
     expect(providerLanguages("fi")).toEqual(["fi"]);
+    expect(providerLanguages("sv")).toEqual(["sv", "en"]);
     expect(providerLanguages("en")).toEqual(["en-US", "en"]);
 
     languages.mockReturnValue(["sv-SE", "en"]);
     expect(providerLanguages("en")[0]).toBe("sv-SE");
+    expect(providerLanguages("sv")).toEqual(["sv", "en"]);
   } finally {
     languages.mockRestore();
   }

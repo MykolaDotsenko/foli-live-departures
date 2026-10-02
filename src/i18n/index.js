@@ -46,18 +46,38 @@ const STORAGE_KEY = "foli-language-v1";
 const LOCALE_PACKS = Object.freeze({
   fi: "locales/fi.json",
   uk: "locales/uk.json",
+  sv: "locales/sv.json",
 });
 
 /** @type {Partial<Record<Language, () => Promise<{default: Dictionary}>>>} */
 const RUNTIME_LOADERS = {
   fi: () => import("./fi/runtime.js"),
   uk: () => import("./uk/runtime.js"),
+  sv: () => import("./sv/runtime.js"),
 };
 
 /**
- * String translations live in same-origin JSON packs so large English source
- * keys are not duplicated inside executable JS. Function-valued translations
- * (plural/count grammar) stay in tiny lazy runtime modules.
+ * String translations live in same-origin JSON packs. English source phrases
+ * are stored once in a shared key table, while each locale contains only its
+ * aligned values. This keeps adding another language from duplicating hundreds
+ * of long English keys. Function-valued plural/count grammar stays in the same
+ * small lazy runtime modules.
+ * @param {string} relativePath
+ * @param {string} label
+ * @returns {Promise<unknown>}
+ */
+async function fetchLocaleJson(relativePath, label) {
+  const response = await globalThis.fetch(
+    `${import.meta.env.BASE_URL}${relativePath}`,
+    { cache: "force-cache" }
+  );
+  if (!response.ok) {
+    throw new Error(`Could not load ${label} (${response.status}).`);
+  }
+  return response.json();
+}
+
+/**
  * @param {Language} language
  * @returns {Promise<Dictionary>}
  */
@@ -66,32 +86,70 @@ async function loadDictionary(language) {
   const runtimeLoader = RUNTIME_LOADERS[language];
   if (!relativePath || !runtimeLoader) return {};
 
-  const response = await globalThis.fetch(`${import.meta.env.BASE_URL}${relativePath}`, {
-    cache: "force-cache",
-  });
-  if (!response.ok) {
-    throw new Error(`Could not load ${language} locale pack (${response.status}).`);
+  const [keys, values, runtime] = await Promise.all([
+    fetchLocaleJson("locales/keys.json", "locale key pack"),
+    fetchLocaleJson(relativePath, `${language} locale pack`),
+    runtimeLoader(),
+  ]);
+
+  if (!Array.isArray(keys) || !Array.isArray(values)) {
+    throw new Error(`Invalid ${language} locale pack structure.`);
+  }
+  if (keys.length !== values.length) {
+    throw new Error(
+      `Invalid ${language} locale pack length: ${values.length} values for ${keys.length} keys.`
+    );
   }
 
-  const payload = await response.json();
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-    throw new Error(`Invalid ${language} locale pack.`);
-  }
+  /** @type {Dictionary} */
+  const dictionary = {};
+  const seen = new Set();
+  const functionSlots = new Set();
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index];
+    const value = values[index];
 
-  for (const value of Object.values(payload)) {
+    if (typeof key !== "string" || key.length === 0 || seen.has(key)) {
+      throw new Error(`Invalid locale key pack entry at index ${index}.`);
+    }
+    seen.add(key);
+
+    // null is reserved for a function-valued translation supplied by the
+    // locale's runtime module. Any other non-string value is malformed.
+    if (value === null) {
+      functionSlots.add(key);
+      continue;
+    }
     if (typeof value !== "string") {
-      throw new Error(`Invalid ${language} locale pack entry.`);
+      throw new Error(`Invalid ${language} locale pack entry at index ${index}.`);
+    }
+    dictionary[key] = value;
+  }
+
+  const runtimeDictionary = runtime.default || {};
+  for (const key of Object.keys(runtimeDictionary)) {
+    if (!functionSlots.delete(key)) {
+      throw new Error(
+        `Invalid ${language} runtime translation slot for ${JSON.stringify(key)}.`
+      );
     }
   }
+  if (functionSlots.size > 0) {
+    throw new Error(
+      `Invalid ${language} locale pack: missing runtime translation for ${JSON.stringify(
+        [...functionSlots][0]
+      )}.`
+    );
+  }
 
-  const runtime = await runtimeLoader();
-  return Object.freeze({ ...payload, ...(runtime.default || {}) });
+  return Object.freeze({ ...dictionary, ...runtimeDictionary });
 }
 
 /** @type {Partial<Record<Language, () => Promise<Dictionary>>>} */
 const DICTIONARY_LOADERS = {
   fi: () => loadDictionary("fi"),
   uk: () => loadDictionary("uk"),
+  sv: () => loadDictionary("sv"),
 };
 /** @type {Map<Language, Promise<Dictionary>>} */
 const dictionaryLoads = new Map();
@@ -349,6 +407,7 @@ export function speechLocale(language = current) {
  */
 export function providerLanguages(language = current) {
   if (localeDefinition(language).providerMode === "finnish") return ["fi"];
+  if (localeDefinition(language).providerMode === "swedish") return ["sv", "en"];
   return [
     ...browserLanguages().filter(
       (tag) => tag && !/^fi\b/i.test(String(tag))

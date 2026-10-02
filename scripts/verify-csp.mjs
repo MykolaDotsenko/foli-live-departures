@@ -44,6 +44,14 @@ for (const [name, sources] of directives) {
   }
 }
 
+const connectSources = directives.get("connect-src") || [];
+const dormantPlaceProvider = "https://nominatim.openstreetmap.org";
+if (connectSources.includes(dormantPlaceProvider)) {
+  failures.push(
+    `connect-src admits dormant place provider ${dormantPlaceProvider}; production direct place search is disabled.`
+  );
+}
+
 const scriptSources = directives.get("script-src") || [];
 for (const body of inlineScripts(html)) {
   const hash = scriptHash(body);
