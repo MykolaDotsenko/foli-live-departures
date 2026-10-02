@@ -150,7 +150,6 @@ export function activeJourneyFromItinerary(
     destinationStopSequence:
       first.exitStopSequence !== null &&
       first.exitStopSequence !== undefined &&
-      first.exitStopSequence !== "" &&
       Number.isFinite(Number(first.exitStopSequence))
         ? Number(first.exitStopSequence)
         : null,
@@ -243,7 +242,6 @@ function projectLeg(journey, index, nowMs, phase, recoveryReason) {
     destinationStopSequence:
       leg.exitStopSequence !== null &&
       leg.exitStopSequence !== undefined &&
-      leg.exitStopSequence !== "" &&
       Number.isFinite(Number(leg.exitStopSequence))
         ? Number(leg.exitStopSequence)
         : null,
