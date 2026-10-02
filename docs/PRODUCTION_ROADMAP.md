@@ -31,7 +31,7 @@ Already implemented and considered part of the baseline:
 - generic locale registry with lazy dictionaries and Ukrainian (`uk-UA`) implementation across the passenger UI;
 - live Föli contract smoke after each master merge and daily.
 
-PR #137 (batch 1) and PR #139 (batch 2) are merged. The implementation count is therefore **16/47**. Verification is deliberately tracked separately: the current `master` merge SHA `f436b4d4dab2c46fc34b71010ece8340058d51f3` has green Android build/E2E and live Föli smoke, but CI is red because shipped JS/CSS is **739,109 raw bytes**, above the unchanged **625,000-byte** complete-app budget. The production deploy is therefore not considered verified, and batch 3 must first restore the existing budget rather than raise it.
+PR #137 (batch 1), PR #139 (batch 2) and the bundle-headroom slice in PR #140 are merged. The implementation count is therefore **17/47**: items 1–16 plus item 21. Verification remains deliberately separate. The current `master` merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e` has green unit-build/bundle/PWA/CSP, Android build/E2E, live Föli smoke and tested Android APK publication. The verified PR payload is **578,177 raw / 161,897 gzip JS/CSS bytes** against unchanged **625,000 / 180,000** limits. Production Pages deployment remains a downstream exact-revision gate and is not claimed verified until that workflow succeeds for this SHA.
 
 The Ukrainian localization implementation is present in code and currently reachable through the locale registry/language switch for pre-field testing. Native-language, physical-device accessibility and speech review remain explicit manual release gates; they are not inferred from the presence of the dictionary.
 
@@ -519,9 +519,24 @@ A first-time passenger can tell why one time says “around” and another does 
 
 ## PR-C02 — Bundle headroom reduction
 
-**Priority:** 84/100
+**Priority:** 84/100  
+**Implementation status (PR #140): blocker fixed and merged; further optimization remains useful.**
 
-Current budgets are intentionally strict. Reduce actual runtime footprint before another major feature wave.
+PR #140 restored the unchanged complete-app gate by moving canonical FI/UK
+string translations into generated same-origin lazy JSON packs while keeping
+function-valued plural/count grammar in small lazy runtime modules. The build
+also added independent locale-pack raw/gzip budgets so this optimization cannot
+hide unbounded translation growth.
+
+Current verified PR measurements:
+
+- complete shipped JS/CSS: **578,177 raw / 161,897 gzip bytes**;
+- JS/CSS limits: **625,000 / 180,000**;
+- FI/UK locale packs: **161,165 raw / 43,526 gzip bytes**;
+- locale-pack limits: **180,000 / 55,000**.
+
+The original budgets remain intentionally strict. Continue reducing actual
+runtime footprint before another major feature wave.
 
 ### Target
 
@@ -543,9 +558,14 @@ without weakening functionality.
 
 ### Acceptance
 
-- both bundle budgets gain meaningful headroom;
-- no higher CPU/startup cost hidden behind smaller transfer bytes;
-- mobile first interaction remains stable.
+- [x] both complete-app JS/CSS budgets regain meaningful headroom without being raised;
+- [x] moved locale payload has its own explicit raw/gzip budget;
+- [x] canonical dictionaries remain the source of truth and generated packs fail closed on invalid loading;
+- [x] mobile/browser/Android regression suites pass on the exact PR head;
+- [ ] continue toward the stretch target below without increasing CPU/startup cost.
+
+The approximate **<560 KB raw / <155 KB gzip** target remains a stretch target,
+not a release gate; PR #140 restored release headroom but did not yet reach it.
 
 ---
 
@@ -861,16 +881,15 @@ Work is merged in verified batches of eight checklist items:
 2. **Batch 2 / PR #139:** multi-leg recovery, leave-now/leave-at/arrive-by,
    routing preferences, entrance-aware destinations, pedestrian-routing
    production boundary, generic locale architecture, Ukrainian safety layer
-   and full Ukrainian UI. The code is merged, but the batch is **not yet
-   verification-closed** because the current master fails the unchanged
-   complete-app bundle budget.
+   and full Ukrainian UI. The implementation is merged.
 3. **Batch 3 / items 17–24:** Ukrainian automated QA/enablement hardening,
    Swedish dictionary, Swedish QA/enablement hardening, exact-vs-approximate
    Next-stops semantics, bundle headroom restoration, external health alerting
    without passenger analytics, dormant-provider CSP tightening, and the final
-   supported dependency/toolchain refresh. Item 21 (bundle headroom) is a
-   blocking repair for the current red master and may be completed before the
-   other batch items while remaining in the same batch PR.
+   supported dependency/toolchain refresh. **Item 21 is now implemented in PR
+   #140.** The rest of the batch remains open; PR #140 also added useful
+   locale-loader regression coverage and a browser locale-cycle check, but that
+   partial QA work does not by itself close item 17.
 4. Later batches cover release/version identity polish, Android native
    background feasibility/implementation, physical-device accessibility and
    language review, domain/Play/release readiness and the final pre-field audit.
