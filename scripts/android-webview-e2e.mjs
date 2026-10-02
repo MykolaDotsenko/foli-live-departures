@@ -256,8 +256,8 @@ const ukrainianReload = await retry(
       ready: document.readyState === "complete",
       lang: document.documentElement.lang || "",
       stored: localStorage.getItem("foli-language-v1"),
-      hasEnglishSwitch: [...document.querySelectorAll("button")].some(
-        (button) => (button.textContent || "").trim() === "In English"
+      hasSwedishSwitch: [...document.querySelectorAll("button")].some(
+        (button) => (button.textContent || "").trim() === "På svenska"
       ),
       hasUkrainianUi:
         /Виберіть автобусну зупинку|Знайти найближчу зупинку|Відправлення/.test(
