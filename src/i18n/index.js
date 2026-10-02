@@ -9,6 +9,7 @@
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
 import fi from "./fi";
+import uk from "./uk";
 import {
   LANGUAGE_CODES,
   isSupportedLanguage,
@@ -38,7 +39,7 @@ import { LOCAL_STATE_IMPORTED_EVENT } from "../utils/localStateEvents";
 export const LANGUAGES = LANGUAGE_CODES;
 
 /** @type {Record<Language, Dictionary>} */
-const DICTIONARIES = { en: {}, fi };
+const DICTIONARIES = { en: {}, fi, uk };
 const STORAGE_KEY = "foli-language-v1";
 
 /**
