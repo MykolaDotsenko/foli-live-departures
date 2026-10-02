@@ -4,25 +4,25 @@ This is the canonical launch checklist for Turku Departures.
 
 ## Current automated state — 2026-10-02
 
-Items 1–16 plus item 21 (bundle headroom) are merged. The current
-`master` SHA is `4f88d851e5eb5ebf0fab555e8725551a209f893e`, so implementation
-progress is **17/47**.
+PR #142 completes items **1–24**, bringing implementation progress to
+**24/47**. Implementation count remains separate from release evidence and from
+the manual gates below.
 
-- unit-build, coverage, PWA, CSP and bundle verification: green;
-- Android build: green;
-- Android emulator E2E: green;
-- live Föli contract smoke: green;
-- tested `android-latest` publication path: green;
-- verified PR build shipped JS/CSS: **578,177 raw / 161,897 gzip bytes** vs
+PR #142's supported toolchain-refresh verification passed runtime audit, lint,
+typecheck, coverage, build, PWA, CSP, bundle and architecture/policy checks
+before committing the refreshed lockfile. That run measured:
+
+- complete shipped JS/CSS: **580,581 raw / 162,788 gzip bytes** vs unchanged
   **625,000 / 180,000** limits;
-- generated FI/UK locale packs: **161,165 raw / 43,526 gzip bytes** vs their
-  independent **180,000 / 55,000** limits;
-- production Pages deployment and its exact-revision post-deploy smoke: green.
+- shared-key + FI/UK/SV locale data: **166,793 raw / 42,478 gzip bytes** vs
+  unchanged **180,000 / 55,000** aggregate limits;
+- zero runtime npm vulnerability findings at the configured high/critical gate.
 
-PR #140 fixed the inherited bundle regression without raising the existing
-JS/CSS budget. The exact merge SHA has now completed the full automated
-CI/browser/PWA/Android/live-contract/test-APK/deployment path. The remaining
-batch 17–24 scope is still open unless explicitly listed as implemented below.
+The final PR head is still required to pass cross-browser/accessibility and
+Android emulator checks before merge, and the exact merge SHA must pass the
+normal master CI / production deployment / exact-revision smoke path. None of
+those automated checks close native-language, physical-device, real-bus,
+custom-domain or production-signing gates.
 
 ## Release classes
 
@@ -94,14 +94,13 @@ fresh live data, and Ride Mode remains authoritative for the boarded leg.
 
 Routing/recovery through two transfers, leave-at/arrive-by, routing
 preferences, entrance-aware destination handling, the pedestrian-routing
-production boundary, generic locale plumbing and the full Ukrainian dictionary
-are implemented in the merged source. Before the field-validation freeze, the
-remaining pre-field work is the still-open Ukrainian QA matrix, Swedish,
-exact/approximate time semantics, further performance headroom toward the
-stretch target, health/CSP and toolchain hardening, followed by the later
-native/background, physical-device
-accessibility/language, domain and Android/Play release gates. Manual reviews
-remain open until they are actually performed.
+production boundary, Ukrainian and Swedish locale implementation/automated QA,
+exact-vs-approximate Next-stops semantics, telemetry-free health alerting, the
+dormant-provider CSP boundary and the supported toolchain refresh are implemented
+through PR #142. Remaining pre-field work is the later roadmap scope plus the
+explicit native/background, physical-device accessibility/language,
+real-bus/domain and Android/Play release gates. Manual reviews remain open until
+they are actually performed.
 
 ## Architectural limits, not unfinished work
 
