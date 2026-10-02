@@ -78,10 +78,13 @@ function finalWalkHeading() {
 
 function recoveryJourneyTarget() {
   const option = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button'
+    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button'
   );
   if (option instanceof globalThis.HTMLElement) return option;
-  return document.getElementById("recovery-journey-options-title");
+  return (
+    document.getElementById("recovery-journey-options-title") ||
+    document.getElementById("recovery-transfer-journey-options-title")
+  );
 }
 
 function selectedJourneyDepartureAction() {
@@ -932,8 +935,10 @@ function App() {
             <TransferRecoveryPanel
               state={online ? transferRecovery.state : "offline"}
               options={transferRecovery.options}
+              transferOptions={transferRecovery.transferOptions}
               destination={journey.destination}
               onSelectJourney={selectJourneyOption}
+              onSelectTransferJourney={selectTransferJourneyOption}
             />
           )}
 
