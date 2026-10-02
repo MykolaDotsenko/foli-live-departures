@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from "react";
-import { applyTransferRevalidation } from "../utils/transferRevalidation";
 import {
   activeJourneyFromOption,
   activeJourneyFromTransferOption,
@@ -7,6 +6,7 @@ import {
   confirmActiveJourneyAtStop,
   observeActiveJourney,
   recoverTransferJourneyAfterRide,
+  revalidateFutureJourneyLeg,
 } from "../utils/activeJourney";
 
 /** @import { ActiveDirectJourney, DestinationIntent, DirectJourneyOption, TransferJourneyOption } from "../types/journey" */
@@ -89,10 +89,13 @@ export default function useActiveJourney() {
 
   /**
    * @param {import("../types/journey").TransferRevalidationState} revalidation
+   * @param {number | null} [legIndex]
    */
   const revalidateTransfer = useCallback(
-    (revalidation) => {
-      commit((current) => applyTransferRevalidation(current, revalidation));
+    (revalidation, legIndex = null) => {
+      commit((current) =>
+        revalidateFutureJourneyLeg(current, revalidation, legIndex)
+      );
     },
     [commit]
   );
