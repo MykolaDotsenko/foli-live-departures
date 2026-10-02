@@ -1,6 +1,6 @@
 # Product audit
 
-**Updated:** 2026-09-27
+**Updated:** 2026-10-02
 **Scope:** what a passenger meets on the screen, how far the app can be trusted, how useful it is, and how it presents itself before a public release.
 
 ## How it was scored
@@ -147,6 +147,7 @@ Every pull request to `master` runs:
 6. a Chromium PWA project that installs the real service worker and reopens offline
 7. the README's and the install sheet's screenshots, taken by the same flows
 8. a fail-on-high/critical runtime dependency audit and an Android production-release contract gate
+9. production Pages deployment stamps the exact CI SHA and then verifies the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision
 
 ## Product principle
 

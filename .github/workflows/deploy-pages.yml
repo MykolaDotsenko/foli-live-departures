@@ -53,6 +53,11 @@ jobs:
       - name: Build production site
         run: npm run build
 
+      - name: Stamp exact verified revision
+        env:
+          DEPLOYMENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: npm run stamp:deployment
+
       - name: Verify the shipped Content-Security-Policy
         run: npm run verify:csp
 
@@ -67,6 +72,7 @@ jobs:
   deploy:
     needs: build
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
@@ -77,3 +83,20 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Checkout exact deployed revision for live smoke
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+
+      - name: Setup Node for live smoke
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Verify exact production deployment
+        env:
+          PRODUCTION_SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          EXPECTED_DEPLOYMENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: npm run verify:production-site
