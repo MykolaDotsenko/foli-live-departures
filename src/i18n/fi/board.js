@@ -1,3 +1,5 @@
+import { liveCount, scheduledCount } from "./runtime.js";
+
 // The departure board, its next stops, and the times and distances it shows.
 /** @import { Dictionary } from "../index" */
 
@@ -71,9 +73,8 @@ export default {
   "Other lines are leaving from this stop.":
     "Tältä pysäkiltä lähtee muita linjoja.",
   "Show all lines": "Näytä kaikki linjat",
-  live: ({ count }) => (count === 1 ? "reaaliaikainen" : "reaaliaikaista"),
-  "{count} scheduled": ({ count }) =>
-    count === 1 ? "1 aikataulun mukainen" : `${count} aikataulun mukaista`,
+  live: liveCount,
+  "{count} scheduled": scheduledCount,
   "Live update failed": "Reaaliaikapäivitys epäonnistui",
   "Offline · last updated {time}": "Ei yhteyttä · päivitetty viimeksi klo {time}",
   "Last live estimate": "Viimeisin reaaliaika-arvio",

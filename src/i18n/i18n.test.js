@@ -268,6 +268,79 @@ test("an unknown language is ignored", () => {
   expect(getLanguage()).toBe("en");
 });
 
+test("loads a locale string pack on demand and overlays runtime grammar", async () => {
+  vi.resetModules();
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(
+      /** @type {Response} */ ({
+        ok: true,
+        status: 200,
+        json: async () => ({ Online: "Yhteys toimii" }),
+      })
+    );
+
+  try {
+    const fresh = await import("./index.js");
+    const dictionary = await fresh.ensureLanguageDictionary("fi");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/locales\/fi\.json$/),
+      { cache: "force-cache" }
+    );
+    expect(dictionary.Online).toBe("Yhteys toimii");
+    expect(typeof dictionary["{count} service updates"]).toBe("function");
+  } finally {
+    fetchMock.mockRestore();
+  }
+});
+
+test("locale pack HTTP failure rejects instead of activating partial translations", async () => {
+  vi.resetModules();
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(
+      /** @type {Response} */ ({
+        ok: false,
+        status: 503,
+      })
+    );
+
+  try {
+    const fresh = await import("./index.js");
+    await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
+      "Could not load fi locale pack (503)."
+    );
+  } finally {
+    fetchMock.mockRestore();
+  }
+});
+
+test.each([
+  ["array payload", []],
+  ["non-string entry", { Online: 42 }],
+])("rejects an invalid locale pack: %s", async (_label, payload) => {
+  vi.resetModules();
+  const fetchMock = vi
+    .spyOn(globalThis, "fetch")
+    .mockResolvedValue(
+      /** @type {Response} */ ({
+        ok: true,
+        status: 200,
+        json: async () => payload,
+      })
+    );
+
+  try {
+    const fresh = await import("./index.js");
+    await expect(fresh.ensureLanguageDictionary("fi")).rejects.toThrow(
+      /Invalid fi locale pack/
+    );
+  } finally {
+    fetchMock.mockRestore();
+  }
+});
+
 test("locale registry guards duplicate, unsupported and missing-loader paths", async () => {
   resetLanguageForTests("en");
 

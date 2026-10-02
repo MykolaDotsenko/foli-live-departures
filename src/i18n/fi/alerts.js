@@ -1,3 +1,5 @@
+import { moreUpdates, serviceUpdates } from "./runtime.js";
+
 // Service updates: Föli's notices, their labels and the panel around them.
 // The notices' own text comes from Föli in the chosen language where Föli
 // has it.
@@ -52,11 +54,11 @@ export default {
   "Emergency notice": "Hätätiedote",
   "Service updates": "Liikennetiedotteet",
   "1 service update": "1 liikennetiedote",
-  "{count} service updates": ({ count }) => `${count} liikennetiedotetta`,
+  "{count} service updates": serviceUpdates,
   "Update failed": "Päivitys epäonnistui",
   "Service updates may be out of date": "Liikennetiedotteet voivat olla vanhentuneita",
   "Show fewer updates": "Näytä vähemmän",
   "Hide service updates": "Piilota liikennetiedotteet",
   "Show 1 more update": "Näytä 1 tiedote lisää",
-  "Show {count} more updates": ({ count }) => `Näytä ${count} tiedotetta lisää`,
+  "Show {count} more updates": moreUpdates,
 };

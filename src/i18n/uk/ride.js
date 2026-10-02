@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { stops, stopsAway } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
@@ -37,8 +37,7 @@ export default {
   "behind you": "позаду вас",
   "almost there": "майже прибули",
   "1 stop": "1 зупинка",
-  "{count} stops": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "зупинка", few: "зупинки", many: "зупинок" })}`,
+  "{count} stops": stops,
   Remaining: "Залишилося",
   Estimate: "Оцінка",
   "By timetable": "За розкладом",
@@ -156,8 +155,7 @@ export default {
   "No later drop-off stops are available for this trip.":
     "Для цього рейсу немає доступних наступних зупинок для виходу.",
   "Choose your exit stop": "Виберіть зупинку виходу",
-  "{count} stops away": ({ count }) =>
-    `через ${count} ${ukPlural(count, { one: "зупинку", few: "зупинки", many: "зупинок" })}`,
+  "{count} stops away": stopsAway,
   "Follow my location (recommended)": "Стежити за моїм місцезнаходженням (рекомендовано)",
   "Times the alerts to where you really are, not only to the timetable. Your location stays on this phone and is forgotten when the ride ends.":
     "Прив’язує сповіщення до вашого реального положення, а не лише до розкладу. Місцезнаходження залишається на телефоні й забувається після завершення поїздки.",

@@ -1,10 +1,17 @@
 # Ukrainian interface implementation plan
 
-This document defines the implementation contract for adding a complete
-Ukrainian interface to Turku Departures.
+This document defines the implementation and release-review contract for the
+Ukrainian interface in Turku Departures.
 
-The target is not "most labels translated". Ukrainian becomes selectable only
-after the full passenger flow is safe, complete and test-protected.
+**Implementation status (2026-10-02):** PR #139 added the generic locale
+registry, lazy Ukrainian dictionary, Ukrainian plural/formatting rules and the
+full passenger UI. Ukrainian is currently reachable through the generic
+language switch in the pre-field build. This does **not** close native-language,
+physical-device accessibility or speech review; those remain explicit manual
+release gates.
+
+The target is not "most labels translated". Broad release requires the full
+passenger flow to be safe, complete and test-protected.
 
 ## Priority and scope
 
@@ -21,7 +28,7 @@ In scope:
 - departure board and filters;
 - service/degraded/offline states;
 - Journey Assistant;
-- direct and one-transfer journeys;
+- direct, one-transfer and two-transfer journeys;
 - Active Journey;
 - Get-off alert / Ride Mode;
 - transfer revalidation and recovery;
@@ -37,36 +44,35 @@ Out of scope:
 - translating stop names, route destination names or line identifiers;
 - weakening Finnish/English coverage to make room for Ukrainian.
 
-## Phase 1 — make i18n locale-agnostic
+## Phase 1 — make i18n locale-agnostic — implemented in PR #139
 
-Before translating copy:
+- [x] replace Finnish-specific locale assumptions with a locale registry;
+- [x] support `en`, `fi`, and `uk` as explicit locale identifiers;
+- [x] map browser `uk` / `uk-*` to Ukrainian on first visit;
+- [x] keep an existing stored language choice authoritative;
+- [x] make `intlLocale()` return the correct locale per enabled language;
+- [x] make document/root language metadata follow the selected UI language;
+- [x] ensure native Android and PWA use the same persisted locale contract;
+- [x] generalize dictionary completeness/placeholder/stale-key checks across
+      the enabled locale registry.
 
-- [ ] replace Finnish-specific locale assumptions with a locale registry;
-- [ ] support `en`, `fi`, and `uk` as explicit locale identifiers;
-- [ ] map browser `uk` / `uk-*` to Ukrainian on first visit;
-- [ ] keep an existing stored language choice authoritative;
-- [ ] make `intlLocale()` return the correct locale per enabled language;
-- [ ] make document/root language metadata follow the selected UI language;
-- [ ] ensure native Android and PWA use the same persisted locale contract;
-- [ ] generalize translation completeness tests so every enabled dictionary is
-      checked for missing keys, stale keys and placeholder mismatches.
+Acceptance remains fail-closed: a dictionary load failure falls back to English
+rather than rendering a half-translated interface.
 
-Acceptance: adding an incomplete `uk` dictionary must fail CI.
+## Phase 2 — Ukrainian language model — implemented in PR #139
 
-## Phase 2 — Ukrainian language model
-
-Create the Ukrainian dictionary in the same modular structure as Finnish.
+The Ukrainian dictionary now follows the same modular structure as Finnish.
 
 Requirements:
 
-- [ ] use `uk-UA` for date/number/speech formatting where a regional locale
+- [x] use `uk-UA` for date/number/speech formatting where a regional locale
       is required;
-- [ ] implement correct Ukrainian plural rules (one/few/many/other);
-- [ ] preserve placeholders exactly;
-- [ ] keep transit clock format 24-hour;
-- [ ] use concise passenger language suitable for reading on a moving bus;
-- [ ] never decline/translate Föli stop and destination names;
-- [ ] keep provider/source text truthful when no Ukrainian source exists.
+- [x] implement correct Ukrainian plural rules (one/few/many/other);
+- [x] preserve placeholders exactly;
+- [x] keep transit clock format 24-hour;
+- [x] use concise passenger language suitable for reading on a moving bus;
+- [x] never decline/translate Föli stop and destination names;
+- [x] keep provider/source text truthful when no Ukrainian source exists.
 
 Core terminology to settle before bulk translation:
 
@@ -92,7 +98,7 @@ Core terminology to settle before bulk translation:
 
 Final wording is validated in-context, not accepted from the glossary alone.
 
-## Phase 3 — safety-critical surfaces first
+## Phase 3 — safety-critical surfaces first — translation implemented; manual review open
 
 Translate and manually review these before general UI:
 
@@ -114,22 +120,22 @@ Safety acceptance:
 - [ ] screen-reader order still puts the urgent action first;
 - [ ] missing Ukrainian speech voice never suppresses visible guidance.
 
-## Phase 4 — complete passenger UI
+## Phase 4 — complete passenger UI — implemented in PR #139
 
 Translate the remaining surfaces:
 
-- [ ] header/navigation/language switcher;
-- [ ] stop search, favourites and recents;
-- [ ] Nearby;
-- [ ] board/filter/service updates;
-- [ ] Journey Assistant/place search/provider handoff;
-- [ ] My Places setup and backup stops;
-- [ ] Get me Home;
-- [ ] printable/shareable recovery information;
-- [ ] About & privacy;
-- [ ] Help guide;
-- [ ] iPhone install hint;
-- [ ] errors, empty states and all accessibility labels.
+- [x] header/navigation/language switcher;
+- [x] stop search, favourites and recents;
+- [x] Nearby;
+- [x] board/filter/service updates;
+- [x] Journey Assistant/place search/provider handoff;
+- [x] My Places setup and backup stops;
+- [x] Get me Home;
+- [x] printable/shareable recovery information;
+- [x] About & privacy;
+- [x] Help guide;
+- [x] iPhone install hint;
+- [x] errors, empty states and all accessibility labels.
 
 No English fallback should be visible in a normal Ukrainian flow.
 
@@ -144,7 +150,7 @@ context, but must not displace Finnish/English.
 Föli-supplied stop names, destination signs and service-alert text remain
 source data. The app does not invent Ukrainian translations for provider data.
 
-## Phase 6 — automated QA
+## Phase 6 — automated QA — partially implemented; batch 17 closes the remaining matrix
 
 Extend CI with:
 
@@ -168,7 +174,7 @@ Extend CI with:
 A missing Ukrainian phrase or stale Ukrainian key must fail CI exactly as a
 Finnish localization defect does.
 
-## Phase 7 — language and accessibility review
+## Phase 7 — language and accessibility review — manual gate, not yet complete
 
 Before declaring Ukrainian complete:
 
@@ -183,7 +189,9 @@ Before declaring Ukrainian complete:
 
 ## Release criteria
 
-Ukrainian may appear in the production language switcher only when:
+Ukrainian is already reachable in the pre-field language switch so the
+complete flow can be exercised before field freeze. Broad public-release
+acceptance remains blocked until:
 
 - all enabled-locale completeness gates pass;
 - unit/integration/browser/Android regression suites are green;

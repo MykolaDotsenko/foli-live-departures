@@ -62,7 +62,7 @@ In the verification round, 21 of 23 screens scored 80 or more on a phone. The tw
 
 The first product review averaged about 41, and the re-audit about 56, on a coarser list of areas.
 
-The product reviewer's verdict: ready for a quiet release now. Not ready to promote until the name and the domain are settled, and until the get-off alert has been ridden on real buses in the city centre.
+Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-02, the latest `master` fails the unchanged complete-app bundle budget, so the current build is not release-verified. Broad promotion also remains blocked on the explicit manual/domain/field-validation gates in `PRODUCTION_READINESS.md`.
 
 ## Fixed after the verification round
 
@@ -102,15 +102,15 @@ These came out of the verification round and are not yet re-scored.
 ## Still open
 
 **Found by the reviews, not done**
-- **Bounded one-transfer journeys are implemented; full journey-planner coverage is not.** Journey Assistant can now fall back to one conservative transfer after direct search is exhausted, lock both concrete legs, orchestrate Ride Mode across the transfer and fail closed into recovery. Remaining routing gaps are 2+ transfers, arrive-by/leave-at controls and full pedestrian street routing.
+- **Bounded direct/one-/two-transfer journey planning is implemented.** The app now uses a generalized ordered itinerary, exact stop occurrences, authoritative per-leg Ride Mode handoff, fresh revalidation of all committed future legs, explicit recovery that may itself include another bounded transfer, leave-at/arrive-by controls and routing preferences. Turn-by-turn pedestrian routing remains intentionally outside the production boundary; walking stays approximate with an explicit external handoff rather than fabricated precision.
 - Next stops mixes "around 01:25" with bare times. Kept, because the difference is Föli's own: only timepoints have exact times.
 - Direct web address/POI lookup is policy-switchable, but **production now defaults it off**. Broad-promotion builds keep address/place text on-device and hand off to the official Turku journey planner; CI prevents accidental re-enabling of public Nominatim without an explicit policy change.
 
 **Owner decisions still open**
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move automatically; the app now provides an explicit privacy-safe backup/import path for portable local state before cutover.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
-3. **Ukrainian interface,** implemented as a full locale rather than partial translated copy; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
-4. **Swedish.**
+3. **Ukrainian release review,** because the full locale is implemented and reachable in the pre-field build, but native-language, physical-device accessibility and speech review are not yet complete; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
+4. **Swedish implementation and review.**
 5. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
 
 **Closed owner decisions**
@@ -128,11 +128,11 @@ These came out of the verification round and are not yet re-scored.
 These are stated, not hidden.
 
 - **A browser can pause the get-off alert.** A page in the background or on a locked phone may stop running. The panel says so, asks the passenger to keep it open, and plays a test alert first. Guaranteed lock-screen alerts need a small backend with Web Push; that is Phase 2 in [Ride Mode design](RIDE_MODE_SPEC.md).
-- **Direct and bounded one-transfer journeys are planned in-app.** Journey Assistant can rank concrete direct Föli trips and conservative one-transfer alternatives to stop/address/POI destinations, with approximate final walking. The committed second transfer leg is revalidated against live-only SIRI so fresh delay/early-running/cancellation evidence can invalidate the old connection without stale/provider-failure data creating a false miss. Ride Mode now keeps the next committed connection visible during leg 1, preserves “Get off now” as the urgent action, and gives concrete same-stop/cross-platform guidance at the transfer. When the broken connection is authoritatively in the transfer area, the app automatically searches fresh bounded direct replacements, excludes the failed concrete run and keeps the destination, but never changes the journey until the passenger explicitly chooses a replacement. It still does not provide replacement journeys requiring another transfer, 2+ transfer routing or turn-by-turn pedestrian routing; walking can hand off externally.
+- **Journey Assistant supports bounded direct, one-transfer and two-transfer itineraries.** Every leg keeps concrete run/stop occurrence identity, future legs are revalidated conservatively from fresh SIRI, and a distant future-leg failure cannot steal control from the current Ride Mode. Recovery never silently switches the itinerary and can offer a bounded replacement that itself includes another transfer only after an authoritative safe boundary. Walking remains approximate and may hand off externally; the app intentionally does not claim turn-by-turn pedestrian routing.
 - **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
 - **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
 - **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.
-- **Two languages today; Ukrainian and Swedish are planned.** The current interface is Finnish and English. Ukrainian is an explicit implementation milestone, and Swedish remains the obvious official-local expansion. Föli service updates are still shown in the language supplied by Föli when no matching localized source text exists.
+- **Three locale implementations exist today; Swedish is still planned.** English, Finnish and Ukrainian are present in the locale registry and Ukrainian is reachable in the pre-field build. Ukrainian still has open native-language/accessibility/speech release gates. Föli service updates remain provider-owned text and are shown truthfully when no matching localized source text exists.
 - **No analytics, by design.** Nothing measures adoption or retention; the scores above are reviewers' judgement.
 
 ## Release gates
@@ -149,6 +149,8 @@ Every pull request to `master` runs:
 8. a fail-on-high/critical runtime dependency audit and an Android production-release contract gate
 
 After a successful `master` CI run, production Pages deployment stamps the exact CI SHA and does not finish green until the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision are verified.
+
+**Current gate status (2026-10-02):** the latest merged batch is not release-verified because main CI fails the unchanged complete-app bundle gate at 739,109 raw JS/CSS bytes versus 625,000 allowed. Android build/E2E and live Föli smoke are green; this does not override the failed bundle gate.
 
 ## Product principle
 

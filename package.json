@@ -31,7 +31,9 @@
     "stamp:deployment": "node scripts/stamp-deployment.mjs",
     "verify:production-site": "node scripts/verify-production-site.mjs",
     "verify:release-provenance": "node --test scripts/release-provenance.test.mjs && node scripts/verify-release-provenance-workflows.mjs",
-    "verify:android-e2e-log": "node --test scripts/verify-android-app-log.test.mjs"
+    "verify:android-e2e-log": "node --test scripts/verify-android-app-log.test.mjs",
+    "predev": "node scripts/build-locale-packs.mjs",
+    "prebuild": "node scripts/build-locale-packs.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

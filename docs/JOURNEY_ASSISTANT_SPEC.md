@@ -1666,4 +1666,14 @@ Automatic recovery contract:
 - never auto-commit or silently switch to a replacement: the passenger must explicitly choose one;
 - hidden-tab / resumed recovery options fail closed until a fresh provider response refreshes them.
 
-Remaining pre-field work is tracked separately: recovery alternatives may themselves include another bounded transfer, leave-at/arrive-by controls, routing preferences, entrance-aware destinations and the pedestrian-routing production decision.
+PR #139 completed the next routing slice: recovery alternatives may include one
+more bounded transfer; leave-now/leave-at/arrive-by is modeled explicitly;
+routing preferences are honored; destination normalization can use trustworthy
+entrance/bounds context; and the production walking boundary remains
+approximate walking plus explicit external handoff rather than unverified
+turn-by-turn routing.
+
+Remaining pre-field work is now quality/release hardening: Ukrainian QA,
+Swedish, exact/approximate Next-stops semantics, bundle headroom,
+health/CSP/toolchain work, then native/background feasibility and the explicit
+physical/manual release gates.

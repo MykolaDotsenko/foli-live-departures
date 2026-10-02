@@ -2,6 +2,22 @@
 
 This is the canonical launch checklist for Turku Departures.
 
+## Current automated state — 2026-10-02
+
+Implementation batches 1–16 are merged. The current `master` SHA is
+`f436b4d4dab2c46fc34b71010ece8340058d51f3`.
+
+- Android build: green;
+- Android emulator E2E: green;
+- live Föli contract smoke: green;
+- main CI: **red** at the unchanged complete-app bundle gate;
+- measured shipped JS/CSS: **739,109 raw bytes** vs **625,000 allowed**;
+- production Pages deployment for this SHA is therefore not treated as verified.
+
+This is an automated release blocker, not a reason to raise the budget. Batch
+17–24 must restore headroom and then re-run the full browser/PWA/Android
+verification path on the exact head SHA.
+
 ## Release classes
 
 ### Quiet web/PWA release
@@ -70,10 +86,15 @@ truth supports direct journeys plus bounded itineraries with up to two
 transfers; each committed future transit leg is revalidated independently from
 fresh live data, and Ride Mode remains authoritative for the boarded leg.
 
-Before the field-validation freeze, the remaining planned routing/recovery,
-time controls, localization (Finnish, English, Ukrainian and Swedish),
-accessibility, domain and Android-release work must be closed or explicitly
-documented as a verified platform boundary.
+Routing/recovery through two transfers, leave-at/arrive-by, routing
+preferences, entrance-aware destination handling, the pedestrian-routing
+production boundary, generic locale plumbing and the full Ukrainian dictionary
+are implemented in the merged source. Before the field-validation freeze, the
+remaining pre-field work is automated Ukrainian QA hardening, Swedish,
+exact/approximate time semantics, bundle/performance headroom, health/CSP and
+toolchain hardening, followed by the later native/background, physical-device
+accessibility/language, domain and Android/Play release gates. Manual reviews
+remain open until they are actually performed.
 
 ## Architectural limits, not unfinished work
 

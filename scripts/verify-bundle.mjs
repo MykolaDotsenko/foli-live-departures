@@ -22,6 +22,12 @@ const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 180_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 
+// Locale strings are generated from the canonical source dictionaries into
+// same-origin JSON packs. They are not executable code, but moving them out
+// of JS must not make translation growth invisible to release QA.
+const MAX_LOCALE_PACK_RAW_BYTES = 180_000;
+const MAX_LOCALE_PACK_GZIP_BYTES = 55_000;
+
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
 const entryKey = Object.keys(manifest).find((key) => manifest[key]?.isEntry);
 if (!entryKey) {
@@ -104,6 +110,29 @@ if (shippedGzip > MAX_SHIPPED_GZIP_JS_CSS_BYTES) {
   );
 }
 
+const localeDir = path.join(DIST_DIR, "locales");
+const localeFiles = await readdir(localeDir);
+let localeRaw = 0;
+let localeGzip = 0;
+
+for (const file of localeFiles) {
+  if (!/^[a-z]{2}\.json$/.test(file)) continue;
+  const body = await readFile(path.join(localeDir, file));
+  localeRaw += body.byteLength;
+  localeGzip += gzipSync(body, { level: 9 }).byteLength;
+}
+
+if (localeRaw > MAX_LOCALE_PACK_RAW_BYTES) {
+  throw new Error(
+    `Locale packs are ${localeRaw} raw bytes, above the ${MAX_LOCALE_PACK_RAW_BYTES}-byte locale budget.`
+  );
+}
+if (localeGzip > MAX_LOCALE_PACK_GZIP_BYTES) {
+  throw new Error(
+    `Locale packs are ${localeGzip} gzip bytes, above the ${MAX_LOCALE_PACK_GZIP_BYTES}-byte locale transfer budget.`
+  );
+}
+
 for (const entry of measured.sort((a, b) => b.rawBytes - a.rawBytes)) {
   console.log(
     `  ${entry.file}: ${entry.rawBytes} raw / ${entry.gzipBytes} gzip bytes (${entry.eager ? "eager" : "lazy"})`
@@ -114,5 +143,7 @@ console.log(
   `Startup JS/CSS budgets: ${eagerRaw} / ${MAX_EAGER_JS_CSS_BYTES} raw; ` +
     `${eagerGzip} / ${MAX_EAGER_GZIP_JS_CSS_BYTES} gzip. ` +
     `Complete shipped JS/CSS: ${shippedRaw} / ${MAX_SHIPPED_JS_CSS_BYTES} raw; ` +
-    `${shippedGzip} / ${MAX_SHIPPED_GZIP_JS_CSS_BYTES} gzip.`
+    `${shippedGzip} / ${MAX_SHIPPED_GZIP_JS_CSS_BYTES} gzip. ` +
+    `Locale packs: ${localeRaw} / ${MAX_LOCALE_PACK_RAW_BYTES} raw; ` +
+    `${localeGzip} / ${MAX_LOCALE_PACK_GZIP_BYTES} gzip.`
 );

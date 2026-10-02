@@ -5,6 +5,8 @@
 //
 // The English text is the key, so the code reads as the screen does and a
 // phrase missing from a dictionary falls back to English instead of breaking.
+// Production string values are generated into same-origin locale packs; the
+// canonical source dictionaries remain the testable translation source.
 // A dictionary entry is either a template ("Stop {id}") or, where word forms
 // follow a number, a function of the same parameters.
 import { useSyncExternalStore } from "react";
@@ -40,10 +42,56 @@ export const LANGUAGES = LANGUAGE_CODES;
 const DICTIONARIES = { en: {} };
 const STORAGE_KEY = "foli-language-v1";
 
+/** @type {Readonly<Partial<Record<Language, string>>>} */
+const LOCALE_PACKS = Object.freeze({
+  fi: "locales/fi.json",
+  uk: "locales/uk.json",
+});
+
 /** @type {Partial<Record<Language, () => Promise<{default: Dictionary}>>>} */
+const RUNTIME_LOADERS = {
+  fi: () => import("./fi/runtime.js"),
+  uk: () => import("./uk/runtime.js"),
+};
+
+/**
+ * String translations live in same-origin JSON packs so large English source
+ * keys are not duplicated inside executable JS. Function-valued translations
+ * (plural/count grammar) stay in tiny lazy runtime modules.
+ * @param {Language} language
+ * @returns {Promise<Dictionary>}
+ */
+async function loadDictionary(language) {
+  const relativePath = LOCALE_PACKS[language];
+  const runtimeLoader = RUNTIME_LOADERS[language];
+  if (!relativePath || !runtimeLoader) return {};
+
+  const response = await globalThis.fetch(`${import.meta.env.BASE_URL}${relativePath}`, {
+    cache: "force-cache",
+  });
+  if (!response.ok) {
+    throw new Error(`Could not load ${language} locale pack (${response.status}).`);
+  }
+
+  const payload = await response.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error(`Invalid ${language} locale pack.`);
+  }
+
+  for (const value of Object.values(payload)) {
+    if (typeof value !== "string") {
+      throw new Error(`Invalid ${language} locale pack entry.`);
+    }
+  }
+
+  const runtime = await runtimeLoader();
+  return Object.freeze({ ...payload, ...(runtime.default || {}) });
+}
+
+/** @type {Partial<Record<Language, () => Promise<Dictionary>>>} */
 const DICTIONARY_LOADERS = {
-  fi: () => import("./fi"),
-  uk: () => import("./uk"),
+  fi: () => loadDictionary("fi"),
+  uk: () => loadDictionary("uk"),
 };
 /** @type {Map<Language, Promise<Dictionary>>} */
 const dictionaryLoads = new Map();
@@ -70,8 +118,8 @@ export function ensureLanguageDictionary(language) {
   const pending =
     dictionaryLoads.get(language) ||
     loader()
-      .then((module) => {
-        registerDictionary(language, module.default);
+      .then((dictionary) => {
+        registerDictionary(language, dictionary);
         return DICTIONARIES[language] || {};
       })
       .finally(() => dictionaryLoads.delete(language));

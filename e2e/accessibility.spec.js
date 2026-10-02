@@ -290,7 +290,7 @@ test.describe("on a Finnish phone", () => {
     return [...new Set(text.match(ENGLISH_WORDS) || [])];
   }
 
-  test("the app is in Finnish, readable, and can be switched to English for good", async ({
+  test("the app is in Finnish, readable, and the locale cycle persists English", async ({
     page,
   }, testInfo) => {
     if (testInfo.project.name === "chromium-mobile") await atMorningCommute(page);
@@ -319,6 +319,13 @@ test.describe("on a Finnish phone", () => {
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
       .analyze();
     expect(results.violations).toEqual([]);
+
+    // Locale switching follows the registry order: Finnish → Ukrainian → English.
+    await page.getByRole("button", { name: "Українською" }).click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+    await expect(
+      page.getByRole("columnheader", { name: "Відправлення" })
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "In English" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
