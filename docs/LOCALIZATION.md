@@ -42,11 +42,10 @@ The detailed Ukrainian acceptance and remaining review plan is in
 
 `src/i18n/i18n.test.js` now iterates the enabled locale registry and protects
 dictionary completeness, placeholders and stale/unused keys across the
-implemented locales. JSX literal checks remain enforced by ESLint. Browser,
-layout, PWA and Android locale-specific QA is expanded in batch 17–24 rather
-than treating dictionary completeness as equivalent to release readiness. ESLint (`react/jsx-no-literals`) catches text between tags,
-including `{"text"}` and template literals, and an end-to-end test looks for
-English left on the Finnish screens.
+implemented locales. ESLint (`react/jsx-no-literals`) catches text between
+tags, including `{"text"}` and template literals. Browser, layout, PWA and
+Android locale-specific QA is expanded in batch 17–24 rather than treating
+dictionary completeness as equivalent to release readiness.
 
 ## Rules
 
