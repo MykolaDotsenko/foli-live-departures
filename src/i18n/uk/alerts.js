@@ -1,4 +1,4 @@
-import { moreUpdates, serviceUpdates } from "./runtime";
+import { moreUpdates, serviceUpdates } from "./runtime.js";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
