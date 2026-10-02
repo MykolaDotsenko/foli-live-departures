@@ -22,11 +22,12 @@ function positive(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/** @param {unknown} value */
+/** @param {unknown} value @returns {any} */
 function safeJson(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+/** @returns {any | null} */
 function readTrace() {
   try {
     const raw = globalThis.sessionStorage?.getItem(FIELD_DIAGNOSTICS_STORAGE_KEY);
@@ -38,6 +39,7 @@ function readTrace() {
   }
 }
 
+/** @param {any} trace */
 function writeTrace(trace) {
   try {
     globalThis.sessionStorage?.setItem(
@@ -62,6 +64,7 @@ export function clearFieldDiagnostics() {
  * Random ride IDs, saved-place labels and any GPS coordinates are deliberately
  * excluded.
  */
+/** @param {any} session */
 export function sanitizedRideIdentity(session) {
   return {
     tripRef: text(session?.tripRef),
@@ -76,6 +79,11 @@ export function sanitizedRideIdentity(session) {
   };
 }
 
+/**
+ * @param {any} runtime
+ * @param {any} gps
+ * @param {import("../types/journey").TransferRevalidationState | null} [transferRevalidation]
+ */
 export function sanitizedEvidence(runtime, gps, transferRevalidation = null) {
   const gpsAge = positive(runtime?.gpsAgeSec);
   const gpsState =
@@ -113,6 +121,10 @@ export function sanitizedEvidence(runtime, gps, transferRevalidation = null) {
   };
 }
 
+/**
+ * @param {any} session
+ * @param {{version?: string, sha?: string, platform?: string}} [build]
+ */
 export function startFieldDiagnostics(session, build = {}) {
   const now = Date.now();
   const trace = {
@@ -142,6 +154,7 @@ export function startFieldDiagnostics(session, build = {}) {
   return safeJson(trace);
 }
 
+/** @param {any} event */
 function appendEvent(event) {
   const trace = readTrace();
   if (!trace) return null;
@@ -152,6 +165,15 @@ function appendEvent(event) {
   return safeJson(next);
 }
 
+/**
+ * @param {{
+ *   session?: any,
+ *   runtime?: any,
+ *   gps?: any,
+ *   transferRevalidation?: import("../types/journey").TransferRevalidationState | null,
+ *   type?: string
+ * }} [input]
+ */
 export function recordFieldDiagnosticObservation({
   session,
   runtime,
@@ -191,6 +213,15 @@ export function recordFieldDiagnosticObservation({
   });
 }
 
+/**
+ * @param {{
+ *   session?: any,
+ *   runtime?: any,
+ *   gps?: any,
+ *   transferRevalidation?: import("../types/journey").TransferRevalidationState | null,
+ *   outcome?: string
+ * }} [input]
+ */
 export function finishFieldDiagnostics({
   session,
   runtime,
