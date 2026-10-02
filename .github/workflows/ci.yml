@@ -49,6 +49,9 @@ jobs:
       - name: Verify backendless PWA architecture
         run: npm run verify:architecture
 
+      - name: Verify production place-search policy
+        run: npm run verify:place-search-policy
+
       - name: Verify Android release contract
         run: npm run verify:android-release
 
