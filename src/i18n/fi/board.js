@@ -1,4 +1,4 @@
-import { liveCount, scheduledCount } from "./runtime";
+import { liveCount, scheduledCount } from "./runtime.js";
 
 // The departure board, its next stops, and the times and distances it shows.
 /** @import { Dictionary } from "../index" */
