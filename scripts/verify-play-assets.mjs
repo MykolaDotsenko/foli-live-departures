@@ -23,13 +23,21 @@ function jpegDimensions(buffer){
 }
 
 const failures=[];
-const icon=pngDimensions(fs.readFileSync("artifacts/play-store/app-icon.png"));
+const iconPath="artifacts/play-store/app-icon.png";
+const iconBuffer=fs.readFileSync(iconPath);
+const icon=pngDimensions(iconBuffer);
 if(icon.width!==512||icon.height!==512) failures.push(`app icon is ${icon.width}x${icon.height}, expected 512x512`);
-const feature=jpegDimensions(fs.readFileSync("artifacts/play-store/feature-graphic.jpg"));
+if(iconBuffer.length>1024*1024) failures.push(`app icon is ${iconBuffer.length} bytes, above Google Play's 1024KB limit`);
+if(iconBuffer[24]!==8 || iconBuffer[25]!==6) failures.push("app icon must be an 8-bit RGBA (32-bit) PNG");
+const featurePath="artifacts/play-store/feature-graphic.jpg";
+const featureBuffer=fs.readFileSync(featurePath);
+const feature=jpegDimensions(featureBuffer);
 if(feature.width!==1024||feature.height!==500) failures.push(`feature graphic is ${feature.width}x${feature.height}, expected 1024x500`);
 
-for(const name of ["phone-01-board.png","phone-02-ride-setup.png","phone-03-ride-now.png","phone-04-privacy.png"]){
-  const size=pngDimensions(fs.readFileSync(`artifacts/play-store/${name}`));
+for(const name of ["phone-01-board.jpg","phone-02-ride-setup.jpg","phone-03-ride-now.jpg","phone-04-privacy.jpg"]){
+  const buffer=fs.readFileSync(`artifacts/play-store/${name}`);
+  if(buffer.length>8*1024*1024) failures.push(`${name} is above Google Play's 8MB screenshot limit`);
+  const size=jpegDimensions(buffer);
   if(size.width<1080) failures.push(`${name} width ${size.width} is below 1080`);
   if(Math.abs(size.width/size.height-9/16)>0.002){
     failures.push(`${name} is ${size.width}x${size.height}, expected 9:16`);
@@ -39,4 +47,4 @@ for(const name of ["phone-01-board.png","phone-02-ride-setup.png","phone-03-ride
   }
 }
 if(failures.length) throw new Error(["Google Play generated asset verification failed:",...failures.map(f=>`- ${f}`)].join("\n"));
-console.log("Google Play generated assets verified: 512x512 icon, 1024x500 feature graphic and four >=1080px 9:16 phone screenshots.");
+console.log("Google Play generated assets verified: <=1MB 512x512 32-bit icon, 1024x500 JPEG feature graphic and four <=8MB >=1080px 9:16 JPEG phone screenshots.");

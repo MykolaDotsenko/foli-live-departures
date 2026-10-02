@@ -11,10 +11,10 @@
     "height": 500
   },
   "phoneScreenshots": [
-    "artifacts/play-store/phone-01-board.png",
-    "artifacts/play-store/phone-02-ride-setup.png",
-    "artifacts/play-store/phone-03-ride-now.png",
-    "artifacts/play-store/phone-04-privacy.png"
+    "artifacts/play-store/phone-01-board.jpg",
+    "artifacts/play-store/phone-02-ride-setup.jpg",
+    "artifacts/play-store/phone-03-ride-now.jpg",
+    "artifacts/play-store/phone-04-privacy.jpg"
   ],
   "phoneScreenshotMinimum": {
     "width": 1080,

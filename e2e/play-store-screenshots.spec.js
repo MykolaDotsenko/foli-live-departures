@@ -14,7 +14,9 @@ test("Google Play phone screenshots use real reproducible app states", async ({ 
   await seedHome(page, { primaryStopId: "32" });
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
   await page.screenshot({
-    path: "artifacts/play-store/phone-01-board.png",
+    path: "artifacts/play-store/phone-01-board.jpg",
+    type: "jpeg",
+    quality: 92,
     fullPage: false,
   });
 
@@ -23,7 +25,9 @@ test("Google Play phone screenshots use real reproducible app states", async ({ 
     page.getByRole("heading", { name: "Where do you want to get off?" })
   ).toBeVisible();
   await page.screenshot({
-    path: "artifacts/play-store/phone-02-ride-setup.png",
+    path: "artifacts/play-store/phone-02-ride-setup.jpg",
+    type: "jpeg",
+    quality: 92,
     fullPage: false,
   });
 
@@ -34,7 +38,9 @@ test("Google Play phone screenshots use real reproducible app states", async ({ 
   await expect(page.getByRole("heading", { name: "Get off now" })).toBeVisible();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
-    path: "artifacts/play-store/phone-03-ride-now.png",
+    path: "artifacts/play-store/phone-03-ride-now.jpg",
+    type: "jpeg",
+    quality: 92,
     fullPage: false,
   });
 
@@ -45,7 +51,9 @@ test("Google Play phone screenshots use real reproducible app states", async ({ 
   await about.scrollIntoViewIfNeeded();
   await expect(about).toBeVisible();
   await page.screenshot({
-    path: "artifacts/play-store/phone-04-privacy.png",
+    path: "artifacts/play-store/phone-04-privacy.jpg",
+    type: "jpeg",
+    quality: 92,
     fullPage: false,
   });
 });

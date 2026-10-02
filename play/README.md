@@ -8,9 +8,9 @@ This directory is the repository source for the Google Play listing and release-
 - Short description: maximum 80 characters.
 - Full description: maximum 4,000 characters.
 - Release notes: maximum 500 Unicode characters per language.
-- At least two screenshots are required; this repository generates four 9:16 phone screenshots at >=1080 px.
+- At least two screenshots are required; this repository generates four JPEG 9:16 phone screenshots at >=1080 px.
 - Feature graphic: generated at exactly 1024×500.
-- Store icon source: `public/icon-512.png`, exactly 512×512.
+- Store icon source: `public/icon-512.jpg`, exactly 512×512.
 - From 31 August 2026, new apps and updates must target Android 16 / API 36. The pinned Capacitor 8 Android toolchain is verified against that generated target.
 
 Official references:
