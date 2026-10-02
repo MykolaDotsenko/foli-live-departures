@@ -55,7 +55,11 @@ function cacheBusted(url, sha, attempt) {
   return next;
 }
 
-async function fetchRequired(url, { label, timeoutMs }) {
+async function fetchRequired(
+  url,
+  { label, timeoutMs, retriable = true }
+) {
+  const Failure = retriable ? RetriableDeploymentError : Error;
   let response;
   try {
     response = await globalThis.fetch(url, {
@@ -69,13 +73,13 @@ async function fetchRequired(url, { label, timeoutMs }) {
       signal: globalThis.AbortSignal.timeout(timeoutMs),
     });
   } catch (cause) {
-    throw new RetriableDeploymentError(
+    throw new Failure(
       `${label} could not be fetched from production: ${cause?.message || cause}`
     );
   }
 
   if (!response.ok) {
-    throw new RetriableDeploymentError(
+    throw new Failure(
       `${label} returned HTTP ${response.status} from production.`
     );
   }
@@ -112,7 +116,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
   // treated as real contract failures rather than propagation lag.
   const htmlResponse = await fetchRequired(
     cacheBusted(baseUrl, expectedSha, attempt),
-    { label: "Production app shell", timeoutMs: fetchTimeoutMs }
+    { label: "Production app shell", timeoutMs: fetchTimeoutMs, retriable: false }
   );
   const html = await htmlResponse.text();
   if (!/text\/html/i.test(htmlResponse.headers.get("content-type") || "")) {
@@ -143,7 +147,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
   const manifestUrl = sameAppUrl(manifestHref, baseUrl, "Manifest");
   const manifestResponse = await fetchRequired(
     cacheBusted(manifestUrl, expectedSha, attempt),
-    { label: "Web app manifest", timeoutMs: fetchTimeoutMs }
+    { label: "Web app manifest", timeoutMs: fetchTimeoutMs, retriable: false }
   );
   const manifest = await manifestResponse.json();
   if (
@@ -166,6 +170,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
   const moduleResponse = await fetchRequired(moduleUrl, {
     label: "Module entry asset",
     timeoutMs: fetchTimeoutMs,
+    retriable: false,
   });
   const moduleSource = await moduleResponse.text();
   if (moduleSource.length < 1_000) {
@@ -181,6 +186,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
     await fetchRequired(serviceWorkerUrl, {
       label: "Service worker",
       timeoutMs: fetchTimeoutMs,
+      retriable: false,
     })
   ).text();
   if (
@@ -199,6 +205,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
     await fetchRequired(placeConfigUrl, {
       label: "Production place-search policy",
       timeoutMs: fetchTimeoutMs,
+      retriable: false,
     })
   ).json();
   if (placeConfig?.enabled !== false) {
