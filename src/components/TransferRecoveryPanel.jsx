@@ -14,6 +14,7 @@ function shownDestinationLabel(destination) {
 export default function TransferRecoveryPanel({
   state,
   options,
+  directOptions = options,
   transferOptions = [],
   destination,
   onSelectJourney,
@@ -24,37 +25,27 @@ export default function TransferRecoveryPanel({
   if (!destination || state === "idle") return null;
 
   const destinationLabel = shownDestinationLabel(destination);
-  const hasDirect =
-    state === "ready" && Array.isArray(options) && options.length > 0;
-  const hasTransfer =
-    state === "ready" &&
-    Array.isArray(transferOptions) &&
-    transferOptions.length > 0;
-
-  if (hasDirect || hasTransfer) {
+  const direct = Array.isArray(directOptions) ? directOptions : [];
+  const transfers = Array.isArray(transferOptions) ? transferOptions : [];
+  if (state === "ready" && (direct.length > 0 || transfers.length > 0)) {
     return (
       <>
-        {hasDirect && (
+        {direct.length > 0 && (
           <JourneyOptions
             mode="recovery"
-            options={options}
+            options={direct}
             destinationLabel={destinationLabel}
             onSelectJourney={onSelectJourney}
           />
         )}
-        {hasTransfer && (
+        {transfers.length > 0 && (
           <TransferJourneyOptions
             mode="recovery"
-            options={transferOptions}
+            options={transfers}
             destinationLabel={destinationLabel}
             onSelectJourney={onSelectTransferJourney}
           />
         )}
-        <p className={styles.note}>
-          {t(
-            "The failed bus is excluded. Nothing changes until you choose a new option."
-          )}
-        </p>
       </>
     );
   }
@@ -70,7 +61,7 @@ export default function TransferRecoveryPanel({
     );
   } else if (state === "ready") {
     statusText = t(
-      "No reliable replacement is available from this transfer area right now."
+      "No reliable replacement with at most one new transfer is available from this transfer area right now."
     );
   }
 
