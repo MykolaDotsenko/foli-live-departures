@@ -38,10 +38,9 @@ Every pull request to `master` must prove:
 - Android production identity/release invariants remain intact;
 - unit/integration coverage meets the repository ratchet;
 - PWA precache, CSP and bundle budget pass;
-- Chromium, Firefox, mobile WebKit and mobile Chromium E2E/accessibility pass;
-- the production artifact is stamped with the exact CI SHA, and the post-deploy live smoke verifies that exact revision plus the HTML entrypoint, module asset, manifest, service worker and fail-closed place-search policy.
+- Chromium, Firefox, mobile WebKit and mobile Chromium E2E/accessibility pass.
 
-Production Pages deployment is downstream of successful `master` CI. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
+Production Pages deployment is downstream of successful `master` CI. Its artifact is stamped with the exact CI SHA, and the deployment is not green until a post-deploy live smoke verifies that exact revision plus the HTML entrypoint, module asset, manifest, service worker and fail-closed place-search policy. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
 
 ## Android
 
