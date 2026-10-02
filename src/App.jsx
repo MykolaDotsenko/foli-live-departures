@@ -918,9 +918,21 @@ function App() {
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
-            onTimeModeChange={journeyPlan.setTimeMode}
-            onTimeLocalValueChange={journeyPlan.setTimeLocalValue}
-            onPreferenceChange={journeyPlan.setPreference}
+            onTimeModeChange={(mode) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setTimeMode(mode);
+            }}
+            onTimeLocalValueChange={(value) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setTimeLocalValue(value);
+            }}
+            onPreferenceChange={(preference) => {
+              pendingTransferJourneyRef.current = null;
+              clearJourney();
+              journeyPlan.setPreference(preference);
+            }}
             onClear={clearJourneyDestination}
           />
         )}
