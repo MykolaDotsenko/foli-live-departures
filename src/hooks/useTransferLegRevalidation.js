@@ -30,6 +30,7 @@ function emptyFeed() {
  *   incomingArrivalAt?: number | null,
  *   incomingLiveState?: LiveState,
  *   cancelled?: boolean,
+ *   legIndex?: number | null,
  * }} input
  */
 export default function useTransferLegRevalidation({
@@ -38,11 +39,22 @@ export default function useTransferLegRevalidation({
   incomingArrivalAt = null,
   incomingLiveState = "unknown",
   cancelled = false,
+  legIndex = null,
 } = {}) {
+  const activeIndex = Number(journey?.activeLegIndex);
+  const targetIndex =
+    Number.isInteger(Number(legIndex)) && Number(legIndex) >= 1
+      ? Number(legIndex)
+      : Number.isInteger(activeIndex) && activeIndex >= 0
+        ? activeIndex + 1
+        : 1;
   const second =
-    journey?.transferPlan && journey.transferLeg === 1
+    journey?.itinerary?.legs?.[targetIndex] ||
+    (targetIndex === 1 &&
+    journey?.transferPlan &&
+    journey.transferLeg === 1
       ? journey.transferPlan.second
-      : null;
+      : null);
   const stopId = String(second?.boardStopId || "");
   const identityKey = second
     ? [
@@ -168,6 +180,7 @@ export default function useTransferLegRevalidation({
       incomingArrivalAt,
       incomingLiveState,
       previous: previousRef.current,
+      legIndex: targetIndex,
     });
   }, [
     active,
@@ -177,6 +190,7 @@ export default function useTransferLegRevalidation({
     incomingLiveState,
     journey,
     nowMs,
+    targetIndex,
   ]);
 
   useEffect(() => {
