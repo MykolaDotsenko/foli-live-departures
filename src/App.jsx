@@ -22,6 +22,7 @@ import ServiceAlerts from "./components/ServiceAlerts";
 import useOnlineStatus from "./hooks/useOnlineStatus";
 import useActiveJourney from "./hooks/useActiveJourney";
 import useDestinationIntent from "./hooks/useDestinationIntent";
+import useJourneyPlanSettings from "./hooks/useJourneyPlanSettings";
 import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
@@ -179,6 +180,7 @@ function App() {
   const online = useOnlineStatus();
   const ride = useRideMode();
   const journey = useDestinationIntent();
+  const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const pendingFinalWalkRef = useRef(null);
   const pendingTransferJourneyRef = useRef(null);
@@ -907,13 +909,18 @@ function App() {
             stops={stops}
             places={places}
             destination={journey.destination}
-            plan={journey.plan}
+            timeConstraint={journeyPlan.timeConstraint}
+            timeLocalValue={journeyPlan.timeLocalValue}
+            timeValid={journeyPlan.timeValid}
+            routingPreference={journeyPlan.preference}
             coordinatesStatus={coordinatesStatus}
             online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
-            onPlanChange={journey.updatePlan}
+            onTimeModeChange={journeyPlan.setTimeMode}
+            onTimeLocalValueChange={journeyPlan.setTimeLocalValue}
+            onPreferenceChange={journeyPlan.setPreference}
             onClear={clearJourneyDestination}
           />
         )}
@@ -1045,7 +1052,9 @@ function App() {
           online={online}
           searchEdits={readSearchEdits}
           destination={journey.destination}
-          journeyPlan={journey.plan}
+          timeConstraint={journeyPlan.timeConstraint}
+          timeValid={journeyPlan.timeValid}
+          routingPreference={journeyPlan.preference}
           excludedJourney={
             selectedJourney?.phase === "recovery" ? selectedJourney : null
           }
