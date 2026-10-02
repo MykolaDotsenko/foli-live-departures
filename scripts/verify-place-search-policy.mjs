@@ -5,7 +5,15 @@ const configPath = path.resolve("public/place-search-config.json");
 const raw = await readFile(configPath, "utf8");
 const config = JSON.parse(raw);
 
+const viteConfig = await readFile(path.resolve("vite.config.js"), "utf8");
+
 const failures = [];
+
+if (viteConfig.includes('"https://nominatim.openstreetmap.org"')) {
+  failures.push(
+    "Production Vite CSP wiring must not directly allowlist the dormant Nominatim origin."
+  );
+}
 
 if (config.enabled !== false) {
   failures.push(
