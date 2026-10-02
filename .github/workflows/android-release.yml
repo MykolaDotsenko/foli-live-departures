@@ -151,6 +151,8 @@ jobs:
         env:
           VITE_BASE_PATH: /
           VITE_NATIVE_BUILD: "true"
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_APP_VERSION: ${{ inputs.version_name }}
         run: |
           npm run build
           npm run verify:csp
