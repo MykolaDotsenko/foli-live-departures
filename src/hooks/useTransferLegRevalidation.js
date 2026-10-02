@@ -48,13 +48,7 @@ export default function useTransferLegRevalidation({
       : Number.isInteger(activeIndex) && activeIndex >= 0
         ? activeIndex + 1
         : 1;
-  const second =
-    journey?.itinerary?.legs?.[targetIndex] ||
-    (targetIndex === 1 &&
-    journey?.transferPlan &&
-    journey.transferLeg === 1
-      ? journey.transferPlan.second
-      : null);
+  const second = journey?.itinerary?.legs?.[targetIndex] || null;
   const stopId = String(second?.boardStopId || "");
   const identityKey = second
     ? [
