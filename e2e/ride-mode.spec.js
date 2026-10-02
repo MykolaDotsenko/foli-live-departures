@@ -403,13 +403,23 @@ test("Ride Mode reopens a false miss only after newer live evidence for the same
   page,
   context,
 }) => {
-  const firstSnapshotSec = Math.floor(Date.now() / 1000);
+  // Keep both provider observations fresh, but make the recovery one
+  // unambiguously newer even when the whole test runs inside one wall-clock
+  // second. Using floor(Date.now()/1000) for both made the two snapshots
+  // identical on fast CI workers; fail-closed MISSED recovery then correctly
+  // refused to reopen.
+  const firstSnapshotSec = Math.floor(Date.now() / 1000) - 10;
+  const recoverySnapshotSec = firstSnapshotSec + 5;
   let recoverySnapshot = false;
 
   await page.route("https://data.foli.fi/siri/sm/32", async (route) => {
     const now = Math.floor(Date.now() / 1000);
-    const observedAt = recoverySnapshot ? now : firstSnapshotSec;
-    const expectedAt = recoverySnapshot ? now + 70 : firstSnapshotSec + 70;
+    const observedAt = recoverySnapshot
+      ? recoverySnapshotSec
+      : firstSnapshotSec;
+    const expectedAt = recoverySnapshot
+      ? recoverySnapshotSec + 70
+      : firstSnapshotSec + 70;
     await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
