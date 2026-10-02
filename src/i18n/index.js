@@ -201,7 +201,7 @@ export function tc(context, key, params) {
 // TRANSIT_CLOCK_LOCALE in utils/time.js).
 /**
  * @param {Language} [language]
- * @returns {"fi-FI" | "en-GB"}
+ * @returns {string}
  */
 export function intlLocale(language = current) {
   return localeDefinition(language).intlLocale;
