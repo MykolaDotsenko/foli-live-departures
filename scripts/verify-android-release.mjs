@@ -120,6 +120,7 @@ for (const [name, source] of [
 
 const requiredReleaseEvidence = [
   "assembleRelease bundleRelease",
+  "npm run configure:android-active-ride",
   "apksigner",
   "jarsigner",
   'jarsigner -verify -verbose "$aab"',

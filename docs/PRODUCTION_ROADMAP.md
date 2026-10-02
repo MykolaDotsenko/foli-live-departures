@@ -844,26 +844,29 @@ These are not v1 blockers and may intentionally change product architecture.
 
 ## PR-E01 — Android foreground Ride Mode feasibility
 
+**Implementation status:** automated feasibility approved and implemented. Physical screen-off / lock-screen / OEM battery validation remains an open manual gate.
+
 **Priority:** 60/100  
 **Architecture impact:** medium/high.
 
-Research whether the Capacitor Android wrapper can keep a native foreground service for active Ride Mode while preserving:
+The Capacitor Android wrapper now has a typed `location` foreground-service companion that is started only from a visible Activity after Ride Mode has obtained a real location fix. Android's required `FOREGROUND_SERVICE` and `FOREGROUND_SERVICE_LOCATION` permissions are declared; `ACCESS_BACKGROUND_LOCATION` remains deliberately absent.
 
-- no backend;
-- explicit user consent;
-- visible persistent notification;
-- battery-responsible behaviour.
+The service is battery- and stale-state-bounded: `START_NOT_STICKY`, task-removal stop, hard ride TTL, explicit End Ride stop, and no boot/background auto-start. Its persistent notification is neutral and contains no destination, route or GPS data.
 
-Do not claim lock-screen guarantees until physical-device testing proves them.
+Automated API-35 emulator evidence proves native registration, successful foreground promotion, typed `location` status and explicit teardown. This does **not** claim physical lock-screen reliability; real Android devices/OEM battery policies remain manual acceptance.
 
 ---
 
 ## PR-E02 — Native Android active-ride bridge
 
-**Priority:** 58/100  
-**Dependency:** E01 approves the approach.
+**Implementation status:** minimum bridge implemented; physical background/lock-screen acceptance remains open.
 
-Bridge only the minimum state needed for an active ride. Do not migrate general app state into native storage without reason.
+**Priority:** 58/100  
+**Dependency:** E01 approved.
+
+The bridge receives only an opaque `rideId` and `expiresAt`. JS Ride Mode remains authoritative for `boarded/soon/next/now/missed`, provider evidence, GPS, destination and route state. Native code persists none of that state and cannot silently change or end the JS itinerary.
+
+Start is fail-closed unless the Activity is visible, foreground location permission exists and Android location services are enabled. Web/PWA builds have an unsupported/no-op bridge.
 
 ---
 

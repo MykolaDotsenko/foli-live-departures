@@ -543,6 +543,88 @@ record(
   geo || {}
 );
 
+const activeRideRequest = await evaluate(`(async () => {
+  const cap = window.Capacitor;
+  if (
+    !cap ||
+    cap.getPlatform?.() !== "android" ||
+    cap.isNativePlatform?.() !== true ||
+    cap.isPluginAvailable?.("ActiveRide") !== true ||
+    typeof cap.registerPlugin !== "function"
+  ) {
+    return { supported: false };
+  }
+
+  const plugin =
+    window.__foliActiveRideE2E ||
+    (window.__foliActiveRideE2E = cap.registerPlugin("ActiveRide"));
+  const rideId = "android-e2e-active-ride";
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const started = await plugin.start({
+    rideId,
+    expiresAt: String(expiresAt)
+  });
+  return { supported: true, rideId, started };
+})()`, { awaitPromise: true });
+
+record(
+  "Android exposes ActiveRide only after foreground location is ready",
+  activeRideRequest?.supported === true &&
+    activeRideRequest?.started?.reason === "requested",
+  activeRideRequest || {}
+);
+
+const activeRideStatus = await retry(
+  "Android ActiveRide foreground service promotion",
+  async () => {
+    const status = await evaluate(`(async () => {
+      const plugin = window.__foliActiveRideE2E;
+      return plugin ? await plugin.status() : null;
+    })()`, { awaitPromise: true });
+    return status?.active === true ? status : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+
+record(
+  "Android ActiveRide runs as a typed non-sticky foreground companion",
+  activeRideStatus?.rideId === activeRideRequest?.rideId &&
+    activeRideStatus?.serviceType === "location" &&
+    activeRideStatus?.restartPolicy === "not-sticky",
+  activeRideStatus || {}
+);
+
+const activeRideStop = await evaluate(`(async () => {
+  const plugin = window.__foliActiveRideE2E;
+  return plugin
+    ? await plugin.stop({ rideId: "android-e2e-active-ride" })
+    : null;
+})()`, { awaitPromise: true });
+
+record(
+  "Android ActiveRide accepts an explicit matching stop request",
+  activeRideStop?.reason === "stopping",
+  activeRideStop || {}
+);
+
+const activeRideStopped = await retry(
+  "Android ActiveRide foreground service stop",
+  async () => {
+    const status = await evaluate(`(async () => {
+      const plugin = window.__foliActiveRideE2E;
+      return plugin ? await plugin.status() : null;
+    })()`, { awaitPromise: true });
+    return status?.active === false ? status : null;
+  },
+  { attempts: 30, delayMs: 250 }
+);
+
+record(
+  "Android ActiveRide leaves no native companion after explicit stop",
+  activeRideStopped?.active === false,
+  activeRideStopped || {}
+);
+
 // Android/WebView correctness must not depend on whether Föli happens to
 // answer during this CI minute. Live provider contracts are exercised by the
 // separate scheduled "Live Föli contract smoke" workflow. Here we seed only

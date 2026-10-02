@@ -151,6 +151,19 @@ afterEach(() => {
 });
 
 test("starts the Android companion only after a GPS fix and stops it with the ride", async () => {
+  let releaseGpsFix;
+  watchPosition.mockImplementationOnce((success) => {
+    releaseGpsFix = () =>
+      success({
+        coords: {
+          latitude: 61.1234,
+          longitude: 23.5678,
+          accuracy: 15,
+        },
+      });
+    return 77;
+  });
+
   const { result, unmount } = renderHook(() => useRideMode());
 
   act(() => {
@@ -160,9 +173,10 @@ test("starts the Android companion only after a GPS fix and stops it with the ri
     });
   });
 
+  await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
   expect(mocks.nativeRideStart).not.toHaveBeenCalled();
 
-  await waitFor(() => expect(watchPosition).toHaveBeenCalledTimes(1));
+  act(() => releaseGpsFix());
   await waitFor(() => expect(mocks.nativeRideStart).toHaveBeenCalledTimes(1));
 
   const nativeSession = mocks.nativeRideStart.mock.calls[0][0];
