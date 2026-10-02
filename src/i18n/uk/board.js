@@ -1,4 +1,4 @@
-import { ukPlural } from "./plural";
+import { scheduledCount, upcoming } from "./runtime";
 /** @import { Dictionary } from "../index" */
 /** @type {Dictionary} */
 export default {
@@ -41,8 +41,7 @@ export default {
   "Refreshing…": "Оновлення…",
   Refresh: "Оновити",
   "Departure data summary": "Підсумок даних про відправлення",
-  "{count} upcoming": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "наступне", few: "наступні", many: "наступних" })}`,
+  "{count} upcoming": upcoming,
   "Filter lines": "Фільтр маршрутів",
   "Only line {line}": "Лише маршрут {line}",
   "Only lines {lines}": "Лише маршрути {lines}",
@@ -68,8 +67,7 @@ export default {
   "Other lines are leaving from this stop.": "З цієї зупинки відправляються інші маршрути.",
   "Show all lines": "Показати всі маршрути",
   live: "актуально",
-  "{count} scheduled": ({ count }) =>
-    `${count} ${ukPlural(count, { one: "за розкладом", few: "за розкладом", many: "за розкладом" })}`,
+  "{count} scheduled": scheduledCount,
   "Live update failed": "Не вдалося оновити актуальні дані",
   "Offline · last updated {time}": "Без мережі · останнє оновлення {time}",
   "Last live estimate": "Остання актуальна оцінка",
