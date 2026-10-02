@@ -31,6 +31,13 @@ export interface DestinationIntent {
   source?: "osm-nominatim";
 }
 
+export interface PlaceSearchBoundingBox {
+  south: number;
+  north: number;
+  west: number;
+  east: number;
+}
+
 export interface PlaceSearchResult {
   id: string;
   title: string;
@@ -39,6 +46,8 @@ export interface PlaceSearchResult {
   lon: number;
   category: string;
   type: string;
+  osmType?: "node" | "way" | "relation" | "";
+  boundingBox?: PlaceSearchBoundingBox | null;
   provider: "nominatim";
   licence: string;
 }
