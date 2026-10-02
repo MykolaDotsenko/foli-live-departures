@@ -47,10 +47,6 @@ function connectSources(env) {
 export default defineConfig(({ mode }) => ({
   base: normalizedBasePath(),
   build: {
-    // Release QA targets current Chromium, Firefox and mobile WebKit. ES2022
-    // is supported by those browsers and avoids compatibility transforms for
-    // syntax we already exercise in Playwright on every pull request.
-    target: "es2022",
     // The app has no dynamic imports, so the modulepreload compatibility
     // polyfill has no runtime work to do. All supported release browsers also
     // have native module support.
@@ -62,7 +58,9 @@ export default defineConfig(({ mode }) => ({
       // stylesheet and JS class map. A six-character content hash keeps
       // module isolation while materially reducing the executable/style
       // payload. Global class names are unaffected.
-      generateScopedName: "[hash:base64:6]",
+      // Four base64 characters provide ~16.7M scoped identifiers while
+      // trimming repeated class-name bytes from both CSS and the JS module maps.
+      generateScopedName: "[hash:base64:4]",
     },
   },
   plugins: [
