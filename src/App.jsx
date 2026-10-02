@@ -336,14 +336,17 @@ function App() {
         : null,
     rideEtaSource: String(ride.runtime?.etaSource || ""),
   });
-  const transferRevalidation =
-    futureLegWatch.immediate || {
-      providerState: "idle",
-      decision: "unknown",
-      departureAt: null,
-      feasibility: null,
-      missingSinceMs: null,
-    };
+  const transferRevalidation = useMemo(
+    () =>
+      futureLegWatch.immediate || {
+        providerState: "idle",
+        decision: "unknown",
+        departureAt: null,
+        feasibility: null,
+        missingSinceMs: null,
+      },
+    [futureLegWatch.immediate]
+  );
 
   useEffect(() => {
     if (!transferWatchJourney || futureLegWatch.states.length === 0) {
