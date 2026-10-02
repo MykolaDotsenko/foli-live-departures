@@ -109,8 +109,9 @@ These came out of the verification round and are not yet re-scored.
 **Owner decisions still open**
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move with it.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
-3. **Swedish.**
-4. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
+3. **Ukrainian interface,** implemented as a full locale rather than partial translated copy; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
+4. **Swedish.**
+5. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
 
 **Closed owner decisions**
 - **One product name:** Turku Departures.
@@ -131,7 +132,7 @@ These are stated, not hidden.
 - **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
 - **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
 - **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.
-- **Two languages, not three.** Föli publishes Finnish, Swedish and English; the interface is Finnish and English. A service update Föli wrote only in Finnish shows in Finnish in the English interface.
+- **Two languages today; Ukrainian and Swedish are planned.** The current interface is Finnish and English. Ukrainian is an explicit implementation milestone, and Swedish remains the obvious official-local expansion. Föli service updates are still shown in the language supplied by Föli when no matching localized source text exists.
 - **No analytics, by design.** Nothing measures adoption or retention; the scores above are reviewers' judgement.
 
 ## Release gates

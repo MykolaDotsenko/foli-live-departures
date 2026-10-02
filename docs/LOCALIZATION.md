@@ -1,12 +1,22 @@
 # Localization
 
-The interface is available in English and Finnish. It follows the phone's
-language on a first visit (Finnish for `fi`, English for everything else) and
-the passenger's own choice from the header switch after that. The choice is
-kept on the phone.
+The interface is currently available in English and Finnish. It follows the
+phone's language on a first visit (Finnish for `fi`, English for everything
+else) and the passenger's own choice from the header switch after that. The
+choice is kept on the phone.
 
-Swedish is the obvious next language: Turku is officially bilingual and Föli
-publishes its data in Finnish, Swedish and English.
+Two localization expansions are planned:
+
+- **Ukrainian (`uk`)** is an explicit implementation milestone requested for
+  the product. It must be complete across the safety-critical Ride Mode,
+  Journey Assistant, recovery, offline, Places, privacy and accessibility
+  surfaces before it is exposed in the language switcher.
+- **Swedish (`sv`)** remains the obvious official-local expansion because
+  Turku is bilingual and Föli publishes its own data in Finnish, Swedish and
+  English.
+
+The detailed Ukrainian acceptance plan is in
+[Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
 
 ## How it works
 
@@ -28,11 +38,10 @@ publishes its data in Finnish, Swedish and English.
   phrase and values, not the finished sentence, so it follows a switch of
   language while it is on screen.
 
-`src/i18n/i18n.test.js` fails when the code asks for a phrase the Finnish
-dictionary lacks, when a translation's placeholders differ from its key's,
-when a dictionary keeps a phrase nothing asks for, or when a component names
-a control in literal English, whether the attribute is quoted or an
-expression. ESLint (`react/jsx-no-literals`) catches text between tags,
+`src/i18n/i18n.test.js` currently protects the Finnish dictionary. Before
+Ukrainian is enabled, the same completeness, placeholder, unused-string and
+literal-English guarantees must apply to **every enabled locale**, not only
+Finnish. ESLint (`react/jsx-no-literals`) catches text between tags,
 including `{"text"}` and template literals, and an end-to-end test looks for
 English left on the Finnish screens.
 
@@ -104,3 +113,35 @@ English left on the Finnish screens.
 
 The Finnish text was written for this app and has not yet been reviewed by
 a native speaker. That review should come before a city-wide launch.
+
+
+## Planned Ukrainian locale
+
+Ukrainian must be implemented as a first-class locale, not as a small set of
+translated labels.
+
+Key rules:
+
+- locale code: `uk`; formatting/speech preference: `uk-UA`;
+- first-visit language detection recognizes `uk` / `uk-*`, while a stored
+  passenger choice remains authoritative;
+- stop names, route destinations and line numbers stay exactly as Föli
+  publishes them and keep their source-language metadata;
+- Ukrainian plural forms must be handled correctly (one/few/many), not by an
+  English-style singular/plural shortcut;
+- all safety copy — Get-off alert, STOP instruction, Get off now, missed-stop
+  recovery, transfer failure/recovery and degraded-data states — must be
+  reviewed as operational instructions, not literal translations;
+- speech uses an available `uk-UA` voice when possible, but text remains the
+  source of truth and the app must degrade safely if no Ukrainian voice exists;
+- the **Show to driver** passenger control is translated into Ukrainian, while
+  the driver-facing card keeps Finnish + English as the primary operational
+  languages; Ukrainian may be supplementary but must not replace the languages
+  a local driver can reasonably be expected to read;
+- Föli service-alert text is not machine-translated by the app. Source text is
+  shown truthfully when Föli does not provide Ukrainian;
+- Ukrainian UI must pass the same phone-width, 200% text, dark-mode, keyboard,
+  VoiceOver/TalkBack and axe checks as Finnish/English.
+
+See [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md) for the staged
+implementation and release criteria.

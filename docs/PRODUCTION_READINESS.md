@@ -65,7 +65,7 @@ These do not block v1:
 - browser background execution is not guaranteed; the web app therefore does not promise lock-screen get-off alerts;
 - Journey Assistant is intentionally bounded to direct and one-transfer journeys;
 - walking is approximate and can hand off externally rather than pretending to provide turn-by-turn pedestrian routing;
-- Swedish is a localization expansion, not a correctness dependency for Finnish + English v1.
+- Swedish and Ukrainian are localization expansions, not correctness dependencies for Finnish + English v1. Ukrainian is an explicit implementation milestone; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
 
 ## Owner-side repository check
 

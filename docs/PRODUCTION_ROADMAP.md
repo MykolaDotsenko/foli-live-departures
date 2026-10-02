@@ -1,6 +1,6 @@
 # Production roadmap
 
-**Baseline:** `master@7a76521aa71c`  
+**Planning baseline:** `master@7a76521aa71c`  
 **Updated:** 2026-10-02  
 **Purpose:** ordered PR-by-PR plan from the current production-grade baseline to a broadly promoted, multilingual and more capable Turku Departures without weakening the static, backendless, privacy-first architecture.
 
@@ -25,7 +25,7 @@ Already implemented and considered part of the baseline:
 - production direct address/POI search fail-closed by default, with official Turku journey-planner handoff;
 - live Föli contract smoke after each master merge and daily.
 
-Open planning work already exists in **PR #128 — Add Ukrainian interface implementation plan**. Treat it as the localization design input, not as the implementation itself.
+The Ukrainian localization design is defined in [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md). Treat it as the localization design contract, not as the implementation itself.
 
 ## Non-negotiable PR rules
 
@@ -368,12 +368,12 @@ Re-run the full product audit instead of editing old scores by intuition.
 
 # Track B — localization
 
-## PR-B00 — Merge PR #128 localization design
+## PR-B00 — Ukrainian localization design contract
 
 **Priority:** 82/100  
-**Status:** already open as PR #128.
+**Status:** complete once [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md) is present on `master`.
 
-Merge it only if it remains documentation/design-only and current with `master`.
+The design remains documentation-only. Implementation starts in PR-B01 and must not expose a partial Ukrainian locale.
 
 ---
 
@@ -810,7 +810,7 @@ These should not become accidental backlog items:
 
 ## Release-critical sequence
 
-1. **PR #128** — localization design docs, if still current.
+1. **PR-B00** — Ukrainian localization design contract on `master`.
 2. **PR-A02** — full local-state backup/import.
 3. **PR-A03** — field-validation support bundle.
 4. **Manual field rides → PR-A04** — remediation.
