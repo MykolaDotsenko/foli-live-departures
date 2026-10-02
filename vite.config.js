@@ -80,8 +80,8 @@ export default defineConfig(({ mode }) => ({
   css: {
     modules: {
       // A build-local registry guarantees uniqueness while using compact
-      // names (_a, _b, …). The global stylesheet reserves this namespace and
-      // the bundle verifier tests that contract on every pull request.
+      // names (a, b, …). A contract test proves these names do not collide
+      // with global App.css classes on every pull request.
       generateScopedName,
     },
   },
