@@ -101,6 +101,7 @@ async function loadDictionary(language) {
     );
   }
 
+  /** @type {Dictionary} */
   const dictionary = {};
   const seen = new Set();
   const functionSlots = new Set();
