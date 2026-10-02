@@ -213,6 +213,7 @@ export default {
     "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
   "Journey timing and preference": "Matkan aika ja reittitoive",
+  When: "Milloin",
   "Leave now": "Lähde nyt",
   "Leave at": "Lähde klo",
   "Arrive by": "Perillä viimeistään",
@@ -223,8 +224,11 @@ export default {
   "More transfer time": "Enemmän vaihtoaikaa",
   "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh.":
     "Tulevan ajan haut käyttävät Fölin julkaistuja aikatauluja. Nyt lähdettäessä käytetään tuoreita reaaliaika-arvioita.",
-  "That local time does not exist because of the daylight-saving clock change. Choose another time.":
-    "Tätä paikallista kellonaikaa ei ole kesäaikaan siirtymisen vuoksi. Valitse toinen aika.",
+  "Choose a valid future Turku time. Times skipped by the daylight-saving clock change are not available.":
+    "Valitse kelvollinen tuleva Turun aika. Kesäaikaan siirtymisessä väliin jääviä kellonaikoja ei voi valita.",
+  "Latest departure": "Viimeisin lähtö",
+  "Latest departure we found that meets your arrival time":
+    "Viimeisin löytämämme lähtö, jolla ehdit perille valitsemaasi aikaan",
   "Fresh transfer options": "Uudet vaihtovaihtoehdot",
   "Continue to {destination}": "Jatka kohteeseen {destination}",
   "Checking fresh buses from this transfer area…":
@@ -233,8 +237,6 @@ export default {
     "Korvaavan yhteyden haku jatkuu, kun verkkoyhteys palaa.",
   "Recovery search is temporarily unavailable. Your destination is kept.":
     "Korvaavan yhteyden haku ei ole tilapäisesti käytettävissä. Kohde säilyy valittuna.",
-  "No reliable direct replacement is available from this transfer area right now.":
-    "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa suoraa korvaavaa yhteyttä.",
   "No reliable replacement with at most one new transfer is available from this transfer area right now.":
     "Tältä vaihtoalueelta ei löydy juuri nyt luotettavaa korvaavaa yhteyttä enintään yhdellä uudella vaihdolla.",
   "These options start from the transfer area. Your journey changes only after you choose one.":
