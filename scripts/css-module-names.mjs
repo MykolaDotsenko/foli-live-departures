@@ -15,7 +15,7 @@ export function encodeCssModuleIndex(index) {
   return encoded;
 }
 
-export function createCssModuleScopedNameGenerator(prefix = "_") {
+export function createCssModuleScopedNameGenerator(prefix = "") {
   const byIdentity = new Map();
   let nextIndex = 0;
 
