@@ -228,7 +228,7 @@ test("production PWA reopens offline in persisted Ukrainian", async ({
   await expect(
     page.getByRole("columnheader", { name: "Відправлення" })
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "På svenska" })).toBeVisible();
   await expect
     .poll(() =>
       page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
