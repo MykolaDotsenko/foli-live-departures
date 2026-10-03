@@ -381,13 +381,34 @@ export function mergeRealtimeAndScheduled(
 
   scheduled.forEach((scheduledRow, scheduledIndex) => {
     const tripref = String(scheduledRow?.tripref || "").trim();
-    if (!tripref) return;
+    const scheduledAimed =
+      finiteNumber(scheduledRow?.aimeddeparturetime) ??
+      finiteNumber(scheduledRow?.aimedarrivaltime);
+    if (!tripref || scheduledAimed === null) return;
 
-    const realtimeIndex = realtime.findIndex(
-      (liveRow, index) =>
-        !matchedRealtime.has(index) &&
-        String(liveRow?.tripref || "").trim() === tripref
-    );
+    const realtimeIndex = realtime.findIndex((liveRow, index) => {
+      if (
+        matchedRealtime.has(index) ||
+        String(liveRow?.tripref || "").trim() !== tripref
+      ) {
+        return false;
+      }
+
+      // A GTFS trip_id describes the planned trip across every service date
+      // on which its service_id runs. It is not, by itself, one physical
+      // occurrence. SIRI can keep yesterday/today's stale occurrence while
+      // the timetable fallback already contains the same trip_id tomorrow.
+      // Require the planned stop time to identify the same occurrence before
+      // suppressing the scheduled row. If either side cannot provide that
+      // anchor, keeping both rows is safer than hiding a real future bus.
+      const liveAimed =
+        finiteNumber(liveRow?.aimeddeparturetime) ??
+        finiteNumber(liveRow?.aimedarrivaltime);
+      return (
+        liveAimed !== null &&
+        Math.abs(liveAimed - scheduledAimed) <= tolerance
+      );
+    });
 
     if (realtimeIndex >= 0) {
       matchedRealtime.add(realtimeIndex);
