@@ -3,6 +3,7 @@ import {
   announceRideStage,
   requestRideNotificationPermission,
   runRideTestAlert,
+  showRideNotification,
   stopRideAlerts,
 } from "../utils/rideAlerts";
 import {
@@ -385,7 +386,7 @@ export default function useRideMode() {
         expiresAt: now + RIDE_TTL_MS,
       };
 
-      stopRideAlerts();
+      const alertCleanup = stopRideAlerts();
       clearRideContinuation(previousRideId);
       const nextContinuation = persistRideContinuation(
         nextSession.id,
@@ -415,18 +416,30 @@ export default function useRideMode() {
       const wantsNotifications =
         nextSession.options?.notifications !== false;
 
-      if (wantsNotifications) {
-        void requestRideNotificationPermission().then((granted) => {
-          commitRuntime((current) => ({
-            ...current,
-            notificationPermission: granted ? "granted" : "unavailable",
-          }));
-        });
-      }
+      // Both permission and audio unlock must begin in the passenger's Start
+      // gesture. The audible/haptic/speech test therefore runs immediately,
+      // but without creating a notification that an older async cleanup could
+      // close. The notification is emitted only after cleanup settles.
+      const permission = wantsNotifications
+        ? requestRideNotificationPermission()
+        : Promise.resolve(false);
+      void runRideTestAlert(nextSession.targetStop, false);
 
-      void runRideTestAlert(
-        nextSession.targetStop,
-        wantsNotifications
+      void Promise.all([Promise.resolve(alertCleanup), permission]).then(
+        ([, granted]) => {
+          if (sessionRef.current?.id !== nextSession.id) return;
+
+          if (wantsNotifications) {
+            commitRuntime((current) => ({
+              ...current,
+              notificationPermission: granted ? "granted" : "unavailable",
+            }));
+          }
+
+          if (wantsNotifications && granted) {
+            void showRideNotification("test", nextSession.targetStop);
+          }
+        }
       );
 
       return true;
