@@ -10,7 +10,8 @@ const mocks = vi.hoisted(() => ({
     ])
   ),
   runRideTestAlert: vi.fn(() => Promise.resolve()),
-  stopRideAlerts: vi.fn(),
+  showRideNotification: vi.fn(() => Promise.resolve(true)),
+  stopRideAlerts: vi.fn(() => Promise.resolve()),
   requestRideNotificationPermission: vi.fn(() => Promise.resolve(false)),
   announceRideStage: vi.fn(),
   repeatNowRideSignal: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock("../utils/rideAlerts", () => ({
   repeatNowRideSignal: mocks.repeatNowRideSignal,
   requestRideNotificationPermission: mocks.requestRideNotificationPermission,
   runRideTestAlert: mocks.runRideTestAlert,
+  showRideNotification: mocks.showRideNotification,
   stopRideAlerts: mocks.stopRideAlerts,
   primeRideVoices: mocks.primeRideVoices,
   unlockRideAudio: mocks.unlockRideAudio,
@@ -119,7 +121,11 @@ beforeEach(() => {
   mocks.fetchStopMonitor.mockClear();
   mocks.fetchTripShape.mockClear();
   mocks.runRideTestAlert.mockClear();
-  mocks.stopRideAlerts.mockClear();
+  mocks.showRideNotification.mockClear();
+  mocks.stopRideAlerts.mockReset();
+  mocks.stopRideAlerts.mockResolvedValue();
+  mocks.requestRideNotificationPermission.mockReset();
+  mocks.requestRideNotificationPermission.mockResolvedValue(false);
   mocks.nativeRidePrepare.mockClear();
   mocks.nativeRideStart.mockClear();
   mocks.nativeRideStop.mockClear();
@@ -155,6 +161,105 @@ afterEach(() => {
   });
   localStorage.clear();
   globalThis.sessionStorage.clear();
+});
+
+test("starts gesture-bound test feedback immediately but waits for cleanup before notification", async () => {
+  let resolveCleanup;
+  let resolvePermission;
+  mocks.stopRideAlerts.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveCleanup = resolve;
+      })
+  );
+  mocks.requestRideNotificationPermission.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolvePermission = resolve;
+      })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      options: {
+        ...rideConfig.options,
+        notifications: true,
+      },
+    });
+  });
+
+  expect(mocks.requestRideNotificationPermission).toHaveBeenCalledTimes(1);
+  expect(mocks.runRideTestAlert).toHaveBeenCalledWith(
+    rideConfig.targetStop,
+    false
+  );
+  expect(mocks.showRideNotification).not.toHaveBeenCalled();
+
+  await act(async () => {
+    resolvePermission(true);
+    await Promise.resolve();
+  });
+  expect(mocks.showRideNotification).not.toHaveBeenCalled();
+
+  await act(async () => {
+    resolveCleanup();
+    await Promise.resolve();
+  });
+
+  await waitFor(() =>
+    expect(mocks.showRideNotification).toHaveBeenCalledWith(
+      "test",
+      rideConfig.targetStop
+    )
+  );
+  expect(result.current.runtime.notificationPermission).toBe("granted");
+});
+
+test("late notification permission from an ended ride cannot mutate a replacement ride", async () => {
+  let resolvePermission;
+  mocks.requestRideNotificationPermission.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolvePermission = resolve;
+      })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      options: {
+        ...rideConfig.options,
+        notifications: true,
+      },
+    });
+  });
+  const firstRideId = result.current.session.id;
+
+  act(() => {
+    result.current.endRide();
+    result.current.startRide({
+      ...rideConfig,
+      tripRef: "trip-2",
+      options: {
+        ...rideConfig.options,
+        notifications: false,
+      },
+    });
+  });
+  expect(result.current.session.id).not.toBe(firstRideId);
+
+  await act(async () => {
+    resolvePermission(true);
+    await Promise.resolve();
+  });
+
+  expect(result.current.runtime.notificationPermission).not.toBe("granted");
+  expect(mocks.showRideNotification).not.toHaveBeenCalled();
 });
 
 test("starts the Android companion only after a GPS fix and stops it with the ride", async () => {
