@@ -117,6 +117,15 @@ function readFrom(target, id, now, { durable = false } = {}) {
  * @param {unknown} rideId
  * @param {number} [nowMs]
  */
+export function readDurableRideContinuation(rideId, nowMs = Date.now()) {
+  const id = String(rideId || "");
+  if (!id) return null;
+
+  return readFrom(durableStorageTarget(), id, Number(nowMs), {
+    durable: true,
+  });
+}
+
 export function readRideContinuation(rideId, nowMs = Date.now()) {
   const id = String(rideId || "");
   if (!id) return null;
@@ -125,7 +134,7 @@ export function readRideContinuation(rideId, nowMs = Date.now()) {
   const session = readFrom(sessionStorageTarget(), id, now);
   if (session) return session;
 
-  return readFrom(durableStorageTarget(), id, now, { durable: true });
+  return readDurableRideContinuation(id, now);
 }
 
 /**
