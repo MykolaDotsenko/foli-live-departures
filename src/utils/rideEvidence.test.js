@@ -151,6 +151,17 @@ describe("rideStageSignals", () => {
     });
   });
 
+  // Kept through a GPS dropout, one old fix past the stop declared a miss
+  // minutes later, while fresh live data had the bus still approaching.
+  it("counts a fix past the stop only while it is recent", () => {
+    const passed = { ...evidence, underway: true, gps: gps({ shapeUsable: true, onRoute: true, shapeStatus: "ready", passedTarget: true }) };
+    expect(rideStageSignals({ ...passed, gpsAgeSec: 5 }).gpsPassedTarget).toBe(true);
+    expect(rideStageSignals({ ...passed, gpsAgeSec: 60 }).gpsPassedTarget).toBe(true);
+    expect(rideStageSignals({ ...passed, gpsAgeSec: 61 }).gpsPassedTarget).toBe(false);
+    expect(rideStageSignals({ ...passed, gpsAgeSec: 180 }).gpsPassedTarget).toBe(false);
+    expect(rideStageSignals({ ...passed, gpsAgeSec: null }).gpsPassedTarget).toBe(false);
+  });
+
   it("holds the timetable back for a reloaded ride until its first poll", () => {
     expect(rideStageSignals(evidence).scheduleMayRaise).toBe(true);
     expect(

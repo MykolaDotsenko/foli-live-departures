@@ -876,9 +876,13 @@ function candidateStage(signals) {
 export function evaluateRideStage(currentStage, signals = {}) {
   if (currentStage === RIDE_STAGE.MISSED) {
     const liveEta = finiteNumber(signals.liveEtaSec);
+    // A fresh fix already past the stop on the route still says missed: a
+    // departed bus the feed keeps listing for a few polls otherwise reopened
+    // NOW, and the next fix missed again, announced each time.
     const freshLiveContradiction =
       signals.liveTargetObservedAfterMiss === true &&
       signals.targetPassedConfirmed !== true &&
+      signals.gpsPassedTarget !== true &&
       (signals.targetAtStop === true || (liveEta !== null && liveEta >= 0));
 
     // MISSED is deliberately fail-closed. Timetable drift, GPS jitter, a

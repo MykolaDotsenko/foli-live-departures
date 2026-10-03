@@ -654,6 +654,18 @@ describe("ride progress", () => {
     ).toBe(RIDE_STAGE.MISSED);
   });
 
+  // A departed bus the feed still lists for a few polls kept reopening
+  // NOW while fresh GPS had the passenger 250 m on, each flip announced.
+  it("does not reopen MISSED while a fresh fix is still past the stop", () => {
+    expect(
+      evaluateRideStage(RIDE_STAGE.MISSED, {
+        targetAtStop: true,
+        liveTargetObservedAfterMiss: true,
+        gpsPassedTarget: true,
+      }).stage
+    ).toBe(RIDE_STAGE.MISSED);
+  });
+
   it("only marks missed after post-target evidence", () => {
     expect(
       evaluateRideStage(RIDE_STAGE.NOW, {

@@ -131,6 +131,9 @@ export function rideUnderway(session, previousPassedConfirmed, gps) {
  *   storage, or "".
  */
 
+// The same freshness every other location signal gets in evaluateRideStage().
+const GPS_PASSED_TARGET_MAX_AGE_SEC = 60;
+
 /**
  * The signals evaluateRideStage() weighs, from aged evidence.
  * @param {RideStageEvidence} evidence
@@ -165,7 +168,13 @@ export function rideStageSignals({
     gpsRouteDistanceM: nextGps.routeDistanceM,
     gpsRouteEtaSec: nextGps.routeEtaSec,
     // 200 m past the exit is not somewhere a passenger waits for the bus.
-    gpsPassedTarget: nextGps.passedTarget,
+    // Only a recent fix says so, as for every other location signal: kept
+    // through a GPS dropout, one old fix declared a miss minutes later while
+    // fresh live data had the bus still approaching, or standing at, the stop.
+    gpsPassedTarget:
+      nextGps.passedTarget === true &&
+      gpsAgeSec !== null &&
+      gpsAgeSec <= GPS_PASSED_TARGET_MAX_AGE_SEC,
     gpsSpeedMps,
     stageAgeSec,
     previousPassedConfirmed: confirmations.previousPassedConfirmed,
