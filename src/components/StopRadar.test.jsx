@@ -77,6 +77,16 @@ test("locks the initial target and changing radar target does not open a stop", 
 
   expect((await screen.findAllByText("Puistokatu")).length).toBeGreaterThan(0);
   expect(screen.getByText("North-up")).toBeInTheDocument();
+
+  const radar = screen.getByRole("group", {
+    name: /Radar showing nearby stops\. Target Puistokatu, stop 32/i,
+  });
+  expect(
+    within(radar).getByRole("button", {
+      name: /Guide to Puistokatu, stop 32/i,
+    })
+  ).toBeInTheDocument();
+
   expect(onPosition).toHaveBeenCalledTimes(1);
   expect(onOpenStop).not.toHaveBeenCalled();
 
