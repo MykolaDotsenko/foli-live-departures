@@ -149,7 +149,11 @@ export default function useStopMonitor(stopId) {
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setError(false);
+      // A retry the passenger asked for clears the failure so they see it
+      // being tried. The half-minute poll does not: during an outage it
+      // took "Couldn't load departures" off screen for every quiet retry
+      // and a screen reader announced it afresh each time it came back.
+      if (!quiet) setError(false);
       if (initial) setLoading(true);
       else if (!quiet) setRefreshing(true);
 
@@ -162,6 +166,7 @@ export default function useStopMonitor(stopId) {
         const received = { stopId, ...next, receivedAtMs: Date.now() };
         consecutiveFailuresRef.current = 0;
         reportProviderReached();
+        setError(false);
         setData(received);
         writeSnapshot(received);
         return true;

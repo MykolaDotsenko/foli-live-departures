@@ -463,3 +463,54 @@ test("only a refresh the passenger asks for says it is refreshing", async () => 
     vi.useRealTimers();
   }
 });
+
+// During an outage every half-minute retry took "Couldn't load departures"
+// off the board for up to the request timeout, then put it back, and a
+// screen reader announced it afresh each time.
+test("an outage message stays up while a quiet retry is on its way, and clears on success", async () => {
+  const visibilitySpy = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockImplementation(() => "visible");
+  let answer;
+  vi.mocked(fetchStopMonitor)
+    .mockRejectedValueOnce(new Error("Föli down"))
+    .mockImplementationOnce(
+      () => new Promise((resolve) => {
+        answer = resolve;
+      })
+    );
+
+  render(<Harness stopId="164" />);
+  await waitFor(() => {
+    expect(screen.getByTestId("error")).toHaveTextContent("true");
+  });
+
+  // A foreground return runs the same quiet refresh as the poll.
+  fireEvent(document, new globalThis.Event("visibilitychange"));
+  await waitFor(() => expect(fetchStopMonitor).toHaveBeenCalledTimes(2));
+  expect(screen.getByTestId("error")).toHaveTextContent("true");
+
+  await act(async () => {
+    answer({ stopName: "Kauppatori", arrivals: [], serverTime: 100 });
+  });
+  expect(await screen.findByText("Kauppatori")).toBeInTheDocument();
+  expect(screen.getByTestId("error")).toHaveTextContent("false");
+
+  visibilitySpy.mockRestore();
+});
+
+test("a retry the passenger asks for clears the outage message while it tries", async () => {
+  vi.mocked(fetchStopMonitor)
+    .mockRejectedValueOnce(new Error("Föli down"))
+    .mockReturnValueOnce(new Promise(() => {}));
+
+  render(<Harness stopId="164" />);
+  await waitFor(() => {
+    expect(screen.getByTestId("error")).toHaveTextContent("true");
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }));
+  await waitFor(() => {
+    expect(screen.getByTestId("error")).toHaveTextContent("false");
+  });
+});
