@@ -60,6 +60,27 @@ test("follows the interface language", async () => {
 });
 
 
+test("follows a theme change made in another tab", () => {
+  resetThemeForTests("light");
+  render(<ThemeSwitch />);
+
+  localStorage.setItem("foli-theme-v1", "dark");
+  act(() => {
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "foli-theme-v1",
+        oldValue: "light",
+        newValue: "dark",
+      })
+    );
+  });
+
+  expect(document.documentElement).toHaveAttribute("data-theme", "dark");
+  expect(
+    screen.getByRole("button", { name: "Use light theme" })
+  ).toBeInTheDocument();
+});
+
 test("applies an imported theme immediately when this origin had no explicit choice", () => {
   resetThemeForTests("light");
   render(<ThemeSwitch />);
