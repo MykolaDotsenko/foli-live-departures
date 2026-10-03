@@ -144,6 +144,8 @@ const requiredReleaseEvidence = [
   "Source-Commit: %s",
   '--notes "$notes"',
   "Require successful CI for this exact master commit",
+  "Require manual Android publish evidence",
+  "node scripts/verify-release-gates.mjs --require android-publish",
   '--arg sha "$GITHUB_SHA"',
   "select(.head_sha == $sha)",
   "adb install -r",

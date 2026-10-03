@@ -85,6 +85,8 @@ The continuously published `android-latest` artifact is a debug-signed testing/s
 
 A production Android release additionally requires:
 
+- `publish=false` remains available for the signing dry run while manual gates are open;
+- `publish=true` is blocked unless the machine-checked `android-publish` manual-evidence profile is closed;
 - protected `android-production` environment;
 - persistent signing key and secrets, exposed only to the validation/decode/signing steps and cleaned from the runner immediately after signing;
 - unique monotonically increasing version code, checked against the complete published production-release history;
