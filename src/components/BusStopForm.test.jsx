@@ -545,3 +545,22 @@ test("the suggestion list stays closed after re-submitting the stop on screen", 
   expect(onSubmit).toHaveBeenCalledWith("164");
   expect(input).toHaveAttribute("aria-expanded", "false");
 });
+
+// "Kauppatroi" left the list empty: a typing slip found nothing at all.
+test("a typing slip is offered the stop it was meant to be, and only offered", () => {
+  const onSubmit = vi.fn();
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={onSubmit} />);
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kauppatroi" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("option", { name: /Kauppatori/ })).toBeInTheDocument();
+
+  // Show does not open a guessed stop by itself.
+  fireEvent.submit(input.closest("form"));
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("option", { name: /Kauppatori/ }));
+  expect(onSubmit).toHaveBeenCalledWith("164");
+});

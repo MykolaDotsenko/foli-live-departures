@@ -8,7 +8,7 @@ import {
 import { judgeNearestStop } from "../utils/nearestStop";
 import styles from "./BusStopForm.module.css";
 import StopName from "./StopName";
-import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
+import { findSimilarStops, findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 
 const MAX_SUGGESTIONS = 6;
 
@@ -133,7 +133,17 @@ function BusStopForm({
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
-  const showSuggestions = focused && value.trim() && matches.length > 0;
+  // With nothing matching as typed, names a typing slip away are offered:
+  // "Kauppatroi" found nothing at all. Only offered; a submit opens a stop
+  // the passenger actually typed or chose.
+  const suggestions = useMemo(
+    () =>
+      matches.length > 0
+        ? matches
+        : findSimilarStops(stops, value, MAX_SUGGESTIONS),
+    [matches, stops, value]
+  );
+  const showSuggestions = focused && value.trim() && suggestions.length > 0;
 
   const chooseStop = (stop) => {
     setValue(stop.name || stop.id);
@@ -272,7 +282,7 @@ function BusStopForm({
   const handleKeyDown = (event) => {
     if (!showSuggestions) {
       // Down arrow opens a list Escape closed, as in any combobox.
-      if (event.key === "ArrowDown" && value.trim() && matches.length > 0) {
+      if (event.key === "ArrowDown" && value.trim() && suggestions.length > 0) {
         event.preventDefault();
         setFocused(true);
       }
@@ -281,15 +291,15 @@ function BusStopForm({
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setActiveIndex((index) => (index + 1) % matches.length);
+      setActiveIndex((index) => (index + 1) % suggestions.length);
     } else if (event.key === "ArrowUp") {
       event.preventDefault();
       setActiveIndex((index) =>
-        index <= 0 ? matches.length - 1 : index - 1
+        index <= 0 ? suggestions.length - 1 : index - 1
       );
     } else if (event.key === "Enter" && activeIndex >= 0) {
       event.preventDefault();
-      chooseStop(matches[activeIndex]);
+      chooseStop(suggestions[activeIndex]);
     } else if (event.key === "Escape") {
       setActiveIndex(-1);
       setFocused(false);
@@ -382,7 +392,7 @@ function BusStopForm({
             role="listbox"
             aria-label={t("Matching bus stops")}
           >
-            {matches.map((stop, index) => (
+            {suggestions.map((stop, index) => (
               <div
                 key={stop.id}
                 id={`foli-stop-option-${index}`}

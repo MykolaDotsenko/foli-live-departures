@@ -21,6 +21,7 @@ function DepartureStates({
   onRetryTimetable,
   onRefresh,
   onShowAllLines,
+  online = true,
   children,
 }) {
   // An empty board is only "no more buses" when a fresh answer says so.
@@ -41,7 +42,15 @@ function DepartureStates({
   ) : error && upcomingCount === 0 && !answerWasEmpty ? (
     <div className={styles.state} role="alert">
       <strong>{t("Couldn’t load departures.")}</strong>
-      <span>{t("Föli’s live times aren’t loading right now. Try again in a moment.")}</span>
+      {/* With the phone itself offline, blaming Föli sent people to wait
+          for a service that was fine. */}
+      <span>
+        {online
+          ? t("Föli’s live times aren’t loading right now. Try again in a moment.")
+          : t(
+              "Saved places and Show to driver still work. Live times and directions need a connection."
+            )}
+      </span>
       <button type="button" className={styles.retryButton} onClick={onRefresh}>
         {t("Try again")}
       </button>

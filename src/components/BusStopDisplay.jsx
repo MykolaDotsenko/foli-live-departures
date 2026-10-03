@@ -411,6 +411,7 @@ function BusStopDisplay({
         onRetryTimetable={lineTimetable.retry}
         onRefresh={onRefresh}
         onShowAllLines={showAllLines}
+        online={online}
       >
         {destination && destinationFitState === "ready" && (
           <p className={styles.destinationBoardNote}>

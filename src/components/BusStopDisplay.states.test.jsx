@@ -71,6 +71,22 @@ test("a first load that failed says so instead of claiming there are no departur
   expect(screen.queryByText("No upcoming departures.")).not.toBeInTheDocument();
 });
 
+// With the phone itself offline, the board blamed Föli and sent people to
+// wait for a service that was fine.
+test("a failed load while the phone is offline says it needs a connection", () => {
+  render(board({ error: true, online: false }));
+
+  expect(screen.getByText("Couldn’t load departures.")).toBeInTheDocument();
+  expect(screen.getByText(/Live times and directions need a connection/)).toBeInTheDocument();
+  expect(screen.queryByText(/Föli’s live times aren’t loading/)).not.toBeInTheDocument();
+});
+
+test("a failed load while online still says Föli is not answering", () => {
+  render(board({ error: true, online: true }));
+
+  expect(screen.getByText(/Föli’s live times aren’t loading/)).toBeInTheDocument();
+});
+
 test("an answer with nothing in it is still reported as no upcoming departures", () => {
   render(board({ serverTime: NOW, receivedAtMs: Date.now() }));
 

@@ -553,3 +553,39 @@ test("opening a stop folds the full planner away", () => {
     screen.getByRole("button", { name: "Where do you want to go?" })
   ).toBeInTheDocument();
 });
+
+test("a destination typed with a slip is offered its stop", () => {
+  const props = renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  const target = stops.find((stop) => stop.name.length >= 6);
+  const slip = target.name.slice(0, 2) + target.name.slice(3);
+  fireEvent.change(input, { target: { value: slip } });
+
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(target.name) }));
+  expect(props.onChooseStop).toHaveBeenCalledWith(target);
+});
+
+// With address search off, the field's own example ("Prisma Itäharju")
+// led straight to "Direct address and place search is unavailable here".
+test("the example in the field is one the app can find", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+  renderSearch();
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveAttribute("placeholder", "e.g. Kauppatori");
+});
+
+test("with address search on, the example still shows a place", () => {
+  renderSearch();
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveAttribute("placeholder", "e.g. Prisma Itäharju or Kauppatori");
+});
