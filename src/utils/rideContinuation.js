@@ -126,6 +126,10 @@ export function readDurableRideContinuation(rideId, nowMs = Date.now()) {
   });
 }
 
+/**
+ * @param {unknown} rideId
+ * @param {number} [nowMs]
+ */
 export function readRideContinuation(rideId, nowMs = Date.now()) {
   const id = String(rideId || "");
   if (!id) return null;
