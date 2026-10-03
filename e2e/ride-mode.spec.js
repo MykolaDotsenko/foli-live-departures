@@ -752,6 +752,76 @@ test("switching to another get-off alert asks before replacing the active ride",
   ).toBeVisible();
 });
 
+test("a reload keeps the final-walk continuation attached to Ride Mode", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await routeTargetStop(page, { vehicleatstop: true });
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+
+  await page.evaluate(() => {
+    const ride = JSON.parse(
+      globalThis.localStorage.getItem("foli-active-ride-v1") || "null"
+    );
+    if (!ride?.id || !ride?.targetStop?.id) {
+      throw new Error("Expected an active stored ride.");
+    }
+
+    const now = Date.now();
+    globalThis.localStorage.setItem(
+      "foli-active-ride-v1",
+      JSON.stringify({
+        ...ride,
+        stage: "now",
+        stageReason: "target-at-stop",
+        stageConfidence: "live",
+        stageChangedAt: now,
+      })
+    );
+    globalThis.sessionStorage.setItem(
+      "foli-active-ride-continuation-v1",
+      JSON.stringify({
+        rideId: ride.id,
+        continuation: {
+          transferJourney: null,
+          finalWalk: {
+            destinationId: "external:test-destination",
+            destinationLabel: "Private destination",
+            lat: 60.451,
+            lon: 22.266,
+            fromStopId: String(ride.targetStop.id),
+            fromStopName: String(ride.targetStop.name || ride.targetStop.id),
+            distanceMeters: 320,
+          },
+        },
+      })
+    );
+  });
+
+  await page.reload();
+
+  const gettingOff = page.getByRole("button", { name: "I'm getting off" });
+  await expect(gettingOff).toBeVisible();
+  await gettingOff.click();
+
+  await expect(
+    page.getByRole("heading", { name: "Walk to Private destination" })
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toBeNull();
+  expect(
+    await page.evaluate(() =>
+      globalThis.localStorage.getItem("foli-active-ride-v1")
+    )
+  ).toBeNull();
+});
+
 // The same ride open in two tabs: turned off in one, the other kept alerting
 // and later wrote its copy back, so the ride returned on the next reload.
 test("a get-off alert turned off in one tab ends in the other and stays off", async ({
