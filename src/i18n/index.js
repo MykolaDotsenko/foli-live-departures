@@ -241,13 +241,22 @@ let current = storedLanguage() || preferredLanguage();
 const listeners = new Set();
 applyToDocument(current);
 
-globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
+function syncLanguageFromStorage() {
   const next = storedLanguage() || preferredLanguage();
-  if (next !== current) {
-    void setLanguage(next);
-  } else {
+  if (next === current) {
     applyToDocument(next);
+    return;
   }
+  void activateLanguage(next, false);
+}
+
+globalThis.addEventListener?.(
+  LOCAL_STATE_IMPORTED_EVENT,
+  syncLanguageFromStorage
+);
+globalThis.addEventListener?.("storage", (event) => {
+  if (event?.key !== null && event?.key !== STORAGE_KEY) return;
+  syncLanguageFromStorage();
 });
 
 /** @returns {Language} */
@@ -266,16 +275,18 @@ function switchTo(language) {
  * Accepts any code: one the app does not speak is ignored.
  * @param {string} language
  */
-export function setLanguage(language) {
+function activateLanguage(language, persist = true) {
   if (!isLanguage(language) || language === current) {
     return Promise.resolve(false);
   }
 
   const activate = () => {
-    try {
-      globalThis.localStorage?.setItem(STORAGE_KEY, language);
-    } catch {
-      // Still switches for this visit.
+    if (persist) {
+      try {
+        globalThis.localStorage?.setItem(STORAGE_KEY, language);
+      } catch {
+        // Still switches for this visit.
+      }
     }
     switchTo(language);
     return true;
@@ -288,6 +299,10 @@ export function setLanguage(language) {
   return ensureLanguageDictionary(language)
     .then(activate)
     .catch(() => false);
+}
+
+export function setLanguage(language) {
+  return activateLanguage(language, true);
 }
 
 /**
