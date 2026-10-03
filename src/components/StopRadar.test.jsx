@@ -116,5 +116,7 @@ test("shows a conservative arrival state and compass fallback notice", async () 
   expect(
     screen.getByText(/Compass data is unavailable/i)
   ).toBeInTheDocument();
-  expect(screen.getByText("<10 m")).toBeInTheDocument();
+  const targetCard = screen.getByText("Target stop").closest("div");
+  expect(targetCard).not.toBeNull();
+  expect(within(targetCard).getByText("<10 m")).toBeInTheDocument();
 });
