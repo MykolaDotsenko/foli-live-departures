@@ -85,10 +85,24 @@ function readFrom(target, id, now, { durable = false } = {}) {
       target.getItem(RIDE_CONTINUATION_STORAGE_KEY) || "null"
     );
     const stored = record(parsed);
+    const storedRideId = String(stored?.rideId || "");
+
+    // sessionStorage belongs only to this tab, so a different ride there is
+    // stale and can be discarded. localStorage is shared between tabs: while
+    // another tab replaces the active ride, its continuation event can arrive
+    // before the ride-session event. Deleting that different ride here loses
+    // the new committed transfer before this tab has a chance to adopt it.
+    if (stored && storedRideId && storedRideId !== id) {
+      if (!durable) {
+        target.removeItem(RIDE_CONTINUATION_STORAGE_KEY);
+      }
+      return null;
+    }
+
     const expiresAt = Number(stored?.expiresAt);
     const normalized =
       stored &&
-      String(stored.rideId || "") === id &&
+      storedRideId === id &&
       Number.isFinite(expiresAt) &&
       Number.isFinite(now) &&
       expiresAt > now
@@ -139,6 +153,58 @@ export function readRideContinuation(rideId, nowMs = Date.now()) {
   if (session) return session;
 
   return readDurableRideContinuation(id, now);
+}
+
+/**
+ * Apply one localStorage continuation event to the ride this tab is already
+ * running. Events for another ride are deliberately ignored until that ride's
+ * own session event arrives. A same-ride update is mirrored into sessionStorage
+ * so a reload cannot resurrect the older tab-local transfer state.
+ *
+ * @param {unknown} rideId
+ * @param {string | null | undefined} newValue
+ * @param {string | null | undefined} [oldValue]
+ * @returns {{ applies: boolean, continuation: ReturnType<typeof normalizeRideContinuation> }}
+ */
+export function syncDurableRideContinuationEvent(
+  rideId,
+  newValue,
+  oldValue = null
+) {
+  const id = String(rideId || "");
+  if (!id) return { applies: false, continuation: null };
+
+  const identityValue = newValue ?? oldValue;
+  let envelope;
+  try {
+    envelope = record(JSON.parse(identityValue || "null"));
+  } catch {
+    return { applies: false, continuation: null };
+  }
+
+  if (String(envelope?.rideId || "") !== id) {
+    return { applies: false, continuation: null };
+  }
+
+  if (newValue === null || newValue === undefined) {
+    clearFrom(sessionStorageTarget(), id);
+    return { applies: true, continuation: null };
+  }
+
+  const continuation = readDurableRideContinuation(id);
+  if (!continuation) {
+    clearFrom(sessionStorageTarget(), id);
+    return { applies: true, continuation: null };
+  }
+
+  const expiry = Number(envelope?.expiresAt);
+  try {
+    writeTo(sessionStorageTarget(), id, continuation, expiry);
+  } catch {
+    // React state still receives the newer continuation for this visit.
+  }
+
+  return { applies: true, continuation };
 }
 
 /**

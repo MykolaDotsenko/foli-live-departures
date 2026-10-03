@@ -506,6 +506,149 @@ test("an active ride follows continuation updates written by another tab", () =>
   expect(result.current.continuation).toEqual(replacement);
 });
 
+test("a cross-tab continuation update survives reloading this tab", () => {
+  const first = renderHook(() => useRideMode());
+
+  act(() => {
+    first.result.current.startRide({
+      ...rideConfig,
+      continuation: {
+        transferJourney: { id: "journey-1", revision: 1 },
+        finalWalk: null,
+        destination: {
+          id: "stop:32",
+          kind: "public-stop",
+          label: "Puistokatu",
+          primaryStopId: "32",
+          acceptableStopIds: ["32"],
+        },
+      },
+    });
+  });
+
+  const replacement = {
+    transferJourney: { id: "journey-1", revision: 2 },
+    finalWalk: null,
+    destination: {
+      id: "stop:32",
+      kind: "public-stop",
+      label: "Puistokatu",
+      primaryStopId: "32",
+      acceptableStopIds: ["32"],
+    },
+  };
+  const stored = JSON.stringify({
+    rideId: first.result.current.session.id,
+    expiresAt: first.result.current.session.expiresAt,
+    continuation: replacement,
+  });
+
+  localStorage.setItem("foli-active-ride-continuation-v1", stored);
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-continuation-v1",
+        newValue: stored,
+      })
+    );
+  });
+
+  expect(first.result.current.continuation).toEqual(replacement);
+  first.unmount();
+
+  const restored = renderHook(() => useRideMode());
+  expect(restored.result.current.session?.id).toBe(
+    JSON.parse(localStorage.getItem("foli-active-ride-v1")).id
+  );
+  expect(restored.result.current.continuation).toEqual(replacement);
+});
+
+test("a different ride's continuation is not deleted before its ride event arrives", () => {
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      continuation: {
+        transferJourney: {
+          id: "journey-old",
+          destinationKind: "public-stop",
+        },
+        finalWalk: null,
+        destination: {
+          id: "stop:32",
+          kind: "public-stop",
+          label: "Puistokatu",
+          primaryStopId: "32",
+          acceptableStopIds: ["32"],
+        },
+      },
+    });
+  });
+
+  const now = Date.now();
+  const replacementRide = {
+    id: "ride-other-tab",
+    ...rideConfig,
+    stage: "boarded",
+    stageReason: "tracking",
+    stageConfidence: "live",
+    startedAt: now,
+    stageChangedAt: now,
+    expiresAt: now + 60 * 60_000,
+  };
+  const replacementContinuation = {
+    transferJourney: {
+      id: "journey-new",
+      destinationKind: "public-stop",
+    },
+    finalWalk: null,
+    destination: {
+      id: "stop:4",
+      kind: "public-stop",
+      label: "Turun linna",
+      primaryStopId: "4",
+      acceptableStopIds: ["4"],
+    },
+  };
+  const continuationValue = JSON.stringify({
+    rideId: replacementRide.id,
+    expiresAt: replacementRide.expiresAt,
+    continuation: replacementContinuation,
+  });
+
+  localStorage.setItem(
+    "foli-active-ride-continuation-v1",
+    continuationValue
+  );
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-continuation-v1",
+        newValue: continuationValue,
+      })
+    );
+  });
+
+  expect(
+    localStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBe(continuationValue);
+
+  const rideValue = JSON.stringify(replacementRide);
+  localStorage.setItem("foli-active-ride-v1", rideValue);
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-v1",
+        newValue: rideValue,
+      })
+    );
+  });
+
+  expect(result.current.session?.id).toBe(replacementRide.id);
+  expect(result.current.continuation).toEqual(replacementContinuation);
+});
+
 // What another tab does to the stored ride, as this tab hears of it.
 function otherTabWrites(value) {
   if (value === null) {

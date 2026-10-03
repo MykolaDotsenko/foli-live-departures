@@ -7,6 +7,7 @@ import {
   readDurableRideContinuation,
   readRideContinuation,
   rideContinuationCanPersistDurably,
+  syncDurableRideContinuationEvent,
 } from "./rideContinuation";
 
 const futureExpiry = () => Date.now() + 60_000;
@@ -182,7 +183,7 @@ describe("ride continuation", () => {
     );
   });
 
-  it("drops expired, wrong-ride and malformed durable event state", () => {
+  it("drops expired and malformed durable state without deleting another ride", () => {
     const continuation = {
       transferJourney: {
         id: "journey-1",
@@ -191,15 +192,19 @@ describe("ride continuation", () => {
       destination: publicDestination,
     };
 
+    const otherRideValue = JSON.stringify({
+      rideId: "wrong-ride",
+      expiresAt: futureExpiry(),
+      continuation,
+    });
     globalThis.localStorage.setItem(
       RIDE_CONTINUATION_STORAGE_KEY,
-      JSON.stringify({
-        rideId: "wrong-ride",
-        expiresAt: futureExpiry(),
-        continuation,
-      })
+      otherRideValue
     );
     expect(readDurableRideContinuation("ride-1")).toBeNull();
+    expect(
+      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBe(otherRideValue);
 
     globalThis.localStorage.setItem(
       RIDE_CONTINUATION_STORAGE_KEY,
@@ -216,6 +221,86 @@ describe("ride continuation", () => {
       "{bad json"
     );
     expect(readDurableRideContinuation("ride-1")).toBeNull();
+  });
+
+  it("syncs only matching durable events into this tab's reload state", () => {
+    const expiry = futureExpiry();
+    const oldContinuation = {
+      transferJourney: {
+        id: "journey-1",
+        revision: 1,
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+    const nextContinuation = {
+      transferJourney: {
+        id: "journey-1",
+        revision: 2,
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+
+    persistRideContinuation("ride-1", oldContinuation, expiry);
+
+    const otherRideValue = JSON.stringify({
+      rideId: "ride-2",
+      expiresAt: expiry,
+      continuation: nextContinuation,
+    });
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      otherRideValue
+    );
+    expect(
+      syncDurableRideContinuationEvent("ride-1", otherRideValue)
+    ).toEqual({ applies: false, continuation: null });
+    expect(
+      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBe(otherRideValue);
+
+    const sameRideValue = JSON.stringify({
+      rideId: "ride-1",
+      expiresAt: expiry,
+      continuation: nextContinuation,
+    });
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      sameRideValue
+    );
+    expect(
+      syncDurableRideContinuationEvent("ride-1", sameRideValue)
+    ).toEqual({
+      applies: true,
+      continuation: normalizeRideContinuation(nextContinuation),
+    });
+    expect(readRideContinuation("ride-1")).toMatchObject({
+      transferJourney: { revision: 2 },
+    });
+
+    expect(
+      syncDurableRideContinuationEvent(
+        "ride-1",
+        null,
+        sameRideValue
+      )
+    ).toEqual({ applies: true, continuation: null });
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("ignores malformed or unidentifiable continuation storage events", () => {
+    expect(
+      syncDurableRideContinuationEvent("ride-1", "{bad json")
+    ).toEqual({ applies: false, continuation: null });
+    expect(
+      syncDurableRideContinuationEvent("ride-1", JSON.stringify({}))
+    ).toEqual({ applies: false, continuation: null });
+    expect(
+      syncDurableRideContinuationEvent("", JSON.stringify({ rideId: "ride-1" }))
+    ).toEqual({ applies: false, continuation: null });
   });
 
   it("mirrors privacy-safe public continuation into durable storage", () => {
@@ -325,7 +410,7 @@ describe("ride continuation", () => {
     ).toBeNull();
   });
 
-  it("never hands one ride another ride's continuation", () => {
+  it("never hands one ride another ride's continuation or deletes its durable owner", () => {
     persistRideContinuation(
       "ride-1",
       {
@@ -337,6 +422,9 @@ describe("ride continuation", () => {
       },
       futureExpiry()
     );
+    const durableOwner = globalThis.localStorage.getItem(
+      RIDE_CONTINUATION_STORAGE_KEY
+    );
 
     expect(readRideContinuation("ride-2")).toBeNull();
     expect(
@@ -344,7 +432,7 @@ describe("ride continuation", () => {
     ).toBeNull();
     expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-    ).toBeNull();
+    ).toBe(durableOwner);
   });
 
   it("cleans malformed and empty stored records", () => {
