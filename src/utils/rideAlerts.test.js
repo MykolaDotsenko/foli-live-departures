@@ -52,6 +52,14 @@ describe("ride alerts", () => {
   });
 });
 
+async function flushUntil(predicate, attempts = 20) {
+  for (let index = 0; index < attempts; index += 1) {
+    if (predicate()) return true;
+    await Promise.resolve();
+  }
+  return predicate();
+}
+
 describe("ride get-off notifications", () => {
   let created = [];
 
@@ -226,7 +234,9 @@ describe("ride get-off notifications", () => {
     const cleanup = stopRideAlerts();
     const notification = showRideNotification("next", "Puistokatu", 3);
 
-    await Promise.resolve();
+    expect(
+      await flushUntil(() => typeof resolveCleanup === "function")
+    ).toBe(true);
     expect(showNotification).not.toHaveBeenCalled();
 
     resolveCleanup();
@@ -254,7 +264,9 @@ describe("ride get-off notifications", () => {
     const first = stopRideAlerts();
     const second = stopRideAlerts();
 
-    expect(getNotifications).toHaveBeenCalledTimes(1);
+    expect(
+      await flushUntil(() => getNotifications.mock.calls.length === 1)
+    ).toBe(true);
 
     resolveFirst();
     await first;
