@@ -115,7 +115,7 @@ let originalGeolocation;
 
 beforeEach(() => {
   localStorage.clear();
-  sessionStorage.clear();
+  globalThis.sessionStorage.clear();
   mocks.fetchStopMonitor.mockClear();
   mocks.fetchTripShape.mockClear();
   mocks.runRideTestAlert.mockClear();
@@ -154,7 +154,7 @@ afterEach(() => {
     value: originalGeolocation,
   });
   localStorage.clear();
-  sessionStorage.clear();
+  globalThis.sessionStorage.clear();
 });
 
 test("starts the Android companion only after a GPS fix and stops it with the ride", async () => {
@@ -277,7 +277,7 @@ test("keeps journey continuation across a same-tab Ride Mode reload boundary", (
   };
 
   localStorage.setItem("foli-active-ride-v1", JSON.stringify(stored));
-  sessionStorage.setItem(
+  globalThis.sessionStorage.setItem(
     "foli-active-ride-continuation-v1",
     JSON.stringify({
       rideId: stored.id,
@@ -316,7 +316,7 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
   expect(result.current.continuation).toEqual(continuation);
   expect(
     JSON.parse(
-      sessionStorage.getItem("foli-active-ride-continuation-v1")
+      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
     )
   ).toMatchObject({
     rideId: result.current.session?.id,
@@ -330,7 +330,7 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
 
   expect(result.current.continuation).toBeNull();
   expect(
-    sessionStorage.getItem("foli-active-ride-continuation-v1")
+    globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
   ).toBeNull();
 });
 
