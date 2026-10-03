@@ -7,7 +7,7 @@ import {
 } from "./rideContinuation";
 
 beforeEach(() => {
-  sessionStorage.clear();
+  globalThis.sessionStorage.clear();
 });
 
 describe("ride continuation", () => {
@@ -53,15 +53,15 @@ describe("ride continuation", () => {
 
     clearRideContinuation("ride-1");
     expect(
-      sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
   });
 
   it("drops malformed session data instead of throwing", () => {
-    sessionStorage.setItem(RIDE_CONTINUATION_STORAGE_KEY, "{bad json");
+    globalThis.sessionStorage.setItem(RIDE_CONTINUATION_STORAGE_KEY, "{bad json");
     expect(readRideContinuation("ride-1")).toBeNull();
     expect(
-      sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
   });
 
