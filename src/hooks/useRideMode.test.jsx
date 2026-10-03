@@ -275,13 +275,21 @@ test("keeps journey continuation across a same-tab Ride Mode reload boundary", (
       phase: "walking-to-stop",
     },
     finalWalk: null,
+    destination: {
+      id: "stop:32",
+      kind: "public-stop",
+      label: "Puistokatu",
+      primaryStopId: "32",
+      acceptableStopIds: ["32"],
+    },
   };
 
   localStorage.setItem("foli-active-ride-v1", JSON.stringify(stored));
-  globalThis.sessionStorage.setItem(
+  localStorage.setItem(
     "foli-active-ride-continuation-v1",
     JSON.stringify({
       rideId: stored.id,
+      expiresAt: stored.expiresAt,
       continuation,
     })
   );
@@ -305,6 +313,15 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
       lon: 22.27,
       fromStopId: "32",
     },
+    destination: {
+      id: "external:test",
+      kind: "external-place",
+      label: "Private destination",
+      primaryStopId: "32",
+      acceptableStopIds: ["32"],
+      lat: 60.45,
+      lon: 22.27,
+    },
   };
 
   act(() => {
@@ -317,10 +334,11 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
   expect(result.current.continuation).toEqual(continuation);
   expect(
     JSON.parse(
-      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+      localStorage.getItem("foli-active-ride-continuation-v1")
     )
   ).toMatchObject({
     rideId: result.current.session?.id,
+    expiresAt: result.current.session?.expiresAt,
     continuation,
   });
   expect(localStorage.getItem("foli-active-ride-v1")).not.toContain(
@@ -331,7 +349,7 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
 
   expect(result.current.continuation).toBeNull();
   expect(
-    globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+    localStorage.getItem("foli-active-ride-continuation-v1")
   ).toBeNull();
 });
 
@@ -346,7 +364,7 @@ test("continuation updates are ignored while Ride Mode is idle", () => {
 
   expect(result.current.continuation).toBeNull();
   expect(
-    globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+    localStorage.getItem("foli-active-ride-continuation-v1")
   ).toBeNull();
 });
 
