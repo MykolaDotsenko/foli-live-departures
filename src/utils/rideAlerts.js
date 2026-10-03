@@ -101,7 +101,9 @@ export async function unlockRideAudio() {
   if (!context) return false;
 
   try {
-    if (context.state === "suspended") {
+    // iOS leaves a context "interrupted" after a call or Siri, not
+    // "suspended": resuming only the latter kept every later tone silent.
+    if (context.state !== "running" && context.state !== "closed") {
       await context.resume();
     }
     return context.state === "running";
@@ -117,8 +119,34 @@ export async function unlockRideAudio() {
 export function playRideTone(stage) {
   const pattern = ALERT_PATTERNS[stage];
   const context = getAudioContext();
-  if (!pattern || !context || context.state !== "running") return false;
+  if (!pattern || !context) return false;
+  if (context.state !== "running") {
+    // Interrupted since it was unlocked (a call, Siri, another app's audio):
+    // try to wake it and sound the tone if it comes back. Speech, vibration
+    // and the notification do not wait for this.
+    if (context.state !== "closed") {
+      try {
+        Promise.resolve(context.resume())
+          .then(() => {
+            if (context.state === "running") scheduleRideTone(context, pattern);
+          })
+          .catch(() => {});
+      } catch {
+        // Nothing more to try without a tap; the other channels still go.
+      }
+    }
+    return false;
+  }
 
+  return scheduleRideTone(context, pattern);
+}
+
+/**
+ * @param {AudioContext} context
+ * @param {typeof ALERT_PATTERNS[keyof typeof ALERT_PATTERNS]} pattern
+ * @returns {boolean}
+ */
+function scheduleRideTone(context, pattern) {
   try {
     const startAt = context.currentTime + 0.02;
     pattern.tones.forEach((frequency, index) => {

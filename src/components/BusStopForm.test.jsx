@@ -512,3 +512,55 @@ test("the suggestion list closes once a stop is chosen", () => {
   expect(onSubmit).toHaveBeenCalledWith("164");
   expect(input).toHaveAttribute("aria-expanded", "false");
 });
+
+// A number typed and submitted with the keyboard's Go key leaves focus in
+// the field. Once the board opens, the field shows the stop's name, and a
+// list still open on that name covered the board's own heading.
+test("the suggestion list stays closed after a stop number is submitted", () => {
+  const onSubmit = vi.fn();
+  const { rerender } = render(
+    <BusStopForm activeStopId="" stops={stops} onSubmit={onSubmit} />
+  );
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "164" } });
+  fireEvent.submit(input.closest("form"));
+  expect(onSubmit).toHaveBeenCalledWith("164");
+
+  rerender(<BusStopForm activeStopId="164" stops={stops} onSubmit={onSubmit} />);
+
+  expect(input).toHaveValue("Kauppatori");
+  expect(input).toHaveAttribute("aria-expanded", "false");
+});
+
+test("the suggestion list stays closed after re-submitting the stop on screen", () => {
+  const onSubmit = vi.fn();
+  render(<BusStopForm activeStopId="164" stops={stops} onSubmit={onSubmit} />);
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.submit(input.closest("form"));
+
+  expect(onSubmit).toHaveBeenCalledWith("164");
+  expect(input).toHaveAttribute("aria-expanded", "false");
+});
+
+// "Kauppatroi" left the list empty: a typing slip found nothing at all.
+test("a typing slip is offered the stop it was meant to be, and only offered", () => {
+  const onSubmit = vi.fn();
+  render(<BusStopForm activeStopId="" stops={stops} onSubmit={onSubmit} />);
+  const input = screen.getByRole("combobox", { name: "Find your stop" });
+
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kauppatroi" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+  expect(screen.getByRole("option", { name: /Kauppatori/ })).toBeInTheDocument();
+
+  // Show does not open a guessed stop by itself.
+  fireEvent.submit(input.closest("form"));
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("option", { name: /Kauppatori/ }));
+  expect(onSubmit).toHaveBeenCalledWith("164");
+});

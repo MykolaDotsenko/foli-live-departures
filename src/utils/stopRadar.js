@@ -4,7 +4,33 @@ export const RADAR_STOP_LIMIT = 8;
 export const RADAR_MAX_RANGE_METERS = 2_000;
 export const RADAR_MOVEMENT_HEADING_MAX_AGE_MS = 15_000;
 
-const RANGE_STEPS_METERS = [200, 400, 800, 1_200, RADAR_MAX_RANGE_METERS];
+// The last hundred metres are where a passenger tells two platforms of the
+// same stop apart, so the scale goes down to 50 m.
+export const RADAR_RANGE_STEPS_METERS = [
+  50,
+  100,
+  200,
+  400,
+  800,
+  1_200,
+  RADAR_MAX_RANGE_METERS,
+];
+// Room around the target so it never sits on the edge of the scale.
+const RANGE_HEADROOM = 1.25;
+// Zooming in waits until the target is clearly inside the smaller scale, so
+// a distance hovering at a step does not flip the scale on every fix.
+const ZOOM_IN_SHARE = 2 / 3;
+const MIN_RANGE_DISTANCE_METERS = 40;
+const CARDINAL_DIRECTIONS = [
+  "north",
+  "north-east",
+  "east",
+  "south-east",
+  "south",
+  "south-west",
+  "west",
+  "north-west",
+];
 
 /** @param {unknown} value */
 export function normalizeDegrees(value) {
@@ -158,20 +184,48 @@ export function radarStops(stops, position, targetStopId) {
 }
 
 /**
- * @param {readonly {distanceMeters?: unknown}[]} stops
+ * The radar's scale follows the stop being walked to. Scaled to the eighth
+ * nearest stop instead, a target 40 m away sat on top of the passenger's own
+ * dot on a 2 km scale, just where the walk needs precision. Stops outside
+ * the scale are left off the radar; the target chooser still lists them.
  * @param {number | null | undefined} targetDistance
+ * @param {number | null} [currentRange] The scale now on screen, if any.
+ * @returns {number}
  */
-export function radarRangeMeters(stops, targetDistance) {
-  const distances = [
-    ...stops.map((stop) => Number(stop?.distanceMeters)),
-    Number(targetDistance),
-  ].filter((value) => Number.isFinite(value) && value >= 0);
+export function radarRangeMeters(targetDistance, currentRange = null) {
+  const distance = Number(targetDistance);
+  const current = RADAR_RANGE_STEPS_METERS.includes(Number(currentRange))
+    ? Number(currentRange)
+    : null;
+  if (targetDistance === null || !Number.isFinite(distance) || distance < 0) {
+    return current ?? 200;
+  }
 
-  const furthest = distances.length ? Math.max(...distances) : 200;
+  const needed = Math.max(distance * RANGE_HEADROOM, MIN_RANGE_DISTANCE_METERS);
+  const fit =
+    RADAR_RANGE_STEPS_METERS.find((range) => needed <= range) ||
+    RADAR_MAX_RANGE_METERS;
+  if (current === null || fit >= current) return fit;
+  // Zoom in to the closest scale the target sits well inside, which after
+  // a jump (a nearer target, a GPS catch-up) may be one between the fit
+  // and the scale on screen; a target at a step's edge keeps the scale.
   return (
-    RANGE_STEPS_METERS.find((range) => furthest <= range) ||
-    RADAR_MAX_RANGE_METERS
+    RADAR_RANGE_STEPS_METERS.find(
+      (range) => range >= fit && range < current && distance <= range * ZOOM_IN_SHARE
+    ) ?? current
   );
+}
+
+/**
+ * One of eight compass points for a bearing, for guidance a passenger can
+ * act on without reading degrees.
+ * @param {number | null | undefined} bearing
+ * @returns {string | null}
+ */
+export function cardinalDirectionKey(bearing) {
+  const normalized = normalizeDegrees(bearing);
+  if (normalized === null) return null;
+  return CARDINAL_DIRECTIONS[Math.round(normalized / 45) % 8];
 }
 
 /**

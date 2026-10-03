@@ -777,3 +777,47 @@ test("ambiguous duplicate target rows fail closed to schedule propagation", asyn
 
   expect(fits["100"].best?.destinationArrivalAt).toBe(2_800);
 });
+
+test("polling waits while the page is hidden and refreshes as soon as it is back", async () => {
+  const timeoutSpy = vi.spyOn(window, "setTimeout");
+  let visibility = "visible";
+  const visibilitySpy = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockImplementation(() => visibility);
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  const { result, unmount } = renderHook(() =>
+    useDestinationAwareNearby({
+      stops: [{ id: "100", distanceMeters: 100 }],
+      destination,
+      positionAccuracy: 20,
+    })
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  const callsAfterFirst = api.fetchStopMonitor.mock.calls.length;
+  const poll = timeoutSpy.mock.calls
+    .filter(([callback, delay]) => typeof callback === "function" && delay === 30_000)
+    .at(-1)?.[0];
+
+  visibility = "hidden";
+  await act(async () => {
+    await poll();
+  });
+  expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterFirst);
+
+  visibility = "visible";
+  await act(async () => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  await waitFor(() =>
+    expect(api.fetchStopMonitor.mock.calls.length).toBeGreaterThan(callsAfterFirst)
+  );
+
+  unmount();
+  visibilitySpy.mockRestore();
+  timeoutSpy.mockRestore();
+});

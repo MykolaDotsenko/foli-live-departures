@@ -328,17 +328,45 @@ export function setLanguage(language) {
   return activateLanguage(language, true);
 }
 
+// How long the first render waits for a language pack. Before the service
+// worker has cached them, a stalled network left a first visit's page blank
+// until the browser gave up, which can be minutes.
+export const FIRST_RENDER_LANGUAGE_WAIT_MS = 4000;
+
 /**
  * Load the selected non-English dictionary before the first React render.
  * If it cannot load, fail closed to English rather than showing a half-
- * translated interface.
+ * translated interface. If it is merely slow, render in English and switch
+ * once it arrives, unless the passenger has chosen a language meanwhile.
  * @returns {Promise<Language>}
  */
 export async function initializeLanguage() {
-  try {
-    await ensureLanguageDictionary(current);
-  } catch {
+  const wanted = current;
+  const loading = ensureLanguageDictionary(wanted);
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let timer;
+  const outcome = await Promise.race([
+    loading.then(
+      () => "loaded",
+      () => "failed"
+    ),
+    new Promise((resolve) => {
+      timer = globalThis.setTimeout(() => resolve("waiting"), FIRST_RENDER_LANGUAGE_WAIT_MS);
+    }),
+  ]);
+  globalThis.clearTimeout(timer);
+
+  if (outcome !== "loaded" && current === wanted) {
     current = "en";
+    if (outcome === "waiting") {
+      void loading
+        .then(() => {
+          if (current === "en" && (storedLanguage() || preferredLanguage()) === wanted) {
+            switchTo(wanted);
+          }
+        })
+        .catch(() => {});
+    }
   }
   applyToDocument(current);
   return current;

@@ -66,6 +66,26 @@ function pageHeading() {
   );
 }
 
+// A saved place's card, by its first control a passenger can reach. The
+// shared-place question is answered from a card that then leaves the page.
+function placeCardControl(placeId) {
+  const card = document.querySelector(
+    `[aria-labelledby="my-places-title"] [data-place="${placeId}"]`
+  );
+  if (!card) return pageHeading();
+  const controls = [...card.querySelectorAll("a[href], button:not(:disabled)")];
+  const shown = controls.find((control) =>
+    typeof control.checkVisibility === "function"
+      ? control.checkVisibility()
+      : control.getClientRects().length > 0
+  );
+  return shown || controls[0] || pageHeading();
+}
+
+function nearbyHeading() {
+  return document.getElementById("nearby-stops-title");
+}
+
 function rideHeading() {
   return document.getElementById("ride-mode-title");
 }
@@ -801,15 +821,22 @@ function App() {
       }
     : null;
 
+  // Either answer removes the question, and the button pressed with it:
+  // focus fell to the page's start. It goes to the place just added, or
+  // back to the page's heading after "Not now".
   const dismissSharedPlace = () => {
+    requestFocus(pageHeading);
     setSharedPlace(null);
     clearSharedPlaceHash();
   };
 
   const importSharedPlace = () => {
     if (!sharedPlace) return;
+    const placeId = sharedPlace.id;
     savePlace(sharedPlace);
-    dismissSharedPlace();
+    setSharedPlace(null);
+    clearSharedPlaceHash();
+    requestFocus(() => placeCardControl(placeId));
   };
 
   return (
@@ -1078,6 +1105,53 @@ function App() {
               lineNotices={lineNotices}
             />
           </>
+        )}
+
+        {/* With a stop's board open and no destination, the planner waits
+            below the board as one line. A returning passenger reopens on
+            their last stop, and with nothing here "Where do you want to go?"
+            was out of reach. Below the board, it never pushes a departure
+            off the first screen. */}
+        {!ride.session && !finalWalk && stopId && !journey.destination && (
+          <JourneySearch
+            key="journey-entry"
+            compact
+            stops={stops}
+            places={places}
+            destination={null}
+            timeConstraint={journeyPlan.timeConstraint}
+            timeLocalValue={journeyPlan.timeLocalValue}
+            timeValid={journeyPlan.timeValid}
+            routingPreference={journeyPlan.preference}
+            coordinatesStatus={coordinatesStatus}
+            online={online}
+            onChoosePlace={(place) => {
+              requestFocus(nearbyHeading);
+              chooseJourneyPlace(place);
+            }}
+            onChooseStop={(stop) => {
+              requestFocus(nearbyHeading);
+              chooseJourneyStop(stop);
+            }}
+            onChooseExternalPlace={(place) => {
+              const prepared = chooseJourneyExternalPlace(place);
+              if (prepared?.ok) requestFocus(nearbyHeading);
+              return prepared;
+            }}
+            onTimeModeChange={(mode) => {
+              clearJourney();
+              journeyPlan.setTimeMode(mode);
+            }}
+            onTimeLocalValueChange={(value) => {
+              clearJourney();
+              journeyPlan.setTimeLocalValue(value);
+            }}
+            onPreferenceChange={(preference) => {
+              clearJourney();
+              journeyPlan.setPreference(preference);
+            }}
+            onClear={clearJourneyDestination}
+          />
         )}
 
         {/* Before a stop is chosen, location is the quickest way to one, and

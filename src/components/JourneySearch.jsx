@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { placeLabel } from "../hooks/useSavedPlaces";
 import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
-import { findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
+import { findSimilarStops, findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 import { formatClock } from "../utils/time";
 import styles from "./JourneySearch.module.css";
 import StopName from "./StopName";
@@ -81,6 +81,12 @@ export default function JourneySearch({
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
+  // Opening a stop folds the planner away, so the board leads the screen.
+  const [wasCompact, setWasCompact] = useState(compact);
+  if (wasCompact !== compact) {
+    setWasCompact(compact);
+    setExpanded(!compact);
+  }
   const timeMode = ["leave-at", "arrive-by"].includes(timeConstraint?.mode)
     ? timeConstraint.mode
     : "leave-now";
@@ -96,7 +102,15 @@ export default function JourneySearch({
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
     [stops, value]
   );
-  const showSuggestions = focused && value.trim() && matches.length > 0;
+  // A typing slip ("Varisuo") is offered its stop, never chosen for it.
+  const suggestions = useMemo(
+    () =>
+      matches.length > 0
+        ? matches
+        : findSimilarStops(stops, value, MAX_SUGGESTIONS),
+    [matches, stops, value]
+  );
+  const showSuggestions = focused && value.trim() && suggestions.length > 0;
 
   const chooseStop = (stop) => {
     onChooseStop(stop);
@@ -174,11 +188,11 @@ export default function JourneySearch({
       return;
     }
 
-    setFocused(matches.length > 0);
+    setFocused(suggestions.length > 0);
 
     if (!online) {
       setError(
-        matches.length > 0
+        suggestions.length > 0
           ? t(
               "Place search needs a connection. You can still choose a Föli stop from the suggestions."
             )
@@ -209,7 +223,7 @@ export default function JourneySearch({
 
     if (results.length === 0) {
       setError(
-        matches.length > 0
+        suggestions.length > 0
           ? t(
               "No matching place or address was found. You can still choose a Föli stop from the suggestions."
             )
@@ -219,6 +233,27 @@ export default function JourneySearch({
       );
     }
   };
+
+  // With a stop's board open and no destination yet, the planner is one
+  // line that opens it. A returning passenger opens on their last stop, and
+  // with no line here "Where do you want to go?" was out of reach for good.
+  if (compact && !destination && !expanded) {
+    return (
+      <section
+        className={styles.compactWrapper}
+        aria-label={t("Journey")}
+      >
+        <button
+          type="button"
+          className={styles.compactOpen}
+          aria-expanded="false"
+          onClick={() => setExpanded(true)}
+        >
+          {t("Where do you want to go?")}
+        </button>
+      </section>
+    );
+  }
 
   if (compact && destination && !expanded) {
     return (
@@ -262,6 +297,15 @@ export default function JourneySearch({
         {destination && (
           <button type="button" className={styles.clear} onClick={onClear}>
             {t("Clear destination")}
+          </button>
+        )}
+        {compact && !destination && (
+          <button
+            type="button"
+            className={styles.clear}
+            onClick={() => setExpanded(false)}
+          >
+            {t("Close")}
           </button>
         )}
       </div>
@@ -371,7 +415,13 @@ export default function JourneySearch({
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               className={styles.input}
-              placeholder={t("e.g. Prisma Itäharju or Kauppatori")}
+              // Where address search is off, the address example led
+              // straight to "unavailable here".
+              placeholder={
+                directPlaceSearchEnabled
+                  ? t("e.g. Prisma Itäharju or Kauppatori")
+                  : t("e.g. Kauppatori")
+              }
               autoComplete="off"
               inputMode="search"
               role="combobox"
@@ -387,7 +437,7 @@ export default function JourneySearch({
                 role="listbox"
                 aria-label={t("Destination stop suggestions")}
               >
-                {matches.map((stop) => (
+                {suggestions.map((stop) => (
                   <button
                     key={stop.id}
                     type="button"

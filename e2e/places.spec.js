@@ -164,6 +164,43 @@ test("a dismissed shared place stays dismissed after moving between stops", asyn
   await expect(page.getByRole("heading", { name: "Add Home?" })).toHaveCount(0);
 });
 
+// Either answer to a shared place removes the card and the button pressed
+// with it; keyboard and screen-reader focus fell to the start of the page.
+test("answering a shared place keeps keyboard focus in the page", async ({
+  page,
+}) => {
+  const token = encodeSharedPlaceForTest({
+    v: 1,
+    p: "home",
+    m: "164",
+    s: [["164", "Kauppatori"]],
+  });
+
+  await page.goto(`/?stop=164#place=${token}`);
+  // The card settles once the stop list has loaded; a key pressed before
+  // then can land on a control that is about to be replaced.
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Add Home" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Add Home?" })).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Boolean(document.activeElement?.closest('[data-place="home"]'))
+      )
+    )
+    .toBe(true);
+
+  await page.evaluate(() => localStorage.removeItem("foli-my-places-v1"));
+  await page.goto(`/?stop=32#place=${token}`);
+  await page.reload();
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Not now" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Add Home?" })).toHaveCount(0);
+  await expect(page.locator("#departures-title")).toBeFocused();
+});
+
 test("recovers to Home with one clear action and resilient fallbacks", async ({
   page,
 }) => {

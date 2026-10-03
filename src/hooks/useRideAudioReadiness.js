@@ -11,26 +11,21 @@ export default function useRideAudioReadiness(rideId) {
   useEffect(() => {
     if (!rideId) return undefined;
 
-    let active = true;
-
-    const detach = () => {
-      document.removeEventListener("pointerdown", tryUnlock);
-      document.removeEventListener("keydown", tryUnlock);
+    // Every tap during the ride gets the chance, not only the first: a call
+    // or Siri interrupts the context again after it was unlocked, and only
+    // a later gesture can be sure to bring it back.
+    const tryUnlock = () => {
+      void unlockRideAudio();
     };
 
-    async function tryUnlock() {
-      const unlocked = await unlockRideAudio();
-      if (unlocked && active) detach();
-    }
-
     primeRideVoices();
-    void tryUnlock();
+    tryUnlock();
     document.addEventListener("pointerdown", tryUnlock);
     document.addEventListener("keydown", tryUnlock);
 
     return () => {
-      active = false;
-      detach();
+      document.removeEventListener("pointerdown", tryUnlock);
+      document.removeEventListener("keydown", tryUnlock);
     };
   }, [rideId]);
 }

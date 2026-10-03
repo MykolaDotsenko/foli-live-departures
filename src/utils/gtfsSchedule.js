@@ -60,6 +60,46 @@ export function parseGtfsClock(value) {
   return { hour, minute, second };
 }
 
+// Building an Intl.DateTimeFormat costs far more than using one, and a
+// quiet stop's timetable search places thousands of times on the clock on
+// every 30-second refresh: built per call, that held a phone's main thread
+// for seconds. Built once, on first use, so a runtime without the service
+// time zone still fails where it did before, inside the callers' handling.
+/** @type {Intl.DateTimeFormat | null} */
+let serviceDateFormatter = null;
+/** @type {Intl.DateTimeFormat | null} */
+let zoneClockFormatter = null;
+
+function serviceDateFormat() {
+  serviceDateFormatter ||= new Intl.DateTimeFormat("en-GB", {
+    timeZone: SERVICE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return serviceDateFormatter;
+}
+
+function zoneClockFormat() {
+  zoneClockFormatter ||= new Intl.DateTimeFormat("en-GB", {
+    timeZone: SERVICE_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  return zoneClockFormatter;
+}
+
+// A service day's start depends only on its date. A search spans a few
+// dates, so a small memo answers nearly every row without the time zone.
+const SERVICE_DAY_START_MEMO_LIMIT = 64;
+/** @type {Map<string, number>} */
+const serviceDayStartMemo = new Map();
+
 /**
  * @param {EpochSeconds | null | undefined} epochSec
  * @returns {DateParts | null}
@@ -69,12 +109,7 @@ function serviceDateParts(epochSec) {
   if (epoch === null || epoch <= 0) return null;
 
   try {
-    const parts = new Intl.DateTimeFormat("en-GB", {
-      timeZone: SERVICE_TIME_ZONE,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).formatToParts(new Date(epoch * 1000));
+    const parts = serviceDateFormat().formatToParts(new Date(epoch * 1000));
     const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
 
     return {
@@ -123,16 +158,7 @@ export function serviceDateKey(epochSec, offsetDays = 0) {
  * @returns {number}
  */
 function zoneOffsetMs(epochMs) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: SERVICE_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  }).formatToParts(new Date(epochMs));
+  const parts = zoneClockFormat().formatToParts(new Date(epochMs));
   const byType = Object.fromEntries(parts.map((part) => [part.type, part.value]));
 
   const asUtc = Date.UTC(
@@ -168,17 +194,25 @@ export function gtfsServiceEpoch(serviceDate, gtfsTime) {
   // wall-clock instant with the same two-pass timezone-offset technique, then
   // subtract twelve real hours and add the full GTFS elapsed time. Hours over
   // 24 therefore stay attached to their originating service day as required.
-  const localNoonAsUtc = Date.UTC(
-    Number(yearText),
-    Number(monthText) - 1,
-    Number(dayText),
-    12,
-    0,
-    0
-  );
-  const noonFirst = localNoonAsUtc - zoneOffsetMs(localNoonAsUtc);
-  const localNoonEpochMs = localNoonAsUtc - zoneOffsetMs(noonFirst);
-  const serviceDayStartMs = localNoonEpochMs - 12 * 60 * 60 * 1000;
+  const dateKey = dateMatch[0];
+  let serviceDayStartMs = serviceDayStartMemo.get(dateKey);
+  if (serviceDayStartMs === undefined) {
+    const localNoonAsUtc = Date.UTC(
+      Number(yearText),
+      Number(monthText) - 1,
+      Number(dayText),
+      12,
+      0,
+      0
+    );
+    const noonFirst = localNoonAsUtc - zoneOffsetMs(localNoonAsUtc);
+    const localNoonEpochMs = localNoonAsUtc - zoneOffsetMs(noonFirst);
+    serviceDayStartMs = localNoonEpochMs - 12 * 60 * 60 * 1000;
+    if (serviceDayStartMemo.size >= SERVICE_DAY_START_MEMO_LIMIT) {
+      serviceDayStartMemo.clear();
+    }
+    serviceDayStartMemo.set(dateKey, serviceDayStartMs);
+  }
   const elapsedMs =
     ((clock.hour * 60 + clock.minute) * 60 + clock.second) * 1000;
 

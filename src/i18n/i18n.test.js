@@ -563,3 +563,82 @@ test("reads provider text in the selected local language without inventing trans
     languages.mockRestore();
   }
 });
+
+// Before the service worker has cached the packs, a stalled network held a
+// first visit's page blank until the browser gave up on the request.
+test("a stalled language pack renders the first screen in English, then switches when it arrives", async () => {
+  vi.resetModules();
+  localStorage.clear();
+  const languages = vi
+    .spyOn(globalThis.navigator, "languages", "get")
+    .mockReturnValue(["fi-FI"]);
+  /** @type {Array<() => void>} */
+  const release = [];
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    const url = String(input);
+    const body = /keys\.json$/.test(url)
+      ? ["Online", ...FI_RUNTIME_KEYS]
+      : ["Yhteys toimii", null, null, null, null];
+    return new Promise((resolve) => {
+      release.push(() => resolve(/** @type {Response} */ ({ ok: true, status: 200, json: async () => body })));
+    });
+  });
+  vi.useFakeTimers();
+
+  try {
+    const fresh = await import("./index.js");
+    expect(fresh.getLanguage()).toBe("fi");
+
+    const started = fresh.initializeLanguage();
+    await vi.advanceTimersByTimeAsync(fresh.FIRST_RENDER_LANGUAGE_WAIT_MS);
+    await expect(started).resolves.toBe("en");
+    expect(document.documentElement.lang).toBe("en");
+
+    release.forEach((answer) => answer());
+    await vi.waitFor(() => expect(fresh.getLanguage()).toBe("fi"));
+    expect(fresh.t("Online")).toBe("Yhteys toimii");
+  } finally {
+    vi.useRealTimers();
+    fetchMock.mockRestore();
+    languages.mockRestore();
+    localStorage.clear();
+  }
+});
+
+test("a language chosen while a stalled pack was loading is not overridden", async () => {
+  vi.resetModules();
+  localStorage.clear();
+  const languages = vi
+    .spyOn(globalThis.navigator, "languages", "get")
+    .mockReturnValue(["fi-FI"]);
+  /** @type {Array<() => void>} */
+  const release = [];
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    const url = String(input);
+    const body = /keys\.json$/.test(url)
+      ? ["Online", ...FI_RUNTIME_KEYS]
+      : ["Yhteys toimii", null, null, null, null];
+    return new Promise((resolve) => {
+      release.push(() => resolve(/** @type {Response} */ ({ ok: true, status: 200, json: async () => body })));
+    });
+  });
+  vi.useFakeTimers();
+
+  try {
+    const fresh = await import("./index.js");
+    const started = fresh.initializeLanguage();
+    await vi.advanceTimersByTimeAsync(fresh.FIRST_RENDER_LANGUAGE_WAIT_MS);
+    await expect(started).resolves.toBe("en");
+
+    // English is chosen (here, in another tab) before Finnish arrives.
+    localStorage.setItem("foli-language-v1", "en");
+    release.forEach((answer) => answer());
+    await vi.advanceTimersByTimeAsync(10);
+    expect(fresh.getLanguage()).toBe("en");
+  } finally {
+    vi.useRealTimers();
+    fetchMock.mockRestore();
+    languages.mockRestore();
+    localStorage.clear();
+  }
+});

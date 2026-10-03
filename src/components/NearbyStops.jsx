@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { msg, t, useLanguage } from "../i18n";
 import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
 import useTransferJourneyOptions from "../hooks/useTransferJourneyOptions";
@@ -29,8 +37,38 @@ import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
 
-const StopRadar = lazy(() => import("./StopRadar"));
+// A fresh lazy component per attempt: React keeps a failed import's
+// rejection, so the one that failed would fail again on every reopen.
+const lazyStopRadar = () => lazy(() => import("./StopRadar"));
 const RADAR_ICON = "◉";
+
+// The radar loads on demand. Offline before it was cached, or after a
+// deploy removed the file a long-open page asks for, the failed load reached
+// the app-wide boundary and replaced everything, a ride in progress
+// included. It now fails here, inside the radar's own place.
+class RadarLoadBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { failed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  componentDidCatch() {
+    this.props.onFailed?.();
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+    return (
+      <p className={styles.error} role="alert">
+        {t("Stop radar couldn’t open. Check your connection, then try again.")}
+      </p>
+    );
+  }
+}
 
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
@@ -185,6 +223,7 @@ function NearbyStops({
   const [error, setError] = useState("");
   const [expandedDestinationId, setExpandedDestinationId] = useState("");
   const [radarOpen, setRadarOpen] = useState(false);
+  const [StopRadar, setStopRadar] = useState(lazyStopRadar);
   const [compassPermission, setCompassPermission] = useState("pending");
   const rankingRef = useRef({ destinationId: "", order: [] });
   const radarButtonRef = useRef(null);
@@ -511,7 +550,7 @@ function NearbyStops({
     <section className={styles.wrapper} aria-labelledby="nearby-stops-title">
       <div className={styles.header}>
         <div>
-          <h2 id="nearby-stops-title" className={styles.heading}>
+          <h2 id="nearby-stops-title" className={styles.heading} tabIndex={-1}>
             {destination
               ? t("Nearby stops for {destination}", {
                   destination: destinationLabel,
@@ -585,38 +624,40 @@ function NearbyStops({
       )}
 
       {radarOpen && (
-        <Suspense
-          fallback={
-            <p className={styles.meta} role="status">
-              {t("Opening stop radar…")}
-            </p>
-          }
-        >
-          <StopRadar
-            stops={stops}
-            initialTargetStopId={initialRadarTargetId}
-            recommendedTargetStopId={bestStopId}
-            activeStopId={activeStopId}
-            compassPermission={compassPermission}
-            onPosition={(nextPosition) => {
-              // Seed Nearby from one fresh fix per radar session, then keep
-              // subsequent live fixes isolated inside StopRadar. Otherwise
-              // every walking update can perturb stop order/accuracy and
-              // restart destination-aware Föli planning.
-              if (radarSeededPositionRef.current) return;
-              radarSeededPositionRef.current = true;
-              setPosition(nextPosition);
-              setStatus("success");
-              setError("");
-            }}
-            onOpenStop={(id) => {
-              restoreRadarFocusRef.current = false;
-              setRadarOpen(false);
-              onSelect(id);
-            }}
-            onClose={closeRadar}
-          />
-        </Suspense>
+        <RadarLoadBoundary onFailed={() => setStopRadar(lazyStopRadar)}>
+          <Suspense
+            fallback={
+              <p className={styles.meta} role="status">
+                {t("Opening stop radar…")}
+              </p>
+            }
+          >
+            <StopRadar
+              stops={stops}
+              initialTargetStopId={initialRadarTargetId}
+              recommendedTargetStopId={bestStopId}
+              activeStopId={activeStopId}
+              compassPermission={compassPermission}
+              onPosition={(nextPosition) => {
+                // Seed Nearby from one fresh fix per radar session, then keep
+                // subsequent live fixes isolated inside StopRadar. Otherwise
+                // every walking update can perturb stop order/accuracy and
+                // restart destination-aware Föli planning.
+                if (radarSeededPositionRef.current) return;
+                radarSeededPositionRef.current = true;
+                setPosition(nextPosition);
+                setStatus("success");
+                setError("");
+              }}
+              onOpenStop={(id) => {
+                restoreRadarFocusRef.current = false;
+                setRadarOpen(false);
+                onSelect(id);
+              }}
+              onClose={closeRadar}
+            />
+          </Suspense>
+        </RadarLoadBoundary>
       )}
 
       {position && (

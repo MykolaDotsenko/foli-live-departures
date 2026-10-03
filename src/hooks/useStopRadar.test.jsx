@@ -462,3 +462,91 @@ test("recovers after a location error when a later watch fix succeeds", async ()
   await waitFor(() => expect(result.current.status).toBe("active"));
   expect(result.current.error).toBe("");
 });
+
+// No fix for a while (under a roof, or none within the timeout while
+// standing at a crossing) cleared the radar and threw away the direction
+// of travel, which then never built up between such gaps.
+test("keeps the last fix and direction of travel through a passing location gap", async () => {
+  let deliver;
+  let fail;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success, error) => {
+        deliver = success;
+        fail = error;
+        return 5;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  act(() =>
+    deliver({ coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 8 }, timestamp: 1 })
+  );
+  act(() => fail({ code: 3 }));
+  expect(result.current.status).toBe("stale");
+  expect(result.current.position).toMatchObject({ lat: 60.4518 });
+  expect(result.current.error).toBe("");
+
+  act(() => fail({ code: 2 }));
+  act(() =>
+    deliver({ coords: { latitude: 60.452, longitude: 22.2666, accuracy: 8 }, timestamp: 2 })
+  );
+  await waitFor(() => expect(result.current.headingSource).toBe("motion"));
+  expect(result.current.status).toBe("active");
+});
+
+test("a refusal still ends the radar's location and says so", async () => {
+  let deliver;
+  let fail;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success, error) => {
+        deliver = success;
+        fail = error;
+        return 6;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  act(() =>
+    deliver({ coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 8 }, timestamp: 1 })
+  );
+  act(() => fail({ code: 1 }));
+  expect(result.current.status).toBe("error");
+  expect(result.current.position).toBeNull();
+  expect(result.current.error).toMatch(/Location access is blocked/);
+});
+
+test("a gap before the first fix is still reported as an error", async () => {
+  let fail;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success, error) => {
+        fail = error;
+        return 7;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  act(() => fail({ code: 3 }));
+  expect(result.current.status).toBe("error");
+  expect(result.current.position).toBeNull();
+});

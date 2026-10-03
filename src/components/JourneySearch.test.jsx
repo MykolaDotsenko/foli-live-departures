@@ -503,3 +503,89 @@ test("place selection reports catalog loading and unavailable states distinctly"
     "Stop locations are temporarily unavailable"
   );
 });
+
+// A returning passenger opens on their last stop. With no destination the
+// planner used to be hidden there, out of reach for good.
+test("an opened stop board keeps the planner one tap away", () => {
+  renderSearch({ compact: true, destination: null });
+
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  );
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  ).toBeInTheDocument();
+});
+
+test("opening a stop folds the full planner away", () => {
+  const props = {
+    stops,
+    places: [home],
+    destination: null,
+    coordinatesStatus: "ready",
+    online: true,
+    onChoosePlace: vi.fn(),
+    onChooseStop: vi.fn(),
+    onClear: vi.fn(),
+  };
+  const view = render(<JourneySearch {...props} />);
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toBeInTheDocument();
+
+  view.rerender(<JourneySearch {...props} compact />);
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  ).toBeInTheDocument();
+});
+
+test("a destination typed with a slip is offered its stop", () => {
+  const props = renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  const target = stops.find((stop) => stop.name.length >= 6);
+  const slip = target.name.slice(0, 2) + target.name.slice(3);
+  fireEvent.change(input, { target: { value: slip } });
+
+  fireEvent.click(screen.getByRole("option", { name: new RegExp(target.name) }));
+  expect(props.onChooseStop).toHaveBeenCalledWith(target);
+});
+
+// With address search off, the field's own example ("Prisma Itäharju")
+// led straight to "Direct address and place search is unavailable here".
+test("the example in the field is one the app can find", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+  renderSearch();
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveAttribute("placeholder", "e.g. Kauppatori");
+});
+
+test("with address search on, the example still shows a place", () => {
+  renderSearch();
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveAttribute("placeholder", "e.g. Prisma Itäharju or Kauppatori");
+});

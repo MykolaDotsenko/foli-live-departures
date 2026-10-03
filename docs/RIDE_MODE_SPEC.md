@@ -167,7 +167,7 @@ Requires stronger evidence:
 
 - target row reports `vehicleatstop`
 - fresh provider vehicle position is <= 60 m from target after NEXT
-- local GPS is <= 60 m from target after NEXT
+- local GPS is <= 60 m from target after NEXT, or, when the trip's shape is in use, a fresh fix (at most 60 s old, accurate to 120 m) matched onto it from 30 m past the stop to 110 m before it along the route, near the end of the ride
 
 Message: **This is your stop. Exit now.**
 
@@ -183,7 +183,7 @@ The alert repeats every 5 s until one of these ends it:
 Requires post-target evidence. Before NOW has fired:
 
 - target was previously reported at stop and is then absent
-- or local GPS passes the target along the route shape
+- or local GPS passes the target along the route shape, from a fix at most 60 s old: an older one, kept through a GPS dropout, says nothing about where the bus is now
 - or, when no route shape is available, local GPS was near the target and then moves > 250 m away, counting only fixes accurate to 50 m: two fixes 300 m wide once ended a ride a minute before its stop. With a shape, straight-line distance cannot raise NOW, and a loop swinging back past the stop looks the same as riding on, so it cannot raise MISSED either
 
 After NOW, the bus leaving and the phone moving away is exactly what a successful exit looks like, so only GPS passing the target along the route counts, and only at riding pace: a reported speed of at least 3 m/s, or, when the phone reports no speed, within 90 s of NOW. Someone who got off and walks on down the same street is not told their stop is behind them.
@@ -195,7 +195,7 @@ MISSED is fail-closed, not blindly permanent. A correction requires all of the f
 - the target-stop row still matches the committed concrete ride identity;
 - the provider observation is distinct and was received after MISSED began;
 - the row is live/monitored and still places the bus at the target or in the future of the target;
-- the pass latch is no longer confirmed.
+- the pass latch is no longer confirmed, and no fresh fix still places the phone past the target along the route.
 
 A repeated pre-miss snapshot, timetable fallback, a network recovery without new transit evidence, or location alone cannot retract MISSED. When those conditions are met, the normal stage thresholds run again (BOARDED/SOON/NEXT/NOW) and any renewed actionable warning is announced normally.
 

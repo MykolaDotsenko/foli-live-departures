@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bearingDegrees,
+  cardinalDirectionKey,
   headingFromOrientationEvent,
   movementHeading,
   normalizeDegrees,
@@ -92,12 +93,49 @@ describe("stop radar geometry", () => {
   });
 
   it("uses bounded readable radar ranges and pins outliers to the edge", () => {
-    expect(radarRangeMeters([{ distanceMeters: 120 }], 150)).toBe(200);
-    expect(radarRangeMeters([{ distanceMeters: 600 }], 650)).toBe(800);
-    expect(radarRangeMeters([{ distanceMeters: 3_000 }], 3_000)).toBe(2_000);
+    expect(radarRangeMeters(150)).toBe(200);
+    expect(radarRangeMeters(600)).toBe(800);
+    expect(radarRangeMeters(3_000)).toBe(2_000);
 
     const point = radarPoint(90, 0, 3_000, 2_000);
     expect(point).toMatchObject({ x: 92, y: 50, clipped: true });
+  });
+
+  // Scaled to the eighth-nearest stop, a target 40 m away sat on the
+  // passenger's own dot on a 2 km scale, where the walk needs precision.
+  it("scales the radar to the stop being walked to, down to 50 m", () => {
+    expect(radarRangeMeters(20)).toBe(50);
+    expect(radarRangeMeters(50)).toBe(100);
+    expect(radarRangeMeters(390)).toBe(800);
+    expect(radarRangeMeters(null)).toBe(200);
+    expect(radarRangeMeters(null, 400)).toBe(400);
+  });
+
+  it("zooms out at once but zooms in only once the target is well inside", () => {
+    // Walking away: the target must never leave the scale.
+    expect(radarRangeMeters(90, 100)).toBe(200);
+    // Walking closer from 400 m: the scale steps down to 200 m once the
+    // target is inside two thirds of it, and not before.
+    expect(radarRangeMeters(130, 400)).toBe(200);
+    expect(radarRangeMeters(150, 400)).toBe(400);
+    // A distance hovering at a step keeps the scale on screen.
+    expect(radarRangeMeters(70, 200)).toBe(200);
+    expect(radarRangeMeters(66, 200)).toBe(100);
+    // After a jump, the closest scale the target sits well inside: 150 m
+    // is not two thirds inside 200 m, but is inside 400 m, not 2 km.
+    expect(radarRangeMeters(150, 2_000)).toBe(400);
+    expect(radarRangeMeters(900, 2_000)).toBe(2_000);
+    expect(radarRangeMeters(790, 2_000)).toBe(1_200);
+  });
+
+  it("names the compass point of a bearing", () => {
+    expect(cardinalDirectionKey(0)).toBe("north");
+    expect(cardinalDirectionKey(22)).toBe("north");
+    expect(cardinalDirectionKey(23)).toBe("north-east");
+    expect(cardinalDirectionKey(257)).toBe("west");
+    expect(cardinalDirectionKey(315)).toBe("north-west");
+    expect(cardinalDirectionKey(359)).toBe("north");
+    expect(cardinalDirectionKey(null)).toBeNull();
   });
 
   it("produces accessible relative direction buckets", () => {
