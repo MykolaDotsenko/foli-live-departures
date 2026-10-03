@@ -191,6 +191,7 @@ export default function useTransferLegRevalidation({
     feed,
     incomingArrivalAt,
     incomingLiveState,
+    identityKey,
     journey,
     nowMs,
     targetIndex,
