@@ -123,7 +123,12 @@ export function movementHeading(previous, next) {
     Number(previous?.accuracy) || 0,
     Number(next?.accuracy) || 0
   );
-  const minimumMovement = Math.max(8, Math.min(30, accuracy || 12));
+
+  // Poor fixes can jump tens of metres while stationary. Direction-of-travel
+  // is a safety fallback, not an excuse to turn uncertainty into a compass.
+  if (accuracy > 30) return null;
+
+  const minimumMovement = Math.max(8, accuracy || 12);
   if (moved < minimumMovement) return null;
 
   return bearingDegrees(previous, next);
