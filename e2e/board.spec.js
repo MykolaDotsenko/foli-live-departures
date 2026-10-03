@@ -275,6 +275,26 @@ test("a returning passenger opens on the stop they last looked at", async ({ pag
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 });
 
+// Reopened on their last stop, a returning passenger had no way back to
+// "Where do you want to go?": it was shown only with no stop open.
+test("a returning passenger can still plan a journey from the reopened stop", async ({ page }) => {
+  await page.goto("/?stop=4");
+  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+
+  await page.goto("/");
+  await expect(page).toHaveURL(/stop=4/);
+  await page.getByRole("button", { name: "Where do you want to go?" }).click();
+
+  const journey = page.locator('section[aria-labelledby="journey-search-title"]');
+  const destination = journey.getByRole("combobox", { name: "Stop, address or place" });
+  await destination.fill("Kauppatori");
+  await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
+
+  await expect(page.getByRole("heading", { name: /Nearby stops for Kauppatori/ })).toBeFocused();
+  await expect(page.getByRole("region", { name: "Journey destination" })).toContainText("Kauppatori");
+  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+});
+
 test("deep links survive reload and invalid stop links recover canonically", async ({ page }) => {
   await page.goto("/?stop=4");
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();

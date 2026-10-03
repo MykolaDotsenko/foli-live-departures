@@ -503,3 +503,53 @@ test("place selection reports catalog loading and unavailable states distinctly"
     "Stop locations are temporarily unavailable"
   );
 });
+
+// A returning passenger opens on their last stop. With no destination the
+// planner used to be hidden there, out of reach for good.
+test("an opened stop board keeps the planner one tap away", () => {
+  renderSearch({ compact: true, destination: null });
+
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  );
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  ).toBeInTheDocument();
+});
+
+test("opening a stop folds the full planner away", () => {
+  const props = {
+    stops,
+    places: [home],
+    destination: null,
+    coordinatesStatus: "ready",
+    online: true,
+    onChoosePlace: vi.fn(),
+    onChooseStop: vi.fn(),
+    onClear: vi.fn(),
+  };
+  const view = render(<JourneySearch {...props} />);
+  expect(
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toBeInTheDocument();
+
+  view.rerender(<JourneySearch {...props} compact />);
+  expect(
+    screen.queryByRole("combobox", { name: "Stop, address or place" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Where do you want to go?" })
+  ).toBeInTheDocument();
+});

@@ -550,7 +550,7 @@ function NearbyStops({
     <section className={styles.wrapper} aria-labelledby="nearby-stops-title">
       <div className={styles.header}>
         <div>
-          <h2 id="nearby-stops-title" className={styles.heading}>
+          <h2 id="nearby-stops-title" className={styles.heading} tabIndex={-1}>
             {destination
               ? t("Nearby stops for {destination}", {
                   destination: destinationLabel,

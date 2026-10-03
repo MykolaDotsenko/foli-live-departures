@@ -81,6 +81,12 @@ export default function JourneySearch({
   const [focused, setFocused] = useState(false);
   const [error, setError] = useState("");
   const [expanded, setExpanded] = useState(!compact);
+  // Opening a stop folds the planner away, so the board leads the screen.
+  const [wasCompact, setWasCompact] = useState(compact);
+  if (wasCompact !== compact) {
+    setWasCompact(compact);
+    setExpanded(!compact);
+  }
   const timeMode = ["leave-at", "arrive-by"].includes(timeConstraint?.mode)
     ? timeConstraint.mode
     : "leave-now";
@@ -220,6 +226,27 @@ export default function JourneySearch({
     }
   };
 
+  // With a stop's board open and no destination yet, the planner is one
+  // line that opens it. A returning passenger opens on their last stop, and
+  // with no line here "Where do you want to go?" was out of reach for good.
+  if (compact && !destination && !expanded) {
+    return (
+      <section
+        className={styles.compactWrapper}
+        aria-label={t("Journey")}
+      >
+        <button
+          type="button"
+          className={styles.compactOpen}
+          aria-expanded="false"
+          onClick={() => setExpanded(true)}
+        >
+          {t("Where do you want to go?")}
+        </button>
+      </section>
+    );
+  }
+
   if (compact && destination && !expanded) {
     return (
       <section
@@ -262,6 +289,15 @@ export default function JourneySearch({
         {destination && (
           <button type="button" className={styles.clear} onClick={onClear}>
             {t("Clear destination")}
+          </button>
+        )}
+        {compact && !destination && (
+          <button
+            type="button"
+            className={styles.clear}
+            onClick={() => setExpanded(false)}
+          >
+            {t("Close")}
           </button>
         )}
       </div>

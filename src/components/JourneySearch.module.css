@@ -312,6 +312,27 @@
   background: #edf8f8;
 }
 
+.compactOpen {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 850;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.compactOpen:hover {
+  background: #edf8f8;
+}
+
 .wrapper[data-compact="true"] {
   margin-top: 0;
 }
@@ -335,11 +356,13 @@
   }
 
   :root[data-theme="dark"] .compactDestination strong,
-  :root[data-theme="dark"] .compactActions button {
+  :root[data-theme="dark"] .compactActions button,
+  :root[data-theme="dark"] .compactOpen {
     color: var(--dm-text);
   }
 
-  :root[data-theme="dark"] .compactActions button:hover {
+  :root[data-theme="dark"] .compactActions button:hover,
+  :root[data-theme="dark"] .compactOpen:hover {
     background: var(--dm-accent-surface);
   }
 }
