@@ -227,24 +227,34 @@
   left: 50%;
   z-index: 4;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   padding: 0;
-  border: 2px solid #fff;
+  border: 0;
   border-radius: 50%;
-  background: #42626a;
+  background: transparent;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(23, 48, 54, 0.24);
   transform: translate(-50%, -50%);
 }
 
-.marker[data-recommended="true"] {
+.marker > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #42626a;
+  box-shadow: 0 2px 8px rgba(23, 48, 54, 0.24);
+}
+
+.marker[data-recommended="true"] > span {
   background: #006c76;
 }
 
-.marker[data-target="true"] {
+.marker[data-target="true"] > span {
   width: 36px;
   height: 36px;
   border-color: #fff4cf;
@@ -430,7 +440,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .marker,
+  .marker > span,
   .targetNeedle {
     transition:
       top 180ms linear,
@@ -450,7 +460,7 @@
     border: 2px solid CanvasText;
   }
 
-  .marker[data-target="true"] {
+  .marker[data-target="true"] > span {
     outline: 3px solid Highlight;
   }
 }
