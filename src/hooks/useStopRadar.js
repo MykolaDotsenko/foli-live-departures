@@ -17,9 +17,10 @@ const LIVE_LOCATION_OPTIONS = {
 };
 
 /** @param {unknown} value */
-function finiteOrNull(value) {
+function nonNegativeFiniteOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
 /**
@@ -58,6 +59,7 @@ export default function useStopRadar({
   useEffect(() => {
     if (!active) {
       setStatus("idle");
+      setPosition(null);
       setError("");
       previousPositionRef.current = null;
       setMotionHeading(null);
@@ -66,6 +68,7 @@ export default function useStopRadar({
     }
     if (!pageVisible) {
       setStatus("paused");
+      setPosition(null);
       previousPositionRef.current = null;
       setMotionHeading(null);
       setMotionHeadingAt(0);
@@ -75,6 +78,7 @@ export default function useStopRadar({
     const geolocation = globalThis.navigator?.geolocation;
     if (typeof geolocation?.watchPosition !== "function") {
       setStatus("error");
+      setPosition(null);
       setError(msg("Live location tracking is not available on this device."));
       return undefined;
     }
@@ -87,18 +91,19 @@ export default function useStopRadar({
         const next = {
           lat: Number(fix?.coords?.latitude),
           lon: Number(fix?.coords?.longitude),
-          accuracy: finiteOrNull(fix?.coords?.accuracy),
+          accuracy: nonNegativeFiniteOrNull(fix?.coords?.accuracy),
           timestamp: Number(fix?.timestamp) || Date.now(),
         };
 
         if (!hasCoordinates(next)) {
           setStatus("error");
+          setPosition(null);
           setError(msg("Live location returned an invalid position."));
           return;
         }
 
         const directHeading = normalizeDegrees(fix?.coords?.heading);
-        const speed = finiteOrNull(fix?.coords?.speed);
+        const speed = nonNegativeFiniteOrNull(fix?.coords?.speed);
         const nextMotionHeading =
           directHeading !== null && (speed === null || speed >= 0.5)
             ? directHeading
@@ -119,6 +124,7 @@ export default function useStopRadar({
       },
       (locationError) => {
         previousPositionRef.current = null;
+        setPosition(null);
         setMotionHeading(null);
         setMotionHeadingAt(0);
         setStatus("error");
@@ -155,6 +161,31 @@ export default function useStopRadar({
       globalThis.removeEventListener?.("deviceorientation", onOrientation);
     };
   }, [active, compassPermission, pageVisible]);
+
+  useEffect(() => {
+    if (
+      !active ||
+      !pageVisible ||
+      motionHeading === null ||
+      motionHeadingAt <= 0
+    ) {
+      return undefined;
+    }
+
+    const age = Date.now() - motionHeadingAt;
+    if (age >= RADAR_MOVEMENT_HEADING_MAX_AGE_MS) {
+      setMotionHeading(null);
+      setMotionHeadingAt(0);
+      return undefined;
+    }
+
+    const timeoutId = globalThis.setTimeout(() => {
+      setMotionHeading(null);
+      setMotionHeadingAt(0);
+    }, RADAR_MOVEMENT_HEADING_MAX_AGE_MS - age);
+
+    return () => globalThis.clearTimeout(timeoutId);
+  }, [active, motionHeading, motionHeadingAt, pageVisible]);
 
   const effectiveMotionHeading =
     motionHeading !== null &&
