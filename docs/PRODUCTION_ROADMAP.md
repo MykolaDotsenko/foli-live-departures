@@ -1,7 +1,7 @@
 # Production roadmap
 
 **Planning baseline:** rolling `master`; implementation state and verification state are tracked separately, and exact revisions are recorded by CI/deployment metadata  
-**Updated:** 2026-10-02  
+**Updated:** 2026-10-03  
 **Purpose:** ordered PR-by-PR plan from the current production-grade baseline to a broadly promoted, multilingual and more capable Turku Departures without weakening the static, backendless, privacy-first architecture.
 
 This roadmap is intentionally stricter than a feature wishlist. Each PR has a narrow purpose, explicit acceptance criteria and a test contract. Do not combine unrelated milestones merely to reduce PR count.
@@ -31,9 +31,9 @@ Already implemented and considered part of the baseline:
 - generic locale registry with lazy dictionaries and Ukrainian (`uk-UA`) implementation across the passenger UI;
 - live Föli contract smoke after each master merge and daily.
 
-PR #137 (batch 1), PR #139 (batch 2), PR #140 (item 21) and PR #142 (items 17–20 and 22–24) complete the first **24/47** implementation items. Verification remains deliberately separate from implementation count: PR #142 is merge-gated on the repository's full unit/coverage/build/PWA/CSP/bundle/cross-browser/accessibility/Android path, and production deployment still verifies the exact merge revision after merge.
+PR #137 (batch 1), PR #139 (batch 2), PR #140 (item 21) and PR #142 (items 17–20 and 22–24) complete the first **24/47** implementation items. That roadmap count intentionally remains unchanged by subsequent reliability fixes. Track E work is separate: PR #144 adds the Android foreground Ride companion and PR #145 adds the repository-owned Google Play release surface. PRs #149–#152 are remediation/hardening work over the implemented scope, not new roadmap items.
 
-PR #142 keeps the unchanged **625,000 raw / 180,000 gzip** complete-app JS/CSS budgets and **180,000 raw / 55,000 gzip** aggregate locale-data budgets. Its supported toolchain refresh measured **580,581 raw / 162,788 gzip JS/CSS** and **166,793 raw / 42,478 gzip locale data**. Ukrainian and Swedish are available for pre-field QA; native-language, physical-device accessibility/speech and real-bus review remain explicit manual release gates and are never inferred from green automation.
+The current verified application-code baseline passes **120/120 test files and 1305/1305 tests** with **88.83 / 81.29 / 90.8 / 91.49%** statement/branch/function/line coverage. The unchanged complete-app budgets remain **625,000 raw / 180,000 gzip JS/CSS** and **180,000 raw / 55,000 gzip** aggregate locale data; the current build measures **609,579 / 172,389 JS/CSS** and **177,609 / 45,505 locale data**. English, Finnish, Ukrainian and Swedish are implemented and exercised by automation; native-language, physical-device accessibility/speech and real-bus review remain explicit manual release gates and are never inferred from green automation.
 
 ## Non-negotiable PR rules
 
@@ -951,12 +951,20 @@ Work is merged in verified batches of eight checklist items:
    telemetry-free health alerting, the dormant-provider CSP boundary and the
    supported dependency/toolchain refresh. Manual language/device/field gates
    remain separate and open until real evidence exists.
-4. Later batches cover release/version identity polish, Android native
-   background feasibility/implementation, physical-device accessibility and
-   language review, domain/Play/release readiness and the final pre-field audit.
-5. Freeze one exact release-candidate SHA only after all planned pre-field
+4. **Track E / PRs #144–#145:** Android foreground Ride feasibility and
+   the repository-owned Google Play release surface are implemented. Their
+   remaining acceptance is owner/physical evidence: production signing,
+   physical Android/iPhone lifecycle and upgrade checks, accessibility/native
+   language review, Play Console/Data Safety review and final promotion.
+5. **Reliability remediation / PRs #149–#152:** physical GTFS/SIRI occurrence
+   identity, reload/cross-tab Ride continuation, notification cleanup ordering,
+   transfer-leg hysteresis isolation, fresh Journey Assistant polling inputs,
+   rolling empty-timetable refresh and live scheduled-time validity are covered
+   by deterministic regressions. These fixes do not change the **24/47**
+   roadmap feature count.
+6. Freeze one exact release-candidate SHA only after all planned pre-field
    gates are closed.
-6. Run real-bus validation after that freeze; subsequent changes are remediation
+7. Run real-bus validation after that freeze; subsequent changes are remediation
    fixes with deterministic regression coverage, not new feature scope.
 
 ---
