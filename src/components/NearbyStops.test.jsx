@@ -503,6 +503,66 @@ test("Find nearest stop keeps focus while it looks and ignores a second press", 
   expect(getCurrentPosition).toHaveBeenCalledTimes(1);
 });
 
+test("stop radar seeds Nearby once instead of streaming every GPS fix into planning", async () => {
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 70;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Open stop radar" }));
+  await screen.findByRole("heading", { name: "Stop radar" });
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.45182,
+        longitude: 22.26662,
+        accuracy: 10,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    })
+  );
+  await screen.findByText(/Accuracy ±10/);
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.453,
+        longitude: 22.27,
+        accuracy: 25,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    })
+  );
+
+  // StopRadar itself consumes the second fix, but the parent one-time Nearby
+  // snapshot deliberately remains the first fix.
+  expect(screen.getByText(/Accuracy ±10/)).toBeInTheDocument();
+  expect(screen.queryByText(/^Accuracy ±25/)).not.toBeInTheDocument();
+  expect(screen.getByText(/GPS accuracy ±25/)).toBeInTheDocument();
+});
+
 test("closing stop radar restores focus to its trigger without changing the board", async () => {
   const clearWatch = vi.fn();
   Object.defineProperty(navigator, "geolocation", {
