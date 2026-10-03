@@ -3,6 +3,7 @@ import {
   formatServiceDateTimeLocal,
   parseServiceDateTimeLocal,
 } from "../utils/journeyTime";
+import useClockTick from "./useClockTick";
 
 /** @import { RoutingPreference } from "../types/journey" */
 
@@ -36,6 +37,8 @@ export default function useJourneyPlanSettings() {
   const [timeLocalValue, setTimeLocalValueState] = useState("");
   /** @type {[RoutingPreference, import("react").Dispatch<import("react").SetStateAction<RoutingPreference>>]} */
   const [preference, setPreferenceState] = useState("balanced");
+  const nowMs = useClockTick(10_000, timeMode !== "leave-now");
+  const nowSec = Math.floor(nowMs / 1000);
 
   const targetTimeSec = useMemo(
     () =>
@@ -52,7 +55,7 @@ export default function useJourneyPlanSettings() {
   const timeValid =
     timeMode === "leave-now" ||
     (Number.isFinite(Number(targetTimeSec)) &&
-      Number(targetTimeSec) > Math.floor(Date.now() / 1000) - 30);
+      Number(targetTimeSec) > nowSec - 30);
 
   const timeConstraint = useMemo(
     () => ({
