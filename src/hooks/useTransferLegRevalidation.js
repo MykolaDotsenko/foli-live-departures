@@ -68,7 +68,7 @@ export default function useTransferLegRevalidation({
   const [feed, setFeed] = useState(emptyFeed);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef(null);
-  const previousRef = useRef(null);
+  const previousRef = useRef({ identityKey: "", state: null });
 
   const active = Boolean(enabled && journey && second && stopId);
   const nowMs = useClockTick(10_000, active);
@@ -113,7 +113,7 @@ export default function useTransferLegRevalidation({
   }, [active, stopId]);
 
   useEffect(() => {
-    previousRef.current = null;
+    previousRef.current = { identityKey, state: null };
     setFeed(emptyFeed());
     setLoading(false);
 
@@ -179,7 +179,10 @@ export default function useTransferLegRevalidation({
       cancelled,
       incomingArrivalAt,
       incomingLiveState,
-      previous: previousRef.current,
+      previous:
+        previousRef.current.identityKey === identityKey
+          ? previousRef.current.state
+          : null,
       legIndex: targetIndex,
     });
   }, [
@@ -194,8 +197,8 @@ export default function useTransferLegRevalidation({
   ]);
 
   useEffect(() => {
-    previousRef.current = state;
-  }, [state]);
+    previousRef.current = { identityKey, state };
+  }, [identityKey, state]);
 
   return {
     ...state,
