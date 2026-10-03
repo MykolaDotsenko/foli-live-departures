@@ -81,6 +81,22 @@ test("past custom time is invalid while leave-now always remains valid", () => {
   expect(result.current.timeValid).toBe(true);
 });
 
+test("scheduled time becomes invalid as the visible clock passes it", () => {
+  const { result } = renderHook(() => useJourneyPlanSettings());
+
+  act(() => result.current.setTimeMode("leave-at"));
+  act(() => result.current.setTimeLocalValue("2026-02-01T12:01"));
+  expect(result.current.timeValid).toBe(true);
+
+  // No form interaction or parent-state change: the hook's own clock must
+  // retire the stale target once it is more than the existing 30s grace old.
+  act(() => {
+    vi.advanceTimersByTime(2 * 60 * 1000);
+  });
+
+  expect(result.current.timeValid).toBe(false);
+});
+
 test("unknown time mode falls back to leave-now", () => {
   const { result } = renderHook(() => useJourneyPlanSettings());
   act(() => result.current.setTimeMode("teleport"));

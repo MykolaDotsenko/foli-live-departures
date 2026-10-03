@@ -583,8 +583,7 @@ export default function useDestinationAwareNearby({
   );
 
   useEffect(() => {
-    const request = requestRef.current;
-    if (!request.destination || request.stops.length === 0) {
+    if (!requestRef.current.destination || requestRef.current.stops.length === 0) {
       setFitsByStop({});
       setState("idle");
       return undefined;
@@ -601,6 +600,11 @@ export default function useDestinationAwareNearby({
       controller = new AbortController();
 
       try {
+        // The polling identity intentionally ignores distance-only object
+        // churn, but each refresh must still use the latest distances and
+        // destination metadata. Capturing the first request here left
+        // catchability frozen while the passenger walked toward the stop.
+        const request = requestRef.current;
         const next = await loadDestinationAwareNearby({
           ...request,
           signal: controller.signal,

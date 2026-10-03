@@ -342,6 +342,83 @@ test("sparse optional occurrence anchors still form an active watcher identity",
 });
 
 
+test("a new committed leg never inherits missing-confirmation hysteresis from the previous leg", async () => {
+  let nowMs = 1_000_000;
+  vi.spyOn(Date, "now").mockImplementation(() => nowMs);
+
+  const replacement = {
+    ...journey,
+    transferPlan: {
+      ...journey.transferPlan,
+      transfer: {
+        ...journey.transferPlan.transfer,
+        boardStopId: "601",
+      },
+      second: {
+        ...journey.transferPlan.second,
+        tripRef: "third",
+        lineRef: "9",
+        boardStopId: "601",
+        departureAt: 3_000,
+        aimedDepartureAt: 3_000,
+        originAimedDepartureAt: 2_800,
+      },
+    },
+  };
+
+  mocks.fetchStopMonitor.mockImplementation(async (stopId) => ({
+    arrivals: [],
+    serverTime: String(stopId) === "501" ? 2_130 : 3_130,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  }));
+
+  const { result, rerender } = renderHook(
+    ({ activeJourney }) =>
+      useTransferLegRevalidation({
+        enabled: true,
+        journey: activeJourney,
+        incomingArrivalAt: 1_600,
+        incomingLiveState: "live",
+      }),
+    { initialProps: { activeJourney: journey } }
+  );
+
+  await waitFor(() =>
+    expect(result.current).toMatchObject({
+      providerState: "missing",
+      decision: "unknown",
+    })
+  );
+  expect(mocks.fetchStopMonitor).toHaveBeenCalledWith(
+    "501",
+    expect.any(globalThis.AbortSignal),
+    { scheduleFallback: false }
+  );
+
+  // More than the 30-second confirmation window has passed, but it belongs
+  // only to the old transfer leg. The replacement leg gets its own first
+  // missing observation and must remain unknown.
+  nowMs += 40_000;
+  rerender({ activeJourney: replacement });
+
+  await waitFor(() =>
+    expect(mocks.fetchStopMonitor).toHaveBeenCalledWith(
+      "601",
+      expect.any(globalThis.AbortSignal),
+      { scheduleFallback: false }
+    )
+  );
+  await waitFor(() =>
+    expect(result.current).toMatchObject({
+      providerState: "missing",
+      decision: "unknown",
+    })
+  );
+});
+
 test("a superseded second-leg response cannot overwrite the newer refresh", async () => {
   let resolveFirst;
   const first = new Promise((resolve) => {

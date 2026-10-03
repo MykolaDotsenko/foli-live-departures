@@ -215,7 +215,7 @@ export async function loadTransferJourneyOptions({
   throwIfAborted(signal);
 
   const firstCandidates = [];
-  const seenFirstTrips = new Set();
+  const seenFirstOccurrences = new Set();
 
   for (
     let departureIndex = 0;
@@ -240,11 +240,7 @@ export async function loadTransferJourneyOptions({
       if (!arrival) continue;
 
       const tripRef = String(arrival.tripref || "");
-      if (
-        !tripRef ||
-        seenFirstTrips.has(tripRef) ||
-        matchesExcludedRun(arrival, excludedRun)
-      ) {
+      if (!tripRef || matchesExcludedRun(arrival, excludedRun)) {
         continue;
       }
 
@@ -258,6 +254,23 @@ export async function loadTransferJourneyOptions({
         continue;
       }
 
+      // A GTFS trip_id identifies the timetable trip definition, not one
+      // physical run. The same trip can appear again on another service date
+      // inside the 36-hour planning window, and the same physical run may be
+      // boardable from more than one nearby origin stop. Deduping on tripRef
+      // alone hid later/closer valid journey options.
+      const occurrenceKey = [
+        String(stop.id),
+        tripRef,
+        Number.isFinite(Number(arrival?.aimeddeparturetime))
+          ? Number(arrival.aimeddeparturetime)
+          : Number(departureAt),
+        Number.isFinite(Number(arrival?.originaimeddeparturetime))
+          ? Number(arrival.originaimeddeparturetime)
+          : "",
+      ].join("|");
+      if (seenFirstOccurrences.has(occurrenceKey)) continue;
+
       const catchability = classifyCatchability({
         distanceM: Number(stop.distanceMeters),
         accuracyM: positionAccuracy,
@@ -266,7 +279,7 @@ export async function loadTransferJourneyOptions({
       });
       if (catchability === "too-late" || catchability === "unknown") continue;
 
-      seenFirstTrips.add(tripRef);
+      seenFirstOccurrences.add(occurrenceKey);
       firstCandidates.push({
         stop,
         arrival,

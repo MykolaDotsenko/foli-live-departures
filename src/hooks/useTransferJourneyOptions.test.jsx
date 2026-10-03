@@ -149,6 +149,81 @@ test("builds a concrete same-stop one-transfer journey", async () => {
 });
 
 
+test("scheduled planning keeps later service-date occurrences of the same GTFS trip", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const firstDeparture = now + 120;
+  const laterDeparture = firstDeparture + 24 * 60 * 60;
+
+  api.fetchScheduledStopDepartures.mockImplementation(
+    async (stopId, referenceTimeSec) => {
+      if (String(stopId) === "100") {
+        return {
+          departures: [
+            scheduled("first", "1", firstDeparture),
+            scheduled("first", "1", laterDeparture),
+          ],
+          complete: true,
+        };
+      }
+
+      if (String(stopId) === "500") {
+        return {
+          departures:
+            Number(referenceTimeSec) > firstDeparture + 10_000
+              ? [scheduled("second", "7", laterDeparture + 1_200)]
+              : [],
+          complete: true,
+        };
+      }
+
+      return { departures: [], complete: true };
+    }
+  );
+
+  api.fetchTripStopTimes.mockImplementation(async (tripId) => {
+    if (tripId === "first") {
+      return [
+        time("100", 1, "10:00:00"),
+        time("500", 2, "10:10:00"),
+      ];
+    }
+    if (tripId === "second") {
+      return [
+        time("500", 1, "10:20:00"),
+        time("900", 2, "10:40:00"),
+      ];
+    }
+    return [];
+  });
+
+  const options = await loadTransferJourneyOptions({
+    originStops: [{ id: "100", name: "Origin", distanceMeters: 10 }],
+    allStops: [
+      { id: "100", name: "Origin" },
+      { id: "500", name: "Hub" },
+      { id: "900", name: "Destination" },
+    ],
+    destination,
+    positionAccuracy: 10,
+    maxTransitLegs: 2,
+    journeyPlan: {
+      mode: "leave-at",
+      targetTimeSec: now + 60,
+      preference: "balanced",
+    },
+  });
+
+  expect(options).toHaveLength(1);
+  expect(options[0].first).toMatchObject({
+    tripRef: "first",
+    departureAt: laterDeparture,
+  });
+  expect(options[0].second).toMatchObject({
+    tripRef: "second",
+    departureAt: laterDeparture + 1_200,
+  });
+});
+
 test("builds a concrete bounded two-transfer journey", async () => {
   api.fetchScheduledStopDepartures.mockImplementation(async (stopId) => {
     if (String(stopId) === "500") {
