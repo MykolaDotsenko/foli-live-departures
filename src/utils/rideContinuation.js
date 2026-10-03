@@ -11,12 +11,14 @@
 export const RIDE_CONTINUATION_STORAGE_KEY =
   "foli-active-ride-continuation-v1";
 
+/** @param {unknown} value */
 function record(value) {
   return value && typeof value === "object" && !Array.isArray(value)
     ? value
     : null;
 }
 
+/** @param {unknown} value */
 export function normalizeRideContinuation(value) {
   const candidate = record(value);
   if (!candidate) return null;
@@ -39,6 +41,7 @@ function storage() {
   }
 }
 
+/** @param {unknown} rideId */
 export function readRideContinuation(rideId) {
   const id = String(rideId || "");
   if (!id) return null;
@@ -62,6 +65,7 @@ export function readRideContinuation(rideId) {
   }
 }
 
+/** @param {unknown} rideId @param {unknown} continuation */
 export function persistRideContinuation(rideId, continuation) {
   const id = String(rideId || "");
   const normalized = normalizeRideContinuation(continuation);
@@ -86,6 +90,7 @@ export function persistRideContinuation(rideId, continuation) {
   return normalized;
 }
 
+/** @param {unknown} [rideId] */
 export function clearRideContinuation(rideId = "") {
   const target = storage();
   if (!target) return;
