@@ -180,11 +180,12 @@ function App() {
   );
   const online = useOnlineStatus();
   const ride = useRideMode();
+  const pendingTransferJourney =
+    ride.continuation?.transferJourney || null;
+  const pendingFinalWalk = ride.continuation?.finalWalk || null;
   const journey = useDestinationIntent();
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
-  const pendingFinalWalkRef = useRef(null);
-  const pendingTransferJourneyRef = useRef(null);
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -310,14 +311,12 @@ function App() {
       ? selectedJourney
       : null;
   const pendingFutureJourney =
-    pendingTransferJourneyRef.current?.itinerary &&
-    Number.isInteger(
-      Number(pendingTransferJourneyRef.current.activeLegIndex)
-    ) &&
-    Number(pendingTransferJourneyRef.current.activeLegIndex) <
-      pendingTransferJourneyRef.current.itinerary.legs.length - 1 &&
-    pendingTransferJourneyRef.current.phase !== "recovery"
-      ? pendingTransferJourneyRef.current
+    pendingTransferJourney?.itinerary &&
+    Number.isInteger(Number(pendingTransferJourney.activeLegIndex)) &&
+    Number(pendingTransferJourney.activeLegIndex) <
+      pendingTransferJourney.itinerary.legs.length - 1 &&
+    pendingTransferJourney.phase !== "recovery"
+      ? pendingTransferJourney
       : null;
   const transferWatchJourney =
     selectedFutureJourney ||
@@ -326,7 +325,7 @@ function App() {
   const ridingSelectedTransfer =
     Boolean(ride.session) &&
     Boolean(transferWatchJourney) &&
-    pendingTransferJourneyRef.current?.id === transferWatchJourney?.id;
+    pendingTransferJourney?.id === transferWatchJourney?.id;
   const rideEtaSec = Number(ride.runtime?.etaSec);
 
   const futureLegWatch = useFutureLegRevalidations({
@@ -366,19 +365,28 @@ function App() {
 
       if (
         ride.session &&
-        pendingTransferJourneyRef.current?.id === transferWatchJourney.id
+        pendingTransferJourney?.id === transferWatchJourney.id
       ) {
-        pendingTransferJourneyRef.current = revalidateFutureJourneyLeg(
-          pendingTransferJourneyRef.current,
-          state,
-          legIndex
-        );
+        ride.updateContinuation((current) => {
+          const currentJourney = current?.transferJourney || null;
+          if (currentJourney?.id !== transferWatchJourney.id) return current;
+
+          const nextJourney = revalidateFutureJourneyLeg(
+            currentJourney,
+            state,
+            legIndex
+          );
+          return nextJourney === currentJourney
+            ? current
+            : { ...current, transferJourney: nextJourney };
+        });
       }
     }
   }, [
     futureLegWatch.states,
+    pendingTransferJourney,
     revalidateTransfer,
-    ride.session,
+    ride,
     selectedJourney,
     transferWatchJourney,
   ]);
@@ -612,10 +620,14 @@ function App() {
           destination: journey.destination,
           rideConfig: config,
         });
-    const started = ride.startRide(config);
+    const started = ride.startRide({
+      ...config,
+      continuation: {
+        transferJourney: pendingTransfer,
+        finalWalk: nextFinalWalk,
+      },
+    });
     if (started) {
-      pendingTransferJourneyRef.current = pendingTransfer;
-      pendingFinalWalkRef.current = nextFinalWalk;
       setFinalWalk(null);
       clearJourney();
       requestFocus(rideHeading);
@@ -626,20 +638,17 @@ function App() {
   // Turning the alert off, or getting off, takes the whole panel away with
   // the button in it. Focus goes back to the board, which is what is left.
   const endRide = () => {
-    const pendingTransfer = pendingTransferJourneyRef.current;
-    const continuedTransfer = pendingTransfer
-      ? continueTransferAfterRide(pendingTransfer, ride.session)
+    const continuedTransfer = pendingTransferJourney
+      ? continueTransferAfterRide(pendingTransferJourney, ride.session)
       : null;
     const transferRecovery =
-      pendingTransfer && !continuedTransfer
-        ? recoverTransferAfterRide(pendingTransfer, ride.session)
+      pendingTransferJourney && !continuedTransfer
+        ? recoverTransferAfterRide(pendingTransferJourney, ride.session)
         : null;
     const completed = completedFinalWalk(
-      pendingFinalWalkRef.current,
+      pendingFinalWalk,
       ride.session
     );
-    pendingTransferJourneyRef.current = null;
-    pendingFinalWalkRef.current = null;
     ride.endRide();
 
     if (continuedTransfer) {
@@ -866,12 +875,11 @@ function App() {
             onTestAlert={ride.testAlert}
             onEndRide={endRide}
             onOpenStop={selectStop}
-            // The pending ref is created only by
+            // The saved continuation is created only by
             // transferJourneyForRideSelection(), which already proves an
             // exact current-leg/exit-occurrence match and a committed future
-            // leg. Pass the generic itinerary through unchanged: gating on
-            // legacy transferPlan here hid 3-leg journeys from Ride Mode.
-            transferJourney={pendingTransferJourneyRef.current}
+            // leg. It survives a same-tab reload with the active ride.
+            transferJourney={pendingTransferJourney}
             transferRevalidation={transferRevalidation}
           />
         )}
@@ -920,17 +928,14 @@ function App() {
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
             onTimeModeChange={(mode) => {
-              pendingTransferJourneyRef.current = null;
               clearJourney();
               journeyPlan.setTimeMode(mode);
             }}
             onTimeLocalValueChange={(value) => {
-              pendingTransferJourneyRef.current = null;
               clearJourney();
               journeyPlan.setTimeLocalValue(value);
             }}
             onPreferenceChange={(preference) => {
-              pendingTransferJourneyRef.current = null;
               clearJourney();
               journeyPlan.setPreference(preference);
             }}
