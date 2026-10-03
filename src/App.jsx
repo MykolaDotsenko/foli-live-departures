@@ -386,7 +386,8 @@ function App() {
     futureLegWatch.states,
     pendingTransferJourney,
     revalidateTransfer,
-    ride,
+    ride.session,
+    ride.updateContinuation,
     selectedJourney,
     transferWatchJourney,
   ]);
