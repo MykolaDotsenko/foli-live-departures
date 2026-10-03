@@ -243,6 +243,28 @@ The persisted ride contains public transit identifiers, target stop identity, ro
 - Wake Lock is released
 - speech and repeated NOW alerts are cancelled
 - notifications use one stable tag so a later alert replaces the previous ride alert
+- notification cleanup is serialized; every new ride notification waits for already-started cleanup from the replaced ride, and late permission results are scoped to the ride that requested them
+- public-stop/saved-place continuation can survive reload through privacy-safe durable storage, while external-place/final-walk continuation remains session-only
+- cross-tab continuation events are identity-checked and mirrored into same-tab session state, so a reload cannot roll back to an older transfer revision and one ride cannot delete another ride's durable continuation
+
+## Current reliability hardening — 2026-10-03
+
+Recent regression coverage specifically locks the lifecycle edges that ordinary
+happy-path Ride Mode tests miss:
+
+- same-tab reload after a cross-tab continuation update restores the newer
+  committed continuation;
+- a replacement ride's durable continuation is not deleted when another tab
+  still temporarily owns the old ride;
+- notification cleanup from an ended ride cannot close a replacement ride's
+  startup or stage notification;
+- notification permission resolving after End/Replace cannot mutate the newer
+  ride runtime;
+- private external destination/final-walk data is never promoted to durable
+  local storage.
+
+These contracts supplement, rather than weaken, the existing fail-closed SIRI,
+GPS and stage-transition rules.
 
 ## Testing contract
 
@@ -258,8 +280,10 @@ The persisted ride contains public transit identifiers, target stop identity, ro
 
 ### Hook/component tests
 
-- persisted ride restore
+- persisted ride restore, including cross-tab continuation update followed by reload
+- replacement-ride ownership ordering and privacy-safe continuation storage
 - GPS cleanup
+- serialized notification cleanup and ride-scoped late permission completion
 - alert transition de-duplication
 - NOW repeat stops after ride completion, once the bus has gone (including after a reload at NOW), and after three minutes
 - target estimates count down and target positions age while polls fail

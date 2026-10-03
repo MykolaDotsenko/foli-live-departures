@@ -136,10 +136,15 @@ The code explicitly handles:
 - responses arriving after the user switches stops;
 - cross-stop cache contamination;
 - stale realtime without a hard provider failure;
-- loop routes and repeated stops;
+- loop routes, repeated stops and the same GTFS trip definition occurring on different service dates;
+- one-to-one realtime/scheduled occurrence matching instead of deduping on bare trip IDs;
 - after-midnight GTFS times;
-- poor/off-route GPS;
-- stale vehicle positions;
+- poor/off-route GPS and stale vehicle positions;
+- cross-tab Ride continuation/settings races and reload restoration;
+- late notification permission/cleanup work from a replaced Ride session;
+- transfer revalidation evidence leaking across committed legs;
+- changing walking distance without restarting a destination-aware polling identity;
+- long-running empty timetable horizons and leave-at/arrive-by expiry;
 - blocked local storage;
 - service-worker deployment under a GitHub Pages subpath;
 - upstream Föli API contract drift.
@@ -201,7 +206,7 @@ runtime dependency audit → lint → typecheck → brand/reference checks
 
 The production GitHub Pages deployment is triggered only after that CI workflow completes successfully on `master`.
 
-**Current pre-field status (2026-10-02):** PR #142 completes implementation items **1–24 (24/47)**. Batch 3 adds Ukrainian automated QA hardening, Swedish, explicit GTFS exact/approximate Next-stops semantics, telemetry-free operator health alerting, a tighter dormant-provider CSP boundary and a supported dependency lock refresh; item 21 remains the bundle-headroom work from PR #140. The unchanged complete-app budgets remain **625,000 raw / 180,000 gzip JS/CSS**, and the unchanged aggregate locale-data budgets remain **180,000 raw / 55,000 gzip**. The supported-refresh gate measured **580,581 / 162,788 JS/CSS** and **166,793 / 42,478 locale data**. Automated completion does not close native-language, physical VoiceOver/TalkBack, real-bus, custom-domain, Android production-signing or physical-phone gates.
+**Current pre-field status (2026-10-03):** the numbered roadmap implementation count remains **24/47**; later PRs deliberately harden release/runtime behaviour rather than inflating that feature count. PR #144 added the Android foreground Ride Mode companion, PR #145 added the repository-owned Google Play release surface, and PRs #149–#152 closed service-date/physical-occurrence, Ride continuation, cross-tab, notification-cleanup, transfer-revalidation and long-running Journey Assistant/timetable races. The current application-code baseline passes **120/120 test files and 1305/1305 tests** with **88.83% statements / 81.29% branches / 90.8% functions / 91.49% lines** coverage. Complete shipped JS/CSS is **609,579 raw / 172,389 gzip bytes** against unchanged **625,000 / 180,000** limits; locale packs are **177,609 raw / 45,505 gzip** against **180,000 / 55,000** limits. English, Finnish, Ukrainian and Swedish are implemented; native-language, physical VoiceOver/TalkBack, real-bus, custom-domain, Android production-signing and physical-phone gates remain manual.
 
 ### Run locally
 
