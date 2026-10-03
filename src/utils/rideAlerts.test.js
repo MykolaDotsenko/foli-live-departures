@@ -212,6 +212,36 @@ describe("ride get-off notifications", () => {
     ]);
   });
 
+  it("serializes notification cleanup so an older ride cannot close a replacement alert later", async () => {
+    let resolveFirst;
+    let call = 0;
+    const firstClose = vi.fn();
+    const secondClose = vi.fn();
+    const getNotifications = vi.fn(() => {
+      call += 1;
+      if (call === 1) {
+        return new Promise((resolve) => {
+          resolveFirst = () => resolve([{ close: firstClose }]);
+        });
+      }
+      return Promise.resolve([{ close: secondClose }]);
+    });
+    stubServiceWorker({ getNotifications });
+
+    const first = stopRideAlerts();
+    const second = stopRideAlerts();
+
+    expect(getNotifications).toHaveBeenCalledTimes(1);
+
+    resolveFirst();
+    await first;
+    expect(firstClose).toHaveBeenCalledTimes(1);
+
+    await second;
+    expect(getNotifications).toHaveBeenCalledTimes(2);
+    expect(secondClose).toHaveBeenCalledTimes(1);
+  });
+
   it("closes the active service-worker ride notification when the ride ends", async () => {
     const close = vi.fn();
     const getNotifications = vi.fn(() =>
