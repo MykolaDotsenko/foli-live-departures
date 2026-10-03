@@ -289,10 +289,8 @@ function switchTo(language) {
 }
 
 /**
- * Accepts any code: one the app does not speak is ignored.
- * @param {string} language
- */
-/**
+ * Internal activation path. Cross-tab sync deliberately skips persistence so
+ * it cannot write the same external preference back and create feedback loops.
  * @param {string} language
  * @param {boolean} [persist]
  */
@@ -322,6 +320,10 @@ function activateLanguage(language, persist = true) {
     .catch(() => false);
 }
 
+/**
+ * Accepts any code: one the app does not speak is ignored.
+ * @param {string} language
+ */
 export function setLanguage(language) {
   return activateLanguage(language, true);
 }
