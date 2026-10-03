@@ -123,6 +123,12 @@ through PR #142. PR #144 adds the automated Android foreground Ride Mode
 companion without changing JS Ride Mode authority; PR #145 prepares the
 repository-owned Google Play listing/privacy/asset surface.
 
+Stop Radar adds lazy-loaded on-device walking guidance to nearby public stops
+with trustworthy compass, recent direction-of-travel and north-up fallbacks.
+Changing the radar target never changes the board or itinerary unless the
+passenger explicitly opens that target stop.
+
+
 Remaining pre-field work is dominated by explicit manual evidence: native
 Finnish/Ukrainian/Swedish review, physical VoiceOver/TalkBack and Android/iPhone
 lifecycle/background checks, real-bus validation, final custom-domain cutover,

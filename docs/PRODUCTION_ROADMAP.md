@@ -672,6 +672,24 @@ Under the current pre-field policy, planned product breadth is completed before
 real-bus validation. Expansion still must preserve the same fail-closed safety
 contracts and may not weaken Ride Mode authority.
 
+## Stop Radar / compass walking guidance
+
+**Implementation status:** implemented in the current pre-field development batch; physical outdoor compass calibration remains a manual device gate.
+
+- explicit, lazy-loaded radar from Nearby;
+- live on-device GPS only while open;
+- nearby stop markers plus one explicitly locked target;
+- compass-up when absolute heading is trustworthy;
+- direction-of-travel and north-up fallbacks;
+- live straight-line distance and GPS accuracy;
+- no silent board/journey switch;
+- no map-provider dependency;
+- no persisted GPS/heading/radar target.
+
+See [STOP_RADAR_SPEC.md](STOP_RADAR_SPEC.md).
+
+---
+
 ## PR-D01 — Generalized N-leg itinerary model
 
 **Implementation status (PR #137): implemented and merged in pre-field batch 1. The current master still contains the implementation; release verification remains governed by the current exact-SHA gates.**
