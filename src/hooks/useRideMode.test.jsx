@@ -335,6 +335,60 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
   ).toBeNull();
 });
 
+test("continuation updates are ignored while Ride Mode is idle", () => {
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.updateContinuation({
+      transferJourney: { id: "should-not-persist" },
+    });
+  });
+
+  expect(result.current.continuation).toBeNull();
+  expect(
+    globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBeNull();
+});
+
+test("continuation supports functional and direct updates while riding", () => {
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      continuation: {
+        transferJourney: { id: "journey-1", revision: 1 },
+        finalWalk: null,
+      },
+    });
+  });
+
+  act(() => {
+    result.current.updateContinuation((current) => ({
+      ...current,
+      transferJourney: {
+        ...current.transferJourney,
+        revision: 2,
+      },
+    }));
+  });
+  expect(result.current.continuation?.transferJourney?.revision).toBe(2);
+
+  const direct = {
+    transferJourney: { id: "journey-1", revision: 3 },
+    finalWalk: null,
+  };
+  act(() => {
+    result.current.updateContinuation(direct);
+  });
+  expect(result.current.continuation).toEqual(direct);
+
+  act(() => {
+    result.current.updateContinuation(result.current.continuation);
+  });
+  expect(result.current.continuation).toEqual(direct);
+});
+
 test("restores a non-expired active ride", () => {
   const stored = {
     id: "ride-restored",
