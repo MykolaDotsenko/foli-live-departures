@@ -52,6 +52,14 @@ describe("ride alerts", () => {
   });
 });
 
+async function flushUntil(predicate, attempts = 20) {
+  for (let index = 0; index < attempts; index += 1) {
+    if (predicate()) return true;
+    await Promise.resolve();
+  }
+  return predicate();
+}
+
 describe("ride get-off notifications", () => {
   let created = [];
 
@@ -210,6 +218,63 @@ describe("ride get-off notifications", () => {
       ["Tämä on pysäkkisi: Puistokatu", "Jää pois nyt.", "fi"],
       ["Seuraava pysäkki: Puistokatu", "Paina STOP-nappia nyt.", "fi"],
     ]);
+  });
+
+  it("holds every new ride notification until already-started cleanup finishes", async () => {
+    let resolveCleanup;
+    const showNotification = vi.fn(() => Promise.resolve());
+    const getNotifications = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveCleanup = () => resolve([]);
+        })
+    );
+    stubServiceWorker({ getNotifications, showNotification });
+
+    const cleanup = stopRideAlerts();
+    const notification = showRideNotification("next", "Puistokatu", 3);
+
+    expect(
+      await flushUntil(() => typeof resolveCleanup === "function")
+    ).toBe(true);
+    expect(showNotification).not.toHaveBeenCalled();
+
+    resolveCleanup();
+    await cleanup;
+    await expect(notification).resolves.toBe(true);
+    expect(showNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes notification cleanup so an older ride cannot close a replacement alert later", async () => {
+    let resolveFirst;
+    let call = 0;
+    const firstClose = vi.fn();
+    const secondClose = vi.fn();
+    const getNotifications = vi.fn(() => {
+      call += 1;
+      if (call === 1) {
+        return new Promise((resolve) => {
+          resolveFirst = () => resolve([{ close: firstClose }]);
+        });
+      }
+      return Promise.resolve([{ close: secondClose }]);
+    });
+    stubServiceWorker({ getNotifications });
+
+    const first = stopRideAlerts();
+    const second = stopRideAlerts();
+
+    expect(
+      await flushUntil(() => getNotifications.mock.calls.length === 1)
+    ).toBe(true);
+
+    resolveFirst();
+    await first;
+    expect(firstClose).toHaveBeenCalledTimes(1);
+
+    await second;
+    expect(getNotifications).toHaveBeenCalledTimes(2);
+    expect(secondClose).toHaveBeenCalledTimes(1);
   });
 
   it("closes the active service-worker ride notification when the ride ends", async () => {

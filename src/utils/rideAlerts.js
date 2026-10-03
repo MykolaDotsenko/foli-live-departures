@@ -69,6 +69,8 @@ const ALERT_PATTERNS = {
 let audioContext = null;
 /** @type {Notification | null} */
 let activePageRideNotification = null;
+/** @type {Promise<void>} */
+let notificationCleanupTail = Promise.resolve();
 
 /** @returns {typeof AudioContext | null} */
 function AudioContextConstructor() {
@@ -441,6 +443,12 @@ export async function showRideNotification(
     return false;
   }
 
+  // A replacement ride can start while notification cleanup from the previous
+  // one is still waiting on the service worker. Every notification, including
+  // a very fast SOON/NEXT transition, waits for the cleanup that was already
+  // queued when it started so that older work cannot close the new alert.
+  await notificationCleanupTail.catch(() => {});
+
   const copy = notificationCopy(stage, stop, routeType, context);
   const options = {
     body: copy.body,
@@ -602,7 +610,15 @@ export function stopRideAlerts() {
     // Speech is optional.
   }
 
-  return closeRideNotifications();
+  // Notification cleanup is serialized. An End Ride followed immediately by
+  // Start Ride used to leave two async getNotifications() calls racing; the
+  // older cleanup could resolve last and close the new ride's test/first-stage
+  // notification. Callers can await the returned tail before showing anything
+  // for a replacement ride.
+  notificationCleanupTail = notificationCleanupTail
+    .catch(() => {})
+    .then(() => closeRideNotifications());
+  return notificationCleanupTail;
 }
 
 /**

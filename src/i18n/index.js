@@ -241,13 +241,39 @@ let current = storedLanguage() || preferredLanguage();
 const listeners = new Set();
 applyToDocument(current);
 
-globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
+let externalLanguageSequence = 0;
+
+function syncLanguageFromStorage() {
+  const requestId = ++externalLanguageSequence;
   const next = storedLanguage() || preferredLanguage();
-  if (next !== current) {
-    void setLanguage(next);
-  } else {
+  if (next === current) {
     applyToDocument(next);
+    return;
   }
+
+  const apply = () => {
+    if (requestId !== externalLanguageSequence) return false;
+    const latest = storedLanguage() || preferredLanguage();
+    if (latest !== next) return false;
+    switchTo(next);
+    return true;
+  };
+
+  if (DICTIONARIES[next]) {
+    apply();
+    return;
+  }
+
+  void ensureLanguageDictionary(next).then(apply).catch(() => {});
+}
+
+globalThis.addEventListener?.(
+  LOCAL_STATE_IMPORTED_EVENT,
+  syncLanguageFromStorage
+);
+globalThis.addEventListener?.("storage", (event) => {
+  if (event?.key !== null && event?.key !== STORAGE_KEY) return;
+  syncLanguageFromStorage();
 });
 
 /** @returns {Language} */
@@ -263,19 +289,23 @@ function switchTo(language) {
 }
 
 /**
- * Accepts any code: one the app does not speak is ignored.
+ * Internal activation path. Cross-tab sync deliberately skips persistence so
+ * it cannot write the same external preference back and create feedback loops.
  * @param {string} language
+ * @param {boolean} [persist]
  */
-export function setLanguage(language) {
+function activateLanguage(language, persist = true) {
   if (!isLanguage(language) || language === current) {
     return Promise.resolve(false);
   }
 
   const activate = () => {
-    try {
-      globalThis.localStorage?.setItem(STORAGE_KEY, language);
-    } catch {
-      // Still switches for this visit.
+    if (persist) {
+      try {
+        globalThis.localStorage?.setItem(STORAGE_KEY, language);
+      } catch {
+        // Still switches for this visit.
+      }
     }
     switchTo(language);
     return true;
@@ -288,6 +318,14 @@ export function setLanguage(language) {
   return ensureLanguageDictionary(language)
     .then(activate)
     .catch(() => false);
+}
+
+/**
+ * Accepts any code: one the app does not speak is ignored.
+ * @param {string} language
+ */
+export function setLanguage(language) {
+  return activateLanguage(language, true);
 }
 
 /**

@@ -96,6 +96,27 @@ test("keeps at most the twenty most recently saved stop filters", () => {
 });
 
 
+test("follows a line-filter change made in another tab", () => {
+  const { result } = renderHook(() => useLineFilter("164"));
+
+  const next = JSON.stringify({
+    164: { lines: ["32"], savedAt: Date.now() },
+  });
+  localStorage.setItem(STORAGE_KEY, next);
+
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: STORAGE_KEY,
+        oldValue: null,
+        newValue: next,
+      })
+    );
+  });
+
+  expect(result.current[0]).toEqual(["32"]);
+});
+
 test("refreshes the current stop filter immediately after a same-tab backup import", () => {
   const { result } = renderHook(() => useLineFilter("164"));
 

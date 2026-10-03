@@ -60,14 +60,22 @@ export default function useLineFilter(stopId) {
   }));
 
   useEffect(() => {
-    const takeImportedChanges = () =>
+    const refreshCurrentStop = () =>
       setState({ stopId, lines: linesFor(stopId) });
-    window.addEventListener(LOCAL_STATE_IMPORTED_EVENT, takeImportedChanges);
-    return () =>
+    const takeOtherTabChanges = (event) => {
+      if (event.key !== null && event.key !== STORAGE_KEY) return;
+      refreshCurrentStop();
+    };
+
+    window.addEventListener("storage", takeOtherTabChanges);
+    window.addEventListener(LOCAL_STATE_IMPORTED_EVENT, refreshCurrentStop);
+    return () => {
+      window.removeEventListener("storage", takeOtherTabChanges);
       window.removeEventListener(
         LOCAL_STATE_IMPORTED_EVENT,
-        takeImportedChanges
+        refreshCurrentStop
       );
+    };
   }, [stopId]);
 
   // The board stays mounted across stops, so a new stop brings its own
