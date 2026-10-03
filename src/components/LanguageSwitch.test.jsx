@@ -251,6 +251,30 @@ test("names are marked with the language they are written in", () => {
 });
 
 
+test("follows a language change made in another tab without rewriting storage", async () => {
+  resetLanguageForTests("en");
+  render(<LanguageSwitch />);
+
+  localStorage.setItem("foli-language-v1", "fi");
+  act(() => {
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: "foli-language-v1",
+        oldValue: "en",
+        newValue: "fi",
+      })
+    );
+  });
+
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("fi");
+    expect(
+      screen.getByRole("button", { name: "Українською" })
+    ).toBeInTheDocument();
+  });
+  expect(localStorage.getItem("foli-language-v1")).toBe("fi");
+});
+
 test("applies an imported language immediately when this origin had no explicit choice", () => {
   resetLanguageForTests("en");
   render(<LanguageSwitch />);
