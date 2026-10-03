@@ -781,10 +781,11 @@ test("a reload keeps the final-walk continuation attached to Ride Mode", async (
         stageChangedAt: now,
       })
     );
-    globalThis.sessionStorage.setItem(
+    globalThis.localStorage.setItem(
       "foli-active-ride-continuation-v1",
       JSON.stringify({
         rideId: ride.id,
+        expiresAt: ride.expiresAt,
         continuation: {
           transferJourney: null,
           finalWalk: {
@@ -795,6 +796,15 @@ test("a reload keeps the final-walk continuation attached to Ride Mode", async (
             fromStopId: String(ride.targetStop.id),
             fromStopName: String(ride.targetStop.name || ride.targetStop.id),
             distanceMeters: 320,
+          },
+          destination: {
+            id: "external:test-destination",
+            kind: "external-place",
+            label: "Private destination",
+            primaryStopId: String(ride.targetStop.id),
+            acceptableStopIds: [String(ride.targetStop.id)],
+            lat: 60.451,
+            lon: 22.266,
           },
         },
       })
@@ -812,7 +822,7 @@ test("a reload keeps the final-walk continuation attached to Ride Mode", async (
   ).toBeVisible();
   expect(
     await page.evaluate(() =>
-      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+      globalThis.localStorage.getItem("foli-active-ride-continuation-v1")
     )
   ).toBeNull();
   expect(
@@ -945,13 +955,21 @@ test("a reload keeps the committed transfer continuation attached to Ride Mode",
       transferRevalidation: null,
     };
 
-    globalThis.sessionStorage.setItem(
+    globalThis.localStorage.setItem(
       "foli-active-ride-continuation-v1",
       JSON.stringify({
         rideId: ride.id,
+        expiresAt: ride.expiresAt,
         continuation: {
           transferJourney,
           finalWalk: null,
+          destination: {
+            id: "stop:32",
+            kind: "public-stop",
+            label: "Puistokatu",
+            primaryStopId: "32",
+            acceptableStopIds: ["32"],
+          },
         },
       })
     );
