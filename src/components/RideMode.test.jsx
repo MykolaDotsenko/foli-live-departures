@@ -489,6 +489,68 @@ function renderPanel(runtime, stage = "soon") {
   );
 }
 
+// Asked for at Start and not allowed: the passenger waited for a
+// notification that would not come, with nothing on screen to say so.
+test("says when notifications were not allowed, and how to allow them", () => {
+  const blocked =
+    "Notifications are blocked. Allow them for this site in your browser settings.";
+
+  const notAllowed = renderPanel({ notificationPermission: "unavailable" });
+  expect(screen.getByText(blocked)).toBeInTheDocument();
+  notAllowed.unmount();
+
+  const granted = renderPanel({ notificationPermission: "granted" });
+  expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+  granted.unmount();
+
+  // Allowed in the browser's settings mid-ride: the next alert notifies.
+  vi.stubGlobal("Notification", { permission: "granted" });
+  try {
+    const allowedLater = renderPanel({ notificationPermission: "unavailable" });
+    expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+    allowedLater.unmount();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+
+  // Not asked for: nothing to report.
+  const notAsked = renderPanel({ notificationPermission: "unknown" });
+  expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+  notAsked.unmount();
+
+  // A ride restored after a reload starts with no recorded answer and is
+  // never asked again: a site the browser has blocked still says so.
+  vi.stubGlobal("Notification", { permission: "denied" });
+  try {
+    const restored = renderPanel({ notificationPermission: "unknown" });
+    expect(screen.getByText(blocked)).toBeInTheDocument();
+    restored.unmount();
+
+    const declined = render(
+      <RideMode
+        session={{
+          ...session("soon"),
+          options: { locationBackup: true, notifications: false },
+        }}
+        runtime={{ trackingHealth: "schedule", remainingStops: 2 }}
+        gps={{ status: "off", error: "" }}
+        wakeLockState="active"
+        onTestAlert={() => {}}
+        onEndRide={() => {}}
+        onOpenStop={() => {}}
+      />
+    );
+    expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+    declined.unmount();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+
+  // "Get off now" keeps the screen to itself.
+  renderPanel({ notificationPermission: "unavailable" }, "now");
+  expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+});
+
 test("never calls the bus confirmed once live tracking has been lost", () => {
   // The last match survives failed polls. Beside "Going by the timetable"
   // and the degraded banner, "Your bus is confirmed" said the opposite.

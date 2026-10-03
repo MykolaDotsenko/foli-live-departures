@@ -330,8 +330,18 @@ test("packaged app keeps address text local and offers the official planner hand
   const input = screen.getByRole("combobox", {
     name: "Stop, address or place",
   });
+  // The link is there from the start; the note waits for text to keep.
+  expect(
+    screen.getByRole("link", { name: "Open Turku journey planner" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText(/keeps address and place text on this device/i)
+  ).not.toBeInTheDocument();
 
   fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
+  expect(
+    screen.getByText(/keeps address and place text on this device/i)
+  ).toBeInTheDocument();
   fireEvent.click(
     screen.getByRole("button", { name: "Search destination" })
   );
@@ -416,6 +426,45 @@ test("journey planning controls expose every time mode and routing preference", 
   expect(screen.getByRole("alert")).toHaveTextContent(
     "Choose a valid future Turku time"
   );
+});
+
+// When and how are refinements of where to. Open, they took a phone's
+// first screen from everything below the planner before anything was asked.
+test("timing and route stay one line until either is changed", () => {
+  const props = {
+    stops,
+    places: [home],
+    destination: null,
+    onChoosePlace: vi.fn(),
+    onChooseStop: vi.fn(),
+    onClear: vi.fn(),
+  };
+  const { container, rerender } = render(<JourneySearch {...props} />);
+  const fold = container.querySelector("details");
+
+  expect(fold).not.toHaveAttribute("open");
+  expect(within(fold.querySelector("summary")).getByText("Leave now · Balanced")).toBeInTheDocument();
+
+  rerender(
+    <JourneySearch
+      {...props}
+      timeConstraint={{ mode: "arrive-by", targetTimeSec: null }}
+      timeValid={false}
+    />
+  );
+  expect(container.querySelector("details")).toHaveAttribute("open");
+  // Outside the fold, so it is seen even after the fold is closed again.
+  fireEvent.click(container.querySelector("summary"));
+  const alert = screen.getByRole("alert");
+  expect(alert).toHaveTextContent("Choose a valid future Turku time");
+  expect(container.querySelector("details").contains(alert)).toBe(false);
+});
+
+test("a changed plan opens on its own when the planner appears", () => {
+  renderSearch({ routingPreference: "less-walking" });
+
+  expect(document.querySelector("details")).toHaveAttribute("open");
+  expect(screen.getByText("Leave now · Less walking")).toBeInTheDocument();
 });
 
 test("leave-now hides the clock and normalizes an unknown preference to balanced", () => {

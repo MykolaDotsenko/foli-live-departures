@@ -587,20 +587,62 @@
 }
 
 
-.planControls {
-  display: grid;
-  gap: 8px;
-  margin: 12px 0;
-  padding: 10px;
+.planDisclosure {
+  margin: 12px 0 0;
   border: 1px solid #d5e3e5;
   border-radius: 12px;
 }
 
-.planControls legend {
-  padding: 0 5px;
+/* One line that says what is set. With display: flex the summary loses its
+   own triangle, so a drawn chevron is the cue that it opens. */
+.planDisclosure > summary {
+  display: flex;
+  min-height: 44px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  position: relative;
+  padding: 6px 34px 6px 10px;
   color: #355159;
   font-size: 0.76rem;
   font-weight: 850;
+  list-style: none;
+  cursor: pointer;
+}
+
+.planDisclosure > summary::-webkit-details-marker {
+  display: none;
+}
+
+.planDisclosure > summary::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 7px;
+  height: 7px;
+  margin-top: -5px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.planDisclosure[open] > summary::after {
+  transform: rotate(45deg);
+}
+
+.planSummary {
+  color: #4e676d;
+  font-weight: 700;
+}
+
+.planControls {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 10px 10px;
+  border: 0;
 }
 
 .planGrid {
@@ -650,11 +692,12 @@
 }
 
 @media screen {
-  :root[data-theme="dark"] .planControls {
+  :root[data-theme="dark"] .planDisclosure {
     border-color: var(--dm-line);
   }
 
-  :root[data-theme="dark"] .planControls legend,
+  :root[data-theme="dark"] .planDisclosure > summary,
+  :root[data-theme="dark"] .planSummary,
   :root[data-theme="dark"] .planGrid label,
   :root[data-theme="dark"] .compactPlan {
     color: var(--dm-muted);

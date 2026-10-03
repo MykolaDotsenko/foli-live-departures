@@ -193,6 +193,8 @@ export default {
     "iPhonessa ilmoitukset vaativat, että sovellus on lisätty Koti-valikkoon (Jaa ja sitten Lisää Koti-valikkoon). Ääni ja värinä toimivat täällä niin kauan kuin tämä sivu pysyy auki.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). The alert sound works here as long as this page stays open, but this phone will not vibrate for it.":
     "iPhonessa ilmoitukset vaativat, että sovellus on lisätty Koti-valikkoon (Jaa ja sitten Lisää Koti-valikkoon). Hälytysääni toimii täällä niin kauan kuin tämä sivu pysyy auki, mutta puhelin ei värise.",
+  "Notifications are blocked. Allow them for this site in your browser settings.":
+    "Ilmoitukset on estetty. Salli ne tälle sivustolle selaimen asetuksista.",
   "Check your sound": "Tarkista ääni ensin",
   "Starting plays a test alert, so you can check the sound and vibration now. We only say “get off now” when live bus data or your location confirms it.":
     "Kun käynnistät, kuulet testihälytyksen – tarkista samalla ääni ja värinä. Sanomme ”jää pois nyt” vain, kun bussin reaaliaikatieto tai sijaintisi vahvistaa sen.",
