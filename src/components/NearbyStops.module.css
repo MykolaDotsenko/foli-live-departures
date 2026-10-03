@@ -33,7 +33,16 @@
   line-height: 1.4;
 }
 
-.locateButton {
+.headerActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.locateButton,
+.radarButton {
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
@@ -51,18 +60,27 @@
   font-weight: 850;
 }
 
-.locateButton:hover:not([aria-disabled="true"]) {
+.locateButton:hover:not([aria-disabled="true"]),
+.radarButton:hover:not([aria-disabled="true"]) {
   background: #edf8f8;
 }
 
-.locateButton[aria-disabled="true"] {
+.radarButton[aria-expanded="true"] {
+  border-color: #9b6800;
+  background: #fff4d4;
+  color: #624000;
+}
+
+.locateButton[aria-disabled="true"],
+.radarButton[aria-disabled="true"] {
   cursor: wait;
   opacity: 0.65;
 }
 
 /* Busy, it keeps keyboard focus, and a faded focus ring fell below 3:1
    against the page. Focused, it is drawn at full strength. */
-.locateButton[aria-disabled="true"]:focus-visible {
+.locateButton[aria-disabled="true"]:focus-visible,
+.radarButton[aria-disabled="true"]:focus-visible {
   opacity: 1;
 }
 
@@ -237,8 +255,13 @@
     flex-direction: column;
   }
 
-  .locateButton {
+  .headerActions {
     width: 100%;
+  }
+
+  .locateButton,
+  .radarButton {
+    flex: 1 1 180px;
     min-height: 46px;
   }
 }
@@ -270,6 +293,7 @@
 @media (forced-colors: active) {
   .stopCard[data-active="true"],
   .locateButton,
+  .radarButton,
   .walkLink {
     border: 2px solid ButtonText;
   }
@@ -317,10 +341,15 @@
     white-space: normal;
   }
 
-  .locateButton {
+  .headerActions {
+    width: auto;
+    margin-left: auto;
+  }
+
+  .locateButton,
+  .radarButton {
     width: auto;
     min-height: 44px;
-    margin-left: auto;
     padding-inline: 12px;
     font-size: 0.8125rem;
   }
@@ -341,10 +370,15 @@
     flex: 1 1 150px;
   }
 
-  .locateButton {
-    max-width: 100%;
-    flex: 1 1 auto;
+  .headerActions {
+    width: 100%;
     margin-left: 0;
+  }
+
+  .locateButton,
+  .radarButton {
+    max-width: 100%;
+    flex: 1 1 140px;
     white-space: normal;
     text-align: center;
   }
