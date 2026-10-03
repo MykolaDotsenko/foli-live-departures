@@ -43,6 +43,7 @@ import {
   RIDE_CONTINUATION_STORAGE_KEY,
   clearRideContinuation,
   persistRideContinuation,
+  readDurableRideContinuation,
   readRideContinuation,
 } from "../utils/rideContinuation";
 import {
@@ -191,7 +192,11 @@ export default function useRideMode() {
       if (!current) return;
 
       if (event.key === RIDE_CONTINUATION_STORAGE_KEY) {
-        setContinuation(readRideContinuation(current.id));
+        setContinuation(
+          event.newValue === null
+            ? null
+            : readDurableRideContinuation(current.id)
+        );
         return;
       }
 
