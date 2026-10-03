@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import useStopRadar from "./useStopRadar";
+import { RADAR_MOVEMENT_HEADING_MAX_AGE_MS } from "../utils/stopRadar";
 
 const originalGeolocation = Object.getOwnPropertyDescriptor(
   navigator,
@@ -229,6 +230,7 @@ test("drops stale compass heading across background and waits for fresh orientat
   act(() => setVisibility("hidden"));
   await waitFor(() => expect(result.current.status).toBe("paused"));
   await waitFor(() => expect(result.current.headingSource).toBe("north"));
+  expect(result.current.position).toBeNull();
   expect(clearWatch).toHaveBeenCalledWith(21);
 
   act(() => setVisibility("visible"));
@@ -300,6 +302,96 @@ test("does not infer motion direction across a background pause", async () => {
   expect(result.current.headingSource).toBe("north");
 });
 
+test("expires movement heading even when no later GPS callback causes a rerender", async () => {
+  vi.useFakeTimers();
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 31;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  try {
+    const { result } = renderHook(() =>
+      useStopRadar({
+        active: true,
+        compassPermission: "unavailable",
+      })
+    );
+
+    act(() => {
+      deliver({
+        coords: {
+          latitude: 60.4518,
+          longitude: 22.2666,
+          accuracy: 8,
+        },
+        timestamp: Date.now(),
+      });
+      deliver({
+        coords: {
+          latitude: 60.4520,
+          longitude: 22.2666,
+          accuracy: 8,
+        },
+        timestamp: Date.now(),
+      });
+    });
+
+    expect(result.current.headingSource).toBe("motion");
+
+    act(() => {
+      vi.advanceTimersByTime(RADAR_MOVEMENT_HEADING_MAX_AGE_MS + 1);
+    });
+
+    expect(result.current.headingSource).toBe("north");
+    expect(result.current.heading).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("treats missing or invalid accuracy as unknown instead of perfect accuracy", async () => {
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 32;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({
+      active: true,
+      compassPermission: "unavailable",
+    })
+  );
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.4518,
+        longitude: 22.2666,
+        accuracy: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    })
+  );
+
+  await waitFor(() => expect(result.current.status).toBe("active"));
+  expect(result.current.position?.accuracy).toBeNull();
+});
+
 test("fails closed when continuous geolocation is unavailable", async () => {
   Object.defineProperty(navigator, "geolocation", {
     configurable: true,
@@ -339,8 +431,22 @@ test("recovers after a location error when a later watch fix succeeds", async ()
     })
   );
 
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.4518,
+        longitude: 22.2666,
+        accuracy: 10,
+      },
+      timestamp: Date.now(),
+    })
+  );
+  await waitFor(() => expect(result.current.status).toBe("active"));
+  expect(result.current.position).not.toBeNull();
+
   act(() => fail({ code: 1 }));
   await waitFor(() => expect(result.current.status).toBe("error"));
+  expect(result.current.position).toBeNull();
   expect(result.current.error).toMatch(/Location access is blocked/);
 
   act(() =>
