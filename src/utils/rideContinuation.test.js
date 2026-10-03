@@ -5,43 +5,47 @@ import {
   normalizeRideContinuation,
   persistRideContinuation,
   readRideContinuation,
+  rideContinuationCanPersistDurably,
 } from "./rideContinuation";
 
 const futureExpiry = () => Date.now() + 60_000;
+const publicDestination = {
+  id: "stop:32",
+  kind: "public-stop",
+  label: "Puistokatu",
+  primaryStopId: "32",
+  acceptableStopIds: ["32"],
+};
+const externalDestination = {
+  id: "external:test",
+  kind: "external-place",
+  label: "Private destination",
+  primaryStopId: "32",
+  acceptableStopIds: ["32"],
+  lat: 60.45,
+  lon: 22.27,
+};
 
 beforeEach(() => {
   globalThis.localStorage.clear();
+  globalThis.sessionStorage.clear();
 });
 
 describe("ride continuation", () => {
-  it("normalizes only supported continuation records", () => {
+  it("normalizes supported continuation records", () => {
     expect(normalizeRideContinuation(null)).toBeNull();
     expect(normalizeRideContinuation([])).toBeNull();
     expect(normalizeRideContinuation({})).toBeNull();
-
     expect(
       normalizeRideContinuation({
         transferJourney: { id: "journey-1" },
-        destination: {
-          id: "stop:32",
-          kind: "public-stop",
-          label: "Puistokatu",
-          primaryStopId: "32",
-          acceptableStopIds: ["32"],
-        },
+        destination: publicDestination,
       })
     ).toEqual({
       transferJourney: { id: "journey-1" },
       finalWalk: null,
-      destination: {
-        id: "stop:32",
-        kind: "public-stop",
-        label: "Puistokatu",
-        primaryStopId: "32",
-        acceptableStopIds: ["32"],
-      },
+      destination: publicDestination,
     });
-
     expect(
       normalizeRideContinuation({
         finalWalk: { fromStopId: "32" },
@@ -52,48 +56,108 @@ describe("ride continuation", () => {
     });
   });
 
-  it("persists one active continuation with the ride expiry", () => {
+  it("mirrors privacy-safe public continuation into durable storage", () => {
     const expiry = futureExpiry();
     const continuation = {
-      transferJourney: { id: "journey-1" },
-      finalWalk: null,
-      destination: {
-        id: "stop:32",
-        kind: "public-stop",
-        label: "Puistokatu",
-        primaryStopId: "32",
-        acceptableStopIds: ["32"],
+      transferJourney: {
+        id: "journey-1",
+        destinationKind: "public-stop",
       },
+      finalWalk: null,
+      destination: publicDestination,
     };
 
+    expect(rideContinuationCanPersistDurably(continuation)).toBe(true);
     expect(
       persistRideContinuation("ride-1", continuation, expiry)
     ).toEqual(continuation);
     expect(readRideContinuation("ride-1")).toEqual(continuation);
 
-    expect(
-      JSON.parse(
-        globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-      )
-    ).toMatchObject({
-      rideId: "ride-1",
-      expiresAt: expiry,
-      continuation,
-    });
+    for (const target of [
+      globalThis.sessionStorage,
+      globalThis.localStorage,
+    ]) {
+      expect(
+        JSON.parse(target.getItem(RIDE_CONTINUATION_STORAGE_KEY))
+      ).toMatchObject({
+        rideId: "ride-1",
+        expiresAt: expiry,
+        continuation,
+      });
+    }
   });
 
-  it("is shared across tabs but expires with the active ride", () => {
+  it("keeps private external continuation session-only", () => {
     const expiry = futureExpiry();
-    persistRideContinuation(
-      "ride-1",
-      { transferJourney: { id: "journey-1" } },
-      expiry
+    const continuation = {
+      transferJourney: {
+        id: "journey-private",
+        destinationKind: "external-place",
+        destinationLabel: "Private destination",
+      },
+      finalWalk: {
+        destinationLabel: "Private destination",
+        lat: 60.45,
+        lon: 22.27,
+        fromStopId: "32",
+      },
+      destination: externalDestination,
+    };
+
+    expect(rideContinuationCanPersistDurably(continuation)).toBe(false);
+    persistRideContinuation("ride-private", continuation, expiry);
+
+    expect(readRideContinuation("ride-private")).toEqual(continuation);
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toContain("Private destination");
+    expect(
+      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("rejects a private continuation found in durable storage", () => {
+    const expiry = futureExpiry();
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-private",
+        expiresAt: expiry,
+        continuation: {
+          transferJourney: {
+            id: "journey-private",
+            destinationKind: "external-place",
+          },
+          finalWalk: null,
+          destination: externalDestination,
+        },
+      })
     );
+
+    expect(readRideContinuation("ride-private")).toBeNull();
+    expect(
+      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("expires both session and durable continuation with the ride", () => {
+    const expiry = futureExpiry();
+    const continuation = {
+      transferJourney: {
+        id: "journey-1",
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+    persistRideContinuation("ride-1", continuation, expiry);
 
     expect(readRideContinuation("ride-1", expiry - 1)).toMatchObject({
       transferJourney: { id: "journey-1" },
     });
     expect(readRideContinuation("ride-1", expiry)).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
     expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
@@ -102,44 +166,59 @@ describe("ride continuation", () => {
   it("never hands one ride another ride's continuation", () => {
     persistRideContinuation(
       "ride-1",
-      { transferJourney: { id: "journey-1" } },
+      {
+        transferJourney: {
+          id: "journey-1",
+          destinationKind: "public-stop",
+        },
+        destination: publicDestination,
+      },
       futureExpiry()
     );
 
     expect(readRideContinuation("ride-2")).toBeNull();
     expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+    expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
   });
 
-  it("cleans empty or malformed stored continuation records", () => {
-    globalThis.localStorage.setItem(
-      RIDE_CONTINUATION_STORAGE_KEY,
-      JSON.stringify({
-        rideId: "ride-1",
-        expiresAt: futureExpiry(),
-        continuation: {},
-      })
-    );
+  it("cleans malformed and empty stored records", () => {
+    for (const target of [
+      globalThis.sessionStorage,
+      globalThis.localStorage,
+    ]) {
+      target.setItem(
+        RIDE_CONTINUATION_STORAGE_KEY,
+        JSON.stringify({
+          rideId: "ride-1",
+          expiresAt: futureExpiry(),
+          continuation: {},
+        })
+      );
+    }
     expect(readRideContinuation("ride-1")).toBeNull();
 
+    globalThis.sessionStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      "{bad json"
+    );
     globalThis.localStorage.setItem(
       RIDE_CONTINUATION_STORAGE_KEY,
       "{bad json"
     );
     expect(readRideContinuation("ride-1")).toBeNull();
     expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+    expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
   });
 
-  it("returns no continuation without a ride id or storage record", () => {
-    expect(readRideContinuation("")).toBeNull();
-    expect(readRideContinuation(null)).toBeNull();
-    expect(readRideContinuation("ride-1")).toBeNull();
-  });
-
-  it("does not persist missing, expired or empty active state", () => {
+  it("does not persist missing or expired active state", () => {
     const continuation = {
       transferJourney: { id: "journey-1" },
     };
@@ -149,59 +228,57 @@ describe("ride continuation", () => {
     ).toMatchObject({
       transferJourney: { id: "journey-1" },
     });
-    expect(
-      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-    ).toBeNull();
+    expect(readRideContinuation("")).toBeNull();
 
     persistRideContinuation("ride-1", continuation, Date.now() - 1);
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
     expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
 
     persistRideContinuation("ride-1", null, futureExpiry());
-    expect(
-      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-    ).toBeNull();
+    expect(readRideContinuation("ride-1")).toBeNull();
   });
 
-  it("clears only the matching active ride unless explicitly cleared", () => {
+  it("clears matching continuation from both storage scopes", () => {
     persistRideContinuation(
       "ride-1",
-      { transferJourney: { id: "journey-1" } },
+      {
+        transferJourney: {
+          id: "journey-1",
+          destinationKind: "public-stop",
+        },
+        destination: publicDestination,
+      },
       futureExpiry()
     );
 
     clearRideContinuation("ride-2");
-    expect(readRideContinuation("ride-1")).toMatchObject({
-      transferJourney: { id: "journey-1" },
-    });
+    expect(readRideContinuation("ride-1")).not.toBeNull();
 
     clearRideContinuation("ride-1");
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
     expect(
       globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
     ).toBeNull();
 
     persistRideContinuation(
       "ride-3",
-      { transferJourney: { id: "journey-3" } },
+      {
+        transferJourney: {
+          id: "journey-3",
+          destinationKind: "public-stop",
+        },
+        destination: publicDestination,
+      },
       futureExpiry()
     );
     clearRideContinuation();
-    expect(
-      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-    ).toBeNull();
-  });
-
-  it("cleans malformed data when clearing a ride", () => {
-    globalThis.localStorage.setItem(
-      RIDE_CONTINUATION_STORAGE_KEY,
-      "{bad json"
-    );
-
-    expect(() => clearRideContinuation("ride-1")).not.toThrow();
-    expect(
-      globalThis.localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
-    ).toBeNull();
+    expect(readRideContinuation("ride-3")).toBeNull();
   });
 
   it("keeps in-memory continuity when Web Storage writes are blocked", () => {
