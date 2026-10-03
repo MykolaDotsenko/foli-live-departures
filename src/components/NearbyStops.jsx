@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
 import useTransferJourneyOptions from "../hooks/useTransferJourneyOptions";
@@ -10,6 +10,7 @@ import {
   hasCoordinates,
   isInsideMultiPolygon,
 } from "../utils/geo";
+import { requestCompassPermission } from "../utils/stopRadar";
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { buildWalkingDirectionsUrl } from "../utils/maps";
 import {
@@ -27,6 +28,9 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
+
+const StopRadar = lazy(() => import("./StopRadar"));
+const RADAR_ICON = "◉";
 
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
@@ -180,7 +184,12 @@ function NearbyStops({
   const [sortMode, setSortMode] = useState("best");
   const [error, setError] = useState("");
   const [expandedDestinationId, setExpandedDestinationId] = useState("");
+  const [radarOpen, setRadarOpen] = useState(false);
+  const [compassPermission, setCompassPermission] = useState("pending");
   const rankingRef = useRef({ destinationId: "", order: [] });
+  const radarButtonRef = useRef(null);
+  const restoreRadarFocusRef = useRef(false);
+  const radarSeededPositionRef = useRef(false);
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -188,6 +197,9 @@ function NearbyStops({
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
     typeof navigator !== "undefined" && "geolocation" in navigator;
+  const liveRadarSupported =
+    geolocationSupported &&
+    typeof navigator.geolocation?.watchPosition === "function";
 
   const baseNearbyStops = useMemo(
     () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
@@ -340,6 +352,31 @@ function NearbyStops({
       ["good", "tight"].includes(fitsByStop[stop.id]?.status)
     )?.id || "";
 
+  const activeStopHasCoordinates = stops.some(
+    (stop) => stop.id === activeStopId && hasCoordinates(stop)
+  );
+  const initialRadarTargetId =
+    bestStopId || (activeStopHasCoordinates ? activeStopId : "");
+
+  const openRadar = () => {
+    if (!hasStopCoordinates || !liveRadarSupported) return;
+    restoreRadarFocusRef.current = false;
+    radarSeededPositionRef.current = false;
+    setRadarOpen(true);
+    void requestCompassPermission().then(setCompassPermission);
+  };
+
+  const closeRadar = () => {
+    restoreRadarFocusRef.current = true;
+    setRadarOpen(false);
+  };
+
+  useEffect(() => {
+    if (radarOpen || !restoreRadarFocusRef.current) return;
+    restoreRadarFocusRef.current = false;
+    radarButtonRef.current?.focus();
+  }, [radarOpen]);
+
   const selectedStopDistance = useMemo(() => {
     if (!position) return null;
 
@@ -488,24 +525,41 @@ function NearbyStops({
           </p>
         </div>
 
-        <button
-          type="button"
-          className={styles.locateButton}
-          onClick={() => {
-            if (status !== "locating" && hasStopCoordinates) locate();
-          }}
-          aria-disabled={
-            status === "locating" || !hasStopCoordinates ? "true" : undefined
-          }
-          aria-busy={status === "locating"}
-        >
-          <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
-          {status === "locating"
-            ? t("Locating…")
-            : position
-              ? t("Update location")
-              : t("Find nearest stop")}
-        </button>
+        <div className={styles.headerActions}>
+          <button
+            type="button"
+            className={styles.locateButton}
+            onClick={() => {
+              if (status !== "locating" && hasStopCoordinates) locate();
+            }}
+            aria-disabled={
+              status === "locating" || !hasStopCoordinates ? "true" : undefined
+            }
+            aria-busy={status === "locating"}
+          >
+            <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
+            {status === "locating"
+              ? t("Locating…")
+              : position
+                ? t("Update location")
+                : t("Find nearest stop")}
+          </button>
+
+          <button
+            ref={radarButtonRef}
+            type="button"
+            className={styles.radarButton}
+            onClick={radarOpen ? closeRadar : openRadar}
+            aria-expanded={radarOpen}
+            aria-controls="stop-radar-panel"
+            aria-disabled={
+              !hasStopCoordinates || !liveRadarSupported ? "true" : undefined
+            }
+          >
+            <span aria-hidden="true">{RADAR_ICON}</span>
+            {radarOpen ? t("Close stop radar") : t("Open stop radar")}
+          </button>
+        </div>
       </div>
 
       {!hasStopCoordinates && (
@@ -522,6 +576,47 @@ function NearbyStops({
         <p className={styles.error} role="alert">
           {t(error)}
         </p>
+      )}
+
+      {!liveRadarSupported && hasStopCoordinates && (
+        <p className={styles.meta}>
+          {t("Live stop radar is not available on this device; one-time nearby search still works.")}
+        </p>
+      )}
+
+      {radarOpen && (
+        <Suspense
+          fallback={
+            <p className={styles.meta} role="status">
+              {t("Opening stop radar…")}
+            </p>
+          }
+        >
+          <StopRadar
+            stops={stops}
+            initialTargetStopId={initialRadarTargetId}
+            recommendedTargetStopId={bestStopId}
+            activeStopId={activeStopId}
+            compassPermission={compassPermission}
+            onPosition={(nextPosition) => {
+              // Seed Nearby from one fresh fix per radar session, then keep
+              // subsequent live fixes isolated inside StopRadar. Otherwise
+              // every walking update can perturb stop order/accuracy and
+              // restart destination-aware Föli planning.
+              if (radarSeededPositionRef.current) return;
+              radarSeededPositionRef.current = true;
+              setPosition(nextPosition);
+              setStatus("success");
+              setError("");
+            }}
+            onOpenStop={(id) => {
+              restoreRadarFocusRef.current = false;
+              setRadarOpen(false);
+              onSelect(id);
+            }}
+            onClose={closeRadar}
+          />
+        </Suspense>
       )}
 
       {position && (

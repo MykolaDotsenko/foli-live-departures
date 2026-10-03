@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import NearbyStops from "./NearbyStops";
 
@@ -501,6 +501,108 @@ test("Find nearest stop keeps focus while it looks and ignores a second press", 
   expect(busy).toHaveFocus();
   fireEvent.click(busy);
   expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+});
+
+test("stop radar seeds Nearby once instead of streaming every GPS fix into planning", async () => {
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 70;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Open stop radar" }));
+  await screen.findByRole("heading", { name: "Stop radar" });
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.45182,
+        longitude: 22.26662,
+        accuracy: 10,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    })
+  );
+  await screen.findByText(/Accuracy ±10/);
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.453,
+        longitude: 22.27,
+        accuracy: 25,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    })
+  );
+
+  // StopRadar itself consumes the second fix asynchronously through its hook
+  // state, while the parent one-time Nearby snapshot deliberately remains the
+  // first fix. Wait for the radar render, then assert the isolation boundary.
+  // 25 m is intentionally rounded by formatAccuracy() to the passenger-facing
+  // 30 m bucket. The radar should update to that formatted second fix while
+  // Nearby stays pinned to the first 10 m seed.
+  await screen.findByText(/GPS accuracy ±30 m/);
+  expect(screen.getByText(/Accuracy ±10 m/)).toBeInTheDocument();
+  expect(screen.queryByText(/^Accuracy ±30 m$/)).not.toBeInTheDocument();
+});
+
+test("closing stop radar restores focus to its trigger without changing the board", async () => {
+  const clearWatch = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn(() => 71),
+      clearWatch,
+    },
+  });
+  const onSelect = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={onSelect}
+    />
+  );
+
+  const open = screen.getByRole("button", { name: "Open stop radar" });
+  expect(open).toHaveAttribute("aria-controls", "stop-radar-panel");
+  fireEvent.click(open);
+
+  await screen.findByRole("heading", { name: "Stop radar" });
+  const close = screen.getByRole("button", { name: "Close radar" });
+  close.focus();
+  fireEvent.click(close);
+
+  await waitFor(() =>
+    expect(screen.queryByRole("heading", { name: "Stop radar" })).not.toBeInTheDocument()
+  );
+  expect(screen.getByRole("button", { name: "Open stop radar" })).toHaveFocus();
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(clearWatch).toHaveBeenCalledWith(71);
 });
 
 test("Find nearest stop does nothing until stop locations have loaded", () => {

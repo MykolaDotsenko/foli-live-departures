@@ -271,3 +271,51 @@ test("a late near-you fix leaves a half-typed search and its board alone", async
   await expect(page).toHaveURL(/[?&]stop=4(&|$)/);
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 });
+
+
+test("stop radar gives live distance guidance without silently switching the board", async ({
+  page,
+  context,
+  baseURL,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-mobile");
+
+  await context.grantPermissions(["geolocation"], {
+    origin: new globalThis.URL(baseURL).origin,
+  });
+  await context.setGeolocation({
+    latitude: 60.45182,
+    longitude: 22.26662,
+    accuracy: 12,
+  });
+
+  await page.goto("/?stop=32");
+  await expect(page.getByRole("heading", { name: "Puistokatu" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Open stop radar" }).click();
+
+  await expect(page.getByRole("heading", { name: "Stop radar" })).toBeVisible();
+  await expect(page.getByText("North-up", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText(/Live location runs only while this radar is open/i)
+  ).toBeVisible();
+  await expect(page).toHaveURL(/[?&]stop=32(&|$)/);
+
+  const targetChooser = page.getByRole("group", {
+    name: "Choose radar target",
+  });
+  await targetChooser.getByRole("button", { name: /Kauppatori/ }).click();
+
+  const targetCard = page
+    .getByText("Target stop", { exact: true })
+    .locator("..");
+  await expect(targetCard.getByText("<10 m", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/[?&]stop=32(&|$)/);
+  await expect(page.getByRole("heading", { name: "Puistokatu" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Open target stop" }).click();
+
+  await expect(page).toHaveURL(/[?&]stop=164(&|$)/);
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stop radar" })).toHaveCount(0);
+});
