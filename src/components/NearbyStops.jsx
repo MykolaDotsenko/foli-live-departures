@@ -189,6 +189,7 @@ function NearbyStops({
   const rankingRef = useRef({ destinationId: "", order: [] });
   const radarButtonRef = useRef(null);
   const restoreRadarFocusRef = useRef(false);
+  const radarSeededPositionRef = useRef(false);
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -360,6 +361,7 @@ function NearbyStops({
   const openRadar = () => {
     if (!hasStopCoordinates || !liveRadarSupported) return;
     restoreRadarFocusRef.current = false;
+    radarSeededPositionRef.current = false;
     setRadarOpen(true);
     void requestCompassPermission().then(setCompassPermission);
   };
@@ -597,6 +599,12 @@ function NearbyStops({
             activeStopId={activeStopId}
             compassPermission={compassPermission}
             onPosition={(nextPosition) => {
+              // Seed Nearby from one fresh fix per radar session, then keep
+              // subsequent live fixes isolated inside StopRadar. Otherwise
+              // every walking update can perturb stop order/accuracy and
+              // restart destination-aware Föli planning.
+              if (radarSeededPositionRef.current) return;
+              radarSeededPositionRef.current = true;
               setPosition(nextPosition);
               setStatus("success");
               setError("");
