@@ -56,8 +56,17 @@ export function readRideContinuation(rideId) {
     const parsed = JSON.parse(
       target.getItem(RIDE_CONTINUATION_STORAGE_KEY) || "null"
     );
-    if (!record(parsed) || String(parsed.rideId || "") !== id) return null;
-    return normalizeRideContinuation(parsed.continuation);
+    const stored = record(parsed);
+    const normalized =
+      stored && String(stored.rideId || "") === id
+        ? normalizeRideContinuation(stored.continuation)
+        : null;
+
+    if (!normalized) {
+      target.removeItem(RIDE_CONTINUATION_STORAGE_KEY);
+      return null;
+    }
+    return normalized;
   } catch {
     try {
       target.removeItem(RIDE_CONTINUATION_STORAGE_KEY);
