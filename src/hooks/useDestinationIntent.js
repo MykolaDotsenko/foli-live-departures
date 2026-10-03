@@ -3,7 +3,7 @@ import { prepareExternalPlaceDestination } from "../utils/placeDestination";
 /** @import { DestinationIntent } from "../types/journey" */
 
 /**
- * Validate a destination restored from tab-scoped ride continuation state.
+ * Validate a destination restored from active Ride Mode continuation state.
  * This accepts the three canonical destination kinds only and normalizes the
  * stop-id set so malformed storage never becomes active journey context.
  *
