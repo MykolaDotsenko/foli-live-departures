@@ -503,6 +503,44 @@ test("Find nearest stop keeps focus while it looks and ignores a second press", 
   expect(getCurrentPosition).toHaveBeenCalledTimes(1);
 });
 
+test("closing stop radar restores focus to its trigger without changing the board", async () => {
+  const clearWatch = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn(() => 71),
+      clearWatch,
+    },
+  });
+  const onSelect = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={onSelect}
+    />
+  );
+
+  const open = screen.getByRole("button", { name: "Open stop radar" });
+  expect(open).toHaveAttribute("aria-controls", "stop-radar-panel");
+  fireEvent.click(open);
+
+  await screen.findByRole("heading", { name: "Stop radar" });
+  const close = screen.getByRole("button", { name: "Close radar" });
+  close.focus();
+  fireEvent.click(close);
+
+  await waitFor(() =>
+    expect(screen.queryByRole("heading", { name: "Stop radar" })).not.toBeInTheDocument()
+  );
+  expect(screen.getByRole("button", { name: "Open stop radar" })).toHaveFocus();
+  expect(onSelect).not.toHaveBeenCalled();
+  expect(clearWatch).toHaveBeenCalledWith(71);
+});
+
 test("Find nearest stop does nothing until stop locations have loaded", () => {
   const getCurrentPosition = vi.fn();
   setGeolocation(getCurrentPosition);
