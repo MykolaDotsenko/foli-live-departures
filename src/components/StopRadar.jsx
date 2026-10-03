@@ -3,6 +3,7 @@ import { t, useLanguage } from "../i18n";
 import useStopRadar from "../hooks/useStopRadar";
 import {
   bearingDegrees,
+  cardinalDirectionKey,
   radarPoint,
   radarRangeMeters,
   radarStops,
@@ -33,6 +34,37 @@ function targetWithinUncertainty(position, distance) {
   );
 }
 
+
+// Markers closer than this (in % of the radar's width, about 24 px on a
+// phone) would sit on top of each other as two tap targets, the lower one
+// a sliver. Only the first (the target, then the nearest) is drawn; the
+// other comes back apart as the scale narrows, and the target chooser
+// below offers it all along.
+const MIN_MARKER_GAP_PERCENT = 8;
+
+function translatedHeading(bearing) {
+  const degrees = Math.round(Number(bearing)) % 360;
+  switch (cardinalDirectionKey(bearing)) {
+    case "north":
+      return t("Head north ({degrees}°)", { degrees });
+    case "north-east":
+      return t("Head north-east ({degrees}°)", { degrees });
+    case "east":
+      return t("Head east ({degrees}°)", { degrees });
+    case "south-east":
+      return t("Head south-east ({degrees}°)", { degrees });
+    case "south":
+      return t("Head south ({degrees}°)", { degrees });
+    case "south-west":
+      return t("Head south-west ({degrees}°)", { degrees });
+    case "west":
+      return t("Head west ({degrees}°)", { degrees });
+    case "north-west":
+      return t("Head north-west ({degrees}°)", { degrees });
+    default:
+      return t("Direction unavailable");
+  }
+}
 
 function translatedRelativeDirection(angle) {
   switch (relativeDirectionKey(angle)) {
@@ -99,22 +131,38 @@ export default function StopRadar({
   const targetBearing =
     position && targetStop ? bearingDegrees(position, targetStop) : null;
   const targetRelativeBearing = relativeBearingDegrees(targetBearing, heading);
-  const range = radarRangeMeters(nearby, targetDistance);
+  const [shownRange, setShownRange] = useState(null);
+  const range = radarRangeMeters(
+    targetDistance ?? (nearby.length ? Number(nearby[0].distanceMeters) : null),
+    shownRange
+  );
+  if (range !== shownRange) setShownRange(range);
 
   const renderedStops = useMemo(() => {
+    // The target first, so it keeps its place and stays on top.
+    const ordered = [...nearby].sort(
+      (a, b) =>
+        Number(String(b.id) === targetStopId) -
+        Number(String(a.id) === targetStopId)
+    );
     const result = [];
-    for (const stop of nearby) {
+    for (const stop of ordered) {
+      const isTarget = String(stop.id) === targetStopId;
+      const distance = Number(stop.distanceMeters);
+      // Off the scale, only the target is drawn, pinned to the edge.
+      if (!isTarget && distance > range) continue;
       const bearing = bearingDegrees(position, stop);
-      const point = radarPoint(
-        bearing,
-        heading,
-        Number(stop.distanceMeters),
-        range
+      const point = radarPoint(bearing, heading, distance, range);
+      if (!point) continue;
+      const crowded = result.some(
+        (placed) =>
+          Math.hypot(placed.point.x - point.x, placed.point.y - point.y) <
+          MIN_MARKER_GAP_PERCENT
       );
-      if (point) result.push({ ...stop, bearing, point });
+      if (!crowded) result.push({ ...stop, bearing, point });
     }
     return result;
-  }, [heading, nearby, position, range]);
+  }, [heading, nearby, position, range, targetStopId]);
 
   const targetPoint = renderedStops.find(
     (stop) => String(stop.id) === targetStopId
@@ -123,10 +171,12 @@ export default function StopRadar({
 
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
-      ? t("Target bearing {degrees}° from north", {
-          degrees: Math.round(targetBearing),
-        })
+      ? translatedHeading(targetBearing)
       : translatedRelativeDirection(targetRelativeBearing);
+  // The GPS circle, drawn to the radar's scale: where the phone may be.
+  const accuracyDiameter = Number.isFinite(position?.accuracy)
+    ? Math.min(84, (84 * Number(position.accuracy)) / range)
+    : 0;
 
   const modeText =
     headingSource === "compass"
@@ -165,6 +215,11 @@ export default function StopRadar({
       {status === "locating" && (
         <p className={styles.status} role="status">
           {t("Finding your live position…")}
+        </p>
+      )}
+      {status === "stale" && (
+        <p className={styles.notice} role="status">
+          {t("Waiting for a new GPS fix…")}
         </p>
       )}
       {status === "paused" && (
@@ -222,6 +277,22 @@ export default function StopRadar({
               <span className={styles.ringOne} aria-hidden="true" />
               <span className={styles.ringTwo} aria-hidden="true" />
               <span className={styles.ringThree} aria-hidden="true" />
+              <span className={styles.rangeLabel} aria-hidden="true">
+                {formatDistance(range)}
+              </span>
+              {headingSource !== "north" && (
+                <span className={styles.headingCone} aria-hidden="true" />
+              )}
+              {accuracyDiameter > 0 && (
+                <span
+                  className={styles.accuracyHalo}
+                  aria-hidden="true"
+                  style={{
+                    width: `${accuracyDiameter}%`,
+                    height: `${accuracyDiameter}%`,
+                  }}
+                />
+              )}
               <span className={styles.userDot} aria-hidden="true" />
 
               {targetPoint && (
@@ -257,7 +328,9 @@ export default function StopRadar({
                       distance: formatDistance(stop.distanceMeters),
                     })}
                   >
-                    <span aria-hidden="true">{target ? "◎" : "•"}</span>
+                    {/* The stop number matches the list below, so two
+                        stops of one name can be told apart on the radar. */}
+                    <span aria-hidden="true">{stop.id}</span>
                   </button>
                 );
               })}
@@ -274,7 +347,11 @@ export default function StopRadar({
                   <span className={styles.distance}>
                     {formatDistance(targetDistance)}
                   </span>
-                  <span className={styles.direction}>{guidanceText}</span>
+                  {/* At the stop, "behind you" from a few metres of GPS
+                      noise would send the passenger walking off again. */}
+                  {!targetAtStop && (
+                    <span className={styles.direction}>{guidanceText}</span>
+                  )}
 
                   {targetPoint?.clipped && (
                     <span className={styles.targetNote}>
@@ -335,6 +412,8 @@ export default function StopRadar({
                   >
                     <span>{stopLabel(stop)}</span>
                     <small>
+                      {t("Stop {id}", { id: stop.id })}
+                      {" · "}
                       {formatDistance(stop.distanceMeters)}
                       {recommended ? ` · ${t("Best")}` : ""}
                       {selected ? ` · ${t("Selected")}` : ""}

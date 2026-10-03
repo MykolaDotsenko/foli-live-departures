@@ -10,6 +10,9 @@ import {
   smoothHeading,
 } from "../utils/stopRadar";
 
+// GeolocationPositionError.PERMISSION_DENIED
+const PERMISSION_DENIED = 1;
+
 const LIVE_LOCATION_OPTIONS = {
   enableHighAccuracy: true,
   timeout: 10_000,
@@ -123,6 +126,18 @@ export default function useStopRadar({
         onPositionRef.current(next);
       },
       (locationError) => {
+        // No fix right now (no signal under a roof, or none within the
+        // timeout while standing at a crossing) is not the end of the walk.
+        // Clearing the radar on it blanked the screen and threw away the
+        // direction of travel, which then never built up between errors.
+        // The last fix stays, marked as waiting; only a refusal ends it.
+        if (
+          locationError?.code !== PERMISSION_DENIED &&
+          previousPositionRef.current
+        ) {
+          setStatus("stale");
+          return;
+        }
         previousPositionRef.current = null;
         setPosition(null);
         setMotionHeading(null);

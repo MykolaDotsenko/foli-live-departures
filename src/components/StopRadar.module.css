@@ -167,9 +167,64 @@
   transform: translate(-50%, -50%);
 }
 
-.ringOne { width: 25%; height: 25%; }
-.ringTwo { width: 50%; height: 50%; }
-.ringThree { width: 75%; height: 75%; }
+/* A third, two thirds and all of the scale: markers sit at up to 42% of
+   the radar's width from its centre, so the outer ring is the scale. */
+.ringOne { width: 28%; height: 28%; }
+.ringTwo { width: 56%; height: 56%; }
+.ringThree {
+  width: 84%;
+  height: 84%;
+  border-color: rgba(0, 121, 133, 0.3);
+}
+
+/* On the outer ring's lowest point, clear of the north label and of the
+   circle's edge at any text size. */
+.rangeLabel {
+  position: absolute;
+  top: 92%;
+  left: 50%;
+  z-index: 3;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #2f5960;
+  font-size: 0.66rem;
+  font-weight: 850;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+/* Where the passenger is facing or walking: the top of the radar. */
+.headingCone {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  width: 46%;
+  height: 46%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from -28deg,
+    rgba(0, 121, 133, 0.26) 0deg 56deg,
+    transparent 56deg
+  );
+  mask-image: radial-gradient(circle, #000 18%, transparent 70%);
+  transform: translate(-50%, -50%);
+}
+
+/* Where the phone may be: the GPS accuracy, to scale. */
+.accuracyHalo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 1;
+  min-width: 22px;
+  min-height: 22px;
+  border: 1px solid rgba(0, 121, 133, 0.35);
+  border-radius: 50%;
+  background: rgba(0, 121, 133, 0.1);
+  transform: translate(-50%, -50%);
+}
 
 .northLabel {
   position: absolute;
@@ -241,28 +296,39 @@
 
 .marker > span {
   display: grid;
-  width: 28px;
-  height: 28px;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 4px;
   place-items: center;
   border: 2px solid #fff;
-  border-radius: 50%;
+  border-radius: 999px;
   background: #42626a;
   box-shadow: 0 2px 8px rgba(23, 48, 54, 0.24);
+  font-size: 0.66rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
+
 
 .marker[data-recommended="true"] > span {
   background: #006c76;
 }
 
+.marker[data-target="true"] {
+  z-index: 6;
+}
+
 .marker[data-target="true"] > span {
-  width: 36px;
-  height: 36px;
+  min-width: 40px;
+  height: 40px;
   border-color: #fff4cf;
-  background: #b77300;
+  background: #a86a00;
   box-shadow:
     0 0 0 3px #f2c75e,
-    0 4px 12px rgba(89, 57, 0, 0.24);
-  font-size: 1.2rem;
+    0 4px 12px rgba(89, 57, 0, 0.28);
+  font-size: 0.8rem;
 }
 
 .targetCard {
@@ -393,7 +459,7 @@
   }
 
   .radar {
-    width: min(88vw, 330px);
+    width: min(100%, 330px);
   }
 
   .targetCard {
@@ -425,6 +491,10 @@
     padding: 12px;
   }
 
+  .stopChooser {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .header {
     flex-direction: column;
     gap: 10px;
@@ -433,13 +503,122 @@
   .closeButton {
     width: 100%;
   }
+}
 
+/* Two stop names side by side no longer fit with larger text. */
+@media (max-width: 380px) {
   .stopChooser {
     grid-template-columns: 1fr;
   }
 }
 
+@media screen {
+  :root[data-theme="dark"] .panel {
+    border-color: var(--dm-line);
+    background:
+      radial-gradient(circle at 18% 12%, rgba(77, 208, 196, 0.12), transparent 34%),
+      var(--dm-surface);
+    box-shadow: none;
+  }
+
+  :root[data-theme="dark"] .eyebrow,
+  :root[data-theme="dark"] .modePill {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .modePill {
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .title,
+  :root[data-theme="dark"] .targetName,
+  :root[data-theme="dark"] .distance {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .subtitle,
+  :root[data-theme="dark"] .modeRow,
+  :root[data-theme="dark"] .targetLabel,
+  :root[data-theme="dark"] .targetMeta,
+  :root[data-theme="dark"] .targetNote,
+  :root[data-theme="dark"] .stopChooser small,
+  :root[data-theme="dark"] .footnote {
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .closeButton,
+  :root[data-theme="dark"] .openStopButton,
+  :root[data-theme="dark"] .stopChooser button,
+  :root[data-theme="dark"] .targetCard {
+    border-color: var(--dm-line);
+    background: var(--dm-raised);
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .closeButton:hover,
+  :root[data-theme="dark"] .openStopButton:hover,
+  :root[data-theme="dark"] .stopChooser button:hover {
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .stopChooser button[data-target="true"] {
+    border-color: #e0a323;
+    background: #3a2c0c;
+    color: #ffe3a3;
+  }
+
+  :root[data-theme="dark"] .direction {
+    color: #f2c75e;
+  }
+
+  :root[data-theme="dark"] .radar {
+    border-color: var(--dm-line);
+    background:
+      linear-gradient(rgba(77, 208, 196, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(77, 208, 196, 0.08) 1px, transparent 1px),
+      radial-gradient(circle at center, rgba(77, 208, 196, 0.1), transparent 62%),
+      var(--dm-sunken);
+    background-size: 25% 25%, 25% 25%, auto, auto;
+  }
+
+  :root[data-theme="dark"] .ringOne,
+  :root[data-theme="dark"] .ringTwo,
+  :root[data-theme="dark"] .ringThree {
+    border-color: rgba(77, 208, 196, 0.22);
+  }
+
+  :root[data-theme="dark"] .rangeLabel {
+    background: var(--dm-sunken);
+    color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .northLabel {
+    color: var(--dm-soft);
+  }
+
+  :root[data-theme="dark"] .notice {
+    border-color: var(--dm-warn-line);
+    background: var(--dm-warn-surface);
+    color: var(--dm-warn-text);
+  }
+
+  :root[data-theme="dark"] .arrival {
+    background: var(--dm-ok-surface);
+    color: var(--dm-ok-text, var(--dm-text));
+  }
+
+  :root[data-theme="dark"] .error {
+    color: var(--dm-danger-text);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  .accuracyHalo {
+    transition:
+      width 400ms ease,
+      height 400ms ease;
+  }
+
   .marker > span,
   .targetNeedle {
     transition:
