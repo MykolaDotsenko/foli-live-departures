@@ -161,36 +161,9 @@ export default function useDestinationIntent(initialDestination = null) {
   );
 
   const restoreDestination = useCallback((candidate) => {
-    const id = String(candidate?.id || "").trim();
-    const label = String(candidate?.label || "").trim();
-    const kind = String(candidate?.kind || "");
-    const primaryStopId = String(candidate?.primaryStopId || "").trim();
-    const acceptableStopIds = Array.isArray(candidate?.acceptableStopIds)
-      ? candidate.acceptableStopIds
-          .map((stopId) => String(stopId || "").trim())
-          .filter((stopId) => /^\d+$/.test(stopId))
-      : [];
-
-    if (
-      !id ||
-      !label ||
-      !["saved-place", "public-stop", "external-place"].includes(kind) ||
-      !/^\d+$/.test(primaryStopId) ||
-      acceptableStopIds.length === 0
-    ) {
-      return false;
-    }
-
-    setDestination(
-      /** @type {DestinationIntent} */ ({
-        ...candidate,
-        id,
-        label,
-        kind,
-        primaryStopId,
-        acceptableStopIds: [...new Set(acceptableStopIds)],
-      })
-    );
+    const next = normalizeDestinationIntent(candidate);
+    if (!next) return false;
+    setDestination(next);
     return true;
   }, []);
 
