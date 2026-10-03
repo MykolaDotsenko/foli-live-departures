@@ -187,6 +187,8 @@ function App() {
     rideContinuation?.transferJourney || null;
   const pendingFinalWalk = rideContinuation?.finalWalk || null;
   const journey = useDestinationIntent(rideContinuation?.destination || null);
+  const journeyDestinationId = journey.destination?.id || "";
+  const restoreJourneyDestination = journey.restoreDestination;
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const {
@@ -204,16 +206,16 @@ function App() {
   useEffect(() => {
     const restoredDestination = rideContinuation?.destination || null;
     if (
-      ride.session &&
+      activeRideSession &&
       restoredDestination &&
-      journey.destination?.id !== restoredDestination.id
+      journeyDestinationId !== restoredDestination.id
     ) {
-      journey.restoreDestination(restoredDestination);
+      restoreJourneyDestination(restoredDestination);
     }
   }, [
-    journey.destination?.id,
-    journey.restoreDestination,
-    ride.session,
+    activeRideSession,
+    journeyDestinationId,
+    restoreJourneyDestination,
     rideContinuation,
   ]);
   const requestFocus = usePendingFocus();
