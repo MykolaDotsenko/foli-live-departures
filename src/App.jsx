@@ -688,12 +688,12 @@ function App() {
           />
         )}
 
-        {!ride.session &&
-          !finalWalk &&
-          (!stopId || journey.destination) && (
+        {/* With a stop open and a destination chosen, the destination
+            stays in view above the board as one line. */}
+        {!ride.session && !finalWalk && stopId && journey.destination && (
           <JourneySearch
             {...planSearchProps}
-            compact={Boolean(stopId)}
+            compact
             destination={journey.destination}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
@@ -770,6 +770,21 @@ function App() {
             />
           )}
         </div>
+
+        {/* Before a stop is open, "what leaves now" comes first: the stop
+            search above, with its location button. The planner follows it,
+            with the destination field leading. Ahead of the search it
+            pushed the question most passengers open the app for off a
+            phone's first screen. */}
+        {!ride.session && !finalWalk && !stopId && (
+          <JourneySearch
+            {...planSearchProps}
+            destination={journey.destination}
+            onChoosePlace={chooseJourneyPlace}
+            onChooseStop={chooseJourneyStop}
+            onChooseExternalPlace={chooseJourneyExternalPlace}
+          />
+        )}
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
