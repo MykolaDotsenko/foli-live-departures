@@ -4,6 +4,7 @@ import {
   clearRideContinuation,
   normalizeRideContinuation,
   persistRideContinuation,
+  readDurableRideContinuation,
   readRideContinuation,
   rideContinuationCanPersistDurably,
 } from "./rideContinuation";
@@ -54,6 +55,167 @@ describe("ride continuation", () => {
       transferJourney: null,
       finalWalk: { fromStopId: "32" },
     });
+  });
+
+  it("classifies every durable-privacy branch explicitly", () => {
+    expect(rideContinuationCanPersistDurably(null)).toBe(false);
+    expect(
+      rideContinuationCanPersistDurably({
+        transferJourney: {
+          id: "journey-public",
+          destinationKind: "public-stop",
+        },
+        finalWalk: null,
+      })
+    ).toBe(true);
+    expect(
+      rideContinuationCanPersistDurably({
+        transferJourney: {
+          id: "journey-saved",
+          destinationKind: "saved-place",
+        },
+        finalWalk: null,
+      })
+    ).toBe(true);
+    expect(
+      rideContinuationCanPersistDurably({
+        transferJourney: {
+          id: "journey-private",
+          destinationKind: "external-place",
+        },
+        finalWalk: null,
+      })
+    ).toBe(false);
+    expect(
+      rideContinuationCanPersistDurably({
+        transferJourney: {
+          id: "journey-public",
+          destinationKind: "public-stop",
+        },
+        finalWalk: { fromStopId: "32" },
+      })
+    ).toBe(false);
+  });
+
+  it("uses same-tab state first but exposes durable state for storage events", () => {
+    const expiry = futureExpiry();
+    const sessionContinuation = {
+      transferJourney: {
+        id: "journey-1",
+        revision: 1,
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+    const durableContinuation = {
+      transferJourney: {
+        id: "journey-1",
+        revision: 2,
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+
+    globalThis.sessionStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-1",
+        expiresAt: expiry,
+        continuation: sessionContinuation,
+      })
+    );
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-1",
+        expiresAt: expiry,
+        continuation: durableContinuation,
+      })
+    );
+
+    expect(readRideContinuation("ride-1")).toMatchObject({
+      transferJourney: { revision: 1 },
+    });
+    expect(readDurableRideContinuation("ride-1")).toMatchObject({
+      transferJourney: { revision: 2 },
+    });
+    expect(readDurableRideContinuation("")).toBeNull();
+  });
+
+  it("falls back to durable state when same-tab state is absent or invalid", () => {
+    const expiry = futureExpiry();
+    const continuation = {
+      transferJourney: {
+        id: "journey-1",
+        destinationKind: "saved-place",
+      },
+      destination: {
+        ...publicDestination,
+        id: "place:home",
+        kind: "saved-place",
+        label: "Home",
+      },
+    };
+
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-1",
+        expiresAt: expiry,
+        continuation,
+      })
+    );
+    expect(readRideContinuation("ride-1")).toEqual(
+      normalizeRideContinuation(continuation)
+    );
+
+    globalThis.sessionStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "wrong-ride",
+        expiresAt: expiry,
+        continuation,
+      })
+    );
+    expect(readRideContinuation("ride-1")).toEqual(
+      normalizeRideContinuation(continuation)
+    );
+  });
+
+  it("drops expired, wrong-ride and malformed durable event state", () => {
+    const continuation = {
+      transferJourney: {
+        id: "journey-1",
+        destinationKind: "public-stop",
+      },
+      destination: publicDestination,
+    };
+
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "wrong-ride",
+        expiresAt: futureExpiry(),
+        continuation,
+      })
+    );
+    expect(readDurableRideContinuation("ride-1")).toBeNull();
+
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-1",
+        expiresAt: Date.now() - 1,
+        continuation,
+      })
+    );
+    expect(readDurableRideContinuation("ride-1")).toBeNull();
+
+    globalThis.localStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      "{bad json"
+    );
+    expect(readDurableRideContinuation("ride-1")).toBeNull();
   });
 
   it("mirrors privacy-safe public continuation into durable storage", () => {
