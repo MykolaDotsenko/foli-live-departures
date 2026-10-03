@@ -317,10 +317,17 @@ async function installWith(pageHtml) {
   }
 }
 
-const shellEntry = (await readFile(path.join(distDir, "index.html"), "utf8")).match(
+const builtPage = await readFile(path.join(distDir, "index.html"), "utf8");
+const shellEntry = builtPage.match(
   /<script\b[^>]*type="module"[^>]*\bsrc="([^"]+)"/
 )?.[1];
-const fresh = await installWith(`<script type="module" src="${shellEntry}"></script>`);
+const shellStyle = builtPage.match(
+  /<link\b[^>]*rel="stylesheet"[^>]*\bhref="([^"]+)"/
+)?.[1];
+if (!shellEntry || !shellStyle) {
+  throw new Error("dist/index.html has no entry script or stylesheet to check the shell install with.");
+}
+const fresh = await installWith(builtPage);
 if (!fresh.ok) {
   throw new Error("Generated service worker fails to install with this build's own page.");
 }
@@ -329,9 +336,21 @@ if (fresh.requested.some((request) => request.cache !== "reload")) {
     "Generated service worker precaches through the HTTP cache, so a new worker can store an old page beside new files."
   );
 }
-const stale = await installWith('<script type="module" src="/assets/index-OLDBUILD.js"></script>');
+const stale = await installWith(
+  builtPage.replace(shellEntry, shellEntry.replace(/[^/]+$/, "index-OLDBUILD.js"))
+);
 if (stale.ok || !stale.deleted) {
   throw new Error(
     "Generated service worker accepts a previous build's page as its offline shell."
+  );
+}
+// A release that changes only styles keeps its script's name, so the
+// script alone cannot tell this build's page from the one before.
+const staleStyle = await installWith(
+  builtPage.replace(shellStyle, shellStyle.replace(/[^/]+$/, "index-OLDBUILD.css"))
+);
+if (staleStyle.ok || !staleStyle.deleted) {
+  throw new Error(
+    "Generated service worker accepts a previous build's page that differs only in its stylesheet."
   );
 }
