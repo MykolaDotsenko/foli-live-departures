@@ -28,11 +28,13 @@ export function normalizeRideContinuation(value) {
 
   const transferJourney = record(candidate.transferJourney);
   const finalWalk = record(candidate.finalWalk);
+  const destination = record(candidate.destination);
 
   if (!transferJourney && !finalWalk) return null;
   return {
     transferJourney,
     finalWalk,
+    destination,
   };
 }
 
