@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
@@ -709,4 +709,51 @@ test("hook exposes a provider error and clears stale transfer options", async ()
   );
   await waitFor(() => expect(failed.current.state).toBe("error"));
   expect(failed.current.options).toEqual([]);
+});
+
+// Polled every half minute even in a hidden tab, a search could keep
+// asking Föli for dozens of answers while the phone sat in a pocket.
+test("hook waits while the page is hidden and refreshes as soon as it is back", async () => {
+  const timeoutSpy = vi.spyOn(window, "setTimeout");
+  let visibility = "visible";
+  const visibilitySpy = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockImplementation(() => visibility);
+  const { result, unmount } = renderHook(() =>
+    useTransferJourneyOptions({
+      enabled: true,
+      originStops: [{ id: "100", distanceMeters: 20 }],
+      allStops: [
+        { id: "100", name: "Origin", lat: 60.45, lon: 22.26 },
+        { id: "500", name: "Hub", lat: 60.46, lon: 22.27 },
+        { id: "900", name: "Destination", lat: 60.47, lon: 22.28 },
+      ],
+      destination,
+      positionAccuracy: 10,
+    })
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  const callsAfterFirst = api.fetchStopMonitor.mock.calls.length;
+  const poll = timeoutSpy.mock.calls
+    .filter(([callback, delay]) => typeof callback === "function" && delay === 30_000)
+    .at(-1)?.[0];
+
+  visibility = "hidden";
+  await act(async () => {
+    await poll();
+  });
+  expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterFirst);
+
+  visibility = "visible";
+  await act(async () => {
+    document.dispatchEvent(new globalThis.Event("visibilitychange"));
+  });
+  await waitFor(() =>
+    expect(api.fetchStopMonitor.mock.calls.length).toBeGreaterThan(callsAfterFirst)
+  );
+
+  unmount();
+  visibilitySpy.mockRestore();
+  timeoutSpy.mockRestore();
 });

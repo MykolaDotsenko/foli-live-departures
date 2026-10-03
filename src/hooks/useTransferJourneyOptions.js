@@ -1016,15 +1016,35 @@ export default function useTransferJourneyOptions({
         setOptions([]);
         setState("error");
       } finally {
-        if (active) timer = window.setTimeout(run, REFRESH_MS);
+        if (active) timer = window.setTimeout(tick, REFRESH_MS);
       }
     };
+
+    // Realtime is polled only while the page is seen. Hidden, a refresh
+    // that falls due waits, and runs as soon as the page is back.
+    let refreshWaiting = false;
+    const tick = () => {
+      if (document.visibilityState === "hidden") {
+        refreshWaiting = true;
+        return;
+      }
+      run();
+    };
+    const handleVisibilityChange = () => {
+      if (!active || !refreshWaiting) return;
+      if (document.visibilityState === "hidden") return;
+      refreshWaiting = false;
+      window.clearTimeout(timer);
+      run();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     run();
 
     return () => {
       active = false;
       window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       controller.abort();
     };
   }, [signature]);
