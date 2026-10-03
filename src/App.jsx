@@ -180,9 +180,12 @@ function App() {
   );
   const online = useOnlineStatus();
   const ride = useRideMode();
+  const activeRideSession = ride.session;
+  const rideContinuation = ride.continuation;
+  const updateRideContinuation = ride.updateContinuation;
   const pendingTransferJourney =
-    ride.continuation?.transferJourney || null;
-  const pendingFinalWalk = ride.continuation?.finalWalk || null;
+    rideContinuation?.transferJourney || null;
+  const pendingFinalWalk = rideContinuation?.finalWalk || null;
   const journey = useDestinationIntent();
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
@@ -364,10 +367,10 @@ function App() {
       }
 
       if (
-        ride.session &&
+        activeRideSession &&
         pendingTransferJourney?.id === transferWatchJourney.id
       ) {
-        ride.updateContinuation((current) => {
+        updateRideContinuation((current) => {
           const currentJourney = current?.transferJourney || null;
           if (currentJourney?.id !== transferWatchJourney.id) return current;
 
@@ -386,8 +389,8 @@ function App() {
     futureLegWatch.states,
     pendingTransferJourney,
     revalidateTransfer,
-    ride.session,
-    ride.updateContinuation,
+    activeRideSession,
+    updateRideContinuation,
     selectedJourney,
     transferWatchJourney,
   ]);
