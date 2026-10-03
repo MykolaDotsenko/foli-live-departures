@@ -987,7 +987,7 @@ test("a reload keeps the committed transfer continuation attached to Ride Mode",
   await expect(page.getByText("Leg 2 of 2 · continue on line 7")).toBeVisible();
   expect(
     await page.evaluate(() =>
-      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+      globalThis.localStorage.getItem("foli-active-ride-continuation-v1")
     )
   ).toBeNull();
 });
