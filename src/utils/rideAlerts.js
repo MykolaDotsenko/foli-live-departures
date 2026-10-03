@@ -443,6 +443,12 @@ export async function showRideNotification(
     return false;
   }
 
+  // A replacement ride can start while notification cleanup from the previous
+  // one is still waiting on the service worker. Every notification, including
+  // a very fast SOON/NEXT transition, waits for the cleanup that was already
+  // queued when it started so that older work cannot close the new alert.
+  await notificationCleanupTail.catch(() => {});
+
   const copy = notificationCopy(stage, stop, routeType, context);
   const options = {
     body: copy.body,
