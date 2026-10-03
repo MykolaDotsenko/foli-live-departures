@@ -186,7 +186,7 @@ function App() {
   const pendingTransferJourney =
     rideContinuation?.transferJourney || null;
   const pendingFinalWalk = rideContinuation?.finalWalk || null;
-  const journey = useDestinationIntent();
+  const journey = useDestinationIntent(rideContinuation?.destination || null);
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const {
@@ -200,6 +200,22 @@ function App() {
     clearJourney,
     observeStopFeed,
   } = useActiveJourney();
+
+  useEffect(() => {
+    const restoredDestination = rideContinuation?.destination || null;
+    if (
+      ride.session &&
+      restoredDestination &&
+      journey.destination?.id !== restoredDestination.id
+    ) {
+      journey.restoreDestination(restoredDestination);
+    }
+  }, [
+    journey.destination?.id,
+    journey.restoreDestination,
+    ride.session,
+    rideContinuation,
+  ]);
   const requestFocus = usePendingFocus();
   // The passenger's own edits to the stop search, counted, so a late "Near
   // you" fix can tell that they started typing while it was on its way. A
@@ -629,6 +645,8 @@ function App() {
       continuation: {
         transferJourney: pendingTransfer,
         finalWalk: nextFinalWalk,
+        destination:
+          pendingTransfer || nextFinalWalk ? journey.destination : null,
       },
     });
     if (started) {
