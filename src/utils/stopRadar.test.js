@@ -23,6 +23,23 @@ describe("stop radar geometry", () => {
     expect(relativeBearingDegrees(20, null)).toBe(20);
   });
 
+  it("fails closed for missing or malformed coordinate pairs", () => {
+    expect(bearingDegrees(null, { lat: 60, lon: 22 })).toBeNull();
+    expect(bearingDegrees({ lat: 60, lon: 22 }, undefined)).toBeNull();
+    expect(
+      bearingDegrees(
+        { lat: "not-a-latitude", lon: 22 },
+        { lat: 60.45, lon: 22.26 }
+      )
+    ).toBeNull();
+    expect(
+      movementHeading(
+        { lat: 60.45, lon: 22.26, accuracy: 8 },
+        { lat: null, lon: 22.27, accuracy: 8 }
+      )
+    ).toBeNull();
+  });
+
   it("smooths across north without taking the long rotation", () => {
     expect(smoothHeading(350, 10, 0.5)).toBeCloseTo(0, 5);
     expect(smoothHeading(null, 12)).toBe(12);
