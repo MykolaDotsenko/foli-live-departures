@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, expect, test, vi } from "vitest";
 
 const api = vi.hoisted(() => ({
@@ -339,6 +339,61 @@ test("does not restart polling for identity-only rerenders with the same semanti
 
   await new Promise((resolve) => window.setTimeout(resolve, 30));
   expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterReady);
+});
+
+test("the next poll uses updated walking distance without restarting the request identity", async () => {
+  const timeoutSpy = vi.spyOn(window, "setTimeout");
+  api.fetchStopMonitor.mockResolvedValue({
+    stopName: "",
+    arrivals: [arrival("t-good", 1_600)],
+    serverTime: 1_000,
+    realtimeAvailable: true,
+    scheduleAvailable: false,
+    scheduleFailed: false,
+    scheduleIncomplete: false,
+  });
+  api.fetchTripStopTimes.mockResolvedValue([
+    stopTime("100", 1, "10:00:00"),
+    stopTime("900", 2, "10:20:00"),
+  ]);
+
+  const { result, rerender, unmount } = renderHook(
+    ({ distanceMeters }) =>
+      useDestinationAwareNearby({
+        stops: [{ id: "100", distanceMeters }],
+        destination,
+        positionAccuracy: 20,
+      }),
+    { initialProps: { distanceMeters: 600 } }
+  );
+
+  await waitFor(() => expect(result.current.state).toBe("ready"));
+  expect(result.current.fitsByStop["100"].status).toBe("too-late");
+  const callsAfterFirst = api.fetchStopMonitor.mock.calls.length;
+
+  // Same stop identity: do not restart the provider request immediately.
+  // The scheduled refresh must nevertheless read the latest walking distance.
+  rerender({ distanceMeters: 0 });
+  await Promise.resolve();
+  expect(api.fetchStopMonitor.mock.calls.length).toBe(callsAfterFirst);
+
+  const poll = timeoutSpy.mock.calls
+    .filter(([callback, delay]) =>
+      typeof callback === "function" && delay === 30_000
+    )
+    .at(-1)?.[0];
+  expect(poll).toEqual(expect.any(Function));
+
+  await act(async () => {
+    await poll();
+  });
+
+  await waitFor(() =>
+    expect(result.current.fitsByStop["100"].status).toBe("good")
+  );
+
+  unmount();
+  timeoutSpy.mockRestore();
 });
 
 test("re-evaluates when the approved destination stop set changes", async () => {
