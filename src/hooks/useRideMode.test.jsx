@@ -435,6 +435,77 @@ test("restores a non-expired active ride", () => {
   expect(result.current.session?.stage).toBe("next");
 });
 
+test("cleans orphaned continuation state when no active ride can be restored", () => {
+  localStorage.setItem(
+    "foli-active-ride-continuation-v1",
+    JSON.stringify({
+      rideId: "orphaned",
+      expiresAt: Date.now() + 60_000,
+      continuation: {
+        transferJourney: { id: "journey-orphaned" },
+      },
+    })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  expect(result.current.session).toBeNull();
+  expect(result.current.continuation).toBeNull();
+  expect(
+    localStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBeNull();
+});
+
+test("an active ride follows continuation updates written by another tab", () => {
+  const { result } = renderHook(() => useRideMode());
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      continuation: {
+        transferJourney: { id: "journey-1", revision: 1 },
+        finalWalk: null,
+        destination: {
+          id: "stop:32",
+          kind: "public-stop",
+          label: "Puistokatu",
+          primaryStopId: "32",
+          acceptableStopIds: ["32"],
+        },
+      },
+    });
+  });
+
+  const replacement = {
+    transferJourney: { id: "journey-1", revision: 2 },
+    finalWalk: null,
+    destination: {
+      id: "stop:32",
+      kind: "public-stop",
+      label: "Puistokatu",
+      primaryStopId: "32",
+      acceptableStopIds: ["32"],
+    },
+  };
+  const stored = JSON.stringify({
+    rideId: result.current.session.id,
+    expiresAt: result.current.session.expiresAt,
+    continuation: replacement,
+  });
+
+  localStorage.setItem("foli-active-ride-continuation-v1", stored);
+  act(() => {
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-active-ride-continuation-v1",
+        newValue: stored,
+      })
+    );
+  });
+
+  expect(result.current.continuation).toEqual(replacement);
+});
+
 // What another tab does to the stored ride, as this tab hears of it.
 function otherTabWrites(value) {
   if (value === null) {
