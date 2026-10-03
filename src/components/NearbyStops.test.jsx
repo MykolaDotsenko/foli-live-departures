@@ -556,11 +556,12 @@ test("stop radar seeds Nearby once instead of streaming every GPS fix into plann
     })
   );
 
-  // StopRadar itself consumes the second fix, but the parent one-time Nearby
-  // snapshot deliberately remains the first fix.
+  // StopRadar itself consumes the second fix asynchronously through its hook
+  // state, while the parent one-time Nearby snapshot deliberately remains the
+  // first fix. Wait for the radar render, then assert the isolation boundary.
+  await screen.findByText(/GPS accuracy ±25/);
   expect(screen.getByText(/Accuracy ±10/)).toBeInTheDocument();
   expect(screen.queryByText(/^Accuracy ±25/)).not.toBeInTheDocument();
-  expect(screen.getByText(/GPS accuracy ±25/)).toBeInTheDocument();
 });
 
 test("closing stop radar restores focus to its trigger without changing the board", async () => {
