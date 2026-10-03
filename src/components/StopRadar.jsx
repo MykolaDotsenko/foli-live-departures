@@ -205,7 +205,7 @@ export default function StopRadar({
           <div className={styles.layout}>
             <div
               className={styles.radar}
-              role="img"
+              role="group"
               aria-label={
                 targetStop
                   ? t("Radar showing nearby stops. Target {name}, stop {id}, {distance} away.", {
