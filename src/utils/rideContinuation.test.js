@@ -80,6 +80,51 @@ describe("ride continuation", () => {
     ).toBeNull();
   });
 
+  it("reads an empty continuation slot as empty", () => {
+    expect(readRideContinuation("ride-1")).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("can explicitly clear the tab-scoped continuation slot", () => {
+    persistRideContinuation("ride-1", {
+      transferJourney: { id: "journey-1" },
+    });
+
+    clearRideContinuation();
+
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("cleans malformed data when clearing a matching ride", () => {
+    globalThis.sessionStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      "{bad json"
+    );
+
+    expect(() => clearRideContinuation("ride-1")).not.toThrow();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("does not write continuation data without a ride id", () => {
+    const continuation = {
+      transferJourney: { id: "journey-1" },
+    };
+
+    expect(persistRideContinuation("", continuation)).toEqual({
+      transferJourney: { id: "journey-1" },
+      finalWalk: null,
+    });
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
   it("survives a same-tab reload boundary without entering localStorage", () => {
     const continuation = {
       transferJourney: {
