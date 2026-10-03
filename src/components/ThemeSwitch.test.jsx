@@ -67,7 +67,7 @@ test("follows a theme change made in another tab", () => {
   localStorage.setItem("foli-theme-v1", "dark");
   act(() => {
     window.dispatchEvent(
-      new StorageEvent("storage", {
+      new globalThis.StorageEvent("storage", {
         key: "foli-theme-v1",
         oldValue: "light",
         newValue: "dark",
