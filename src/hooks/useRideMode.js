@@ -422,6 +422,7 @@ export default function useRideMode() {
     setContinuation((current) => {
       const next =
         typeof updater === "function" ? updater(current) : updater;
+      if (next === current) return current;
       return persistRideContinuation(rideId, next);
     });
   }, []);
