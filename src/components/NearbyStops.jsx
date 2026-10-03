@@ -187,6 +187,8 @@ function NearbyStops({
   const [radarOpen, setRadarOpen] = useState(false);
   const [compassPermission, setCompassPermission] = useState("pending");
   const rankingRef = useRef({ destinationId: "", order: [] });
+  const radarButtonRef = useRef(null);
+  const restoreRadarFocusRef = useRef(false);
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -357,11 +359,21 @@ function NearbyStops({
 
   const openRadar = () => {
     if (!hasStopCoordinates || !liveRadarSupported) return;
+    restoreRadarFocusRef.current = false;
     setRadarOpen(true);
     void requestCompassPermission().then(setCompassPermission);
   };
 
-  const closeRadar = () => setRadarOpen(false);
+  const closeRadar = () => {
+    restoreRadarFocusRef.current = true;
+    setRadarOpen(false);
+  };
+
+  useEffect(() => {
+    if (radarOpen || !restoreRadarFocusRef.current) return;
+    restoreRadarFocusRef.current = false;
+    radarButtonRef.current?.focus();
+  }, [radarOpen]);
 
   const selectedStopDistance = useMemo(() => {
     if (!position) return null;
@@ -532,11 +544,12 @@ function NearbyStops({
           </button>
 
           <button
+            ref={radarButtonRef}
             type="button"
             className={styles.radarButton}
             onClick={radarOpen ? closeRadar : openRadar}
             aria-expanded={radarOpen}
-            aria-controls="stop-radar-title"
+            aria-controls="stop-radar-panel"
             aria-disabled={
               !hasStopCoordinates || !liveRadarSupported ? "true" : undefined
             }
@@ -589,6 +602,7 @@ function NearbyStops({
               setError("");
             }}
             onOpenStop={(id) => {
+              restoreRadarFocusRef.current = false;
               setRadarOpen(false);
               onSelect(id);
             }}
