@@ -249,6 +249,60 @@ describe("GTFS scheduled departure helpers", () => {
     ]);
   });
 
+  it("does not let a stale occurrence hide the same trip on a later service day", () => {
+    const realtime = [
+      {
+        tripref: "daily-trip",
+        lineref: "1",
+        monitored: true,
+        aimeddeparturetime: 1_000,
+      },
+    ];
+    const scheduled = [
+      {
+        tripref: "daily-trip",
+        lineref: "1",
+        monitored: false,
+        aimeddeparturetime: 1_000 + 24 * 60 * 60,
+      },
+    ];
+
+    expect(
+      mergeRealtimeAndScheduled(realtime, scheduled).map((row) => [
+        row.tripref,
+        row.aimeddeparturetime,
+      ])
+    ).toEqual([
+      ["daily-trip", 1_000],
+      ["daily-trip", 1_000 + 24 * 60 * 60],
+    ]);
+  });
+
+  it("does not merge two visits of the same trip when their planned stop times differ", () => {
+    const realtime = [
+      {
+        tripref: "loop-trip",
+        lineref: "7",
+        monitored: true,
+        aimeddeparturetime: 1_000,
+      },
+    ];
+    const scheduled = [
+      {
+        tripref: "loop-trip",
+        lineref: "7",
+        monitored: false,
+        aimeddeparturetime: 1_300,
+      },
+    ];
+
+    expect(
+      mergeRealtimeAndScheduled(realtime, scheduled, {
+        timeToleranceSeconds: 120,
+      })
+    ).toHaveLength(2);
+  });
+
   it("deduplicates by line and aimed time when SIRI omits the trip reference", () => {
     const realtime = [
       {
