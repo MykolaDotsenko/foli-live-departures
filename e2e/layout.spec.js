@@ -117,6 +117,33 @@ test("mobile first screen shows a real departure without scrolling", async ({
   expect(metrics.top).toBeLessThan(metrics.viewportHeight);
 });
 
+// Before a stop was open, the journey planner stood above the stop search
+// and its timing controls above its own destination field, so on a phone
+// "what leaves from my stop" started below the first screen. The stop
+// search now leads; the destination field still makes the first screen.
+test("a first visit leads with the stop search, then the destination", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    !["webkit-mobile", "chromium-mobile"].includes(testInfo.project.name)
+  );
+
+  await page.goto("/");
+  const stopSearch = page.getByRole("combobox", { name: "Find your stop" });
+  const destination = page.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+  const when = page.getByRole("combobox", { name: "When" });
+  await expect(stopSearch).toBeVisible();
+  await expect(destination).toBeVisible();
+
+  const top = async (locator) => (await locator.boundingBox()).y;
+  expect(await top(stopSearch)).toBeLessThan(await top(destination));
+  expect(await top(destination)).toBeLessThan(await top(when));
+  await expect(stopSearch).toBeInViewport();
+  await expect(destination).toBeInViewport();
+});
+
 // Stacked, Get me Home, search and service updates pushed the first
 // departure to 851px on a 1280x800 laptop, below the fold, with most of the
 // width empty. On a wide screen they now share the top in two columns.

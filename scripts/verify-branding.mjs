@@ -4,6 +4,8 @@ const PRODUCT_NAME = "Turku Departures";
 
 const publicBrandFiles = [
   "src/App.jsx",
+  "src/app/AppHeader.jsx",
+  "src/app/AppFooter.jsx",
   "src/components/AppErrorBoundary.jsx",
   "src/components/HelpGuide.jsx",
   "src/i18n/fi/app.js",
@@ -54,15 +56,18 @@ for (const expected of [
   }
 }
 
-const app = sources.get("src/App.jsx");
+// The banner carries the name; the footer, how to reach the maker.
+if (!sources.get("src/app/AppHeader.jsx").includes(PRODUCT_NAME)) {
+  throw new Error(`Missing ${PRODUCT_NAME} in the app's banner (src/app/AppHeader.jsx).`);
+}
+const footer = sources.get("src/app/AppFooter.jsx");
 for (const expected of [
-  PRODUCT_NAME,
   'mailto:docnikolaj1990@gmail.com?subject=Turku%20Departures%20feedback',
   'issues/new?template=bug_report.yml',
   'https://github.com/MykolaDotsenko/foli-live-departures',
 ]) {
-  if (!app.includes(expected)) {
-    throw new Error(`Missing trust/contact contract in App.jsx: ${expected}`);
+  if (!footer.includes(expected)) {
+    throw new Error(`Missing trust/contact contract in src/app/AppFooter.jsx: ${expected}`);
   }
 }
 

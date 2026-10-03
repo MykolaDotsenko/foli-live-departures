@@ -1,5 +1,9 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout, clearTimeout } from "node:timers";
+import vm from "node:vm";
+
+const { Response } = globalThis;
 
 const distDir = path.resolve("dist");
 
@@ -241,5 +245,112 @@ if (
 if (!sw.includes('foli-claim-clients')) {
   throw new Error(
     "Generated service worker cannot take over a page that reloaded during install, so that visit has no offline shell."
+  );
+}
+
+// Install, run for real in a sandbox: the shell must come from the network
+// past the HTTP cache, and a page that is not this build's must not become
+// the offline shell (it would ask, offline, for files the update deleted).
+async function installWith(pageHtml) {
+  const handlers = {};
+  const stored = new Map();
+  const requested = [];
+  let deleted = false;
+  const cache = {
+    async addAll(requests) {
+      for (const request of requests) {
+        requested.push(request);
+        const url = new URL(request.url ?? request, "https://example.test").pathname;
+        stored.set(url, url === BASE_PATH ? pageHtml : "asset");
+      }
+    },
+    async match(url) {
+      const key = new URL(url, "https://example.test").pathname;
+      return stored.has(key) ? new Response(stored.get(key)) : undefined;
+    },
+    async put() {},
+    async delete() {},
+  };
+  const sandbox = {
+    self: {
+      addEventListener: (type, handler) => {
+        handlers[type] = handler;
+      },
+      skipWaiting() {},
+      clients: { claim: async () => {}, matchAll: async () => [] },
+      location: new URL("https://example.test/"),
+    },
+    caches: {
+      open: async () => cache,
+      keys: async () => [],
+      delete: async () => {
+        deleted = true;
+        return true;
+      },
+      match: async () => undefined,
+    },
+    Request: class {
+      constructor(url, init = {}) {
+        this.url = new URL(url, "https://example.test").href;
+        this.cache = init.cache ?? "default";
+      }
+    },
+    Response,
+    URL,
+    setTimeout,
+    clearTimeout,
+    fetch: async () => new Response(""),
+    console,
+  };
+  vm.runInNewContext(sw, sandbox);
+  let installed;
+  handlers.install({
+    waitUntil(promise) {
+      installed = promise;
+    },
+  });
+  try {
+    await installed;
+    return { ok: true, requested, deleted };
+  } catch {
+    return { ok: false, requested, deleted };
+  }
+}
+
+const builtPage = await readFile(path.join(distDir, "index.html"), "utf8");
+const shellEntry = builtPage.match(
+  /<script\b[^>]*type="module"[^>]*\bsrc="([^"]+)"/
+)?.[1];
+const shellStyle = builtPage.match(
+  /<link\b[^>]*rel="stylesheet"[^>]*\bhref="([^"]+)"/
+)?.[1];
+if (!shellEntry || !shellStyle) {
+  throw new Error("dist/index.html has no entry script or stylesheet to check the shell install with.");
+}
+const fresh = await installWith(builtPage);
+if (!fresh.ok) {
+  throw new Error("Generated service worker fails to install with this build's own page.");
+}
+if (fresh.requested.some((request) => request.cache !== "reload")) {
+  throw new Error(
+    "Generated service worker precaches through the HTTP cache, so a new worker can store an old page beside new files."
+  );
+}
+const stale = await installWith(
+  builtPage.replace(shellEntry, shellEntry.replace(/[^/]+$/, "index-OLDBUILD.js"))
+);
+if (stale.ok || !stale.deleted) {
+  throw new Error(
+    "Generated service worker accepts a previous build's page as its offline shell."
+  );
+}
+// A release that changes only styles keeps its script's name, so the
+// script alone cannot tell this build's page from the one before.
+const staleStyle = await installWith(
+  builtPage.replace(shellStyle, shellStyle.replace(/[^/]+$/, "index-OLDBUILD.css"))
+);
+if (staleStyle.ok || !staleStyle.deleted) {
+  throw new Error(
+    "Generated service worker accepts a previous build's page that differs only in its stylesheet."
   );
 }

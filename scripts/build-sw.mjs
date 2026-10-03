@@ -68,17 +68,56 @@ const precacheUrls = [
     .map((relative) => withBasePath(relative)),
 ];
 
+// The hashed files this build's page loads: its entry script and its
+// stylesheet. A worker installing for this build checks that the page it
+// stored names every one of them: an older page from a cache on the way
+// would point at files this build no longer has. The script alone is not
+// enough, since a release that changes only styles keeps its name.
+const indexHtml = await readFile(path.join(DIST_DIR, "index.html"), "utf8");
+const shellAssets = [
+  ...new Set(
+    [...indexHtml.matchAll(/\b(?:src|href)="([^"]+)"/g)]
+      .map((match) => match[1])
+      .filter((url) => url.startsWith(withBasePath("assets/")))
+  ),
+];
+if (!indexHtml.match(/<script\b[^>]*type="module"[^>]*\bsrc="([^"]+)"/)) {
+  throw new Error("dist/index.html has no module entry script to check the shell against.");
+}
+if (!shellAssets.some((url) => url.endsWith(".js"))) {
+  throw new Error("dist/index.html loads no hashed script to check the shell against.");
+}
+
 const serviceWorker = `const CACHE_NAME = ${JSON.stringify(cacheName)};
 const CACHE_PREFIX = "foli-shell-";
 const BASE_PATH = ${JSON.stringify(BASE_PATH)};
 const SHELL_URL = BASE_PATH;
 const OFFLINE_MARKER_URL = \`${BASE_PATH}__foli_offline_shell__\`;
 const PRECACHE_URLS = ${JSON.stringify(precacheUrls, null, 2)};
+const SHELL_ASSETS = ${JSON.stringify(shellAssets, null, 2)};
+
+// The precache skips the browser's HTTP cache: the page itself is not
+// content-hashed, and taken from that cache (GitHub Pages lets it keep ten
+// minutes) a new worker stored the previous build's page beside this
+// build's files. Offline, that page asked for files deleted with the old
+// cache, and opened blank. A page that does not name every one of this
+// build's hashed files (an edge cache lagging behind the deploy) fails the
+// install, so the previous worker and its complete shell stay in charge.
+async function precacheShell() {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.addAll(
+    PRECACHE_URLS.map((url) => new Request(url, { cache: "reload" }))
+  );
+  const shell = await cache.match(SHELL_URL);
+  const html = shell ? await shell.text() : "";
+  if (!SHELL_ASSETS.every((url) => html.includes(url))) {
+    await caches.delete(CACHE_NAME);
+    throw new Error("The page fetched for the offline shell is not this build's.");
+  }
+}
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
-  );
+  event.waitUntil(precacheShell());
   self.skipWaiting();
 });
 
