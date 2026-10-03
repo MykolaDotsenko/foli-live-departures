@@ -1642,14 +1642,22 @@ The final experience should feel simpler to the passenger than the current produ
 
 ## P2 — Transfer journeys
 
-**Implementation status (2026-10-02):** the one-transfer foundation from PR #116, second-leg revalidation from PR #118 and explicit recovery from PR #119 are now generalized in PR #137 to an ordered itinerary with at most three transit legs (up to two transfers), multi-leg Active Journey handoffs and live revalidation of every committed future leg.
+**Implementation status (2026-10-03):** the one-transfer foundation from PR #116, second-leg revalidation from PR #118 and explicit recovery from PR #119 are generalized in PR #137 to an ordered itinerary with at most three transit legs (up to two transfers), multi-leg Active Journey handoffs and live revalidation of every committed future leg. PR #139 adds bounded multi-leg recovery plus leave-at/arrive-by and routing preferences; PR #152 hardens physical-occurrence identity and long-running revalidation/polling behaviour without changing the bounded product scope.
 
 Direct options remain preferred. When direct options are unavailable, Journey Assistant may search a strictly bounded client-side Föli SIRI/GTFS frontier with one or two transfers. Ride Mode remains authoritative on the currently boarded leg; only authoritative NOW at the exact selected alighting occurrence may advance the committed itinerary.
+
+A GTFS `trip_id` is treated as a trip definition, not a globally unique physical
+run. Scheduled transfer planning keeps separate first-leg occurrences by
+boarding stop plus planned/origin planned time, so a later service-date
+occurrence of the same trip remains searchable when an earlier occurrence
+cannot make a valid connection. Trip topology may still be cached by
+`tripRef` because the ordered stop definition is shared.
 
 Future-leg live revalidation contract:
 - monitor each already committed future trip at its concrete boarding stop;
 - use live-only SIRI for revalidation, never timetable fallback disguised as live evidence;
 - require exact trip identity plus planned/origin-time occurrence anchors when available;
+- bind both hysteresis history and the feed snapshot itself to the concrete committed leg identity, so a newly selected future leg cannot inherit another leg's missing-confirmation evidence even for one transient render;
 - age repeated provider snapshots naturally;
 - fresh delay/early-running evidence may update that concrete leg and transfer catchability;
 - cancellation is strong failure evidence even if the departure row has disappeared;
@@ -1673,9 +1681,13 @@ entrance/bounds context; and the production walking boundary remains
 approximate walking plus explicit external handoff rather than unverified
 turn-by-turn routing.
 
-Remaining pre-field work is now quality/release hardening: Ukrainian QA,
-Swedish, exact/approximate Next-stops semantics, health/CSP/toolchain work,
-further performance optimization toward the stretch target, then
-native/background feasibility and the explicit physical/manual release gates.
-The blocking complete-app bundle regression was repaired in PR #140 without
-raising the JS/CSS budget.
+Automated Ukrainian/Swedish QA, exact/approximate Next-stops semantics,
+health/CSP/toolchain work, Android foreground Ride feasibility and the
+repository-owned Play release surface are implemented. PRs #149–#152 add the
+current reliability hardening around occurrence identity, continuation,
+notification lifecycle, transfer hysteresis and long-running planner state.
+Remaining pre-field work is dominated by explicit manual evidence: native
+language review, VoiceOver/TalkBack and physical phone lifecycle checks,
+real-bus validation, custom-domain cutover, Android production signing/upgrade
+evidence and Play Console/Data Safety review. The complete-app bundle gate
+remains unchanged and green.

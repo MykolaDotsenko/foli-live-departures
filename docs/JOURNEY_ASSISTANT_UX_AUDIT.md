@@ -722,7 +722,7 @@ Potential reasons:
 
 ## P2.1 — Transfer routing
 
-**Status (2026-10-02): implemented through PR #137 and generalized/recovery-expanded in PR #139.**
+**Status (2026-10-03): implemented through PR #137 and generalized/recovery-expanded in PR #139; PR #152 adds occurrence-identity and long-running revalidation/polling hardening without changing the bounded UX model.**
 
 Current implementation:
 - bounded direct, one-transfer and two-transfer itinerary search;
@@ -733,6 +733,9 @@ Current implementation:
 - distant future-leg failure is recorded without interrupting the active Ride Mode;
 - recovery is explicit, destination-preserving and may include one additional bounded transfer;
 - no cancellation, disappearance, delay or recovery path silently switches the committed journey.
+- transfer missing-confirmation hysteresis and feed evidence are isolated by concrete committed-leg identity;
+- repeated GTFS trip definitions on different service dates remain distinct physical transfer candidates;
+- recurring destination-aware polling uses the latest walking-distance inputs even when the stop identity has not changed.
 
 ---
 
@@ -942,10 +945,13 @@ At the same time, an experienced passenger who only wants a departure board shou
 **The new product must be more capable without feeling heavier.**
 
 
-### Multi-leg journey UX — 2026-10-02
+### Multi-leg journey UX — 2026-10-03
 
 Status: implemented as a bounded fallback after direct journey search, with up
-to two transfers and explicit multi-leg recovery.
+to two transfers and explicit multi-leg recovery. Reliability hardening now
+also preserves distinct service-date occurrences of the same GTFS trip and
+prevents stale hysteresis/feed evidence from crossing into a replacement
+committed leg.
 
 Passenger sequence:
 1. direct journey options are checked first;

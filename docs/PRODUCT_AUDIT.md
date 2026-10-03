@@ -1,6 +1,6 @@
 # Product audit
 
-**Updated:** 2026-10-02
+**Updated:** 2026-10-03
 **Scope:** what a passenger meets on the screen, how far the app can be trusted, how useful it is, and how it presents itself before a public release.
 
 ## How it was scored
@@ -62,7 +62,7 @@ In the verification round, 21 of 23 screens scored 80 or more on a phone. The tw
 
 The first product review averaged about 41, and the re-audit about 56, on a coarser list of areas.
 
-Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-02, PR #140 has repaired the inherited bundle regression on `master` without raising the budget, and merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e` completed the repository's automated CI/browser/PWA/Android/live-contract/test-APK/production-deployment path. Broad promotion remains blocked by unfinished pre-field scope plus the explicit manual/domain/field-validation gates in `PRODUCTION_READINESS.md`.
+Historical review verdict: the product architecture was judged suitable for a quiet release before the latest feature batches. That verdict is **not the current release gate**. As of 2026-10-03, PRs #149–#152 have added another reliability pass over physical trip occurrences, Ride continuation/cross-tab state, notification cleanup, transfer revalidation and long-running Journey Assistant/timetable state. The current application-code baseline has completed the repository's automated CI/browser/PWA/Android/live-contract/test-APK/production-deployment path. Broad promotion remains blocked by the explicit manual/native-language/physical-device/domain/field-validation/signing/Play gates in `PRODUCTION_READINESS.md`, not by a known P0/P1 defect.
 
 ## Fixed after the verification round
 
@@ -78,6 +78,14 @@ These came out of the verification round and are not yet re-scored.
 - Get me Home is hidden during a ride: its route link would leave the page the alert runs in.
 - The badge no longer squeezes the title on a small phone.
 - A false MISSED can reopen only when a distinct live SIRI observation for the same concrete run arrives after the miss and proves the target is still ahead/at the bus. Timetable drift, GPS alone and replayed pre-miss snapshots cannot roll it back.
+
+**Reliability hardening after the feature batches**
+- Live + scheduled departures no longer collapse distinct physical occurrences merely because GTFS reuses the same trip ID across service dates or loop visits.
+- Ride continuation survives reload and cross-tab revalidation without rolling back to stale transfer state or deleting a replacement ride's durable continuation.
+- Notification cleanup is serialized; late permission/cleanup work from an ended ride cannot close or mutate alerts for a replacement ride.
+- Transfer revalidation hysteresis and feed evidence are bound to the concrete committed leg, so a new connection cannot inherit an old leg's missing-confirmation window.
+- Scheduled transfer search preserves later physical occurrences of the same GTFS trip when an earlier occurrence cannot produce a valid connection.
+- Destination-aware recurring polling reads the latest walking distance, empty followed-line timetable results advance their rolling horizon, and leave-at/arrive-by validity expires without requiring another user interaction.
 
 **Board and service updates**
 - A failed service-update check is tried again as soon as Föli answers the board, not five minutes later.
@@ -110,7 +118,7 @@ These came out of the verification round and are not yet re-scored.
 1. **Custom domain,** before promoting. Places, favourites and installs belong to the github.io address and do not move automatically; the app now provides an explicit privacy-safe backup/import path for portable local state before cutover.
 2. **A native Finnish review,** starting with the alert, what it says aloud, and the driver card.
 3. **Ukrainian release review,** because the full locale is implemented and reachable in the pre-field build, but native-language, physical-device accessibility and speech review are not yet complete; see [Ukrainian interface plan](UKRAINIAN_INTERFACE_PLAN.md).
-4. **Swedish implementation and review.**
+4. **Swedish native-language/accessibility/speech review.** The Swedish interface is implemented and exercised by automated browser/PWA/Android coverage; native sign-off is still manual.
 5. **Production Android signing material,** stored only in the protected `android-production` GitHub environment before the first immutable signed release.
 
 **Closed owner decisions**
@@ -132,7 +140,7 @@ These are stated, not hidden.
 - **Vehicle direction is unknown.** Stop Monitoring gives a position, not a heading, so the board says "Bus nearby", never "approaching".
 - **Connectivity is advisory.** `navigator.onLine` and a same-origin HEAD probe decide the offline notice; whether Föli answered decides what the board claims.
 - **A saved place reveals an area.** Places are public stops, never an address, but a stop labelled Home still says roughly where someone lives. Share, import and print say this.
-- **Three locale implementations exist today; Swedish is still planned.** English, Finnish and Ukrainian are present in the locale registry and Ukrainian is reachable in the pre-field build. Ukrainian still has open native-language/accessibility/speech release gates. Föli service updates remain provider-owned text and are shown truthfully when no matching localized source text exists.
+- **Four interface languages exist today.** English, Finnish, Ukrainian and Swedish are present in the locale registry, with FI/UK/SV shipped as lazy same-origin locale packs. Native Finnish/Ukrainian/Swedish language, accessibility and speech review gates remain open. Föli service updates remain provider-owned text and are shown truthfully when no matching localized source text exists.
 - **No analytics, by design.** Nothing measures adoption or retention; the scores above are reviewers' judgement.
 
 ## Release gates
@@ -150,7 +158,7 @@ Every pull request to `master` runs:
 
 After a successful `master` CI run, production Pages deployment stamps the exact CI SHA and does not finish green until the live HTML, main module, manifest, service worker, fail-closed place-search policy and exact deployed revision are verified.
 
-**Current gate status (2026-10-02):** PR #140 restored the unchanged JS/CSS gate at **578,177 raw / 161,897 gzip bytes** versus **625,000 / 180,000** limits. On merge SHA `4f88d851e5eb5ebf0fab555e8725551a209f893e`, CI including cross-browser/accessibility, bundle/PWA/CSP, Android build/E2E, live Föli smoke, tested Android APK publication and production Pages deployment with exact-revision smoke are green. Manual/field/domain/signing gates remain separate evidence and are not inferred from those automated checks.
+**Current gate status (2026-10-03):** the latest verified application-code baseline passes **120/120 test files and 1305/1305 tests** with **88.83% statements / 81.29% branches / 90.8% functions / 91.49% lines** coverage. Complete shipped JS/CSS is **609,579 raw / 172,389 gzip bytes** versus unchanged **625,000 / 180,000** limits; locale packs are **177,609 raw / 45,505 gzip** versus **180,000 / 55,000**. Cross-browser/accessibility, bundle/PWA/CSP, Android build/E2E, live Föli smoke, tested Android APK publication and production Pages deployment with exact-revision smoke are green. Manual/field/domain/signing/Play gates remain separate evidence and are not inferred from those automated checks.
 
 ## Product principle
 
