@@ -241,13 +241,30 @@ let current = storedLanguage() || preferredLanguage();
 const listeners = new Set();
 applyToDocument(current);
 
+let externalLanguageSequence = 0;
+
 function syncLanguageFromStorage() {
+  const requestId = ++externalLanguageSequence;
   const next = storedLanguage() || preferredLanguage();
   if (next === current) {
     applyToDocument(next);
     return;
   }
-  void activateLanguage(next, false);
+
+  const apply = () => {
+    if (requestId !== externalLanguageSequence) return false;
+    const latest = storedLanguage() || preferredLanguage();
+    if (latest !== next) return false;
+    switchTo(next);
+    return true;
+  };
+
+  if (DICTIONARIES[next]) {
+    apply();
+    return;
+  }
+
+  void ensureLanguageDictionary(next).then(apply).catch(() => {});
 }
 
 globalThis.addEventListener?.(
