@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
+import AppFooter from "./app/AppFooter";
+import AppHeader from "./app/AppHeader";
+import useStopBoard from "./app/useStopBoard";
+import useTransferWatch from "./app/useTransferWatch";
 import ActiveJourney from "./components/ActiveJourney";
 import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
-import BuildIdentity from "./components/BuildIdentity";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
 import FieldTestReport from "./components/FieldTestReport";
 import HomeRecovery from "./components/HomeRecovery";
-import HelpGuide from "./components/HelpGuide";
 import IosInstallHint from "./components/IosInstallHint";
-import LanguageSwitch from "./components/LanguageSwitch";
-import LocalStateBackup from "./components/LocalStateBackup";
 import JourneySearch from "./components/JourneySearch";
 import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
-import ThemeSwitch from "./components/ThemeSwitch";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
@@ -28,100 +27,44 @@ import usePendingFocus from "./hooks/usePendingFocus";
 import useRouteCatalog from "./hooks/useRouteCatalog";
 import useRideMode from "./hooks/useRideMode";
 import useSavedPlaces from "./hooks/useSavedPlaces";
-import useSavedStops, { stopToReopen } from "./hooks/useSavedStops";
+import useSavedStops from "./hooks/useSavedStops";
 import useServiceBoundary from "./hooks/useServiceBoundary";
-import useStopAlerts from "./hooks/useStopAlerts";
 import useStopCatalog from "./hooks/useStopCatalog";
-import useStopMonitor from "./hooks/useStopMonitor";
-import useFutureLegRevalidations from "./hooks/useFutureLegRevalidations";
 import useTransferRecoveryOptions from "./hooks/useTransferRecoveryOptions";
 import { t, useLanguage } from "./i18n";
 import { buildRouteIndexes } from "./utils/routes";
 import {
   arrivalMatchesActiveJourney,
-  revalidateFutureJourneyLeg,
   transferJourneyForRideSelection,
 } from "./utils/activeJourney";
 import { canSearchTransferRecovery } from "./utils/transferRecovery";
 import { advanceServerTime } from "./utils/time";
 import { isCancelledHere } from "./components/departureBoard/departures";
 import { clearSharedPlaceHash, parseSharedPlaceHash } from "./utils/sharedPlaces";
+import {
+  activeJourneyHeading,
+  finalWalkHeading,
+  firstJourneyOption,
+  nearbyHeading,
+  pageHeading,
+  placeCardControl,
+  recoveryJourneyTarget,
+  rideHeading,
+  selectedJourneyDepartureAction,
+} from "./app/focusTargets";
+import {
+  canonicalizeCurrentStop,
+  currentHistoryState,
+  openingStop,
+  stopFromLocation,
+  stopUrl,
+} from "./app/stopNavigation";
 import { realStopName } from "./utils/stopNames";
-import { recordFieldDiagnosticObservation } from "./utils/fieldDiagnostics";
 import {
   completedFinalWalk,
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
 
-const PRODUCT_NAME = "Turku Departures";
-const MAKER_NAME = "Mykola Dotsenko";
-
-// The page's one h1: the stop's name on the board, or the app's own name
-// before a stop is open. It is where focus goes when the button pressed
-// has gone and the page itself is the answer.
-function pageHeading() {
-  return (
-    document.getElementById("departures-title") ||
-    document.getElementById("app-title")
-  );
-}
-
-// A saved place's card, by its first control a passenger can reach. The
-// shared-place question is answered from a card that then leaves the page.
-function placeCardControl(placeId) {
-  const card = document.querySelector(
-    `[aria-labelledby="my-places-title"] [data-place="${placeId}"]`
-  );
-  if (!card) return pageHeading();
-  const controls = [...card.querySelectorAll("a[href], button:not(:disabled)")];
-  const shown = controls.find((control) =>
-    typeof control.checkVisibility === "function"
-      ? control.checkVisibility()
-      : control.getClientRects().length > 0
-  );
-  return shown || controls[0] || pageHeading();
-}
-
-function nearbyHeading() {
-  return document.getElementById("nearby-stops-title");
-}
-
-function rideHeading() {
-  return document.getElementById("ride-mode-title");
-}
-
-function activeJourneyHeading() {
-  return document.getElementById("active-journey-title");
-}
-
-function finalWalkHeading() {
-  return document.getElementById("final-walk-title");
-}
-
-function recoveryJourneyTarget() {
-  const option = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button'
-  );
-  if (option instanceof globalThis.HTMLElement) return option;
-  return (
-    document.getElementById("recovery-journey-options-title") ||
-    document.getElementById("recovery-transfer-journey-options-title")
-  );
-}
-
-function selectedJourneyDepartureAction() {
-  return (
-    document.getElementById("selected-journey-departure-action") ||
-    pageHeading()
-  );
-}
-
-function firstJourneyOption() {
-  const element = document.querySelector(
-    '[aria-labelledby="recovery-journey-options-title"] button, [aria-labelledby="recovery-transfer-journey-options-title"] button, [aria-labelledby="direct-journey-options-title"] button, [aria-labelledby="transfer-journey-options-title"] button'
-  );
-  return element instanceof globalThis.HTMLElement ? element : null;
-}
 
 function announceStop(stopId, name, loading) {
   if (name) return t("Departures for {name}, stop {id}", { name, id: stopId });
@@ -131,62 +74,11 @@ function announceStop(stopId, name, loading) {
 }
 
 
-function stopFromLocation() {
-  const stopFromUrl = new URLSearchParams(window.location.search).get("stop");
-  return /^\d+$/.test(stopFromUrl || "") ? stopFromUrl : "";
-}
-
-// The home-screen icon opens the bare address, and a daily passenger opens
-// it for their own stop: the one they last looked at, or their first
-// favourite. A link that names a stop, even one that does not exist, and a
-// shared place's link still decide for themselves.
-function openingStop() {
-  if (new URLSearchParams(window.location.search).has("stop")) {
-    return stopFromLocation();
-  }
-  if (parseSharedPlaceHash(window.location.hash)) return "";
-  return stopToReopen();
-}
-
-// A shared-place token belongs to the page it arrived on. Carried into
-// every stop URL, it put the "Add Home?" question back one Back press
-// after "Not now". So an entry keeps it only while it is the page the link
-// opened; leaving for another stop drops it from both entries.
-function stopUrl(stopId, { keepSharedPlace = false } = {}) {
-  const url = new globalThis.URL(window.location.href);
-
-  if (/^\d+$/.test(stopId || "")) {
-    url.searchParams.set("stop", stopId);
-  } else {
-    url.searchParams.delete("stop");
-  }
-
-  if (!keepSharedPlace && url.hash.startsWith("#place=")) {
-    url.hash = "";
-  }
-
-  return `${url.pathname}${url.search}${url.hash}`;
-}
-
 function withCatalogNames(savedStops, stops) {
   if (!savedStops.some((stop) => !stop.name)) return savedStops;
   const names = new Map(stops.map((stop) => [stop.id, stop.name]));
   return savedStops.map((stop) =>
     stop.name ? stop : { ...stop, name: names.get(stop.id) || "" }
-  );
-}
-
-function currentHistoryState() {
-  return window.history.state && typeof window.history.state === "object"
-    ? window.history.state
-    : {};
-}
-
-function canonicalizeCurrentStop(stopId, options) {
-  window.history.replaceState(
-    currentHistoryState(),
-    "",
-    stopUrl(stopId, options)
   );
 }
 
@@ -303,159 +195,23 @@ function App() {
     refreshing,
     error,
     refresh,
-  } = useStopMonitor(stopId);
-  const activeLines = useMemo(
-    () => [...new Set(arrivals.map((arrival) => arrival.lineref).filter(Boolean))],
-    [arrivals]
-  );
-  const {
-    alerts: serviceAlerts,
-    error: serviceAlertsError,
-    receivedAtMs: serviceAlertsReceivedAtMs,
-  } = useStopAlerts(stopId, activeLines, routesById);
-  const selectedStop = useMemo(
-    () => stops.find((stop) => stop.id === stopId) || null,
-    [stopId, stops]
-  );
-  // A number Föli's up-to-date stop list does not have: "?stop=1640" for
-  // 164 read as a stop with no departures.
-  const unknownStop =
-    Boolean(stopId) &&
-    catalogStatus === "ready" &&
-    stops.length > 0 &&
-    !selectedStop;
-  // A notice about a line, on that line's buses: with the list folded on a
-  // phone, "Detour" on the row is what says line 1 is affected.
-  const lineNotices = useMemo(() => {
-    const notices = new Map();
-    for (const alert of serviceAlerts) {
-      if (alert.type !== "message" && alert.type !== "emergency") continue;
-      for (const line of alert.routeNames || []) {
-        if (!notices.has(String(line))) {
-          notices.set(String(line), alert.effectLabel || "");
-        }
-      }
-    }
-    return notices;
-  }, [serviceAlerts]);
-  const stopCancellations = useMemo(
-    () => serviceAlerts.filter((alert) => alert.type === "cancellation"),
-    [serviceAlerts]
-  );
+    serviceAlerts,
+    serviceAlertsError,
+    serviceAlertsReceivedAtMs,
+    selectedStop,
+    unknownStop,
+    lineNotices,
+    stopCancellations,
+  } = useStopBoard({ stopId, stops, catalogStatus, routesById });
 
-  const selectedFutureJourney =
-    selectedJourney?.itinerary &&
-    Number.isInteger(Number(selectedJourney.activeLegIndex)) &&
-    Number(selectedJourney.activeLegIndex) <
-      selectedJourney.itinerary.legs.length - 1 &&
-    selectedJourney.phase !== "recovery"
-      ? selectedJourney
-      : null;
-  const pendingFutureJourney =
-    pendingTransferJourney?.itinerary &&
-    Number.isInteger(Number(pendingTransferJourney.activeLegIndex)) &&
-    Number(pendingTransferJourney.activeLegIndex) <
-      pendingTransferJourney.itinerary.legs.length - 1 &&
-    pendingTransferJourney.phase !== "recovery"
-      ? pendingTransferJourney
-      : null;
-  const transferWatchJourney =
-    selectedFutureJourney ||
-    (ride.session ? pendingFutureJourney : null);
-
-  const ridingSelectedTransfer =
-    Boolean(ride.session) &&
-    Boolean(transferWatchJourney) &&
-    pendingTransferJourney?.id === transferWatchJourney?.id;
-  const rideEtaSec = Number(ride.runtime?.etaSec);
-
-  const futureLegWatch = useFutureLegRevalidations({
-    enabled: Boolean(transferWatchJourney),
-    journey: transferWatchJourney,
-    routesById,
-    riding: ridingSelectedTransfer,
-    rideEtaSec:
-      ridingSelectedTransfer &&
-      Number.isFinite(rideEtaSec) &&
-      rideEtaSec >= 0
-        ? rideEtaSec
-        : null,
-    rideEtaSource: String(ride.runtime?.etaSource || ""),
-  });
-  const transferRevalidation = useMemo(
-    () =>
-      futureLegWatch.immediate || {
-        providerState: "idle",
-        decision: "unknown",
-        departureAt: null,
-        feasibility: null,
-        missingSinceMs: null,
-      },
-    [futureLegWatch.immediate]
-  );
-
-  useEffect(() => {
-    if (!transferWatchJourney || futureLegWatch.states.length === 0) {
-      return;
-    }
-
-    for (const { legIndex, state } of futureLegWatch.states) {
-      if (selectedJourney?.id === transferWatchJourney.id) {
-        revalidateTransfer(state, legIndex);
-      }
-
-      if (
-        activeRideSession &&
-        pendingTransferJourney?.id === transferWatchJourney.id
-      ) {
-        updateRideContinuation((current) => {
-          const currentJourney = current?.transferJourney || null;
-          if (currentJourney?.id !== transferWatchJourney.id) return current;
-
-          const nextJourney = revalidateFutureJourneyLeg(
-            currentJourney,
-            state,
-            legIndex
-          );
-          return nextJourney === currentJourney
-            ? current
-            : { ...current, transferJourney: nextJourney };
-        });
-      }
-    }
-  }, [
-    futureLegWatch.states,
-    pendingTransferJourney,
-    revalidateTransfer,
-    activeRideSession,
-    updateRideContinuation,
+  const transferRevalidation = useTransferWatch({
     selectedJourney,
-    transferWatchJourney,
-  ]);
-
-  useEffect(() => {
-    if (
-      !ride.fieldDiagnosticsEnabled ||
-      !ride.session ||
-      transferRevalidation.providerState === "idle"
-    ) {
-      return;
-    }
-    recordFieldDiagnosticObservation({
-      session: ride.session,
-      runtime: ride.runtime,
-      gps: ride.gps,
-      transferRevalidation,
-      futureLegRevalidations: futureLegWatch.states,
-    });
-  }, [
-    ride.fieldDiagnosticsEnabled,
-    ride.gps,
-    ride.runtime,
-    ride.session,
-    transferRevalidation,
-    futureLegWatch.states,
-  ]);
+    pendingTransferJourney,
+    ride,
+    routesById,
+    revalidateTransfer,
+    updateRideContinuation,
+  });
 
   const selectedJourneyArrival = useMemo(() => {
     if (!selectedJourney || selectedJourney.stopId !== stopId) return null;
@@ -839,71 +595,42 @@ function App() {
     requestFocus(() => placeCardControl(placeId));
   };
 
+  // What the planner shares wherever it appears: the plan's settings, and
+  // that changing one drops a journey chosen under the old ones.
+  const planSearchProps = {
+    stops,
+    places,
+    timeConstraint: journeyPlan.timeConstraint,
+    timeLocalValue: journeyPlan.timeLocalValue,
+    timeValid: journeyPlan.timeValid,
+    routingPreference: journeyPlan.preference,
+    coordinatesStatus,
+    online,
+    onTimeModeChange: (mode) => {
+      clearJourney();
+      journeyPlan.setTimeMode(mode);
+    },
+    onTimeLocalValueChange: (value) => {
+      clearJourney();
+      journeyPlan.setTimeLocalValue(value);
+    },
+    onPreferenceChange: (preference) => {
+      clearJourney();
+      journeyPlan.setPreference(preference);
+    },
+    onClear: clearJourneyDestination,
+  };
+
   return (
     // The header and footer sit beside the main content, not inside it, so
     // they are the page's banner and contentinfo: inside <main> they were
     // neither, and a screen reader's landmark list had only "main".
     <div className="app-shell">
-      <header className="topbar">
-        <div className="brandLockup">
-          {/* The favicon, and the source scripts/build-icons.mjs renders the
-              home-screen and get-off notification icons from, so the mark
-              someone tapped is the mark that greets them. Decorative here:
-              the wordmark beside it already carries the name, so a second
-              "Turku Departures" for a screen reader would only repeat it. */}
-          <img
-            className="brandMark"
-            src={`${import.meta.env.BASE_URL}foli-icon.svg`}
-            alt=""
-            width="48"
-            height="48"
-            decoding="async"
-          />
-          <div className="brandText">
-            {/* Turku is officially bilingual, and the pairing is itself a
-                local signal. The independence disclaimer keeps its place in
-                the footer; this line has one job, which is "you are here". */}
-            {/* The language switch rides on this short line's spare end: in a
-                row of its own it cost every phone screen a line of board. */}
-            <div className="eyebrow-row">
-              <p className="eyebrow">
-                <span lang="fi">Turku</span> · <span lang="sv">Åbo</span>
-              </p>
-              <div className="header-controls">
-                <ThemeSwitch />
-                <LanguageSwitch />
-              </div>
-            </div>
-            {/* The name stays English in either interface, and is read so.
-                Before a stop is open it is the page's heading: a first
-                visit had no h1 at all. With a stop open, the stop's name on
-                the board is the h1, and a page has only one. */}
-            {stopId ? (
-              <p className="brand" lang="en">
-                {PRODUCT_NAME}
-              </p>
-            ) : (
-              <h1 id="app-title" className="brand" lang="en" tabIndex={-1}>
-                {PRODUCT_NAME}
-              </h1>
-            )}
-            <p
-              className="context"
-              data-firstrun={
-                placesById.size === 0 && (firstVisit || !stopId) ? "true" : "false"
-              }
-            >
-              {t("Live bus times, disruptions and get-off alerts.")}
-            </p>
-          </div>
-        </div>
-        {/* Out of sight, and always in the page, so a change of connection
-            is announced: a live region added at that moment often is not.
-            The Offline banner below is what the eye gets. */}
-        <span className="live-pill" aria-live="polite">
-          {online ? t("Online") : t("Offline mode")}
-        </span>
-      </header>
+      <AppHeader
+        stopId={stopId}
+        firstRun={placesById.size === 0 && (firstVisit || !stopId)}
+        online={online}
+      />
 
       <main className="app-main">
         <ConnectivityStatus online={online} />
@@ -965,32 +692,12 @@ function App() {
           !finalWalk &&
           (!stopId || journey.destination) && (
           <JourneySearch
+            {...planSearchProps}
             compact={Boolean(stopId)}
-            stops={stops}
-            places={places}
             destination={journey.destination}
-            timeConstraint={journeyPlan.timeConstraint}
-            timeLocalValue={journeyPlan.timeLocalValue}
-            timeValid={journeyPlan.timeValid}
-            routingPreference={journeyPlan.preference}
-            coordinatesStatus={coordinatesStatus}
-            online={online}
             onChoosePlace={chooseJourneyPlace}
             onChooseStop={chooseJourneyStop}
             onChooseExternalPlace={chooseJourneyExternalPlace}
-            onTimeModeChange={(mode) => {
-              clearJourney();
-              journeyPlan.setTimeMode(mode);
-            }}
-            onTimeLocalValueChange={(value) => {
-              clearJourney();
-              journeyPlan.setTimeLocalValue(value);
-            }}
-            onPreferenceChange={(preference) => {
-              clearJourney();
-              journeyPlan.setPreference(preference);
-            }}
-            onClear={clearJourneyDestination}
           />
         )}
 
@@ -1115,16 +822,9 @@ function App() {
         {!ride.session && !finalWalk && stopId && !journey.destination && (
           <JourneySearch
             key="journey-entry"
+            {...planSearchProps}
             compact
-            stops={stops}
-            places={places}
             destination={null}
-            timeConstraint={journeyPlan.timeConstraint}
-            timeLocalValue={journeyPlan.timeLocalValue}
-            timeValid={journeyPlan.timeValid}
-            routingPreference={journeyPlan.preference}
-            coordinatesStatus={coordinatesStatus}
-            online={online}
             onChoosePlace={(place) => {
               requestFocus(nearbyHeading);
               chooseJourneyPlace(place);
@@ -1138,19 +838,6 @@ function App() {
               if (prepared?.ok) requestFocus(nearbyHeading);
               return prepared;
             }}
-            onTimeModeChange={(mode) => {
-              clearJourney();
-              journeyPlan.setTimeMode(mode);
-            }}
-            onTimeLocalValueChange={(value) => {
-              clearJourney();
-              journeyPlan.setTimeLocalValue(value);
-            }}
-            onPreferenceChange={(preference) => {
-              clearJourney();
-              journeyPlan.setPreference(preference);
-            }}
-            onClear={clearJourneyDestination}
           />
         )}
 
@@ -1200,123 +887,7 @@ function App() {
 
       </main>
 
-      <footer className="source-note">
-        <p className="source-line">
-          {t("Independent app · Data: Föli open data")} ·{" "}
-          <a href="https://data.foli.fi/" target="_blank" rel="noreferrer">
-            data.foli.fi
-          </a>{" "}
-          ·{" "}
-          <a
-            href="https://creativecommons.org/licenses/by/4.0/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            CC BY 4.0
-          </a>
-        </p>
-
-        <div className="maker-row">
-          <span>
-            {t("Built by")}{" "}
-            <a
-              href="https://github.com/MykolaDotsenko"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {MAKER_NAME}
-            </a>
-          </span>
-          <nav className="project-links" aria-label={t("Project links")}>
-            <a
-              href="mailto:docnikolaj1990@gmail.com?subject=Turku%20Departures%20feedback"
-              aria-label={t("Contact the maker by email")}
-            >
-              {t("Contact")}
-            </a>
-            <a
-              href="https://github.com/MykolaDotsenko/foli-live-departures/issues/new?template=bug_report.yml"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("Report a problem (GitHub)")}
-            </a>
-            <a
-              href="https://github.com/MykolaDotsenko/foli-live-departures"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {t("Source code")}
-            </a>
-            <a href={`${import.meta.env.BASE_URL}privacy.html`}>
-              {t("Privacy policy")}
-            </a>
-          </nav>
-        </div>
-
-        {/* Trust needs one place that says who makes this, what stays on
-            the phone and what leaves it. The facts were spread over a
-            dozen fine-print lines, and a one-line disclaimer was all a
-            passenger saw without scrolling to the bottom. */}
-        <div className="footer-actions">
-          <HelpGuide />
-          <details className="about">
-            <summary>{t("About & privacy")}</summary>
-          <dl>
-            <dt>{t("Who makes it")}</dt>
-            <dd>
-              {t(
-                "Turku Departures is an independent project by Mykola Dotsenko. It uses Föli open data but is not made by or affiliated with Föli or the City of Turku. For tickets and official journey planning, use Föli’s own services."
-              )}{" "}
-              {/* It is a companion to the official services, not a stand-in
-                  for them, so it points the way. */}
-              <a href="https://www.foli.fi/" target="_blank" rel="noreferrer">
-                {t("Föli’s website")}
-              </a>
-            </dd>
-            <dt>{t("Release")}</dt>
-            <BuildIdentity />
-            <dt>{t("Where the times come from")}</dt>
-            <dd>
-              {t(
-                "Föli open data at data.foli.fi, under CC BY 4.0, as processed by this app. Live times are estimates from the buses and can change."
-              )}
-            </dd>
-            <dt>{t("What stays on this phone")}</dt>
-            <dd>
-              {t(
-                "Favourites, recent stops and when you last looked at them, each stop’s line filter, My Places (public stop numbers and names, never an address), the last few departure boards for up to 15 minutes, a ride in progress for up to six hours, and recent place-search results for this browser session only. Clearing this site’s data removes all of it."
-              )}
-            </dd>
-            <dt>{t("What leaves the phone")}</dt>
-            {/* One fact per entry: a single paragraph ran to 90 words. */}
-            <dd>
-              {t(
-                "The app is loaded from GitHub Pages, which sees your IP address. The stops you look up and the buses whose stops you open are fetched from data.foli.fi, which sees your IP address and what was asked for. During a ride, so are your exit stop and the one before it."
-              )}
-            </dd>
-            <dd>
-              {t(
-                "Your location is used to find a stop when you ask, and during a ride while Follow my location is on. It stays on the phone and is never saved."
-              )}
-            </dd>
-            <dd>
-              {t(
-                "Direct address and place lookup is disabled in the production web app. Address and place text stays on this device, and the app offers the official Turku journey planner instead. Föli stop search remains available inside Turku Departures."
-              )}
-            </dd>
-            <dd>
-              {t(
-                "Google Maps opens only when you tap a route link. It gets the stop you chose and may then use your location to plan the route."
-              )}
-            </dd>
-            <dt>{t("What it doesn’t have")}</dt>
-            <dd>{t("No account, no ads, no analytics.")}</dd>
-          </dl>
-          <LocalStateBackup />
-          </details>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 }

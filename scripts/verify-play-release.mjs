@@ -14,7 +14,8 @@ const contact=JSON.parse(read("play/contact.json"));
 const altText=JSON.parse(read("play/alt-text.en-US.json"));
 const privacy=read("public/privacy.html");
 const privacyText=privacy.replace(/\s+/g," ");
-const app=read("src/App.jsx");
+// The in-app trust surface (contact, source, privacy policy) is the footer.
+const app=read("src/app/AppFooter.jsx");
 const releaseWorkflow=read(".github/workflows/android-release.yml");
 const apkWorkflow=read(".github/workflows/android-apk.yml");
 const e2eWorkflow=read(".github/workflows/android-e2e.yml");
