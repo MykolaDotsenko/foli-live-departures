@@ -30,6 +30,7 @@ import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
 
 const StopRadar = lazy(() => import("./StopRadar"));
+const RADAR_ICON = "◉";
 
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
@@ -540,7 +541,7 @@ function NearbyStops({
               !hasStopCoordinates || !liveRadarSupported ? "true" : undefined
             }
           >
-            <span aria-hidden="true">◉</span>
+            <span aria-hidden="true">{RADAR_ICON}</span>
             {radarOpen ? t("Close stop radar") : t("Open stop radar")}
           </button>
         </div>
