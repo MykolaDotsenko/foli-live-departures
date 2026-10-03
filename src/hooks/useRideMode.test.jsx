@@ -115,6 +115,7 @@ let originalGeolocation;
 
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   mocks.fetchStopMonitor.mockClear();
   mocks.fetchTripShape.mockClear();
   mocks.runRideTestAlert.mockClear();
@@ -153,6 +154,7 @@ afterEach(() => {
     value: originalGeolocation,
   });
   localStorage.clear();
+  sessionStorage.clear();
 });
 
 test("starts the Android companion only after a GPS fix and stops it with the ride", async () => {
@@ -245,6 +247,91 @@ test("persists the ride but never persists the device GPS sample", async () => {
   expect(clearWatch).toHaveBeenCalledWith(77);
   expect(localStorage.getItem("foli-active-ride-v1")).toBeNull();
   unmount();
+});
+
+test("keeps journey continuation across a same-tab Ride Mode reload boundary", () => {
+  const stored = {
+    id: "ride-restored-continuation",
+    ...rideConfig,
+    options: { locationBackup: false, notifications: false },
+    stage: "next",
+    stageReason: "schedule-fallback",
+    stageConfidence: "schedule",
+    startedAt: Date.now() - 60_000,
+    stageChangedAt: Date.now() - 60_000,
+    expiresAt: Date.now() + 60_000,
+  };
+  const continuation = {
+    transferJourney: {
+      id: "journey-1",
+      itinerary: {
+        legs: [
+          { tripRef: "trip-1" },
+          { tripRef: "trip-2" },
+        ],
+      },
+      activeLegIndex: 0,
+      phase: "walking-to-stop",
+    },
+    finalWalk: null,
+  };
+
+  localStorage.setItem("foli-active-ride-v1", JSON.stringify(stored));
+  sessionStorage.setItem(
+    "foli-active-ride-continuation-v1",
+    JSON.stringify({
+      rideId: stored.id,
+      continuation,
+    })
+  );
+
+  const { result } = renderHook(() => useRideMode());
+
+  expect(result.current.session?.id).toBe(stored.id);
+  expect(result.current.continuation).toEqual(continuation);
+  expect(localStorage.getItem("foli-active-ride-v1")).not.toContain(
+    "journey-1"
+  );
+});
+
+test("starting and ending a ride owns the continuation lifecycle", () => {
+  const { result } = renderHook(() => useRideMode());
+  const continuation = {
+    transferJourney: { id: "journey-1" },
+    finalWalk: {
+      destinationLabel: "Private destination",
+      lat: 60.45,
+      lon: 22.27,
+      fromStopId: "32",
+    },
+  };
+
+  act(() => {
+    result.current.startRide({
+      ...rideConfig,
+      continuation,
+    });
+  });
+
+  expect(result.current.continuation).toEqual(continuation);
+  expect(
+    JSON.parse(
+      sessionStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toMatchObject({
+    rideId: result.current.session?.id,
+    continuation,
+  });
+  expect(localStorage.getItem("foli-active-ride-v1")).not.toContain(
+    "Private destination"
+  );
+
+  act(() => result.current.endRide());
+
+  expect(result.current.continuation).toBeNull();
+  expect(
+    sessionStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBeNull();
 });
 
 test("restores a non-expired active ride", () => {
