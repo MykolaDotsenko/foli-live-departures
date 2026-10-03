@@ -40,6 +40,7 @@ import {
   nativeRideCompanionEligible,
 } from "../utils/nativeActiveRide";
 import {
+  RIDE_CONTINUATION_STORAGE_KEY,
   clearRideContinuation,
   persistRideContinuation,
   readRideContinuation,
@@ -72,6 +73,9 @@ export default function useRideMode() {
   const initialRideRef = useRef(null);
   if (initialRideRef.current === null) {
     initialRideRef.current = readStoredRide() || false;
+    if (initialRideRef.current === false) {
+      clearRideContinuation();
+    }
   }
 
   const [session, setSession] = useState(
@@ -183,9 +187,15 @@ export default function useRideMode() {
   // that runs it, which may know its bus is very late and still coming.
   useEffect(() => {
     const takeOtherTabRide = (event) => {
-      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
       const current = sessionRef.current;
       if (!current) return;
+
+      if (event.key === RIDE_CONTINUATION_STORAGE_KEY) {
+        setContinuation(readRideContinuation(current.id));
+        return;
+      }
+
+      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
       if (storedRideId() === current.id) return;
       const stored = readStoredRide();
 
@@ -371,7 +381,8 @@ export default function useRideMode() {
       clearRideContinuation(previousRideId);
       const nextContinuation = persistRideContinuation(
         nextSession.id,
-        requestedContinuation
+        requestedContinuation,
+        nextSession.expiresAt
       );
       setContinuation(nextContinuation);
       commitRuntime(emptyRuntime());
@@ -423,7 +434,11 @@ export default function useRideMode() {
       const next =
         typeof updater === "function" ? updater(current) : updater;
       if (next === current) return current;
-      return persistRideContinuation(rideId, next);
+      return persistRideContinuation(
+        rideId,
+        next,
+        sessionRef.current?.expiresAt
+      );
     });
   }, []);
 
