@@ -59,10 +59,16 @@ export default function useStopRadar({
     if (!active) {
       setStatus("idle");
       setError("");
+      previousPositionRef.current = null;
+      setMotionHeading(null);
+      setMotionHeadingAt(0);
       return undefined;
     }
     if (!pageVisible) {
       setStatus("paused");
+      previousPositionRef.current = null;
+      setMotionHeading(null);
+      setMotionHeadingAt(0);
       return undefined;
     }
 
@@ -112,6 +118,9 @@ export default function useStopRadar({
         onPositionRef.current(next);
       },
       (locationError) => {
+        previousPositionRef.current = null;
+        setMotionHeading(null);
+        setMotionHeadingAt(0);
         setStatus("error");
         setError(locationErrorMessage(locationError));
       },
@@ -124,7 +133,10 @@ export default function useStopRadar({
   }, [active, pageVisible]);
 
   useEffect(() => {
-    if (!active || !pageVisible) return undefined;
+    if (!active || !pageVisible) {
+      setCompassHeading(null);
+      return undefined;
+    }
     if (!["granted", "not-required"].includes(compassPermission)) {
       setCompassHeading(null);
       return undefined;
