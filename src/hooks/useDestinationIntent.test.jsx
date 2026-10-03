@@ -92,6 +92,102 @@ test("restores a validated destination intent for active Ride Mode continuity", 
   expect(result.current.destination?.id).toBe("place:home");
 });
 
+test("destination restoration fails closed for malformed persisted shapes", () => {
+  const base = {
+    id: "stop:32",
+    kind: "public-stop",
+    label: "Puistokatu",
+    primaryStopId: "32",
+    acceptableStopIds: ["32"],
+  };
+
+  for (const candidate of [
+    null,
+    "not-an-object",
+    [],
+    { ...base, id: "" },
+    { ...base, label: "" },
+    { ...base, kind: "private-stop" },
+    { ...base, primaryStopId: "bad" },
+    { ...base, acceptableStopIds: "32" },
+    { ...base, acceptableStopIds: ["31"] },
+  ]) {
+    expect(normalizeDestinationIntent(candidate)).toBeNull();
+  }
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      acceptableStopIds: [null, "", "bad", "32", "32", "33"],
+    })
+  ).toEqual({
+    ...base,
+    acceptableStopIds: ["32", "33"],
+  });
+});
+
+test("destination restoration validates private external-place details", () => {
+  const base = {
+    id: "external:test",
+    kind: "external-place",
+    label: "Private destination",
+    primaryStopId: "32",
+    acceptableStopIds: ["32", "33"],
+    lat: 60.45,
+    lon: 22.27,
+  };
+
+  expect(
+    normalizeDestinationIntent({ ...base, lat: "not-a-number" })
+  ).toBeNull();
+  expect(
+    normalizeDestinationIntent({ ...base, lon: Number.POSITIVE_INFINITY })
+  ).toBeNull();
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: [],
+    })
+  ).toEqual(base);
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: {
+        "32": 0,
+        "33": "125",
+        bad: 50,
+        "34": -1,
+        "35": "not-a-number",
+      },
+      source: "osm-nominatim",
+    })
+  ).toEqual({
+    ...base,
+    finalWalkDistanceByStop: {
+      "32": 0,
+      "33": 125,
+    },
+    source: "osm-nominatim",
+  });
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: {
+        "32": 75,
+      },
+      source: "something-else",
+    })
+  ).toEqual({
+    ...base,
+    finalWalkDistanceByStop: {
+      "32": 75,
+    },
+  });
+});
+
 test("lets the passenger choose and clear destination explicitly", () => {
   const { result } = renderHook(() => useDestinationIntent());
 
