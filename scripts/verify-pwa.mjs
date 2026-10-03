@@ -1,10 +1,47 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
-// Normalized exactly as in vite.config.js and scripts/build-sw.mjs, so the
-// gate checks the build it is given: "/" by default, and the GitHub Pages
-// subpath that production actually ships under.
-const configuredBasePath = String(process.env.VITE_BASE_PATH || "/").trim();
+const distDir = path.resolve("dist");
+
+async function readProductionBuildContext() {
+  try {
+    const payload = JSON.parse(
+      await readFile(path.join(distDir, ".production-site.json"), "utf8")
+    );
+    if (
+      payload?.schema !== 1 ||
+      typeof payload?.siteUrl !== "string" ||
+      typeof payload?.basePath !== "string"
+    ) {
+      throw new Error("Production build metadata is malformed.");
+    }
+    return payload;
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+// Verify the build artifact's actual base path. Normal/local builds have no
+// production metadata and use VITE_BASE_PATH (or "/"). The production build
+// wrapper writes metadata after Vite succeeds, so a later verifier process
+// cannot accidentally fall back to "/" and inspect the wrong scope.
+const productionBuild = await readProductionBuildContext();
+const envBasePath = String(process.env.VITE_BASE_PATH || "").trim();
+const configuredBasePath = String(
+  productionBuild?.basePath || envBasePath || "/"
+).trim();
+
+if (
+  productionBuild &&
+  envBasePath &&
+  envBasePath !== productionBuild.basePath
+) {
+  throw new Error(
+    `PWA verification base-path mismatch: env=${envBasePath}, build=${productionBuild.basePath}.`
+  );
+}
+
 const baseWithLeadingSlash = configuredBasePath.startsWith("/")
   ? configuredBasePath
   : `/${configuredBasePath}`;
@@ -12,7 +49,14 @@ const BASE_PATH = baseWithLeadingSlash.endsWith("/")
   ? baseWithLeadingSlash
   : `${baseWithLeadingSlash}/`;
 
-const distDir = path.resolve("dist");
+if (productionBuild) {
+  const site = new URL(productionBuild.siteUrl);
+  if (site.protocol !== "https:" || site.pathname !== BASE_PATH) {
+    throw new Error(
+      "Production build metadata siteUrl/basePath is inconsistent."
+    );
+  }
+}
 const assetsDir = path.join(distDir, "assets");
 const sw = await readFile(path.join(distDir, "sw.js"), "utf8");
 const assets = await readdir(assetsDir);

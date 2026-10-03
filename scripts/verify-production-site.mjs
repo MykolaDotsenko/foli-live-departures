@@ -253,6 +253,7 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
  * @param {{
  *   siteUrl: string,
  *   expectedSha: string,
+ *   expectedSiteUrl?: string,
  *   attempts?: number,
  *   retryDelayMs?: number,
  *   fetchTimeoutMs?: number,
@@ -261,11 +262,20 @@ async function verifyOnce({ baseUrl, expectedSha, attempt, fetchTimeoutMs }) {
 export async function verifyProductionSite({
   siteUrl,
   expectedSha,
+  expectedSiteUrl = "",
   attempts = DEFAULT_ATTEMPTS,
   retryDelayMs = DEFAULT_RETRY_DELAY_MS,
   fetchTimeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
 }) {
   const baseUrl = normalizeSiteUrl(siteUrl);
+  if (expectedSiteUrl) {
+    const configuredUrl = normalizeSiteUrl(expectedSiteUrl);
+    if (baseUrl.href !== configuredUrl.href) {
+      throw new Error(
+        `Production smoke URL ${baseUrl.href} does not match configured production site ${configuredUrl.href}.`
+      );
+    }
+  }
   const sha = exactSha(expectedSha);
   const tries = Number(attempts);
   if (!Number.isInteger(tries) || tries < 1) {
@@ -298,9 +308,12 @@ const isMain =
   import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href;
 
 if (isMain) {
+  const { loadProductionSiteConfig } = await import("./production-site-config.mjs");
+  const production = loadProductionSiteConfig();
   const result = await verifyProductionSite({
     siteUrl: process.env.PRODUCTION_SITE_URL || "",
     expectedSha: process.env.EXPECTED_DEPLOYMENT_SHA || "",
+    expectedSiteUrl: production.siteUrl,
   });
   console.log(
     `Verified production ${result.siteUrl} at exact revision ${result.sha}.`

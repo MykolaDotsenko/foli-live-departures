@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "gates": [
+    {"id":"branch-protection","status":"open","completedAt":null,"evidence":[]},
+    {"id":"native-finnish-review","status":"open","completedAt":null,"evidence":[]},
+    {"id":"native-ukrainian-review","status":"open","completedAt":null,"evidence":[]},
+    {"id":"native-swedish-review","status":"open","completedAt":null,"evidence":[]},
+    {"id":"voiceover-physical","status":"open","completedAt":null,"evidence":[]},
+    {"id":"talkback-physical","status":"open","completedAt":null,"evidence":[]},
+    {"id":"physical-iphone-lifecycle","status":"open","completedAt":null,"evidence":[]},
+    {"id":"physical-android-lifecycle","status":"open","completedAt":null,"evidence":[]},
+    {"id":"real-bus-validation","status":"open","completedAt":null,"evidence":[]},
+    {"id":"custom-domain","status":"open","completedAt":null,"evidence":[]},
+    {"id":"android-production-signing","status":"open","completedAt":null,"evidence":[]},
+    {"id":"android-physical-upgrade","status":"open","completedAt":null,"evidence":[]},
+    {"id":"play-data-safety-final-review","status":"open","completedAt":null,"evidence":[]},
+    {"id":"play-console-upload-review","status":"open","completedAt":null,"evidence":[]}
+  ]
+}

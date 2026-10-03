@@ -15,7 +15,7 @@ import { isSupportedLanguage } from "../i18n/locales";
  *   needsReview: boolean,
  * }} BackupPlace */
 /** @typedef {{ stopId: string, lines: string[], savedAt: number }} LineFilter */
-/** @typedef {"en" | "fi" | "uk"} InterfaceLanguage */
+/** @typedef {"en" | "fi" | "uk" | "sv"} InterfaceLanguage */
 /** @typedef {"light" | "dark"} InterfaceTheme */
 /** @typedef {Pick<Storage, "getItem" | "setItem" | "removeItem">} StorageLike */
 /** @typedef {{

@@ -102,6 +102,10 @@ release surface; it does not claim those owner-side steps are complete.
 
 See [ANDROID_RELEASE.md](ANDROID_RELEASE.md) and [../play/README.md](../play/README.md).
 
+## Release-candidate evidence ledger
+
+Manual release gates are tracked in `config/release-gates.json` and checked by `npm run verify:release-readiness`. Automation validates the ledger shape but cannot close physical/native/domain/Play gates without dated evidence. The production origin/base path is versioned in `config/production-site.json`; see [DOMAIN_CUTOVER.md](DOMAIN_CUTOVER.md).
+
 ## Pre-field completion policy
 
 Real-bus validation begins only after the planned product scope is implemented

@@ -39,7 +39,12 @@
     "verify:play-release": "node scripts/verify-play-release.mjs && node --test scripts/verify-android-play-target.test.mjs",
     "verify:android-play-target": "node scripts/verify-android-play-target.mjs",
     "build:play-store-assets": "node scripts/build-play-store-assets.mjs",
-    "verify:play-assets": "node scripts/verify-play-assets.mjs"
+    "verify:play-assets": "node scripts/verify-play-assets.mjs",
+    "build:production-site": "node scripts/build-production-site.mjs",
+    "verify:production-cutover": "node --test scripts/production-site-config.test.mjs && node scripts/verify-production-cutover.mjs",
+    "verify:release-gates": "node scripts/verify-release-gates.mjs",
+    "verify:release-readiness": "npm run verify:production-cutover && npm run verify:release-gates && npm run verify:pwa-context",
+    "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

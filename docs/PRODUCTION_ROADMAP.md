@@ -76,6 +76,8 @@ These come before major feature expansion.
 
 ## PR-A01 — Custom-domain migration contract
 
+**Implementation status:** automated pre-cutover contract implemented; final domain selection, DNS/Pages configuration and real cutover evidence remain manual/open.
+
 **Priority:** 100/100  
 **Dependency:** owner chooses and controls the final domain.
 

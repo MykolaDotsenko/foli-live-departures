@@ -195,6 +195,7 @@ const pluginSource = `package ${PACKAGE_NAME};
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -223,12 +224,7 @@ public class ActiveRidePlugin extends Plugin {
     @PluginMethod
     public void prepare(PluginCall call) {
         Activity activity = getActivity();
-        if (
-            activity == null ||
-            activity.isFinishing() ||
-            activity.isDestroyed() ||
-            !activity.hasWindowFocus()
-        ) {
+        if (!isActivityVisible(activity)) {
             call.resolve(preparation(false, "activity-not-visible"));
             return;
         }
@@ -270,12 +266,7 @@ public class ActiveRidePlugin extends Plugin {
     @PluginMethod
     public void start(PluginCall call) {
         Activity activity = getActivity();
-        if (
-            activity == null ||
-            activity.isFinishing() ||
-            activity.isDestroyed() ||
-            !activity.hasWindowFocus()
-        ) {
+        if (!isActivityVisible(activity)) {
             call.resolve(result(false, "activity-not-visible"));
             return;
         }
@@ -368,6 +359,24 @@ public class ActiveRidePlugin extends Plugin {
         response.put("ready", ready);
         response.put("reason", reason);
         return response;
+    }
+
+    private static boolean isActivityVisible(Activity activity) {
+        if (
+            activity == null ||
+            activity.isFinishing() ||
+            activity.isDestroyed()
+        ) {
+            return false;
+        }
+
+        ActivityManager.RunningAppProcessInfo processInfo =
+            new ActivityManager.RunningAppProcessInfo();
+        ActivityManager.getMyMemoryState(processInfo);
+        return processInfo.importance ==
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND ||
+            processInfo.importance ==
+                ActivityManager.RunningAppProcessInfo.IMPORTANCE_VISIBLE;
     }
 
     private static boolean hasForegroundLocationPermission(Context context) {
@@ -537,7 +546,9 @@ export function verifyAndroidActiveRide(
     'alias = "notifications"',
     "requestPermissionForAlias(",
     "@PermissionCallback",
-    "activity.hasWindowFocus()",
+    "ActivityManager.getMyMemoryState(processInfo)",
+    "IMPORTANCE_FOREGROUND",
+    "IMPORTANCE_VISIBLE",
     "location-permission-required",
     "notification-permission-required",
     "location-services-disabled",

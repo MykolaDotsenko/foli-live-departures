@@ -301,6 +301,28 @@ test("serializer never creates a file this version would reject as oversized", (
   expect(() => serializeLocalStateBackup()).toThrow("backup-export-too-large");
 });
 
+test("Swedish preference round-trips through the cross-origin backup contract", () => {
+  seed(LOCAL_STATE_KEYS.language, "sv");
+  seed(LOCAL_STATE_KEYS.theme, "dark");
+
+  const serialized = serializeLocalStateBackup({
+    now: Date.parse("2026-10-03T00:00:00Z"),
+  });
+  expect(JSON.parse(serialized).data.preferences).toEqual({
+    language: "sv",
+    theme: "dark",
+  });
+
+  localStorage.clear();
+  const prepared = prepareLocalStateImport(serialized);
+  expect(prepared.incoming.language).toBe("sv");
+  expect(prepared.preview.languageWillImport).toBe(true);
+
+  applyPreparedLocalStateImport(prepared);
+  expect(localStorage.getItem(LOCAL_STATE_KEYS.language)).toBe("sv");
+  expect(localStorage.getItem(LOCAL_STATE_KEYS.theme)).toBe("dark");
+});
+
 test("serializer produces a stable inspectable JSON document", () => {
   seed(LOCAL_STATE_KEYS.savedStops, {
     favorites: [{ id: "10", name: "Kauppatori" }],
