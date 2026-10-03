@@ -450,3 +450,73 @@ it("never fuzzy-deduplicates two departures with different known trip identities
     "scheduled-trip",
   ]);
 });
+
+// The reference: the noon-minus-twelve-hours rule worked out from scratch
+// for every call, as the code did before it reused its formatters.
+function referenceServiceEpoch(serviceDate, clock) {
+  const [, y, m, d] = serviceDate.match(/^(\d{4})(\d{2})(\d{2})$/);
+  const [hh, mm, ss] = clock.split(":").map(Number);
+  const offset = (epochMs) => {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/Helsinki",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hourCycle: "h23",
+      })
+        .formatToParts(new Date(epochMs))
+        .map((part) => [part.type, part.value])
+    );
+    return (
+      Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second) -
+      Math.floor(epochMs / 1000) * 1000
+    );
+  };
+  const noonUtc = Date.UTC(+y, +m - 1, +d, 12);
+  const noon = noonUtc - offset(noonUtc - offset(noonUtc));
+  return Math.round((noon - 12 * 3600 * 1000 + ((hh * 60 + mm) * 60 + ss) * 1000) / 1000);
+}
+
+it("places every clock exactly as the uncached rule does, DST nights included", () => {
+  const dates = [];
+  for (let day = Date.UTC(2026, 0, 1); day <= Date.UTC(2027, 11, 31); day += 86_400_000) {
+    const at = new Date(day);
+    dates.push(
+      `${at.getUTCFullYear()}${String(at.getUTCMonth() + 1).padStart(2, "0")}${String(at.getUTCDate()).padStart(2, "0")}`
+    );
+  }
+  const clocks = ["00:00:00", "02:30:00", "03:59:59", "04:00:00", "12:00:00", "23:59:59", "24:10:00", "26:45:00", "47:59:59"];
+  const mismatches = [];
+  for (const date of dates) {
+    for (const clock of clocks) {
+      if (gtfsServiceEpoch(date, clock) !== referenceServiceEpoch(date, clock)) {
+        mismatches.push(`${date} ${clock}`);
+      }
+    }
+  }
+  expect(mismatches).toEqual([]);
+});
+
+it("builds no time-zone formatter per call on a long timetable", () => {
+  const RealFormat = Intl.DateTimeFormat;
+  let constructed = 0;
+  globalThis.Intl.DateTimeFormat = function (...args) {
+    constructed += 1;
+    return new RealFormat(...args);
+  };
+  try {
+    for (let row = 0; row < 600; row += 1) {
+      for (const date of ["20261002", "20261003", "20261004", "20261005", "20261006"]) {
+        gtfsServiceEpoch(date, `${String(5 + (row % 20)).padStart(2, "0")}:${String(row % 60).padStart(2, "0")}:00`);
+      }
+    }
+    serviceDateKey(1_790_000_000);
+  } finally {
+    globalThis.Intl.DateTimeFormat = RealFormat;
+  }
+  expect(constructed).toBeLessThan(10);
+});
