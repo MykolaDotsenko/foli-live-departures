@@ -97,6 +97,13 @@ export default function JourneySearch({
   ].includes(routingPreference)
     ? routingPreference
     : "balanced";
+  const planChanged = timeMode !== "leave-now" || preference !== "balanced";
+  const [planOpen, setPlanOpen] = useState(planChanged);
+  const [wasPlanChanged, setWasPlanChanged] = useState(planChanged);
+  if (wasPlanChanged !== planChanged) {
+    setWasPlanChanged(planChanged);
+    if (planChanged) setPlanOpen(true);
+  }
 
   const matches = useMemo(
     () => findStopMatches(stops, value, MAX_SUGGESTIONS),
@@ -421,11 +428,15 @@ export default function JourneySearch({
           </p>
         ) : (
           <div className={styles.handoff}>
-            <p className={styles.privacyNote}>
-              {t(
-                "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
-              )}
-            </p>
+            {/* Said once there is text to keep: before that, three lines
+                of it stood between the field and everything below. */}
+            {(value.trim() || placeSearch.status === "error") && (
+              <p className={styles.privacyNote}>
+                {t(
+                  "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
+                )}
+              </p>
+            )}
             {online && (
               <a
                 className={styles.handoffLink}
@@ -502,64 +513,82 @@ export default function JourneySearch({
       </form>
 
       {/* Where to comes first; when and how are refinements of it, and
-          ahead of the field they pushed it off a phone's first screen. */}
-      <fieldset className={styles.planControls}>
-        <legend>{t("Journey timing and preference")}</legend>
-        <div className={styles.planGrid}>
-          <label>
-            <span>{t("When")}</span>
-            <select
-              value={timeMode}
-              onChange={(event) => onTimeModeChange?.(event.target.value)}
-            >
-              <option value="leave-now">{t("Leave now")}</option>
-              <option value="leave-at">{t("Leave at")}</option>
-              <option value="arrive-by">{t("Arrive by")}</option>
-            </select>
-          </label>
-
-          {timeMode !== "leave-now" && (
+          ahead of the field they pushed it off a phone's first screen.
+          Folded to one line that says what is set, they open by themselves
+          once either is changed from "leave now" and "balanced". */}
+      <details
+        className={styles.planDisclosure}
+        open={planOpen}
+        onToggle={(event) => setPlanOpen(event.currentTarget.open)}
+      >
+        <summary>
+          <span>{t("Journey timing and preference")}</span>
+          <span className={styles.planSummary}>
+            {planSummary(timeConstraint, preference)}
+          </span>
+        </summary>
+        <fieldset className={styles.planControls}>
+          <legend className="visually-hidden">
+            {t("Journey timing and preference")}
+          </legend>
+          <div className={styles.planGrid}>
             <label>
-              <span>{t("Turku local time")}</span>
-              <input
-                type="datetime-local"
-                value={timeLocalValue}
-                onChange={(event) =>
-                  onTimeLocalValueChange?.(event.target.value)
-                }
-                aria-invalid={!timeValid}
-              />
+              <span>{t("When")}</span>
+              <select
+                value={timeMode}
+                onChange={(event) => onTimeModeChange?.(event.target.value)}
+              >
+                <option value="leave-now">{t("Leave now")}</option>
+                <option value="leave-at">{t("Leave at")}</option>
+                <option value="arrive-by">{t("Arrive by")}</option>
+              </select>
             </label>
-          )}
 
-          <label>
-            <span>{t("Route preference")}</span>
-            <select
-              value={preference}
-              onChange={(event) =>
-                onPreferenceChange?.(event.target.value)
-              }
-            >
-              <option value="balanced">{t("Balanced")}</option>
-              <option value="fewer-transfers">{t("Fewer transfers")}</option>
-              <option value="less-walking">{t("Less walking")}</option>
-              <option value="more-buffer">{t("More transfer time")}</option>
-            </select>
-          </label>
-        </div>
-        <p className={styles.planHelp}>
-          {t(
-            "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh."
-          )}
-        </p>
-        {!timeValid && timeMode !== "leave-now" && (
-          <p className={styles.error} role="alert">
+            {timeMode !== "leave-now" && (
+              <label>
+                <span>{t("Turku local time")}</span>
+                <input
+                  type="datetime-local"
+                  value={timeLocalValue}
+                  onChange={(event) =>
+                    onTimeLocalValueChange?.(event.target.value)
+                  }
+                  aria-invalid={!timeValid}
+                />
+              </label>
+            )}
+
+            <label>
+              <span>{t("Route preference")}</span>
+              <select
+                value={preference}
+                onChange={(event) =>
+                  onPreferenceChange?.(event.target.value)
+                }
+              >
+                <option value="balanced">{t("Balanced")}</option>
+                <option value="fewer-transfers">{t("Fewer transfers")}</option>
+                <option value="less-walking">{t("Less walking")}</option>
+                <option value="more-buffer">{t("More transfer time")}</option>
+              </select>
+            </label>
+          </div>
+          <p className={styles.planHelp}>
             {t(
-              "Choose a valid future Turku time. Times skipped by the daylight-saving clock change are not available."
+              "Future-time searches use published Föli timetables. Live estimates are used for leave-now journeys when fresh."
             )}
           </p>
-        )}
-      </fieldset>
+        </fieldset>
+      </details>
+      {/* Outside the fold, so a closed one still shows why no journey is
+          searched. */}
+      {!timeValid && timeMode !== "leave-now" && (
+        <p className={styles.error} role="alert">
+          {t(
+            "Choose a valid future Turku time. Times skipped by the daylight-saving clock change are not available."
+          )}
+        </p>
+      )}
     </section>
   );
 }

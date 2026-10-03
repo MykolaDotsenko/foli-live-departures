@@ -120,7 +120,8 @@ test("mobile first screen shows a real departure without scrolling", async ({
 // Before a stop was open, the journey planner stood above the stop search
 // and its timing controls above its own destination field, so on a phone
 // "what leaves from my stop" started below the first screen. The stop
-// search now leads; the destination field still makes the first screen.
+// search now leads; the destination field still makes the first screen,
+// and timing and route wait folded to one line below it.
 test("a first visit leads with the stop search, then the destination", async ({
   page,
 }, testInfo) => {
@@ -133,15 +134,22 @@ test("a first visit leads with the stop search, then the destination", async ({
   const destination = page.getByRole("combobox", {
     name: "Stop, address or place",
   });
+  const plan = page.getByText("Leave now · Balanced");
   const when = page.getByRole("combobox", { name: "When" });
   await expect(stopSearch).toBeVisible();
   await expect(destination).toBeVisible();
+  await expect(plan).toBeVisible();
+  await expect(when).toBeHidden();
 
   const top = async (locator) => (await locator.boundingBox()).y;
   expect(await top(stopSearch)).toBeLessThan(await top(destination));
-  expect(await top(destination)).toBeLessThan(await top(when));
+  expect(await top(destination)).toBeLessThan(await top(plan));
   await expect(stopSearch).toBeInViewport();
   await expect(destination).toBeInViewport();
+
+  await plan.click();
+  await expect(when).toBeVisible();
+  await expect(when).toHaveValue("leave-now");
 });
 
 // Stacked, Get me Home, search and service updates pushed the first
