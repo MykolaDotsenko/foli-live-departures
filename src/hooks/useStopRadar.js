@@ -93,7 +93,7 @@ export default function useStopRadar({
 
         const directHeading = normalizeDegrees(fix?.coords?.heading);
         const speed = finiteOrNull(fix?.coords?.speed);
-        let nextMotionHeading =
+        const nextMotionHeading =
           directHeading !== null && (speed === null || speed >= 0.5)
             ? directHeading
             : movementHeading(previousPositionRef.current, next);
@@ -125,7 +125,7 @@ export default function useStopRadar({
 
   useEffect(() => {
     if (!active || !pageVisible) return undefined;
-    if (["denied", "unavailable", "error"].includes(compassPermission)) {
+    if (!["granted", "not-required"].includes(compassPermission)) {
       setCompassHeading(null);
       return undefined;
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { t, useLanguage } from "../i18n";
 import useStopRadar from "../hooks/useStopRadar";
 import {
@@ -44,7 +44,7 @@ export default function StopRadar({
   onClose,
 }) {
   useLanguage();
-      const [targetStopId, setTargetStopId] = useState(() =>
+  const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
   const { status, position, error, heading, headingSource, pageVisible } =
@@ -77,22 +77,20 @@ export default function StopRadar({
   const targetRelativeBearing = relativeBearingDegrees(targetBearing, heading);
   const range = radarRangeMeters(nearby, targetDistance);
 
-  const renderedStops = useMemo(
-    () =>
-      nearby
-        .map((stop) => {
-          const bearing = bearingDegrees(position, stop);
-          const point = radarPoint(
-            bearing,
-            heading,
-            Number(stop.distanceMeters),
-            range
-          );
-          return point ? { ...stop, bearing, point } : null;
-        })
-        .filter(Boolean),
-    [heading, nearby, position, range]
-  );
+  const renderedStops = useMemo(() => {
+    const result = [];
+    for (const stop of nearby) {
+      const bearing = bearingDegrees(position, stop);
+      const point = radarPoint(
+        bearing,
+        heading,
+        Number(stop.distanceMeters),
+        range
+      );
+      if (point) result.push({ ...stop, bearing, point });
+    }
+    return result;
+  }, [heading, nearby, position, range]);
 
   const targetPoint = renderedStops.find(
     (stop) => String(stop.id) === targetStopId
