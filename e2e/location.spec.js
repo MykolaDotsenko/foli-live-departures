@@ -295,7 +295,7 @@ test("stop radar gives live distance guidance without silently switching the boa
   await page.getByRole("button", { name: "Open stop radar" }).click();
 
   await expect(page.getByRole("heading", { name: "Stop radar" })).toBeVisible();
-  await expect(page.getByText("North-up")).toBeVisible();
+  await expect(page.getByText("North-up", { exact: true })).toBeVisible();
   await expect(
     page.getByText(/Live location runs only while this radar is open/i)
   ).toBeVisible();

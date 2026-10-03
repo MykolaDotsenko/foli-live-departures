@@ -1,5 +1,8 @@
 .wrapper {
   display: grid;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 10px;
   margin: 12px 0 14px;
   padding: 14px;
@@ -12,6 +15,7 @@
 
 .header {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
@@ -35,6 +39,8 @@
 
 .headerActions {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   flex: 0 0 auto;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -44,6 +50,8 @@
 .locateButton,
 .radarButton {
   display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
@@ -58,6 +66,7 @@
   font: inherit;
   font-size: 0.82rem;
   font-weight: 850;
+  overflow-wrap: anywhere;
 }
 
 .locateButton:hover:not([aria-disabled="true"]),
