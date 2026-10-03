@@ -544,12 +544,18 @@ function-valued plural/count grammar in small lazy runtime modules. The build
 also added independent locale-pack raw/gzip budgets so this optimization cannot
 hide unbounded translation growth.
 
-Current verified PR measurements:
+PR #140 verification measurements (historical baseline):
 
 - complete shipped JS/CSS: **578,177 raw / 161,897 gzip bytes**;
 - JS/CSS limits: **625,000 / 180,000**;
 - FI/UK locale packs: **161,165 raw / 43,526 gzip bytes**;
 - locale-pack limits: **180,000 / 55,000**.
+
+The 2026-10-03 application-code baseline now measures **609,579 raw / 172,389
+gzip JS/CSS** and **177,609 raw / 45,505 gzip locale data**, still inside the
+same unchanged limits. Headroom is therefore materially tighter than it was at
+PR #140; further feature work should prefer lazy loading/removal over raising
+the gates.
 
 The original budgets remain intentionally strict. Continue reducing actual
 runtime footprint before another major feature wave.
