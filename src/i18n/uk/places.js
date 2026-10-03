@@ -4,6 +4,8 @@ import { backupStops } from "./runtime.js";
 export default {
   "Open stop radar": "Відкрити радар зупинок",
   "Close stop radar": "Закрити радар зупинок",
+  "Stop radar couldn’t open. Check your connection, then try again.":
+    "Не вдалося відкрити радар зупинок. Перевірте з’єднання й спробуйте ще раз.",
   "Opening stop radar…": "Відкриваємо радар зупинок…",
   "Live stop radar is not available on this device; one-time nearby search still works.": "Радар зупинок у реальному часі недоступний на цьому пристрої; одноразовий пошук поруч і далі працює.",
   "Stop radar": "Радар зупинок",

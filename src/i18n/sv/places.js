@@ -6,6 +6,8 @@ import { backupStops } from "./runtime.js";
 export default {
   "Open stop radar": "Öppna hållplatsradar",
   "Close stop radar": "Stäng hållplatsradar",
+  "Stop radar couldn’t open. Check your connection, then try again.":
+    "Hållplatsradarn kunde inte öppnas. Kontrollera anslutningen och försök sedan igen.",
   "Opening stop radar…": "Öppnar hållplatsradarn…",
   "Live stop radar is not available on this device; one-time nearby search still works.": "Hållplatsradar i realtid är inte tillgänglig på den här enheten; engångssökning i närheten fungerar fortfarande.",
   "Stop radar": "Hållplatsradar",

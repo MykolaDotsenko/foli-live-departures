@@ -7,6 +7,8 @@
 export default {
   "Open stop radar": "Avaa pysäkkitutka",
   "Close stop radar": "Sulje pysäkkitutka",
+  "Stop radar couldn’t open. Check your connection, then try again.":
+    "Pysäkkitutkaa ei voitu avata. Tarkista yhteys ja yritä sitten uudelleen.",
   "Opening stop radar…": "Avataan pysäkkitutkaa…",
   "Live stop radar is not available on this device; one-time nearby search still works.": "Reaaliaikainen pysäkkitutka ei ole käytettävissä tällä laitteella; kertaluonteinen lähihaku toimii silti.",
   "Stop radar": "Pysäkkitutka",
