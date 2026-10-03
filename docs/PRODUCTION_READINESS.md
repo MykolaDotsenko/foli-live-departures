@@ -2,36 +2,41 @@
 
 This is the canonical launch checklist for Turku Departures.
 
-## Current automated state — 2026-10-02
+## Current automated state — 2026-10-03
 
-PR #142 completes checklist items **1–24**, so the numbered implementation
-progress remains **24/47**. Track E is tracked separately from that count:
-PR #144 merged the Android foreground Ride Mode feasibility/bridge work (E01/E02),
-and PR #145 adds the automated Google Play release surface (E03).
+The numbered roadmap implementation count remains **24/47**. That count is a
+feature-plan measure, not a quality score: later work deliberately hardened the
+already-implemented product without pretending bug fixes were new roadmap
+features.
 
-PR #142's supported toolchain-refresh verification measured:
+Track E remains separate from the 47-item count:
 
-- complete shipped JS/CSS: **580,581 raw / 162,788 gzip bytes** vs unchanged
+- PR #144 merged the Android foreground Ride Mode feasibility/bridge work;
+- PR #145 merged the repository-owned Google Play listing/privacy/Data Safety
+  and API-36 release surface;
+- PRs #149–#152 hardened physical-occurrence identity, Ride continuation and
+  cross-tab persistence, notification cleanup/permission races, transfer-leg
+  hysteresis, destination-aware polling freshness, rolling timetable horizons
+  and scheduled journey-time expiry.
+
+The latest verified application-code baseline passes:
+
+- **120/120 test files and 1305/1305 tests**;
+- coverage: **88.83% statements / 81.29% branches / 90.8% functions / 91.49% lines**;
+- complete shipped JS/CSS: **609,579 raw / 172,389 gzip bytes** vs unchanged
   **625,000 / 180,000** limits;
-- shared-key + FI/UK/SV locale data stayed inside the unchanged
-  **180,000 raw / 55,000 gzip** aggregate limits;
-- zero runtime npm vulnerability findings at the configured high/critical gate.
+- locale packs: **177,609 raw / 45,505 gzip bytes** vs unchanged
+  **180,000 / 55,000** aggregate limits;
+- zero runtime npm vulnerability findings at the configured high/critical gate;
+- green master CI, cross-browser/accessibility, Android APK build/E2E, live
+  Föli contract smoke, tested APK publication and production Pages deployment
+  with exact-revision smoke.
 
-PR #144 was merged only after exact-head CI/browser QA, installable APK and
-API-35 emulator foreground-service lifecycle checks were green; its exact merge
-SHA then passed master CI, Android APK/E2E, live Föli smoke, production Pages
-deployment and exact-revision live smoke. This automated evidence does **not**
-close physical screen-off/lock-screen/OEM-battery acceptance.
-
-PR #145 is merge-gated on the same exact-head CI/browser/Android path. It adds
-the public privacy-policy surface, conservative Data Safety worksheet, verified
-Play listing/contact/release-note contracts, reproducible store graphics and an
-API-36 generated-Android target check. Play Console publication, Data Safety
-final submission, native-language listing review, production signing, physical
-upgrade testing and track promotion remain manual evidence.
-
-No automated check closes native-language, physical-device, real-bus,
-custom-domain or production-signing gates.
+English, Finnish, Ukrainian and Swedish are implemented. Automation still does
+**not** close native-language, physical-device, real-bus, custom-domain,
+production-signing, physical-upgrade or Play Console review gates. The
+machine-checked ledger currently keeps all **14 manual gates** open until dated
+human/owner evidence exists.
 
 ## Release classes
 
@@ -79,6 +84,20 @@ push with green CI is not sufficient release provenance.
 
 Production Pages deployment is downstream of successful `master` CI. Its artifact is stamped with the exact CI SHA. The privileged deploy job runs only the pinned Pages deployment action; repository code is then checked out in a separate read-only smoke job, and the workflow is not green until that smoke verifies the exact revision plus the HTML entrypoint, module asset, manifest, service worker, fail-closed place-search policy and public Play privacy-policy disclosures. The live Föli contract smoke is deliberately a separate health signal: it runs after every master push and daily, but a transient external Föli outage does not block deploying an application fix.
 
+### Redeploying the current revision
+
+To redeploy an unchanged current `master`, re-run the successful `master` CI
+workflow. Its fresh successful completion triggers a **new** downstream
+`Deploy production site` workflow and therefore a single fresh
+`github-pages` artifact.
+
+Do **not** re-run the completed deploy workflow's `build` job as the normal
+redeploy mechanism. GitHub keeps artifacts from the earlier attempt; another
+`upload-pages-artifact` in the same workflow run can leave two artifacts named
+`github-pages`, and `deploy-pages` then fails closed because it cannot choose
+between them. This operational limitation does not alter the already deployed
+site, but the CI-triggered path is the supported idempotent redeploy procedure.
+
 ## Android
 
 The continuously published `android-latest` artifact is a debug-signed testing/sideload build.
@@ -123,7 +142,14 @@ exact-vs-approximate Next-stops semantics, telemetry-free health alerting, the
 dormant-provider CSP boundary and the supported toolchain refresh are implemented
 through PR #142. PR #144 adds the automated Android foreground Ride Mode
 companion without changing JS Ride Mode authority; PR #145 prepares the
-repository-owned Google Play listing/privacy/asset surface.
+repository-owned Google Play listing/privacy/asset surface. PRs #149–#152 add
+the latest reliability hardening: service-date/loop physical-occurrence
+matching, durable Ride continuation without cross-tab rollback, serialized
+notification cleanup scoped to the active ride, transfer evidence isolated by
+leg identity, scheduled transfer search that preserves later occurrences of the
+same GTFS trip, fresh walking-distance inputs on recurring Journey Assistant
+polls, bounded refresh for an empty timetable horizon and live expiry of custom
+leave-at/arrive-by targets.
 
 Stop Radar adds lazy-loaded on-device walking guidance to nearby public stops
 with trustworthy compass, recent direction-of-travel and north-up fallbacks.
