@@ -49,7 +49,6 @@ describe("ride continuation", () => {
     ).toEqual({
       transferJourney: null,
       finalWalk: { fromStopId: "32" },
-      destination: null,
     });
   });
 
