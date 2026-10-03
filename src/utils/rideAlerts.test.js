@@ -212,6 +212,29 @@ describe("ride get-off notifications", () => {
     ]);
   });
 
+  it("holds every new ride notification until already-started cleanup finishes", async () => {
+    let resolveCleanup;
+    const showNotification = vi.fn(() => Promise.resolve());
+    const getNotifications = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveCleanup = () => resolve([]);
+        })
+    );
+    stubServiceWorker({ getNotifications, showNotification });
+
+    const cleanup = stopRideAlerts();
+    const notification = showRideNotification("next", "Puistokatu", 3);
+
+    await Promise.resolve();
+    expect(showNotification).not.toHaveBeenCalled();
+
+    resolveCleanup();
+    await cleanup;
+    await expect(notification).resolves.toBe(true);
+    expect(showNotification).toHaveBeenCalledTimes(1);
+  });
+
   it("serializes notification cleanup so an older ride cannot close a replacement alert later", async () => {
     let resolveFirst;
     let call = 0;
