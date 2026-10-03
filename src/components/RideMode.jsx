@@ -797,6 +797,19 @@ export default function RideMode({
         </p>
       )}
 
+      {/* Asked for at Start and not allowed: without this the passenger
+          waits for a notification that will not come. Allowed mid-ride,
+          the next alert shows one, and this goes. */}
+      {runtime.notificationPermission === "unavailable" &&
+        globalThis.Notification?.permission !== "granted" &&
+        !gettingOffNow && (
+        <p className={styles.degraded} role="status">
+          {t(
+            "Notifications are blocked. Allow them for this site in your browser settings."
+          )}
+        </p>
+      )}
+
       {/* The hook keeps the error as a phrase, translated here. */}
       {gps.error && (
         <p className={styles.degraded} role="status">

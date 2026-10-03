@@ -430,6 +430,34 @@ test("does not offer notifications a browser cannot send", async () => {
   }
 });
 
+// A browser that has blocked a site never asks it again, so the ticked box
+// promised a notification that could not come, and nothing said so.
+test("says when the browser has blocked notifications for this site", async () => {
+  const Notification = Object.assign(function Notification() {}, {
+    permission: "denied",
+  });
+  vi.stubGlobal("Notification", Notification);
+  try {
+    renderThreeStopSetup();
+    fireEvent.click(await screen.findByDisplayValue("3"));
+    const hint = /Notifications are blocked\. Allow them for this site/;
+    const box = screen.getByRole("checkbox", { name: /Also show notifications/ });
+
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+    fireEvent.click(box);
+    expect(screen.getByText(hint)).toBeInTheDocument();
+    fireEvent.click(box);
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+
+    // Not yet asked: Start will ask, so there is nothing to warn about.
+    Notification.permission = "default";
+    fireEvent.click(box);
+    expect(screen.queryByText(hint)).not.toBeInTheDocument();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
 // Trip details carry the route and its shape. Lost to one failed request on
 // a weak connection, the ride went without "Press STOP" and without
 // location tracking along the route.

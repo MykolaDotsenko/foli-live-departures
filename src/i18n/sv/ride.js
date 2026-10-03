@@ -182,6 +182,8 @@ export default {
     "På iPhone kräver notiser att appen finns på hemskärmen (Dela, sedan Lägg till på hemskärmen). Ljud och vibration fungerar här så länge sidan är öppen.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). The alert sound works here as long as this page stays open, but this phone will not vibrate for it.":
     "På iPhone kräver notiser att appen finns på hemskärmen (Dela, sedan Lägg till på hemskärmen). Larmljudet fungerar här så länge sidan är öppen, men telefonen vibrerar inte för det.",
+  "Notifications are blocked. Allow them for this site in your browser settings.":
+    "Notiser är blockerade. Tillåt dem för den här webbplatsen i webbläsarens inställningar.",
   "Check your sound": "Kontrollera ljudet",
   "Starting plays a test alert, so you can check the sound and vibration now. We only say “get off now” when live bus data or your location confirms it.":
     "När du startar spelas ett testlarm så att du kan kontrollera ljud och vibration. Vi säger bara ”stig av nu” när realtidsdata från bussen eller din position bekräftar det.",

@@ -169,6 +169,8 @@ export default {
     "На iPhone для сповіщень застосунок має бути на початковому екрані (Поділитися → Додати на початковий екран). Звук і вібрація працюють, поки сторінка залишається відкритою.",
   "On iPhone, notifications need this app on your Home Screen (Share, then Add to Home Screen). The alert sound works here as long as this page stays open, but this phone will not vibrate for it.":
     "На iPhone для сповіщень застосунок має бути на початковому екрані (Поділитися → Додати на початковий екран). Звук працює, поки сторінка відкрита, але цей телефон не вібруватиме для нього.",
+  "Notifications are blocked. Allow them for this site in your browser settings.":
+    "Сповіщення заблоковано. Дозвольте їх для цього сайту в налаштуваннях браузера.",
   "Check your sound": "Перевірте звук",
   "Starting plays a test alert, so you can check the sound and vibration now. We only say “get off now” when live bus data or your location confirms it.":
     "Під час запуску відтвориться тестове сповіщення, щоб ви перевірили звук і вібрацію. Ми кажемо «виходьте зараз» лише коли це підтверджують актуальні дані автобуса або ваше місцезнаходження.",

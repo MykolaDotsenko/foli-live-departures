@@ -527,6 +527,18 @@ export default function RideSetup({
                   </span>
                 </label>
               )}
+              {/* A browser that has blocked this site never asks again, so
+                  ticking the box would promise a notification that cannot
+                  come. Say so while it can still be changed. */}
+              {notificationsAvailable === "supported" &&
+                notifications &&
+                globalThis.Notification?.permission === "denied" && (
+                  <p className={styles.optionNote} role="status">
+                    {t(
+                      "Notifications are blocked. Allow them for this site in your browser settings."
+                    )}
+                  </p>
+                )}
               {nativeAndroidBuild && (
                 <label>
                   <input
