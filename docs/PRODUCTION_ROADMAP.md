@@ -330,6 +330,8 @@ Run it with:
 
 ## PR-A09 — Android v1.0.0 immutable release
 
+**Implementation status:** immutable-publication workflow is now fail-closed on A08/A09 manual evidence; actual production signing, physical upgrade test and publication remain manual/open.
+
 **Priority:** 98/100  
 **Dependency:** A08 + physical Android smoke.
 
@@ -352,6 +354,8 @@ Run it with:
 ---
 
 ## PR-A10 — Final public-release re-audit
+
+**Implementation status:** machine-readable release-gate profiles enforce the evidence preconditions; the actual final re-audit remains blocked on manual A01/A04/A05/A06 evidence.
 
 **Priority:** 100/100  
 **Dependency:** A01, A04, A05, A06; Android items if Android is launched simultaneously.

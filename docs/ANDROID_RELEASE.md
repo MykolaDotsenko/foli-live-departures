@@ -48,6 +48,8 @@ Inputs:
 - `version_code`: positive monotonically increasing integer;
 - `publish`: false for a dry verification run, true to create the immutable GitHub release.
 
+`publish=false` deliberately remains usable while manual gates are open so A08 can perform the signing dry run that creates its own evidence. `publish=true` is fail-closed: before signing continues, the workflow requires the `android-publish` evidence profile to be closed in `config/release-gates.json` (production signing dry run, physical Android lifecycle, and physical upgrade evidence). This prevents an immutable release from being published merely because CI and emulator checks are green.
+
 The workflow keeps production signing secrets out of dependency installation, web/native builds and emulator checks. Secret values are injected only into the validation/decode/signing steps; the decoded keystore is removed with an always-running cleanup step immediately after signing.
 
 The workflow:
@@ -70,6 +72,8 @@ The workflow:
 
 Before publishing:
 
+- [ ] `npm run verify:release-gates` is structurally green;
+- [ ] `npm run verify:release-gates -- --require android-publish` succeeds after A08/A09 evidence is recorded;
 - [ ] source commit is the intended green `master`;
 - [ ] package ID is unchanged;
 - [ ] version code is higher than every previous production release;

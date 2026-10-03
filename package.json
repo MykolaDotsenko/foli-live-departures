@@ -42,9 +42,11 @@
     "verify:play-assets": "node scripts/verify-play-assets.mjs",
     "build:production-site": "node scripts/build-production-site.mjs",
     "verify:production-cutover": "node --test scripts/production-site-config.test.mjs && node scripts/verify-production-cutover.mjs",
-    "verify:release-gates": "node scripts/verify-release-gates.mjs",
+    "verify:release-gates": "node --test scripts/verify-release-gates.test.mjs && node scripts/verify-release-gates.mjs",
     "verify:release-readiness": "npm run verify:production-cutover && npm run verify:release-gates && npm run verify:pwa-context",
-    "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs"
+    "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs",
+    "verify:public-promotion": "node scripts/verify-release-gates.mjs --require public-promotion",
+    "verify:play-production": "node scripts/verify-release-gates.mjs --require play-production"
   },
   "dependencies": {
     "react": "^18.3.1",
