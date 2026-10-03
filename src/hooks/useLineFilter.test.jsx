@@ -106,7 +106,7 @@ test("follows a line-filter change made in another tab", () => {
 
   act(() => {
     window.dispatchEvent(
-      new StorageEvent("storage", {
+      new globalThis.StorageEvent("storage", {
         key: STORAGE_KEY,
         oldValue: null,
         newValue: next,
