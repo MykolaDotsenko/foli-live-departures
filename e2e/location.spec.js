@@ -306,7 +306,10 @@ test("stop radar gives live distance guidance without silently switching the boa
   });
   await targetChooser.getByRole("button", { name: /Kauppatori/ }).click();
 
-  await expect(page.getByText("<10 m")).toBeVisible();
+  const targetCard = page
+    .getByText("Target stop", { exact: true })
+    .locator("..");
+  await expect(targetCard.getByText("<10 m", { exact: true })).toBeVisible();
   await expect(page).toHaveURL(/[?&]stop=32(&|$)/);
   await expect(page.getByRole("heading", { name: "Puistokatu" })).toBeVisible();
 
