@@ -781,7 +781,7 @@ test("a reload keeps the final-walk continuation attached to Ride Mode", async (
         stageChangedAt: now,
       })
     );
-    globalThis.localStorage.setItem(
+    globalThis.sessionStorage.setItem(
       "foli-active-ride-continuation-v1",
       JSON.stringify({
         rideId: ride.id,
@@ -820,6 +820,11 @@ test("a reload keeps the final-walk continuation attached to Ride Mode", async (
   await expect(
     page.getByRole("heading", { name: "Walk to Private destination" })
   ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toBeNull();
   expect(
     await page.evaluate(() =>
       globalThis.localStorage.getItem("foli-active-ride-continuation-v1")
