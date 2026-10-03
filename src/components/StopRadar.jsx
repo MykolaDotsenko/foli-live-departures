@@ -33,6 +33,30 @@ function targetWithinUncertainty(position, distance) {
   );
 }
 
+
+function translatedRelativeDirection(angle) {
+  switch (relativeDirectionKey(angle)) {
+    case "Straight ahead":
+      return t("Straight ahead");
+    case "Slightly right":
+      return t("Slightly right");
+    case "Slightly left":
+      return t("Slightly left");
+    case "To your right":
+      return t("To your right");
+    case "To your left":
+      return t("To your left");
+    case "Behind you to the right":
+      return t("Behind you to the right");
+    case "Behind you to the left":
+      return t("Behind you to the left");
+    case "Behind you":
+      return t("Behind you");
+    default:
+      return t("Direction unavailable");
+  }
+}
+
 export default function StopRadar({
   stops,
   initialTargetStopId = "",
@@ -97,15 +121,12 @@ export default function StopRadar({
   )?.point;
 
 
-  const guidanceKey =
-    headingSource === "north"
-      ? "Target bearing {degrees}° from north"
-      : relativeDirectionKey(targetRelativeBearing);
-
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
-      ? t(guidanceKey, { degrees: Math.round(targetBearing) })
-      : t(guidanceKey);
+      ? t("Target bearing {degrees}° from north", {
+          degrees: Math.round(targetBearing),
+        })
+      : translatedRelativeDirection(targetRelativeBearing);
 
   const modeText =
     headingSource === "compass"
