@@ -142,7 +142,11 @@ export default function StopRadar({
     headingSource !== "motion";
 
   return (
-    <section className={styles.panel} aria-labelledby="stop-radar-title">
+    <section
+      id="stop-radar-panel"
+      className={styles.panel}
+      aria-labelledby="stop-radar-title"
+    >
       <div className={styles.header}>
         <div>
           <p className={styles.eyebrow}>{t("Live walking guidance")}</p>
