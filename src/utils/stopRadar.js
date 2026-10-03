@@ -21,9 +21,14 @@ export function normalizeDegrees(value) {
 export function bearingDegrees(from, to) {
   if (!hasCoordinates(from) || !hasCoordinates(to)) return null;
 
-  const lat1 = (Number(from.lat) * Math.PI) / 180;
-  const lat2 = (Number(to.lat) * Math.PI) / 180;
-  const deltaLon = ((Number(to.lon) - Number(from.lon)) * Math.PI) / 180;
+  const fromLat = Number(from?.lat);
+  const fromLon = Number(from?.lon);
+  const toLat = Number(to?.lat);
+  const toLon = Number(to?.lon);
+
+  const lat1 = (fromLat * Math.PI) / 180;
+  const lat2 = (toLat * Math.PI) / 180;
+  const deltaLon = ((toLon - fromLon) * Math.PI) / 180;
 
   const y = Math.sin(deltaLon) * Math.cos(lat2);
   const x =
@@ -111,7 +116,7 @@ export function movementHeading(previous, next) {
   if (!hasCoordinates(previous) || !hasCoordinates(next)) return null;
 
   const moved = distanceInMeters(previous, next);
-  if (!Number.isFinite(moved)) return null;
+  if (typeof moved !== "number" || !Number.isFinite(moved)) return null;
 
   const accuracy = Math.max(
     Number(previous?.accuracy) || 0,
