@@ -278,6 +278,37 @@ describe("GTFS scheduled departure helpers", () => {
     ]);
   });
 
+  it("matches the nearest occurrence when one trip visits the stop twice inside tolerance", () => {
+    const realtime = [
+      {
+        tripref: "loop-trip",
+        lineref: "7",
+        monitored: true,
+        aimeddeparturetime: 1_115,
+      },
+    ];
+    const scheduled = [
+      {
+        tripref: "loop-trip",
+        lineref: "7",
+        monitored: false,
+        aimeddeparturetime: 1_030,
+      },
+      {
+        tripref: "loop-trip",
+        lineref: "7",
+        monitored: false,
+        aimeddeparturetime: 1_120,
+      },
+    ];
+
+    expect(
+      mergeRealtimeAndScheduled(realtime, scheduled, {
+        timeToleranceSeconds: 120,
+      }).map((row) => row.aimeddeparturetime)
+    ).toEqual([1_115, 1_030]);
+  });
+
   it("does not merge two visits of the same trip when their planned stop times differ", () => {
     const realtime = [
       {
