@@ -70,6 +70,13 @@ describe("stop radar geometry", () => {
       { lat: 60.4520, lon: 22.2666, accuracy: 8 }
     );
     expect(heading).toBeCloseTo(0, 3);
+
+    expect(
+      movementHeading(
+        { lat: 60.4518, lon: 22.2666, accuracy: 80 },
+        { lat: 60.4524, lon: 22.2666, accuracy: 80 }
+      )
+    ).toBeNull();
   });
 
   it("keeps the target even when it is outside the nearest-eight list", () => {
