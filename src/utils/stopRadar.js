@@ -8,6 +8,7 @@ const RANGE_STEPS_METERS = [200, 400, 800, 1_200, RADAR_MAX_RANGE_METERS];
 
 /** @param {unknown} value */
 export function normalizeDegrees(value) {
+  if (value === null || value === undefined || value === "") return null;
   const number = Number(value);
   if (!Number.isFinite(number)) return null;
   return ((number % 360) + 360) % 360;
