@@ -155,12 +155,18 @@ function BusStopForm({
     // name lookup, which would stumble on two stops sharing a name.
     if (resolved && normalizeStopQuery(query) === normalizeStopQuery(resolved.name)) {
       setValidationError(null);
+      // Submitted with the keyboard's Go key, focus stays in the field. A
+      // list left open there covered the board this submit just opened.
+      setActiveIndex(-1);
+      setFocused(false);
       onSubmit(resolved.id);
       return;
     }
 
     if (/^\d+$/.test(query)) {
       setValidationError(null);
+      setActiveIndex(-1);
+      setFocused(false);
       onSubmit(query);
       return;
     }
