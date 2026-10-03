@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   RIDE_CONTINUATION_STORAGE_KEY,
   clearRideContinuation,
+  normalizeRideContinuation,
   persistRideContinuation,
   readRideContinuation,
 } from "./rideContinuation";
@@ -11,6 +12,74 @@ beforeEach(() => {
 });
 
 describe("ride continuation", () => {
+  it("normalizes only supported continuation records", () => {
+    expect(normalizeRideContinuation(null)).toBeNull();
+    expect(normalizeRideContinuation([])).toBeNull();
+    expect(normalizeRideContinuation({})).toBeNull();
+    expect(
+      normalizeRideContinuation({
+        transferJourney: { id: "journey-1" },
+      })
+    ).toEqual({
+      transferJourney: { id: "journey-1" },
+      finalWalk: null,
+    });
+    expect(
+      normalizeRideContinuation({
+        finalWalk: { fromStopId: "32" },
+      })
+    ).toEqual({
+      transferJourney: null,
+      finalWalk: { fromStopId: "32" },
+    });
+  });
+
+  it("returns no continuation without a ride id", () => {
+    persistRideContinuation("ride-1", {
+      transferJourney: { id: "journey-1" },
+    });
+
+    expect(readRideContinuation("")).toBeNull();
+    expect(readRideContinuation(null)).toBeNull();
+  });
+
+  it("cleans a continuation belonging to a different ride", () => {
+    persistRideContinuation("ride-1", {
+      transferJourney: { id: "journey-1" },
+    });
+
+    expect(readRideContinuation("ride-2")).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("cleans a stored record whose continuation is empty", () => {
+    globalThis.sessionStorage.setItem(
+      RIDE_CONTINUATION_STORAGE_KEY,
+      JSON.stringify({
+        rideId: "ride-1",
+        continuation: {},
+      })
+    );
+
+    expect(readRideContinuation("ride-1")).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
+  it("clears the active slot when persistence receives no continuation", () => {
+    persistRideContinuation("ride-1", {
+      transferJourney: { id: "journey-1" },
+    });
+
+    expect(persistRideContinuation("ride-1", null)).toBeNull();
+    expect(
+      globalThis.sessionStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)
+    ).toBeNull();
+  });
+
   it("survives a same-tab reload boundary without entering localStorage", () => {
     const continuation = {
       transferJourney: {
@@ -31,14 +100,6 @@ describe("ride continuation", () => {
     ).toEqual(continuation);
     expect(readRideContinuation("ride-1")).toEqual(continuation);
     expect(localStorage.getItem(RIDE_CONTINUATION_STORAGE_KEY)).toBeNull();
-  });
-
-  it("never hands one ride another ride's continuation", () => {
-    persistRideContinuation("ride-1", {
-      transferJourney: { id: "journey-1" },
-    });
-
-    expect(readRideContinuation("ride-2")).toBeNull();
   });
 
   it("clears only the matching active ride", () => {
