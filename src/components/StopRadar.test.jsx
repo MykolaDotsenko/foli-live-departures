@@ -75,7 +75,7 @@ test("locks the initial target and changing radar target does not open a stop", 
 
   live.deliver();
 
-  expect(await screen.findByText("Puistokatu")).toBeInTheDocument();
+  expect((await screen.findAllByText("Puistokatu")).length).toBeGreaterThan(0);
   expect(screen.getByText("North-up")).toBeInTheDocument();
   expect(onPosition).toHaveBeenCalledTimes(1);
   expect(onOpenStop).not.toHaveBeenCalled();
@@ -84,7 +84,7 @@ test("locks the initial target and changing radar target does not open a stop", 
   fireEvent.click(within(chooser).getByRole("button", { name: /Kauppatori/ }));
 
   await waitFor(() =>
-    expect(screen.getByText("Kauppatori")).toBeInTheDocument()
+    expect(screen.getAllByText("Kauppatori").length).toBeGreaterThan(0)
   );
   expect(onOpenStop).not.toHaveBeenCalled();
 

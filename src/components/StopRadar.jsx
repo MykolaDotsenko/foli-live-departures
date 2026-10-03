@@ -44,8 +44,7 @@ export default function StopRadar({
   onClose,
 }) {
   useLanguage();
-  const headingRef = useRef(null);
-  const [targetStopId, setTargetStopId] = useState(() =>
+      const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
   const { status, position, error, heading, headingSource, pageVisible } =
@@ -99,9 +98,6 @@ export default function StopRadar({
     (stop) => String(stop.id) === targetStopId
   )?.point;
 
-  useEffect(() => {
-    headingRef.current = heading;
-  }, [heading]);
 
   const guidanceKey =
     headingSource === "north"
@@ -210,7 +206,7 @@ export default function StopRadar({
                   className={styles.targetNeedle}
                   aria-hidden="true"
                   style={{
-                    "--needle-angle": `${targetPoint.angle}deg`,
+                    transform: `rotate(${targetPoint.angle}deg)`,
                   }}
                 />
               )}
@@ -227,8 +223,8 @@ export default function StopRadar({
                     data-target={target ? "true" : undefined}
                     data-recommended={recommended ? "true" : undefined}
                     style={{
-                      "--radar-x": `${stop.point.x}%`,
-                      "--radar-y": `${stop.point.y}%`,
+                      left: `${stop.point.x}%`,
+                      top: `${stop.point.y}%`,
                     }}
                     onClick={() => setTargetStopId(String(stop.id))}
                     aria-pressed={target}

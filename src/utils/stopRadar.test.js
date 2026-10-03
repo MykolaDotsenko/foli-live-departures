@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bearingDegrees,
   headingFromOrientationEvent,
@@ -7,6 +7,7 @@ import {
   radarPoint,
   radarRangeMeters,
   radarStops,
+  requestCompassPermission,
   relativeBearingDegrees,
   relativeDirectionKey,
   smoothHeading,
@@ -78,5 +79,52 @@ describe("stop radar geometry", () => {
     expect(relativeDirectionKey(90)).toBe("To your right");
     expect(relativeDirectionKey(270)).toBe("To your left");
     expect(relativeDirectionKey(180)).toBe("Behind you");
+  });
+});
+
+
+describe("compass permission", () => {
+  const original = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "DeviceOrientationEvent"
+  );
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (original) {
+      Object.defineProperty(globalThis, "DeviceOrientationEvent", original);
+    } else {
+      delete globalThis.DeviceOrientationEvent;
+    }
+  });
+
+  it("feature-detects unsupported and permission-free browsers", async () => {
+    delete globalThis.DeviceOrientationEvent;
+    await expect(requestCompassPermission()).resolves.toBe("unavailable");
+
+    Object.defineProperty(globalThis, "DeviceOrientationEvent", {
+      configurable: true,
+      value: function DeviceOrientationEvent() {},
+    });
+    await expect(requestCompassPermission()).resolves.toBe("not-required");
+  });
+
+  it("requests absolute magnetometer access and fails closed", async () => {
+    const requestPermission = vi.fn(async (absolute) =>
+      absolute ? "granted" : "denied"
+    );
+    Object.defineProperty(globalThis, "DeviceOrientationEvent", {
+      configurable: true,
+      value: { requestPermission },
+    });
+
+    await expect(requestCompassPermission()).resolves.toBe("granted");
+    expect(requestPermission).toHaveBeenCalledWith(true);
+
+    requestPermission.mockResolvedValueOnce("denied");
+    await expect(requestCompassPermission()).resolves.toBe("denied");
+
+    requestPermission.mockRejectedValueOnce(new Error("blocked"));
+    await expect(requestCompassPermission()).resolves.toBe("error");
   });
 });

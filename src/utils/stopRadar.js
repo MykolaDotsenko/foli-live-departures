@@ -86,7 +86,7 @@ export function headingFromOrientationEvent(event) {
  * @returns {Promise<"granted" | "denied" | "not-required" | "unavailable" | "error">}
  */
 export async function requestCompassPermission() {
-  const OrientationEvent = globalThis.DeviceOrientationEvent;
+  const OrientationEvent = /** @type {any} */ (globalThis).DeviceOrientationEvent;
   if (!OrientationEvent) return "unavailable";
 
   const requestPermission = OrientationEvent.requestPermission;

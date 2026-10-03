@@ -73,7 +73,7 @@ export default function useStopRadar({
       return undefined;
     }
 
-    setStatus(position ? "active" : "locating");
+    setStatus("locating");
     setError("");
 
     const watchId = geolocation.watchPosition(
@@ -121,7 +121,7 @@ export default function useStopRadar({
     return () => {
       geolocation.clearWatch?.(watchId);
     };
-  }, [active, pageVisible, position]);
+  }, [active, pageVisible]);
 
   useEffect(() => {
     if (!active || !pageVisible) return undefined;

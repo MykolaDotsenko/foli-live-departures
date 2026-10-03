@@ -166,3 +166,61 @@ test("falls back to direction of travel only after meaningful movement", async (
   await waitFor(() => expect(result.current.headingSource).toBe("motion"));
   expect(result.current.heading).toBeCloseTo(0, 2);
 });
+
+
+test("fails closed when continuous geolocation is unavailable", async () => {
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition: vi.fn() },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({
+      active: true,
+      compassPermission: "unavailable",
+    })
+  );
+
+  await waitFor(() => expect(result.current.status).toBe("error"));
+  expect(result.current.error).toMatch(/Live location tracking is not available/);
+});
+
+test("recovers after a location error when a later watch fix succeeds", async () => {
+  let deliver;
+  let fail;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success, error) => {
+        deliver = success;
+        fail = error;
+        return 33;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({
+      active: true,
+      compassPermission: "denied",
+    })
+  );
+
+  act(() => fail({ code: 1 }));
+  await waitFor(() => expect(result.current.status).toBe("error"));
+  expect(result.current.error).toMatch(/Location access is blocked/);
+
+  act(() =>
+    deliver({
+      coords: {
+        latitude: 60.4518,
+        longitude: 22.2666,
+        accuracy: 10,
+      },
+      timestamp: Date.now(),
+    })
+  );
+  await waitFor(() => expect(result.current.status).toBe("active"));
+  expect(result.current.error).toBe("");
+});
