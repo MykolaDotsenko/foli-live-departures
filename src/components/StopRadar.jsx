@@ -131,12 +131,16 @@ export default function StopRadar({
   const targetBearing =
     position && targetStop ? bearingDegrees(position, targetStop) : null;
   const targetRelativeBearing = relativeBearingDegrees(targetBearing, heading);
-  const [shownRange, setShownRange] = useState(null);
+  // The scale on screen, and the target it was set for: hysteresis holds
+  // a scale between fixes for one target, never across a change of target.
+  const [shown, setShown] = useState({ range: null, targetStopId });
   const range = radarRangeMeters(
     targetDistance ?? (nearby.length ? Number(nearby[0].distanceMeters) : null),
-    shownRange
+    shown.targetStopId === targetStopId ? shown.range : null
   );
-  if (range !== shownRange) setShownRange(range);
+  if (range !== shown.range || targetStopId !== shown.targetStopId) {
+    setShown({ range, targetStopId });
+  }
 
   const renderedStops = useMemo(() => {
     // The target first, so it keeps its place and stays on top.

@@ -121,6 +121,11 @@ describe("stop radar geometry", () => {
     // A distance hovering at a step keeps the scale on screen.
     expect(radarRangeMeters(70, 200)).toBe(200);
     expect(radarRangeMeters(66, 200)).toBe(100);
+    // After a jump, the closest scale the target sits well inside: 150 m
+    // is not two thirds inside 200 m, but is inside 400 m, not 2 km.
+    expect(radarRangeMeters(150, 2_000)).toBe(400);
+    expect(radarRangeMeters(900, 2_000)).toBe(2_000);
+    expect(radarRangeMeters(790, 2_000)).toBe(1_200);
   });
 
   it("names the compass point of a bearing", () => {

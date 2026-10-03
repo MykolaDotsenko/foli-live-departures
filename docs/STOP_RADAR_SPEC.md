@@ -42,7 +42,7 @@ Relative/uncalibrated orientation is never presented as north-referenced compass
 - GPS accuracy is always visible, as text and as a circle drawn to the radar's scale.
 - Arrival is claimed only within 30 m **and** with <=30 m reported accuracy.
 - With poorer accuracy, the UI says the target is within GPS uncertainty instead of claiming arrival.
-- Radar range follows the target: the smallest of 50 / 100 / 200 / 400 / 800 / 1200 / 2000 m that holds the target with a quarter to spare, so the last hundred metres get a 50–100 m scale. The scale widens at once when the target would leave it and narrows only when the target is within two thirds of the smaller scale, so it does not flip at a boundary. The outer ring is the scale and is labelled with it.
+- Radar range follows the target: the smallest of 50 / 100 / 200 / 400 / 800 / 1200 / 2000 m that holds the target with a quarter to spare, so the last hundred metres get a 50–100 m scale. The scale widens at once when the target would leave it, and narrows to the closest scale that holds the target within two thirds of it, so it does not flip at a boundary. A newly chosen target gets its own scale at once. The outer ring is the scale and is labelled with it.
 - Other stops beyond the scale are left off the radar (the chooser still lists them). A target beyond 2 km is pinned to the edge and labelled as outside scale.
 - The feature explicitly says it is **not a safe walking route**; it does not tell the passenger where to cross a road.
 

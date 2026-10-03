@@ -234,3 +234,26 @@ test("at the stop it stops giving a direction a few metres of GPS noise would in
   expect(await screen.findByText(/You are at the stop area/)).toBeInTheDocument();
   expect(screen.queryByText(/^Head /)).not.toBeInTheDocument();
 });
+
+// Switching from a far target to a near one kept the far target's 2 km
+// scale: hysteresis belongs to one target's fixes, not to a new choice.
+test("choosing a nearer target sets the scale for it at once", async () => {
+  const live = installLiveLocation();
+  const far = [
+    { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
+    { id: "166", name: "Kauppatori", lat: 60.4512, lon: 22.2678 },
+    { id: "500", name: "Varissuo", lat: 60.443, lon: 22.338 },
+  ];
+
+  render(
+    <StopRadar stops={far} initialTargetStopId="500" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  live.deliver({ latitude: 60.4532, longitude: 22.2666, accuracy: 8 });
+  expect(await screen.findByText(/Radar range 2(\.0)? km|Radar range 2,0 km/)).toBeInTheDocument();
+
+  const chooser = screen.getByRole("group", { name: "Choose radar target" });
+  fireEvent.click(within(chooser).getByRole("button", { name: /Kauppatori.*Stop 164/s }));
+
+  // About 155 m away: a 200 m scale, not the 2 km one Varissuo needed.
+  expect(await screen.findByText(/Radar range 200 m/)).toBeInTheDocument();
+});

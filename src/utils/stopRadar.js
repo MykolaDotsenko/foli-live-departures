@@ -206,7 +206,14 @@ export function radarRangeMeters(targetDistance, currentRange = null) {
     RADAR_RANGE_STEPS_METERS.find((range) => needed <= range) ||
     RADAR_MAX_RANGE_METERS;
   if (current === null || fit >= current) return fit;
-  return distance <= fit * ZOOM_IN_SHARE ? fit : current;
+  // Zoom in to the closest scale the target sits well inside, which after
+  // a jump (a nearer target, a GPS catch-up) may be one between the fit
+  // and the scale on screen; a target at a step's edge keeps the scale.
+  return (
+    RADAR_RANGE_STEPS_METERS.find(
+      (range) => range >= fit && range < current && distance <= range * ZOOM_IN_SHARE
+    ) ?? current
+  );
 }
 
 /**
