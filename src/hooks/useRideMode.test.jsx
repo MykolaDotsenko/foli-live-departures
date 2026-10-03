@@ -264,6 +264,7 @@ test("keeps journey continuation across a same-tab Ride Mode reload boundary", (
   const continuation = {
     transferJourney: {
       id: "journey-1",
+      destinationLabel: "Continuation-only private marker",
       itinerary: {
         legs: [
           { tripRef: "trip-1" },
@@ -290,7 +291,7 @@ test("keeps journey continuation across a same-tab Ride Mode reload boundary", (
   expect(result.current.session?.id).toBe(stored.id);
   expect(result.current.continuation).toEqual(continuation);
   expect(localStorage.getItem("foli-active-ride-v1")).not.toContain(
-    "journey-1"
+    "Continuation-only private marker"
   );
 });
 
