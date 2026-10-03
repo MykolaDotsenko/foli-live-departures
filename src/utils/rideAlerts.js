@@ -69,6 +69,8 @@ const ALERT_PATTERNS = {
 let audioContext = null;
 /** @type {Notification | null} */
 let activePageRideNotification = null;
+/** @type {Promise<void>} */
+let notificationCleanupTail = Promise.resolve();
 
 /** @returns {typeof AudioContext | null} */
 function AudioContextConstructor() {
@@ -602,7 +604,15 @@ export function stopRideAlerts() {
     // Speech is optional.
   }
 
-  return closeRideNotifications();
+  // Notification cleanup is serialized. An End Ride followed immediately by
+  // Start Ride used to leave two async getNotifications() calls racing; the
+  // older cleanup could resolve last and close the new ride's test/first-stage
+  // notification. Callers can await the returned tail before showing anything
+  // for a replacement ride.
+  notificationCleanupTail = notificationCleanupTail
+    .catch(() => {})
+    .then(() => closeRideNotifications());
+  return notificationCleanupTail;
 }
 
 /**
