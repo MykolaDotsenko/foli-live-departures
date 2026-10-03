@@ -332,6 +332,75 @@ test("loads compact locale values against the shared key pack and overlays runti
   }
 });
 
+test("a slower older cross-tab language load cannot overwrite a newer preference", async () => {
+  // Keep the already-imported module from issuing its own fetch when the
+  // storage event is dispatched; the fresh module below is the one under test.
+  registerDictionary("fi", fi);
+  localStorage.setItem("foli-language-v1", "en");
+
+  let releaseFiValues;
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((input) => {
+    const url = String(input);
+    if (/locales\/keys\.json$/.test(url)) {
+      return Promise.resolve(
+        /** @type {Response} */ ({
+          ok: true,
+          status: 200,
+          json: async () => ["Online", ...FI_RUNTIME_KEYS],
+        })
+      );
+    }
+    if (/locales\/fi\.json$/.test(url)) {
+      return new Promise((resolve) => {
+        releaseFiValues = () =>
+          resolve(
+            /** @type {Response} */ ({
+              ok: true,
+              status: 200,
+              json: async () => ["Yhteys toimii", null, null, null, null],
+            })
+          );
+      });
+    }
+    throw new Error(`Unexpected locale request: ${url}`);
+  });
+
+  vi.resetModules();
+  try {
+    const fresh = await import("./index.js");
+    expect(fresh.getLanguage()).toBe("en");
+
+    localStorage.setItem("foli-language-v1", "fi");
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-language-v1",
+        oldValue: "en",
+        newValue: "fi",
+      })
+    );
+    await Promise.resolve();
+
+    localStorage.setItem("foli-language-v1", "en");
+    window.dispatchEvent(
+      new globalThis.StorageEvent("storage", {
+        key: "foli-language-v1",
+        oldValue: "fi",
+        newValue: "en",
+      })
+    );
+    expect(fresh.getLanguage()).toBe("en");
+
+    releaseFiValues();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(fresh.getLanguage()).toBe("en");
+    expect(document.documentElement.lang).toBe("en");
+  } finally {
+    fetchMock.mockRestore();
+    localStorage.clear();
+  }
+});
+
 test("locale pack HTTP failure rejects instead of activating partial translations", async () => {
   vi.resetModules();
   const fetchMock = compactFiFixture({ fiStatus: 503 });
