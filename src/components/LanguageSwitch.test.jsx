@@ -258,7 +258,7 @@ test("follows a language change made in another tab without rewriting storage", 
   localStorage.setItem("foli-language-v1", "fi");
   act(() => {
     window.dispatchEvent(
-      new StorageEvent("storage", {
+      new globalThis.StorageEvent("storage", {
         key: "foli-language-v1",
         oldValue: "en",
         newValue: "fi",
