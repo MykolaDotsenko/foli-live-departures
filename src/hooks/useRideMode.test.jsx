@@ -334,13 +334,18 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
   expect(result.current.continuation).toEqual(continuation);
   expect(
     JSON.parse(
-      localStorage.getItem("foli-active-ride-continuation-v1")
+      globalThis.sessionStorage.getItem(
+        "foli-active-ride-continuation-v1"
+      )
     )
   ).toMatchObject({
     rideId: result.current.session?.id,
     expiresAt: result.current.session?.expiresAt,
     continuation,
   });
+  expect(
+    localStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBeNull();
   expect(localStorage.getItem("foli-active-ride-v1")).not.toContain(
     "Private destination"
   );
@@ -348,6 +353,9 @@ test("starting and ending a ride owns the continuation lifecycle", () => {
   act(() => result.current.endRide());
 
   expect(result.current.continuation).toBeNull();
+  expect(
+    globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+  ).toBeNull();
   expect(
     localStorage.getItem("foli-active-ride-continuation-v1")
   ).toBeNull();
