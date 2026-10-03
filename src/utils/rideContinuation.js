@@ -11,10 +11,13 @@
 export const RIDE_CONTINUATION_STORAGE_KEY =
   "foli-active-ride-continuation-v1";
 
-/** @param {unknown} value */
+/**
+ * @param {unknown} value
+ * @returns {Record<string, unknown> | null}
+ */
 function record(value) {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? value
+    ? /** @type {Record<string, unknown>} */ (value)
     : null;
 }
 
