@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import useDestinationIntent, {
   destinationFromPlace,
   destinationFromStop,
+  normalizeDestinationIntent,
 } from "./useDestinationIntent";
 
 test("builds a public-stop destination without persisting private data", () => {
@@ -33,6 +34,158 @@ test("keeps primary and approved backup stops for a saved place", () => {
   });
 
   expect(destinationFromPlace({ id: "home", label: "Home", stops: [] })).toBeNull();
+});
+
+test("restores a validated destination intent for active Ride Mode continuity", () => {
+  const restored = {
+    id: "stop:32",
+    kind: "public-stop",
+    label: " Puistokatu ",
+    primaryStopId: "32",
+    acceptableStopIds: ["32", "bad", "32"],
+  };
+
+  expect(normalizeDestinationIntent(restored)).toEqual({
+    id: "stop:32",
+    kind: "public-stop",
+    label: "Puistokatu",
+    primaryStopId: "32",
+    acceptableStopIds: ["32"],
+  });
+  expect(
+    normalizeDestinationIntent({
+      ...restored,
+      primaryStopId: "bad",
+    })
+  ).toBeNull();
+
+  const { result } = renderHook(() => useDestinationIntent(restored));
+  expect(result.current.destination?.id).toBe("stop:32");
+
+  act(() => {
+    expect(
+      result.current.restoreDestination({
+        id: "place:home",
+        kind: "saved-place",
+        label: "Home",
+        primaryStopId: "164",
+        acceptableStopIds: ["164", "4"],
+      })
+    ).toBe(true);
+  });
+  expect(result.current.destination).toMatchObject({
+    id: "place:home",
+    acceptableStopIds: ["164", "4"],
+  });
+
+  act(() => {
+    expect(
+      result.current.restoreDestination({
+        id: "",
+        kind: "public-stop",
+        label: "Invalid",
+        primaryStopId: "32",
+        acceptableStopIds: ["32"],
+      })
+    ).toBe(false);
+  });
+  expect(result.current.destination?.id).toBe("place:home");
+});
+
+test("destination restoration fails closed for malformed persisted shapes", () => {
+  const base = {
+    id: "stop:32",
+    kind: "public-stop",
+    label: "Puistokatu",
+    primaryStopId: "32",
+    acceptableStopIds: ["32"],
+  };
+
+  for (const candidate of [
+    null,
+    "not-an-object",
+    [],
+    { ...base, id: "" },
+    { ...base, label: "" },
+    { ...base, kind: "private-stop" },
+    { ...base, primaryStopId: "bad" },
+    { ...base, acceptableStopIds: "32" },
+    { ...base, acceptableStopIds: ["31"] },
+  ]) {
+    expect(normalizeDestinationIntent(candidate)).toBeNull();
+  }
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      acceptableStopIds: [null, "", "bad", "32", "32", "33"],
+    })
+  ).toEqual({
+    ...base,
+    acceptableStopIds: ["32", "33"],
+  });
+});
+
+test("destination restoration validates private external-place details", () => {
+  const base = {
+    id: "external:test",
+    kind: "external-place",
+    label: "Private destination",
+    primaryStopId: "32",
+    acceptableStopIds: ["32", "33"],
+    lat: 60.45,
+    lon: 22.27,
+  };
+
+  expect(
+    normalizeDestinationIntent({ ...base, lat: "not-a-number" })
+  ).toBeNull();
+  expect(
+    normalizeDestinationIntent({ ...base, lon: Number.POSITIVE_INFINITY })
+  ).toBeNull();
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: [],
+    })
+  ).toEqual(base);
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: {
+        "32": 0,
+        "33": "125",
+        bad: 50,
+        "34": -1,
+        "35": "not-a-number",
+      },
+      source: "osm-nominatim",
+    })
+  ).toEqual({
+    ...base,
+    finalWalkDistanceByStop: {
+      "32": 0,
+      "33": 125,
+    },
+    source: "osm-nominatim",
+  });
+
+  expect(
+    normalizeDestinationIntent({
+      ...base,
+      finalWalkDistanceByStop: {
+        "32": 75,
+      },
+      source: "something-else",
+    })
+  ).toEqual({
+    ...base,
+    finalWalkDistanceByStop: {
+      "32": 75,
+    },
+  });
 });
 
 test("lets the passenger choose and clear destination explicitly", () => {

@@ -379,21 +379,60 @@ export function mergeRealtimeAndScheduled(
   /** @type {Set<number>} */
   const matchedScheduled = new Set();
 
+  /** @type {{ scheduledIndex: number, realtimeIndex: number, delta: number }[]} */
+  const exactTripCandidates = [];
+
   scheduled.forEach((scheduledRow, scheduledIndex) => {
     const tripref = String(scheduledRow?.tripref || "").trim();
-    if (!tripref) return;
+    const scheduledAimed =
+      finiteNumber(scheduledRow?.aimeddeparturetime) ??
+      finiteNumber(scheduledRow?.aimedarrivaltime);
+    if (!tripref || scheduledAimed === null) return;
 
-    const realtimeIndex = realtime.findIndex(
-      (liveRow, index) =>
-        !matchedRealtime.has(index) &&
-        String(liveRow?.tripref || "").trim() === tripref
-    );
+    realtime.forEach((liveRow, realtimeIndex) => {
+      if (String(liveRow?.tripref || "").trim() !== tripref) return;
 
-    if (realtimeIndex >= 0) {
-      matchedRealtime.add(realtimeIndex);
-      matchedScheduled.add(scheduledIndex);
-    }
+      // A GTFS trip_id describes the planned trip across every service date
+      // on which its service_id runs. It is not, by itself, one physical
+      // occurrence. SIRI can keep yesterday/today's stale occurrence while
+      // the timetable fallback already contains the same trip_id tomorrow.
+      // Planned stop time therefore anchors the occurrence. Build every
+      // plausible exact-trip pair first, then choose the closest one-to-one:
+      // on a loop, two visits can share trip_id and both sit inside the
+      // tolerance window, and "first row wins" can suppress the wrong visit.
+      const liveAimed =
+        finiteNumber(liveRow?.aimeddeparturetime) ??
+        finiteNumber(liveRow?.aimedarrivaltime);
+      if (liveAimed === null) return;
+
+      const delta = Math.abs(liveAimed - scheduledAimed);
+      if (delta <= tolerance) {
+        exactTripCandidates.push({
+          scheduledIndex,
+          realtimeIndex,
+          delta,
+        });
+      }
+    });
   });
+
+  exactTripCandidates
+    .sort(
+      (left, right) =>
+        left.delta - right.delta ||
+        left.scheduledIndex - right.scheduledIndex ||
+        left.realtimeIndex - right.realtimeIndex
+    )
+    .forEach(({ scheduledIndex, realtimeIndex }) => {
+      if (
+        matchedScheduled.has(scheduledIndex) ||
+        matchedRealtime.has(realtimeIndex)
+      ) {
+        return;
+      }
+      matchedScheduled.add(scheduledIndex);
+      matchedRealtime.add(realtimeIndex);
+    });
 
   /** @type {{ scheduledIndex: number, realtimeIndex: number, delta: number }[]} */
   const fuzzyCandidates = [];

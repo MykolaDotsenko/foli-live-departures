@@ -40,6 +40,13 @@ import {
   nativeRideCompanionEligible,
 } from "../utils/nativeActiveRide";
 import {
+  RIDE_CONTINUATION_STORAGE_KEY,
+  clearRideContinuation,
+  persistRideContinuation,
+  readDurableRideContinuation,
+  readRideContinuation,
+} from "../utils/rideContinuation";
+import {
   RIDE_STORAGE_KEY,
   RIDE_TTL_MS,
   createRideId,
@@ -67,11 +74,19 @@ export default function useRideMode() {
   const initialRideRef = useRef(null);
   if (initialRideRef.current === null) {
     initialRideRef.current = readStoredRide() || false;
+    if (initialRideRef.current === false) {
+      clearRideContinuation();
+    }
   }
 
   const [session, setSession] = useState(
     initialRideRef.current === false ? null : initialRideRef.current
   );
+  const [continuation, setContinuation] = useState(() => {
+    const restoredId =
+      initialRideRef.current === false ? "" : initialRideRef.current?.id || "";
+    return restoredId ? readRideContinuation(restoredId) : null;
+  });
   // The ride this page picked up from storage, if any. It knows nothing
   // live about the bus until its first poll comes back.
   const restoredRideIdRef = useRef(initialRideRef.current?.id || "");
@@ -144,6 +159,8 @@ export default function useRideMode() {
       setFieldReport(buildFieldDiagnosticReport());
     }
     stopRideAlerts();
+    clearRideContinuation(current?.id || "");
+    setContinuation(null);
     const nativeRideId = nativeRideIdRef.current || current?.id || "";
     nativeRideIdRef.current = "";
     nativePreparedRideIdRef.current = "";
@@ -171,16 +188,28 @@ export default function useRideMode() {
   // that runs it, which may know its bus is very late and still coming.
   useEffect(() => {
     const takeOtherTabRide = (event) => {
-      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
       const current = sessionRef.current;
       if (!current) return;
+
+      if (event.key === RIDE_CONTINUATION_STORAGE_KEY) {
+        setContinuation(
+          event.newValue === null
+            ? null
+            : readDurableRideContinuation(current.id)
+        );
+        return;
+      }
+
+      if (event.key !== null && event.key !== RIDE_STORAGE_KEY) return;
       if (storedRideId() === current.id) return;
       const stored = readStoredRide();
 
       stopRideAlerts();
+      clearRideContinuation(current.id);
       shapeRef.current = null;
       sessionRef.current = stored;
       setSession(stored);
+      setContinuation(stored?.id ? readRideContinuation(stored.id) : null);
       // Like a ride picked up on load, it knows nothing live yet.
       restoredRideIdRef.current = stored?.id || "";
       commitRuntime(emptyRuntime());
@@ -336,10 +365,15 @@ export default function useRideMode() {
     (config) => {
       if (!config?.targetStop || !config?.plan) return false;
 
+      const {
+        continuation: requestedContinuation = null,
+        ...rideConfig
+      } = config;
       const now = Date.now();
+      const previousRideId = sessionRef.current?.id || "";
       const nextSession = {
         id: createRideId(),
-        ...config,
+        ...rideConfig,
         stage: RIDE_STAGE.BOARDED,
         stageReason: "tracking",
         stageConfidence: "live",
@@ -349,6 +383,13 @@ export default function useRideMode() {
       };
 
       stopRideAlerts();
+      clearRideContinuation(previousRideId);
+      const nextContinuation = persistRideContinuation(
+        nextSession.id,
+        requestedContinuation,
+        nextSession.expiresAt
+      );
+      setContinuation(nextContinuation);
       commitRuntime(emptyRuntime());
       commitGps(emptyGps());
       nativeRideIdRef.current = "";
@@ -389,6 +430,22 @@ export default function useRideMode() {
     },
     [commitGps, commitRuntime, commitSession]
   );
+
+  const updateContinuation = useCallback((updater) => {
+    const rideId = sessionRef.current?.id || "";
+    if (!rideId) return;
+
+    setContinuation((current) => {
+      const next =
+        typeof updater === "function" ? updater(current) : updater;
+      if (next === current) return current;
+      return persistRideContinuation(
+        rideId,
+        next,
+        sessionRef.current?.expiresAt
+      );
+    });
+  }, []);
 
   const testAlert = useCallback(() => {
     const current = sessionRef.current;
@@ -529,6 +586,7 @@ export default function useRideMode() {
 
   return {
     session,
+    continuation,
     runtime,
     gps,
     wakeLockState,
@@ -537,6 +595,7 @@ export default function useRideMode() {
     active: Boolean(session),
     startRide,
     endRide,
+    updateContinuation,
     testAlert,
   };
 }

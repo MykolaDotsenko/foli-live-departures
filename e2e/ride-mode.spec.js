@@ -752,6 +752,251 @@ test("switching to another get-off alert asks before replacing the active ride",
   ).toBeVisible();
 });
 
+test("a reload keeps the final-walk continuation attached to Ride Mode", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await routeTargetStop(page, { vehicleatstop: true });
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+
+  await page.evaluate(() => {
+    const ride = JSON.parse(
+      globalThis.localStorage.getItem("foli-active-ride-v1") || "null"
+    );
+    if (!ride?.id || !ride?.targetStop?.id) {
+      throw new Error("Expected an active stored ride.");
+    }
+
+    const now = Date.now();
+    globalThis.localStorage.setItem(
+      "foli-active-ride-v1",
+      JSON.stringify({
+        ...ride,
+        stage: "now",
+        stageReason: "target-at-stop",
+        stageConfidence: "live",
+        stageChangedAt: now,
+      })
+    );
+    globalThis.sessionStorage.setItem(
+      "foli-active-ride-continuation-v1",
+      JSON.stringify({
+        rideId: ride.id,
+        expiresAt: ride.expiresAt,
+        continuation: {
+          transferJourney: null,
+          finalWalk: {
+            destinationId: "external:test-destination",
+            destinationLabel: "Private destination",
+            lat: 60.451,
+            lon: 22.266,
+            fromStopId: String(ride.targetStop.id),
+            fromStopName: String(ride.targetStop.name || ride.targetStop.id),
+            distanceMeters: 320,
+          },
+          destination: {
+            id: "external:test-destination",
+            kind: "external-place",
+            label: "Private destination",
+            primaryStopId: String(ride.targetStop.id),
+            acceptableStopIds: [String(ride.targetStop.id)],
+            lat: 60.451,
+            lon: 22.266,
+          },
+        },
+      })
+    );
+  });
+
+  await page.reload();
+
+  const gettingOff = page.getByRole("button", { name: "I'm getting off" });
+  await expect(gettingOff).toBeVisible();
+  await gettingOff.click();
+
+  await expect(
+    page.getByRole("heading", { name: "Walk to Private destination" })
+  ).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      globalThis.sessionStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toBeNull();
+  expect(
+    await page.evaluate(() =>
+      globalThis.localStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toBeNull();
+  expect(
+    await page.evaluate(() =>
+      globalThis.localStorage.getItem("foli-active-ride-v1")
+    )
+  ).toBeNull();
+});
+
+test("a reload keeps the committed transfer continuation attached to Ride Mode", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+  await routeTargetStop(page, { vehicleatstop: true });
+
+  await page.goto("/?stop=164");
+  await seedHome(page);
+  await startRide(page, { gps: false });
+
+  await page.evaluate(() => {
+    const ride = JSON.parse(
+      globalThis.localStorage.getItem("foli-active-ride-v1") || "null"
+    );
+    if (!ride?.id || !ride?.targetStop?.id || !ride?.tripRef) {
+      throw new Error("Expected an active stored ride.");
+    }
+
+    const nowMs = Date.now();
+    const nowSec = Math.floor(nowMs / 1000);
+    globalThis.localStorage.setItem(
+      "foli-active-ride-v1",
+      JSON.stringify({
+        ...ride,
+        stage: "now",
+        stageReason: "target-at-stop",
+        stageConfidence: "live",
+        stageChangedAt: nowMs,
+      })
+    );
+
+    const firstLeg = {
+      tripRef: String(ride.tripRef),
+      lineRef: String(ride.lineRef || "1"),
+      boardStopId: String(ride.boardingStop?.id || "164"),
+      boardStopSequence: null,
+      exitStopId: String(ride.targetStop.id),
+      exitStopSequence: null,
+      departureAt: nowSec - 600,
+      arrivalAt: nowSec,
+      aimedDepartureAt: nowSec - 600,
+      originAimedDepartureAt: nowSec - 660,
+      liveState: "live",
+    };
+    const secondLeg = {
+      tripRef: "trip-transfer-2",
+      lineRef: "7",
+      boardStopId: "4",
+      boardStopSequence: null,
+      exitStopId: "32",
+      exitStopSequence: null,
+      departureAt: nowSec + 900,
+      arrivalAt: nowSec + 1500,
+      aimedDepartureAt: nowSec + 900,
+      originAimedDepartureAt: nowSec + 840,
+      liveState: "schedule",
+    };
+    const transfer = {
+      alightStopId: String(ride.targetStop.id),
+      alightStopSequence: 2,
+      boardStopId: "4",
+      boardStopName: "Turun linna",
+      walkingDistanceM: 75,
+      feasibility: {
+        state: "comfortable",
+        recommendable: true,
+        incomingArrivalAt: nowSec,
+        outgoingDepartureAt: nowSec + 900,
+        walkingDistanceM: 75,
+        requiredSec: 120,
+        availableSec: 900,
+        slackSec: 780,
+      },
+    };
+    const itinerary = {
+      id: "reload-transfer-itinerary",
+      originStopId: firstLeg.boardStopId,
+      originStopName: String(ride.boardingStop?.name || firstLeg.boardStopId),
+      originDistanceMeters: 0,
+      legs: [firstLeg, secondLeg],
+      transfers: [transfer],
+      destinationStopId: secondLeg.exitStopId,
+      destinationArrivalAt: secondLeg.arrivalAt,
+      finalWalkDistanceM: null,
+      finalWalkSecEstimate: null,
+      journeyArrivalAt: secondLeg.arrivalAt,
+      totalWalkingDistanceM: 75,
+      reliability: "medium",
+    };
+    const transferJourney = {
+      id: itinerary.id,
+      destinationId: "stop:32",
+      destinationKind: "public-stop",
+      destinationLabel: "Puistokatu",
+      optionLabel: "transfer",
+      stopId: firstLeg.boardStopId,
+      stopName: String(ride.boardingStop?.name || firstLeg.boardStopId),
+      distanceMeters: 0,
+      tripRef: firstLeg.tripRef,
+      lineRef: firstLeg.lineRef,
+      destinationStopId: firstLeg.exitStopId,
+      destinationStopSequence: null,
+      departureAt: firstLeg.departureAt,
+      aimedDepartureAt: firstLeg.aimedDepartureAt,
+      originAimedDepartureAt: firstLeg.originAimedDepartureAt,
+      destinationArrivalAt: itinerary.destinationArrivalAt,
+      journeyArrivalAt: itinerary.journeyArrivalAt,
+      finalWalkDistanceM: null,
+      finalWalkSecEstimate: null,
+      liveState: "live",
+      phase: "walking-to-stop",
+      recoveryReason: null,
+      selectedAt: nowMs - 10_000,
+      atStopConfirmedAt: null,
+      lastSeenAt: nowMs - 10_000,
+      itinerary,
+      activeLegIndex: 0,
+      futureLegRevalidations: {},
+      transferPlan: null,
+      transferLeg: null,
+      transferRevalidation: null,
+    };
+
+    globalThis.localStorage.setItem(
+      "foli-active-ride-continuation-v1",
+      JSON.stringify({
+        rideId: ride.id,
+        expiresAt: ride.expiresAt,
+        continuation: {
+          transferJourney,
+          finalWalk: null,
+          destination: {
+            id: "stop:32",
+            kind: "public-stop",
+            label: "Puistokatu",
+            primaryStopId: "32",
+            acceptableStopIds: ["32"],
+          },
+        },
+      })
+    );
+  });
+
+  await page.reload();
+
+  const gettingOff = page.getByRole("button", { name: "I'm getting off" });
+  await expect(gettingOff).toBeVisible();
+  await gettingOff.click();
+
+  await expect(
+    page.getByRole("heading", { name: "Walk to Turun linna" })
+  ).toBeVisible();
+  await expect(page.getByText("Leg 2 of 2 · continue on line 7")).toBeVisible();
+  expect(
+    await page.evaluate(() =>
+      globalThis.localStorage.getItem("foli-active-ride-continuation-v1")
+    )
+  ).toBeNull();
+});
+
 // The same ride open in two tabs: turned off in one, the other kept alerting
 // and later wrote its copy back, so the ride returned on the next reload.
 test("a get-off alert turned off in one tab ends in the other and stays off", async ({

@@ -40,7 +40,7 @@
       <li>favourite and recent public stop identifiers;</li>
       <li>line filters and My Places made from public stop numbers/names, not street addresses;</li>
       <li>recent departure-board responses for a short offline-recovery window;</li>
-      <li>an active Ride Mode session for at most six hours;</li>
+      <li>an active Ride Mode session for at most six hours, including the selected public-transit continuation and destination needed to resume that active journey after a reload;</li>
       <li>local preferences and recent same-session search results.</li>
     </ul>
     <p>
@@ -56,7 +56,9 @@
       route. Stop Radar can also use device orientation or recent direction of
       travel to point toward a selected public stop. Raw device coordinates are not saved by
       Turku Departures and are not sent by Turku Departures to the developer
-      or to Föli.
+      or to Föli. This refers to device-location samples; a destination chosen
+      for an active journey can be kept temporarily on this device until that
+      ride ends or expires.
     </p>
     <p>
       The Android build can additionally offer a per-ride foreground-service

@@ -3,6 +3,84 @@ import { prepareExternalPlaceDestination } from "../utils/placeDestination";
 /** @import { DestinationIntent } from "../types/journey" */
 
 /**
+ * Validate a destination restored from active Ride Mode continuation state.
+ * This accepts the three canonical destination kinds only and normalizes the
+ * stop-id set so malformed storage never becomes active journey context.
+ *
+ * @param {unknown} value
+ * @returns {DestinationIntent | null}
+ */
+export function normalizeDestinationIntent(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const candidate = /** @type {Record<string, unknown>} */ (value);
+  const id = String(candidate.id || "").trim();
+  const kind = String(candidate.kind || "");
+  const label = String(candidate.label || "").trim();
+  const primaryStopId = String(candidate.primaryStopId || "").trim();
+  const acceptableStopIds = [
+    ...new Set(
+      (Array.isArray(candidate.acceptableStopIds)
+        ? candidate.acceptableStopIds
+        : []
+      )
+        .map((stopId) => String(stopId || "").trim())
+        .filter((stopId) => /^\d+$/.test(stopId))
+    ),
+  ];
+
+  if (
+    !id ||
+    !label ||
+    !["saved-place", "public-stop", "external-place"].includes(kind) ||
+    !/^\d+$/.test(primaryStopId) ||
+    !acceptableStopIds.includes(primaryStopId)
+  ) {
+    return null;
+  }
+
+  /** @type {DestinationIntent} */
+  const normalized = {
+    id,
+    kind: /** @type {DestinationIntent["kind"]} */ (kind),
+    label,
+    primaryStopId,
+    acceptableStopIds,
+  };
+
+  if (kind === "external-place") {
+    const lat = Number(candidate.lat);
+    const lon = Number(candidate.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    normalized.lat = lat;
+    normalized.lon = lon;
+
+    const distances =
+      candidate.finalWalkDistanceByStop &&
+      typeof candidate.finalWalkDistanceByStop === "object" &&
+      !Array.isArray(candidate.finalWalkDistanceByStop)
+        ? candidate.finalWalkDistanceByStop
+        : null;
+    if (distances) {
+      normalized.finalWalkDistanceByStop = Object.fromEntries(
+        Object.entries(distances)
+          .map(([stopId, distance]) => [stopId, Number(distance)])
+          .filter(
+            ([stopId, distance]) =>
+              /^\d+$/.test(stopId) &&
+              Number.isFinite(distance) &&
+              distance >= 0
+          )
+      );
+    }
+    if (candidate.source === "osm-nominatim") {
+      normalized.source = "osm-nominatim";
+    }
+  }
+
+  return normalized;
+}
+
+/**
  * @param {{ id?: unknown, name?: unknown } | null | undefined} stop
  * @returns {DestinationIntent | null}
  */
@@ -52,9 +130,11 @@ export function destinationFromPlace(place) {
   };
 }
 
-export default function useDestinationIntent() {
+export default function useDestinationIntent(initialDestination = null) {
   /** @type {[DestinationIntent | null, import("react").Dispatch<import("react").SetStateAction<DestinationIntent | null>>]} */
-  const [destination, setDestination] = useState(null);
+  const [destination, setDestination] = useState(() =>
+    normalizeDestinationIntent(initialDestination)
+  );
   const chooseStop = useCallback((stop) => {
     const next = destinationFromStop(stop);
     if (next) setDestination(next);
@@ -80,6 +160,13 @@ export default function useDestinationIntent() {
     []
   );
 
+  const restoreDestination = useCallback((candidate) => {
+    const next = normalizeDestinationIntent(candidate);
+    if (!next) return false;
+    setDestination(next);
+    return true;
+  }, []);
+
   const clearDestination = useCallback(() => setDestination(null), []);
 
   return {
@@ -87,6 +174,7 @@ export default function useDestinationIntent() {
     chooseStop,
     choosePlace,
     chooseExternalPlace,
+    restoreDestination,
     clearDestination,
   };
 }
