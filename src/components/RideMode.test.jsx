@@ -518,6 +518,34 @@ test("says when notifications were not allowed, and how to allow them", () => {
   expect(screen.queryByText(blocked)).not.toBeInTheDocument();
   notAsked.unmount();
 
+  // A ride restored after a reload starts with no recorded answer and is
+  // never asked again: a site the browser has blocked still says so.
+  vi.stubGlobal("Notification", { permission: "denied" });
+  try {
+    const restored = renderPanel({ notificationPermission: "unknown" });
+    expect(screen.getByText(blocked)).toBeInTheDocument();
+    restored.unmount();
+
+    const declined = render(
+      <RideMode
+        session={{
+          ...session("soon"),
+          options: { locationBackup: true, notifications: false },
+        }}
+        runtime={{ trackingHealth: "schedule", remainingStops: 2 }}
+        gps={{ status: "off", error: "" }}
+        wakeLockState="active"
+        onTestAlert={() => {}}
+        onEndRide={() => {}}
+        onOpenStop={() => {}}
+      />
+    );
+    expect(screen.queryByText(blocked)).not.toBeInTheDocument();
+    declined.unmount();
+  } finally {
+    vi.unstubAllGlobals();
+  }
+
   // "Get off now" keeps the screen to itself.
   renderPanel({ notificationPermission: "unavailable" }, "now");
   expect(screen.queryByText(blocked)).not.toBeInTheDocument();

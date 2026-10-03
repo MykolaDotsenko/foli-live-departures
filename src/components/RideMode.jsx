@@ -362,6 +362,18 @@ function offRouteQuestion({ lineRef, destination }) {
   );
 }
 
+// Notifications asked for and not allowed: without saying so the passenger
+// waits for one that will not come. Start records the answer; a ride
+// restored after a reload starts with none, and never asks again, so a
+// browser that has blocked the site counts too. Allowed mid-ride, the next
+// alert shows one, and the notice goes.
+function notificationsBlocked(session, runtime) {
+  const permission = globalThis.Notification?.permission;
+  if (permission === "granted") return false;
+  if (runtime.notificationPermission === "unavailable") return true;
+  return session.options?.notifications === true && permission === "denied";
+}
+
 // While the sound is being fixed, what else will reach the passenger. It
 // used to promise vibration and a notification on every phone, iPhones
 // included, which have neither for a web page.
@@ -797,12 +809,7 @@ export default function RideMode({
         </p>
       )}
 
-      {/* Asked for at Start and not allowed: without this the passenger
-          waits for a notification that will not come. Allowed mid-ride,
-          the next alert shows one, and this goes. */}
-      {runtime.notificationPermission === "unavailable" &&
-        globalThis.Notification?.permission !== "granted" &&
-        !gettingOffNow && (
+      {notificationsBlocked(session, runtime) && !gettingOffNow && (
         <p className={styles.degraded} role="status">
           {t(
             "Notifications are blocked. Allow them for this site in your browser settings."
