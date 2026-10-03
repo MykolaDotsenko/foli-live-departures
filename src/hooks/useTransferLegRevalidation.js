@@ -9,8 +9,9 @@ import { reportProviderReached } from "./useOnlineStatus";
 
 const REFRESH_INTERVAL_MS = 30_000;
 
-function emptyFeed() {
+function emptyFeed(identityKey = "") {
   return {
+    identityKey,
     arrivals: [],
     serverTime: null,
     receivedAtMs: null,
@@ -65,7 +66,7 @@ export default function useTransferLegRevalidation({
       ].join("|")
     : "";
 
-  const [feed, setFeed] = useState(emptyFeed);
+  const [feed, setFeed] = useState(() => emptyFeed(""));
   const [loading, setLoading] = useState(false);
   const abortRef = useRef(null);
   const previousRef = useRef({ identityKey: "", state: null });
@@ -89,6 +90,7 @@ export default function useTransferLegRevalidation({
 
       const receivedAtMs = Date.now();
       setFeed({
+        identityKey,
         arrivals: next.arrivals,
         serverTime: next.serverTime,
         receivedAtMs,
@@ -110,11 +112,11 @@ export default function useTransferLegRevalidation({
     } finally {
       if (!controller.signal.aborted) setLoading(false);
     }
-  }, [active, stopId]);
+  }, [active, identityKey, stopId]);
 
   useEffect(() => {
     previousRef.current = { identityKey, state: null };
-    setFeed(emptyFeed());
+    setFeed(emptyFeed(identityKey));
     setLoading(false);
 
     if (!active) {
@@ -166,16 +168,24 @@ export default function useTransferLegRevalidation({
       return evaluateTransferRevalidation({ journey: null });
     }
 
+    // During the render that switches committed legs, React still exposes the
+    // previous leg's feed until the identity-reset effect runs. Treat that
+    // payload as absent immediately; otherwise one transient evaluation can
+    // attach the old leg's missingSinceMs to the new identity and falsely
+    // confirm "missed" on the first new poll.
+    const currentFeed =
+      feed.identityKey === identityKey ? feed : emptyFeed(identityKey);
+
     return evaluateTransferRevalidation({
       journey,
-      arrivals: feed.arrivals,
+      arrivals: currentFeed.arrivals,
       referenceTimeSec: advanceServerTime(
-        feed.serverTime,
-        feed.receivedAtMs,
+        currentFeed.serverTime,
+        currentFeed.receivedAtMs,
         nowMs
       ),
-      receivedAtMs: feed.receivedAtMs,
-      feedError: feed.error,
+      receivedAtMs: currentFeed.receivedAtMs,
+      feedError: currentFeed.error,
       cancelled,
       incomingArrivalAt,
       incomingLiveState,
