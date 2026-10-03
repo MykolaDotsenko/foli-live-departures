@@ -67,9 +67,15 @@ function followSystem(event) {
 
 media?.addEventListener?.("change", followSystem);
 
-globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, () => {
+function syncThemeFromStorage() {
   preference = readPreference();
   publish(preference || systemTheme());
+}
+
+globalThis.addEventListener?.(LOCAL_STATE_IMPORTED_EVENT, syncThemeFromStorage);
+globalThis.addEventListener?.("storage", (event) => {
+  if (event?.key !== null && event?.key !== STORAGE_KEY) return;
+  syncThemeFromStorage();
 });
 
 export function getTheme() {
