@@ -40,10 +40,13 @@ describe("stop radar geometry", () => {
     ).toBeNull();
   });
 
-  it("smooths across north without taking the long rotation", () => {
+  it("smooths across north without inventing a zero-degree prior heading", () => {
     expect(smoothHeading(350, 10, 0.5)).toBeCloseTo(0, 5);
     expect(smoothHeading(null, 12)).toBe(12);
     expect(normalizeDegrees(-10)).toBe(350);
+    expect(normalizeDegrees(null)).toBeNull();
+    expect(normalizeDegrees(undefined)).toBeNull();
+    expect(normalizeDegrees("")).toBeNull();
   });
 
   it("uses only absolute orientation or Safari compass heading", () => {
