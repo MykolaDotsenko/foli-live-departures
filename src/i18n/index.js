@@ -292,6 +292,10 @@ function switchTo(language) {
  * Accepts any code: one the app does not speak is ignored.
  * @param {string} language
  */
+/**
+ * @param {string} language
+ * @param {boolean} [persist]
+ */
 function activateLanguage(language, persist = true) {
   if (!isLanguage(language) || language === current) {
     return Promise.resolve(false);
