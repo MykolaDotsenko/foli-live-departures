@@ -196,16 +196,6 @@ export default {
     "Välj Hem, Arbete, Skola, en Föli-hållplats, adress eller plats.",
   "Destination suggestions":
     "Förslag på destinationer",
-  "Stop or place":
-    "Hållplats eller plats",
-  "e.g. Kauppatori or Prisma":
-    "t.ex. Kauppatori eller Prisma",
-  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
-    "Välj Hem, Arbete, Skola, en Föli-hållplats eller en plats som Prisma.",
-  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
-    "Gatuadresser söks inte här. Använd Åbos officiella reseplanerare för adresser.",
-  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
-    "Ingen hållplats eller plats matchar ”{query}”. Använd Åbos officiella reseplanerare för gatuadresser.",
   "Nearest to me first":
     "Närmast mig först",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
@@ -309,7 +299,6 @@ export default {
     "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
-  "Enter a stop or place.": "Ange en hållplats eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Platssökning kräver internetanslutning. Du kan fortfarande välja en Föli-hållplats bland förslagen.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
