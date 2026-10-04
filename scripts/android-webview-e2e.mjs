@@ -251,9 +251,8 @@ const ukrainianReload = await retry(
       ready: document.readyState === "complete",
       lang: document.documentElement.lang || "",
       stored: localStorage.getItem("foli-language-v1"),
-      hasSwedishSwitch: [...document.querySelectorAll("button")].some(
-        (button) => (button.textContent || "").trim() === "På svenska"
-      ),
+      pickerShowsUkrainian:
+        document.querySelector(".language-switch select")?.value === "uk",
       hasUkrainianUi:
         /Виберіть автобусну зупинку|Знайти найближчу зупинку|Відправлення/.test(
           document.body.innerText
@@ -262,7 +261,7 @@ const ukrainianReload = await retry(
     return snapshot.ready &&
       snapshot.lang === "uk" &&
       snapshot.stored === "uk" &&
-      snapshot.hasSwedishSwitch &&
+      snapshot.pickerShowsUkrainian &&
       snapshot.hasUkrainianUi
       ? snapshot
       : null;
@@ -281,19 +280,18 @@ const switchedToSwedish = await retry(
   "Android Swedish locale switch",
   async () => {
     const snapshot = await evaluate(`(() => {
-      const button = [...document.querySelectorAll("button")].find(
-        (candidate) => (candidate.textContent || "").trim() === "På svenska"
-      );
-      if (document.documentElement.lang === "uk" && button) {
-        button.click();
+      const picker = document.querySelector(".language-switch select");
+      if (document.documentElement.lang === "uk" && picker) {
+        if (picker.value !== "sv") {
+          picker.value = "sv";
+          picker.dispatchEvent(new Event("change", { bubbles: true }));
+        }
         return null;
       }
       return {
         lang: document.documentElement.lang || "",
         stored: localStorage.getItem("foli-language-v1"),
-        hasEnglishSwitch: [...document.querySelectorAll("button")].some(
-          (candidate) => (candidate.textContent || "").trim() === "In English"
-        ),
+        pickerShowsSwedish: picker?.value === "sv",
         hasSwedishUi:
           /Välj en busshållplats|Hitta närmaste hållplats|Avgår/.test(
             document.body.innerText
@@ -302,7 +300,7 @@ const switchedToSwedish = await retry(
     })()`);
     return snapshot?.lang === "sv" &&
       snapshot?.stored === "sv" &&
-      snapshot?.hasEnglishSwitch &&
+      snapshot?.pickerShowsSwedish &&
       snapshot?.hasSwedishUi
       ? snapshot
       : null;
@@ -323,9 +321,8 @@ const swedishReload = await retry(
       ready: document.readyState === "complete",
       lang: document.documentElement.lang || "",
       stored: localStorage.getItem("foli-language-v1"),
-      hasEnglishSwitch: [...document.querySelectorAll("button")].some(
-        (candidate) => (candidate.textContent || "").trim() === "In English"
-      ),
+      pickerShowsSwedish:
+        document.querySelector(".language-switch select")?.value === "sv",
       hasSwedishUi:
         /Välj en busshållplats|Hitta närmaste hållplats|Avgår/.test(
           document.body.innerText
@@ -334,7 +331,7 @@ const swedishReload = await retry(
     return snapshot.ready &&
       snapshot.lang === "sv" &&
       snapshot.stored === "sv" &&
-      snapshot.hasEnglishSwitch &&
+      snapshot.pickerShowsSwedish &&
       snapshot.hasSwedishUi
       ? snapshot
       : null;
@@ -350,18 +347,18 @@ record(
 );
 
 // Keep the long-standing Android E2E assertions language-stable after proving
-// native persistence. The registry continues Swedish → English.
+// native persistence: English is one choice in the picker.
 const restoredEnglish = await retry(
   "Android locale reset to English",
   async () => {
     const snapshot = await evaluate(`(() => {
-      const findButton = (label) =>
-        [...document.querySelectorAll("button")].find(
-          (candidate) => (candidate.textContent || "").trim() === label
-        );
+      const picker = document.querySelector(".language-switch select");
       const lang = document.documentElement.lang || "";
-      if (lang === "sv") {
-        findButton("In English")?.click();
+      if (lang !== "en") {
+        if (picker && picker.value !== "en") {
+          picker.value = "en";
+          picker.dispatchEvent(new Event("change", { bubbles: true }));
+        }
         return null;
       }
       return {
@@ -376,7 +373,7 @@ const restoredEnglish = await retry(
   { attempts: 30, delayMs: 250 }
 );
 record(
-  "Android locale cycle returns to English for the remaining E2E contract",
+  "Android language picker returns to English for the remaining E2E contract",
   restoredEnglish?.lang === "en" && restoredEnglish?.stored === "en",
   restoredEnglish || {}
 );
