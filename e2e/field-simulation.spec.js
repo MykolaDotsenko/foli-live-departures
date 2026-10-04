@@ -3,7 +3,7 @@
 // fixed provider/GPS fixtures so CI can reproduce every transition.
 import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
-import { rideArrival, startRide } from "./support/ride.js";
+import { rideArrival, routeTargetStop, startRide } from "./support/ride.js";
 
 function mobileOnly(testInfo) {
   test.skip(
@@ -158,32 +158,41 @@ test("simulated phone ride survives weak GPS and an app restart before arrival",
 
 test("simulated phone ride records a missed stop without leaking its GPS trail", async ({
   page,
+  context,
 }, testInfo) => {
   mobileOnly(testInfo);
-  const state = { atStop: false };
-  await routeMutableTarget(page, state);
+  await routeTargetStop(page);
   await disableShape(page);
-  await installRideGeolocation(page, {
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({
     latitude: 60.4518,
     longitude: 22.2666,
-    accuracy: 20,
+    accuracy: 25,
   });
 
   await page.goto("/?stop=164&fieldtest=1");
   await seedHome(page);
   await startRide(page, { gps: true });
 
-  await setRideGeolocation(page, {
+  // Reuse the same proven browser-level evidence sequence as the canonical
+  // Ride Mode recovery test. This keeps the field-diagnostics assertion
+  // focused on diagnostics/privacy instead of testing a second geolocation
+  // emulator implementation.
+  await expect(
+    page.getByRole("heading", { name: "Get ready to press STOP" })
+  ).toBeVisible();
+
+  await context.setGeolocation({
     latitude: 60.44945,
     longitude: 22.255,
-    accuracy: 20,
+    accuracy: 25,
   });
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
-  await setRideGeolocation(page, {
+  await context.setGeolocation({
     latitude: 60.4533,
     longitude: 22.255,
-    accuracy: 20,
+    accuracy: 25,
   });
   await expect(
     page.getByRole("heading", { name: "Your stop may be behind you" })
