@@ -319,7 +319,7 @@ Direct public-Nominatim search is disabled. The packaged WebView keeps address/P
 
 **Shipped place pack — 2026-10-04**
 
-With direct provider search off, "Lidl" or "Prisma Itäharju" found nothing. Named places in the six Föli municipalities (shops and shopping centres, health care, schools and universities, libraries, culture, sports, stations, the airport) now ship with the app as `public/places/foli-places.json`:
+With direct provider search off, "Lidl" or "Prisma Itäharju" found nothing. Named places in the seven current Föli municipalities (shops and shopping centres, health care, schools and universities, libraries, culture, sports, stations, the airport) now ship with the app as `public/places/foli-places.json`:
 
 - built by hand with `npm run build:place-pack` from OpenStreetMap through the Overpass API and committed; a release never contacts Overpass;
 - licensed ODbL-1.0; the file carries its licence and attribution, and every list of places and every place destination shows "© OpenStreetMap contributors";
