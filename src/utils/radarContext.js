@@ -178,14 +178,7 @@ export function buildRadarContext(index, position, target, heading, range) {
       b.count - a.count
   );
 
-  const roads = roadCandidates.slice(0, MAX_ROADS).map((road) => ({
-    street: road.street,
-    x1: road.x1,
-    y1: road.y1,
-    x2: road.x2,
-    y2: road.y2,
-    targetStreet: road.street === targetStreet,
-  }));
+  const roads = roadCandidates.slice(0, MAX_ROADS);
 
   const seen = new Set();
   const size =
@@ -203,7 +196,6 @@ export function buildRadarContext(index, position, target, heading, range) {
       x: p.x,
       y: p.y,
       size,
-      targetStreet: entry.item.street === targetStreet,
     });
     if (buildings.length >= MAX_BUILDINGS) break;
   }
