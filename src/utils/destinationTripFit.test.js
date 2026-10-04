@@ -126,3 +126,47 @@ test("keeps first downstream semantics when no destination cost map is supplied"
   expect(fit.destination.stopId).toBe("900");
   expect(fit.rideDurationSec).toBe(8 * 60);
 });
+
+// A loop that starts and ends at one stop has one boarding visit there and
+// one arrival, and the stop board lists both under the same trip. Matched to
+// the start, the arrival became a ride that never happens: "line 7 at 13:57,
+// arrive 14:11" was the bus ending its loop.
+describe("a loop that starts and ends at the same stop", () => {
+  const loop = [
+    row("164", 1, "13:30:00", "13:30:00", { dropOffType: 1 }),
+    row("310", 2, "13:35:00", "13:35:00"),
+    row("320", 3, "13:40:00", "13:40:00"),
+    row("321", 4, "13:44:00", "13:44:00"),
+    row("310", 5, "13:50:00", "13:50:00"),
+    row("164", 6, "13:58:00", "13:58:00", { pickupType: 1 }),
+  ];
+  // 13:30 and 13:58 in Turku on 4 October 2026 (UTC+3).
+  const start = Date.UTC(2026, 9, 4, 10, 30) / 1000;
+  const end = Date.UTC(2026, 9, 4, 10, 58) / 1000;
+
+  test("its arrival at the end is not a boarding", () => {
+    // A terminus arrival has no aimed departure.
+    expect(resolveBoardingOccurrence(loop, "164", null, null)).toBeNull();
+    expect(resolveBoardingOccurrence(loop, "164", null, end)).toBeNull();
+    expect(
+      analyzeTripFit({
+        stopTimes: loop,
+        boardingStopId: "164",
+        boardingAimedDepartureEpochSec: null,
+        destinationStopIds: ["321"],
+      }).compatible
+    ).toBe(false);
+  });
+
+  test("its departure at the start still is", () => {
+    expect(resolveBoardingOccurrence(loop, "164", null, start)?.stopSequence).toBe(1);
+    expect(
+      analyzeTripFit({
+        stopTimes: loop,
+        boardingStopId: "164",
+        boardingAimedDepartureEpochSec: start,
+        destinationStopIds: ["321"],
+      })
+    ).toMatchObject({ compatible: true, rideDurationSec: 14 * 60 });
+  });
+});
