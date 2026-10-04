@@ -315,6 +315,16 @@ export default {
   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
     "Пошук місць тимчасово обмежено. Зачекайте трохи й спробуйте знову; пошук зупинок Föli продовжує працювати.",
   "Final walk": "Фінальна піша ділянка",
+  "Destination is roughly {direction} from this stop.":
+    "Пункт призначення розташований приблизно {direction} від цієї зупинки.",
+  north: "на північ",
+  "north-east": "на північний схід",
+  east: "на схід",
+  "south-east": "на південний схід",
+  south: "на південь",
+  "south-west": "на південний захід",
+  west: "на захід",
+  "north-west": "на північний захід",
   "Walk to {destination}": "Ідіть пішки до {destination}",
   "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
     "Піша відстань — приблизна оцінка по прямій. Реальний маршрут може бути довшим.",
