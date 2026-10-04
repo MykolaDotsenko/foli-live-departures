@@ -327,9 +327,9 @@ export default function StopRadar({
                   <rect
                     key={building.id}
                     x={building.x - building.size / 2}
-                    y={building.y - building.size * 0.38}
+                    y={building.y - building.size / 2}
                     width={building.size}
-                    height={building.size * 0.76}
+                    height={building.size}
                   />
                 ))}
                 {targetPoint && (
