@@ -14,14 +14,14 @@ const args = process.argv.slice(2);
 const endpointIndex = args.indexOf("--endpoint");
 const endpoint = endpointIndex >= 0 ? args[endpointIndex + 1] : DEFAULT_ENDPOINT;
 
-const response = await fetch(endpoint, {
+const response = await globalThis.fetch(endpoint, {
   method: "POST",
   headers: {
     "Content-Type": "application/x-www-form-urlencoded",
     "User-Agent": "turku-departures-address-pack (https://github.com/MykolaDotsenko/foli-live-departures)",
   },
   body: new URLSearchParams({ data: addressOverpassQuery() }).toString(),
-  signal: AbortSignal.timeout(300_000),
+  signal: globalThis.AbortSignal.timeout(300_000),
 });
 if (!response.ok) throw new Error(`Overpass answered HTTP ${response.status}.`);
 
