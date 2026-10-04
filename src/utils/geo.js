@@ -83,6 +83,7 @@ export function directionBetween(from, to) {
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   const normalized = (bearing + 360) % 360;
+  /** @type {const} */
   const directions = [
     "north",
     "north-east",
@@ -96,6 +97,11 @@ export function directionBetween(from, to) {
   return directions[Math.round(normalized / 45) % 8];
 }
 
+/**
+ * @param {MaybeLatLon | null | undefined} from
+ * @param {MaybeLatLon | null | undefined} to
+ * @returns {number | null}
+ */
 export function distanceInMeters(from, to) {
   const fromLat = coordinate(from?.lat, -90, 90);
   const fromLon = coordinate(from?.lon, -180, 180);
