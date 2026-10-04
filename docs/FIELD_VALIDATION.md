@@ -102,4 +102,16 @@ For each run keep:
 - any false positive, false negative or confusing instruction;
 - screenshot only when it does not expose private location information.
 
+## Deterministic simulated-phone coverage
+
+CI also runs phone-sized Chromium/WebKit ride simulations. These do **not** replace the physical-phone checklist above, but they make the most failure-prone transitions reproducible before a field run:
+
+- weak GPS accuracy → improved GPS;
+- WebView/browser reload while a ride is active;
+- provider evidence advancing to the target stop;
+- missed-stop progression;
+- privacy-safe field report continuity.
+
+Field diagnostics schema v2 stores only categorical quality evidence such as GPS accuracy/age class, provider age class, ETA source and notification permission state. It never stores the raw GPS coordinates or device identifiers used by those simulations.
+
 A release blocker is any reproducible case where the app gives an unsafe definitive instruction from stale/ambiguous evidence.
