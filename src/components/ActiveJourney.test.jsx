@@ -78,7 +78,7 @@ test("a passenger already beside the stop is not told to walk there", () => {
 
   render(
     <ActiveJourney
-      journey={journey({ distanceMeters: 8 })}
+      journey={journey({ distanceMeters: 8, nearStopAtSelection: true })}
       stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
       online
       onConfirmAtStop={onConfirmAtStop}
@@ -94,6 +94,27 @@ test("a passenger already beside the stop is not told to walk there", () => {
   expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "I'm at the stop" }));
   expect(onConfirmAtStop).toHaveBeenCalledTimes(1);
+});
+
+// A short distance alone is no evidence: from a coarse fix the passenger
+// may be anywhere near.
+test("a short distance without an accurate fix still says to walk there", () => {
+  render(
+    <ActiveJourney
+      journey={journey({ distanceMeters: 8 })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
+  ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Walk there" })).toBeInTheDocument();
 });
 
 test("an unknown distance to the stop still says to walk there", () => {

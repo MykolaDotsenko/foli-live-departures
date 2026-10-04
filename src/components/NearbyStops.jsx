@@ -586,18 +586,15 @@ function NearbyStops({
               looking for options that the button below has to fetch. Once
               found, the line says what a stop card does; "switch back to
               pure distance" described the sorting buttons beside it. */}
-          {/* "Open stop radar" said nothing of what a radar is for. */}
+          {/* "Open stop radar" said nothing of what a radar is for; the
+              line says so as long as the button is there. */}
           <p className={styles.description}>
-            {destination && position ? (
-              t("Tap a stop to see when its buses leave.")
-            ) : (
-              <>
-                {t("Uses your location once. It isn’t saved.")}{" "}
-                <span id="stop-radar-hint">
-                  {t("The radar shows the way to a stop as you walk.")}
-                </span>
-              </>
-            )}
+            {destination && position
+              ? t("Tap a stop to see when its buses leave.")
+              : t("Uses your location once. It isn’t saved.")}{" "}
+            <span id="stop-radar-hint">
+              {t("The radar shows the way to a stop as you walk.")}
+            </span>
           </p>
         </div>
 
@@ -628,9 +625,7 @@ function NearbyStops({
             onClick={radarOpen ? closeRadar : openRadar}
             aria-expanded={radarOpen}
             aria-controls="stop-radar-panel"
-            aria-describedby={
-              destination && position ? undefined : "stop-radar-hint"
-            }
+            aria-describedby="stop-radar-hint"
             aria-disabled={
               !hasStopCoordinates || !liveRadarSupported ? "true" : undefined
             }
@@ -745,7 +740,15 @@ function NearbyStops({
             <JourneyOptions
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
-              onSelectJourney={onSelectJourney}
+              onSelectJourney={
+                onSelectJourney
+                  ? (option) =>
+                      onSelectJourney({
+                        ...option,
+                        positionAccuracyM: position.accuracy ?? null,
+                      })
+                  : null
+              }
               onOpenStop={onSelect}
             />
           )}

@@ -180,6 +180,8 @@ export interface DirectJourneyOption {
   departure: NearbyDepartureFit;
   arrivalDeltaSec: number;
   walkingDeltaMeters: number;
+  /** Accuracy of the location fix distanceMeters was measured from. */
+  positionAccuracyM?: number | null;
 }
 
 export type ActiveJourneyPhase =
@@ -245,6 +247,8 @@ export interface ActiveDirectJourney {
   selectedAt: number;
   atStopConfirmedAt: number | null;
   lastSeenAt: number;
+  /** Chosen beside the boarding stop, on a fix accurate enough to tell. */
+  nearStopAtSelection?: boolean;
   /** Generic itinerary source of truth, including direct journeys. */
   itinerary: MultiLegJourneyOption | null;
   /** Zero-based index of the currently authoritative transit leg. */

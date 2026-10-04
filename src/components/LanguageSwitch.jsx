@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { setLanguage, t, useLanguage } from "../i18n";
+import { useRef, useState } from "react";
+import { getLanguage, setLanguage, t, useLanguage } from "../i18n";
 import { LOCALES, localeDefinition } from "../i18n/locales";
 
 // Every language the app speaks, each in its own name, in one list. A button
@@ -10,14 +10,32 @@ import { LOCALES, localeDefinition } from "../i18n/locales";
 export default function LanguageSwitch() {
   const language = useLanguage();
   const [pending, setPending] = useState("");
+  // The passenger's latest choice. A language pack can take a moment to
+  // load the first time; a choice made meanwhile was dropped, and the
+  // picker went back to the first one. It follows once that one lands.
+  const wanted = useRef("");
   const shown = localeDefinition(pending || language);
+
+  /** @param {string} code */
+  const load = (code) => {
+    setPending(code);
+    void setLanguage(code).finally(() => {
+      const next = wanted.current;
+      if (next !== code && next !== getLanguage()) {
+        load(next);
+      } else {
+        wanted.current = "";
+        setPending("");
+      }
+    });
+  };
 
   /** @param {import("react").ChangeEvent<HTMLSelectElement>} event */
   const changeLanguage = (event) => {
     const code = event.target.value;
-    if (pending || code === language) return;
-    setPending(code);
-    void setLanguage(code).finally(() => setPending(""));
+    wanted.current = code;
+    if (pending) setPending(code);
+    else if (code !== language) load(code);
   };
 
   return (

@@ -15,11 +15,22 @@ const DEPARTED_GRACE_SECONDS = 120;
 const MISSING_CONFIRMATION_MS = 30_000;
 const PLANNED_MATCH_TOLERANCE_SECONDS = 90;
 const ORIGIN_MATCH_TOLERANCE_SECONDS = 30;
+// Beside the boarding stop: chosen within this of it, on a fix no coarser
+// than this. Told "Walk to Kauppatori" while standing there, a passenger
+// reads it as being somewhere else; a coarse fix 20 m away is no evidence.
+const NEAR_STOP_METERS = 30;
 
 /** @param {unknown} value */
 function finitePositive(value) {
   const number = Number(value);
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+/** @param {unknown} value */
+function finiteOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
 /** @param {DestinationIntent | null | undefined} destination */
@@ -70,6 +81,13 @@ export function activeJourneyFromOption(
   const finalWalkDistanceM = Number(option?.departure?.finalWalkDistanceM);
   const finalWalkSecEstimate = Number(option?.departure?.finalWalkSecEstimate);
   const destinationStopId = String(option?.departure?.destinationStopId || "");
+  const stopDistance = finiteOrNull(option?.distanceMeters);
+  const fixAccuracy = finiteOrNull(option?.positionAccuracyM);
+  const nearStopAtSelection =
+    stopDistance !== null &&
+    stopDistance <= NEAR_STOP_METERS &&
+    fixAccuracy !== null &&
+    fixAccuracy <= NEAR_STOP_METERS;
 
   /** @type {MultiLegJourneyOption | null} */
   const itinerary =
@@ -147,6 +165,7 @@ export function activeJourneyFromOption(
     selectedAt,
     atStopConfirmedAt: null,
     lastSeenAt: selectedAt,
+    nearStopAtSelection,
     itinerary,
     activeLegIndex: itinerary ? 0 : null,
     futureLegRevalidations: {},

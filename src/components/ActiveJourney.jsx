@@ -60,18 +60,13 @@ function currentLegUsesSameTransferStop(journey) {
   );
 }
 
-// Within this of the boarding stop when the journey was chosen, telling the
-// passenger to walk there read as if they were somewhere else: a passenger
-// standing at Kauppatori was shown "Walk to Kauppatori" and a walking route.
-// Arrival is still theirs to confirm.
-const NEAR_STOP_METERS = 30;
-
+// Chosen beside the boarding stop, on a fix accurate enough to tell (see
+// activeJourneyFromOption): telling the passenger to walk there read as if
+// they were somewhere else. Arrival is still theirs to confirm.
 function isNearBoardingStop(journey) {
-  if (isTransferContinuationLeg(journey)) return false;
-  const raw = journey?.distanceMeters;
-  if (raw === null || raw === undefined || raw === "") return false;
-  const distance = Number(raw);
-  return Number.isFinite(distance) && distance <= NEAR_STOP_METERS;
+  return (
+    journey?.nearStopAtSelection === true && !isTransferContinuationLeg(journey)
+  );
 }
 
 function phaseTitle(journey) {

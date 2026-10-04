@@ -173,3 +173,65 @@ test("says which part of an uncertain stop is unknown", async () => {
   ).toBeInTheDocument();
   expect(screen.queryByText(/suitability/i)).not.toBeInTheDocument();
 });
+
+// "You're near" on the chosen journey needs to know how good the fix was:
+// the option carries the accuracy its distance was measured with, and the
+// radar keeps saying what it is for once the results are in.
+test("a chosen option carries the accuracy of the fix it was measured from", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: null,
+        departures: [
+          {
+            tripRef: "trip-1",
+            lineRef: "18",
+            destinationStopId: "900",
+            departureAt: now + 600,
+            destinationArrivalAt: now + 1_800,
+            catchability: "comfortable",
+            liveState: "live",
+          },
+        ],
+      },
+    },
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((success) =>
+        success({
+          coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 20 },
+        })
+      ),
+    },
+  });
+  const onSelectJourney = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={() => {}}
+      onSelectJourney={onSelectJourney}
+    />
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+
+  const options = await screen.findByRole("region", {
+    name: "Best ways to Home stop",
+  });
+  fireEvent.click(within(options).getAllByRole("button")[0]);
+  expect(onSelectJourney).toHaveBeenCalledWith(
+    expect.objectContaining({ stopId: "100", positionAccuracyM: 20 })
+  );
+
+  expect(
+    screen.getByRole("button", { name: "Open stop radar" })
+  ).toHaveAccessibleDescription("The radar shows the way to a stop as you walk.");
+});
