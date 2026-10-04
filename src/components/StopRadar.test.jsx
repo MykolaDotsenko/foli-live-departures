@@ -1,12 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-
-const addressPack = vi.hoisted(() => ({ load: vi.fn() }));
-
-vi.mock("../api/addressPack", () => ({
-  loadAddressPack: addressPack.load,
-}));
-
+import { resetAddressPackForTests } from "../api/addressPack";
 import StopRadar from "./StopRadar";
 
 const stops = [
@@ -20,11 +14,23 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
   "geolocation"
 );
 
-beforeEach(() => {
-  addressPack.load.mockReset().mockResolvedValue({
-    addresses: [],
-    streets: [],
+const emptyAddressPack = {
+  addressFields: ["street", "house", "lat", "lon", "city"],
+  streetFields: ["street", "lat", "lon", "city"],
+  addresses: [],
+  streets: [],
+};
+
+function mockAddressPack(raw = emptyAddressPack) {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => raw,
   });
+}
+
+beforeEach(() => {
+  resetAddressPackForTests();
+  mockAddressPack();
 });
 
 afterEach(() => {
@@ -149,58 +155,19 @@ test("shows a conservative arrival state and compass fallback notice", async () 
 // away, and neither dots nor list said which Kauppatori was which.
 test("adds offline street/building context without stealing stop interaction", async () => {
   const live = installLiveLocation();
-  addressPack.load.mockResolvedValue({
+  vi.restoreAllMocks();
+  resetAddressPackForTests();
+  mockAddressPack({
+    addressFields: ["street", "house", "lat", "lon", "city"],
+    streetFields: ["street", "lat", "lon", "city"],
     addresses: [
-      {
-        id: "a1",
-        street: "Aurakatu",
-        streetKey: "aurakatu",
-        house: "1",
-        lat: 60.4513,
-        lon: 22.2664,
-      },
-      {
-        id: "a2",
-        street: "Aurakatu",
-        streetKey: "aurakatu",
-        house: "3",
-        lat: 60.4517,
-        lon: 22.2664,
-      },
-      {
-        id: "a3",
-        street: "Aurakatu",
-        streetKey: "aurakatu",
-        house: "5",
-        lat: 60.4521,
-        lon: 22.2664,
-      },
-      {
-        id: "b1",
-        street: "Eerikinkatu",
-        streetKey: "eerikinkatu",
-        house: "10",
-        lat: 60.4518,
-        lon: 22.2659,
-      },
-      {
-        id: "b2",
-        street: "Eerikinkatu",
-        streetKey: "eerikinkatu",
-        house: "12",
-        lat: 60.4518,
-        lon: 22.267,
-      },
+      ["Aurakatu", "1", 60.4513, 22.2664, "Turku"],
+      ["Aurakatu", "3", 60.4517, 22.2664, "Turku"],
+      ["Aurakatu", "5", 60.4521, 22.2664, "Turku"],
+      ["Eerikinkatu", "10", 60.4518, 22.2659, "Turku"],
+      ["Eerikinkatu", "12", 60.4518, 22.267, "Turku"],
     ],
-    streets: [
-      {
-        id: "street:aurakatu",
-        street: "Aurakatu",
-        streetKey: "aurakatu",
-        lat: 60.4518,
-        lon: 22.26645,
-      },
-    ],
+    streets: [["Aurakatu", 60.4518, 22.26645, "Turku"]],
   });
 
   render(
