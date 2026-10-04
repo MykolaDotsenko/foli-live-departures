@@ -312,6 +312,7 @@ export default {
     "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
+  "Enter a stop or place.": "Kirjoita pysäkki tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Paikkahaku tarvitsee verkkoyhteyden. Voit silti valita Fölin pysäkin ehdotuksista.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
