@@ -85,6 +85,16 @@ export function finalWalkFromRideSelection({
       ? null
       : Number(mappedRaw);
 
+  const fromLat = Number(rideConfig?.targetStop?.lat);
+  const fromLon = Number(rideConfig?.targetStop?.lon);
+  const hasOriginCoordinates =
+    Number.isFinite(fromLat) &&
+    fromLat >= -90 &&
+    fromLat <= 90 &&
+    Number.isFinite(fromLon) &&
+    fromLon >= -180 &&
+    fromLon <= 180;
+
   return {
     destinationId: destination.id,
     destinationLabel: destination.label,
@@ -92,6 +102,7 @@ export function finalWalkFromRideSelection({
     lon,
     fromStopId: targetStopId,
     fromStopName: String(rideConfig?.targetStop?.name || targetStopId),
+    ...(hasOriginCoordinates ? { fromLat, fromLon } : {}),
     distanceMeters:
       selectedDistance !== null &&
       Number.isFinite(selectedDistance) &&
