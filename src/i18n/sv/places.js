@@ -21,7 +21,6 @@ export default {
   "North-up": "Norr uppåt",
   "GPS accuracy ±{accuracy}": "GPS-noggrannhet ±{accuracy}",
   "Radar range {distance}": "Radarräckvidd {distance}",
-  "Near {street}": "Nära {street}",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Kompassdata är inte tillgänglig, så norr stannar uppåt i radarn. När du går uppdateras ändå avstånd och hållplatsernas lägen.",
   "N": "N",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Radarn visar hållplatser i närheten. Mål {name}, hållplats {id}, {distance} bort.",
