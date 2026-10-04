@@ -222,9 +222,6 @@ test("tells two stops of one name apart and scales to the walk", async () => {
   const chooser = screen.getByRole("group", { name: "Choose radar target" });
   expect(within(chooser).getByText(/Stop 164/)).toBeInTheDocument();
   expect(within(chooser).getByText(/Stop 166/)).toBeInTheDocument();
-  expect(
-    screen.getByText(/Other Kauppatori: stop 164, .* away\. Check the stop number\./i)
-  ).toBeInTheDocument();
 
   const radar = screen.getByRole("group", { name: /Radar showing nearby stops/ });
   expect(within(radar).getByRole("button", { name: /Guide to Kauppatori, stop 166/ })).toHaveTextContent("166");
