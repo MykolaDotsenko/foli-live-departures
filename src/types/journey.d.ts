@@ -267,5 +267,7 @@ export interface FinalWalkIntent {
   lon: number;
   fromStopId: string;
   fromStopName: string;
+  fromLat?: number;
+  fromLon?: number;
   distanceMeters: number | null;
 }
