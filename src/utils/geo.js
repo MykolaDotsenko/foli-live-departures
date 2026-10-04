@@ -83,7 +83,7 @@ export function directionBetween(from, to) {
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
   const bearing = (Math.atan2(y, x) * 180) / Math.PI;
   const normalized = (bearing + 360) % 360;
-  /** @type {const} */
+  /** @type {readonly ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]} */
   const directions = [
     "north",
     "north-east",
