@@ -234,9 +234,6 @@ export default function StopRadar({
     );
   }, [stops, targetStop, targetStopId]);
 
-  const hasMapContext =
-    mapContext.roads.length > 0 || mapContext.buildings.length > 0;
-
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
       ? translatedHeading(targetBearing)
@@ -305,11 +302,6 @@ export default function StopRadar({
         <>
           <div className={styles.modeRow} role="status" aria-live="polite">
             <span className={styles.modePill}>{modeText}</span>
-            {hasMapContext && (
-              <span className={styles.contextPill}>
-                {t("Offline street context")}
-              </span>
-            )}
             {Number.isFinite(position.accuracy) && (
               <span>
                 {t("GPS accuracy ±{accuracy}", {
@@ -352,29 +344,17 @@ export default function StopRadar({
               >
                 <g className={styles.roadLayer}>
                   {mapContext.roads.map((road) => (
-                    <g key={road.id}>
-                      <line
-                        x1={road.x1}
-                        y1={road.y1}
-                        x2={road.x2}
-                        y2={road.y2}
-                        data-target-street={
-                          road.targetStreet ? "true" : undefined
-                        }
-                        vectorEffect="non-scaling-stroke"
-                      />
-                      {road.showLabel && (
-                        <text
-                          x={road.labelX}
-                          y={road.labelY}
-                          data-target-street={
-                            road.targetStreet ? "true" : undefined
-                          }
-                        >
-                          {road.street}
-                        </text>
-                      )}
-                    </g>
+                    <line
+                      key={road.street}
+                      x1={road.x1}
+                      y1={road.y1}
+                      x2={road.x2}
+                      y2={road.y2}
+                      data-target-street={
+                        road.targetStreet ? "true" : undefined
+                      }
+                      vectorEffect="non-scaling-stroke"
+                    />
                   ))}
                 </g>
                 <g className={styles.buildingLayer}>
@@ -386,10 +366,6 @@ export default function StopRadar({
                       width={building.size}
                       height={building.size * 0.76}
                       rx="0.45"
-                      data-target-street={
-                        building.targetStreet ? "true" : undefined
-                      }
-                      transform={`rotate(${building.rotation} ${building.x} ${building.y})`}
                     />
                   ))}
                 </g>
@@ -479,7 +455,7 @@ export default function StopRadar({
                     {t("Stop {id}", { id: targetStop.id })}
                   </span>
                   {mapContext.targetStreet && (
-                    <span className={styles.streetCue}>
+                    <span className={styles.targetMeta}>
                       {t("Near {street}", { street: mapContext.targetStreet })}
                     </span>
                   )}
@@ -515,7 +491,7 @@ export default function StopRadar({
                     )}
 
                   {sameNameStop && (
-                    <span className={styles.platformWarning}>
+                    <span className={styles.notice}>
                       {t(
                         "Another stop named {name} is {distance} away: stop {id}. Check the stop number.",
                         {
@@ -578,18 +554,11 @@ export default function StopRadar({
             </div>
           )}
 
-          {hasMapContext && (
-            <p className={styles.contextFootnote}>
-              {t(
-                "Street lines and building cues are approximate orientation aids derived from offline OpenStreetMap address data, not exact building footprints or a walking route."
-              )}
-              {" "}
-              {t("© OpenStreetMap contributors")}
-            </p>
-          )}
-
           <p className={styles.footnote}>
             {t("The arrow uses compass north when available. Otherwise the radar is north-up or uses your recent direction of travel. Distances are straight-line estimates, not a safe walking route.")}
+            {(mapContext.roads.length > 0 || mapContext.buildings.length > 0) && (
+              <>{" · "}{t("© OpenStreetMap contributors")}</>
+            )}
           </p>
         </>
       )}
