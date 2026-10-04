@@ -148,11 +148,7 @@
 }
 
 .contextLayer rect {
-  fill: #4b626933;
-}
-
-.targetConnector {
-  stroke: #b70b;
+  fill: #4663;
 }
 
 .radar::before,
