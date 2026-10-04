@@ -19,7 +19,6 @@ export default {
   "North-up": "Північ угорі",
   "GPS accuracy ±{accuracy}": "Точність GPS ±{accuracy}",
   "Radar range {distance}": "Діапазон радара {distance}",
-  "Near {street}": "Поруч із {street}",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Дані компаса недоступні, тому північ залишається вгорі радара. Під час ходьби відстань і положення зупинок усе одно оновлюються.",
   "N": "Пн",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Радар показує зупинки поруч. Ціль: {name}, зупинка {id}, відстань {distance}.",
