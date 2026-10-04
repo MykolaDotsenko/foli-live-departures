@@ -173,6 +173,14 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   await seedHome(page);
   await startRide(page, { gps: true });
 
+  // The missed-stop safety latch only arms once independent ride evidence
+  // has advanced the session to NEXT. Waiting for that user-visible state
+  // removes a browser-scheduling race between the first SIRI poll and the
+  // synthetic near-stop GPS fix.
+  await expect(
+    page.getByRole("heading", { name: "Your stop is next" })
+  ).toBeVisible();
+
   await setRideGeolocation(page, {
     latitude: 60.44945,
     longitude: 22.255,
