@@ -142,13 +142,16 @@
   pointer-events: none;
 }
 
+.contextLayer path:first-child,
 .contextLayer > line {
+  fill: none;
   stroke: #4668;
   stroke-width: 2.2px;
 }
 
-.contextLayer rect {
+.contextLayer path + path {
   fill: #4663;
+  stroke: none;
 }
 
 .radar::before,
