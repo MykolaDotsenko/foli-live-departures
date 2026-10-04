@@ -49,7 +49,9 @@
     "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs",
     "verify:public-promotion": "node scripts/verify-release-gates.mjs --require public-promotion",
     "verify:play-production": "node scripts/verify-release-gates.mjs --require play-production",
-    "verify:osm-refresh": "node scripts/verify-place-refresh-workflow.mjs"
+    "verify:osm-refresh": "node scripts/verify-place-refresh-workflow.mjs",
+    "build:address-pack": "node scripts/build-address-pack.mjs",
+    "verify:address-pack": "node --test scripts/address-pack.test.mjs && node scripts/verify-address-pack.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
