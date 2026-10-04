@@ -57,8 +57,12 @@ async function installRideGeolocation(page, initialFix) {
       value(next) {
         fix = { ...fix, ...next };
         const current = position();
+        // Manual field-simulation updates are delivered synchronously so the
+        // caller can sequence safety evidence deterministically across
+        // Chromium and WebKit. Initial watch registration remains async and
+        // browser-like above.
         for (const success of watchers.values()) {
-          globalThis.queueMicrotask(() => success(current));
+          success(current);
         }
       },
     });
@@ -173,12 +177,21 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   await seedHome(page);
   await startRide(page, { gps: true });
 
-  await setRideGeolocation(page, {
+  const nearFix = {
     latitude: 60.44945,
     longitude: 22.255,
     accuracy: 20,
-  });
+  };
+  await setRideGeolocation(page, nearFix);
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
+
+  // The missed-stop safety latch deliberately ignores a "near" sample until
+  // Ride Mode is already at NEXT. Confirm that stage, then submit the same
+  // precise fix once more to arm wasNearTarget before moving away.
+  await expect(
+    page.getByRole("heading", { name: "Your stop is next" })
+  ).toBeVisible();
+  await setRideGeolocation(page, nearFix);
 
   await setRideGeolocation(page, {
     latitude: 60.4533,
