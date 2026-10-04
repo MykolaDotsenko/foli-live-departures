@@ -8,11 +8,14 @@ import {
   placeRows,
 } from "./place-pack.mjs";
 
-test("the query covers the seven current Föli municipalities", () => {
+test("the query covers the seven current Föli municipalities unambiguously", () => {
   const query = overpassQuery();
-  for (const name of ["Turku", "Kaarina", "Raisio", "Naantali", "Lieto", "Rusko"]) {
-    assert.match(query, new RegExp(`area\\["name"="${name}"\\]`));
-  }
+  assert.match(
+    query,
+    /rel\(id:399906,2506378,2506383,2376175,2380603,2379142,2506382\)/
+  );
+  assert.match(query, /\.foliRelations map_to_area -> \.foli;/);
+  assert.doesNotMatch(query, /area\["name"=/);
   assert.match(query, /out center tags;/);
 });
 
