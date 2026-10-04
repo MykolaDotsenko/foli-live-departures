@@ -27,7 +27,10 @@ const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 // Locale strings are generated from the canonical source dictionaries into
 // same-origin JSON packs. They are not executable code, but moving them out
 // of JS must not make translation growth invisible to release QA.
-const MAX_LOCALE_PACK_RAW_BYTES = 180_000;
+// The 2026-10-04 offline-address/confidence/final-walk release added reviewed
+// FI/SV/UK copy and measured 182,592 raw locale bytes. Keep a small bounded
+// headroom without changing the gzip transfer gate.
+const MAX_LOCALE_PACK_RAW_BYTES = 185_000;
 const MAX_LOCALE_PACK_GZIP_BYTES = 55_000;
 
 const manifest = JSON.parse(await readFile(MANIFEST_PATH, "utf8"));
