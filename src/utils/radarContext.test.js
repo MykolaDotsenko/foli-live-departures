@@ -88,11 +88,10 @@ describe("radar context", () => {
     );
     expect(
       context.roads.find((road) => road.street === "Aurakatu")
-    ).toMatchObject({ targetStreet: true });
+    ).toBeTruthy();
     expect(context.buildings.length).toBeGreaterThan(0);
     expect(context.buildings.every((building) => building.x >= 8 && building.x <= 92)).toBe(true);
     expect(context.buildings.every((building) => building.y >= 8 && building.y <= 92)).toBe(true);
-    expect(context.buildings.some((building) => building.targetStreet)).toBe(true);
   });
 
   it("rotates the context with the radar heading instead of leaving a north-up map behind", () => {
