@@ -148,11 +148,6 @@
   stroke-width: 2.2px;
 }
 
-.roadLayer line[data-target-street="true"] {
-  stroke: rgba(0, 121, 133, 0.68);
-  stroke-width: 3px;
-}
-
 .buildingLayer rect {
   fill: rgba(75, 98, 105, 0.2);
   stroke: rgba(75, 98, 105, 0.24);
@@ -613,10 +608,6 @@
 
   :root[data-theme="dark"] .roadLayer line {
     stroke: rgba(174, 199, 202, 0.45);
-  }
-
-  :root[data-theme="dark"] .roadLayer line[data-target-street="true"] {
-    stroke: rgba(77, 208, 196, 0.7);
   }
 
   :root[data-theme="dark"] .buildingLayer rect {
