@@ -223,8 +223,10 @@ test("offline mode never calls external place search", async () => {
   );
 
   expect(placeSearch.search).not.toHaveBeenCalled();
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Place search needs a connection"
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Place search needs a connection"
+    )
   );
 });
 
@@ -872,7 +874,11 @@ describe("places shipped with the app", () => {
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Search destination" }));
-    expect(screen.getByRole("listbox", { name: "Destination suggestions" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("listbox", { name: "Destination suggestions" })
+      ).toBeInTheDocument()
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(placeSearch.search).not.toHaveBeenCalled();
   });
