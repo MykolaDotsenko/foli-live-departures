@@ -19,6 +19,13 @@ export default {
   "North-up": "Північ угорі",
   "GPS accuracy ±{accuracy}": "Точність GPS ±{accuracy}",
   "Radar range {distance}": "Діапазон радара {distance}",
+  "Offline street context": "Офлайн-контекст вулиць",
+  "Near {street}": "Поруч із {street}",
+  "Another stop named {name} is {distance} away: stop {id}. Check the stop number.":
+    "Інша зупинка з назвою {name} за {distance}: зупинка {id}. Перевірте номер зупинки.",
+  "Street lines and building cues are approximate orientation aids derived from offline OpenStreetMap address data, not exact building footprints or a walking route.":
+    "Лінії вулиць і позначки будівель — приблизні орієнтири з офлайн-даних адрес OpenStreetMap, а не точні контури будівель чи пішохідний маршрут.",
+  "© OpenStreetMap contributors": "© учасники OpenStreetMap",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Дані компаса недоступні, тому північ залишається вгорі радара. Під час ходьби відстань і положення зупинок усе одно оновлюються.",
   "N": "Пн",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Радар показує зупинки поруч. Ціль: {name}, зупинка {id}, відстань {distance}.",
