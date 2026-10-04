@@ -1,4 +1,5 @@
 import {
+  cleanup,
   fireEvent,
   render,
   screen,
@@ -358,6 +359,43 @@ test("packaged app keeps address text local and offers the official planner hand
   ).toBeInTheDocument();
 });
 
+// A stop chosen from the list fills the field with its name, and the note
+// about keeping address text then explained something nobody had typed.
+test("a chosen stop does not bring up the address note", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+  const props = { ...renderSearch() };
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Turun" } });
+  expect(screen.getByText(/keeps address and place text on this device/i)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("option", { name: /Turun linna/ }));
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
+  cleanup();
+  render(
+    <JourneySearch
+      {...props}
+      destination={{
+        id: "stop:4",
+        kind: "public-stop",
+        label: "Turun linna",
+        primaryStopId: "4",
+        acceptableStopIds: ["4"],
+      }}
+    />
+  );
+  const reopened = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.change(reopened, { target: { value: "Turun linna" } });
+  expect(screen.queryByText(/keeps address and place text on this device/i)).not.toBeInTheDocument();
+});
+
 test("provider failure is not misreported as a valid zero-match result", async () => {
   placeSearch.search.mockResolvedValueOnce(null);
   renderSearch();
@@ -637,4 +675,46 @@ test("with address search on, the example still shows a place", () => {
   expect(
     screen.getByRole("combobox", { name: "Stop, address or place" })
   ).toHaveAttribute("placeholder", "e.g. Prisma Itäharju or Kauppatori");
+});
+
+// The destination field called itself a combobox, but its list answered
+// only to touch: arrow keys did nothing, Escape left it open, and Tab
+// moved focus onto an option that the list then removed, dropping a
+// keyboard user to the top of the page. It now works like stop search.
+test("the destination list works from the keyboard", () => {
+  const props = renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kauppatori" } });
+
+  const list = screen.getByRole("listbox", { name: "Destination stop suggestions" });
+  const options = within(list).getAllByRole("option");
+  expect(options).toHaveLength(2);
+  // Not Tab stops: focus stays in the field while the list is open.
+  expect(within(list).queryAllByRole("button")).toHaveLength(0);
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-activedescendant", options[0].id);
+  expect(options[0]).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-activedescendant", options[1].id);
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[2]);
+});
+
+test("Escape closes the destination list and typing opens it again", () => {
+  renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(input).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+  fireEvent.change(input, { target: { value: "Kaupp" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
 });

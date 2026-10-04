@@ -170,7 +170,7 @@
 }
 
 .suggestion:hover,
-.suggestion:focus-visible {
+.suggestion[aria-selected="true"] {
   background: #edf8f8;
 }
 
@@ -252,7 +252,7 @@
   }
 
   :root[data-theme="dark"] .suggestion:hover,
-  :root[data-theme="dark"] .suggestion:focus-visible {
+  :root[data-theme="dark"] .suggestion[aria-selected="true"] {
     background: var(--dm-accent-surface);
   }
 }

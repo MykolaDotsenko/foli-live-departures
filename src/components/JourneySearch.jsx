@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { placeLabel } from "../hooks/useSavedPlaces";
 import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
@@ -118,14 +118,53 @@ export default function JourneySearch({
     [matches, stops, value]
   );
   const showSuggestions = focused && value.trim() && suggestions.length > 0;
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  // Keyboard selection can move past the visible part of a long list.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document
+      .getElementById(`journey-destination-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex]);
 
   const chooseStop = (stop) => {
+    setActiveIndex(-1);
     onChooseStop(stop);
     placeSearch.clear();
     setValue(stop.name || String(stop.id));
     setFocused(false);
     setError("");
     if (compact) setExpanded(false);
+  };
+
+  // As in stop search: the field is a combobox, so its list answers to the
+  // keyboard. Its options were buttons, and Tab moved focus onto one that
+  // the list then removed, dropping a keyboard user to the top of the page.
+  const handleKeyDown = (event) => {
+    if (!showSuggestions) {
+      if (event.key === "ArrowDown" && value.trim() && suggestions.length > 0) {
+        event.preventDefault();
+        setFocused(true);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) =>
+        index <= 0 ? suggestions.length - 1 : index - 1
+      );
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      chooseStop(suggestions[activeIndex]);
+    } else if (event.key === "Escape") {
+      setActiveIndex(-1);
+      setFocused(false);
+    }
   };
 
   const choosePlace = (place) => {
@@ -359,11 +398,16 @@ export default function JourneySearch({
               onChange={(event) => {
                 setValue(event.target.value);
                 setError("");
+                setActiveIndex(-1);
                 setFocused(true);
                 placeSearch.clear();
               }}
               onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
+              onBlur={() => {
+                setActiveIndex(-1);
+                setFocused(false);
+              }}
+              onKeyDown={handleKeyDown}
               className={styles.input}
               // Where address search is off, the address example led
               // straight to "unavailable here".
@@ -378,6 +422,11 @@ export default function JourneySearch({
               aria-expanded={Boolean(showSuggestions)}
               aria-controls="journey-destination-suggestions"
               aria-autocomplete="list"
+              aria-activedescendant={
+                showSuggestions && activeIndex >= 0
+                  ? `journey-destination-option-${activeIndex}`
+                  : undefined
+              }
               aria-invalid={Boolean(error)}
             />
             {showSuggestions && (
@@ -387,11 +436,12 @@ export default function JourneySearch({
                 role="listbox"
                 aria-label={t("Destination stop suggestions")}
               >
-                {suggestions.map((stop) => (
-                  <button
+                {suggestions.map((stop, index) => (
+                  <div
                     key={stop.id}
-                    type="button"
+                    id={`journey-destination-option-${index}`}
                     role="option"
+                    aria-selected={index === activeIndex}
                     className={styles.suggestion}
                     onPointerDown={(event) => event.preventDefault()}
                     onClick={() => chooseStop(stop)}
@@ -400,7 +450,7 @@ export default function JourneySearch({
                       <StopName stop={stop} />
                     </strong>
                     <span>{t("Stop {id}", { id: stop.id })}</span>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -429,8 +479,11 @@ export default function JourneySearch({
         ) : (
           <div className={styles.handoff}>
             {/* Said once there is text to keep: before that, three lines
-                of it stood between the field and everything below. */}
-            {(value.trim() || placeSearch.status === "error") && (
+                of it stood between the field and everything below. A stop
+                just chosen from the list is not address text. */}
+            {((value.trim() &&
+              value.trim() !== destinationLabel(destination)) ||
+              placeSearch.status === "error") && (
               <p className={styles.privacyNote}>
                 {t(
                   "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
