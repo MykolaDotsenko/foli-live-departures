@@ -11,10 +11,12 @@ const MAX_BUILDINGS = 40;
 const MAX_ROADS = 6;
 const MIN_ROAD_SPAN_METERS = 24;
 
+/** @param {number} value */
 function cell(value) {
   return Math.floor(Number(value) / CELL_DEGREES);
 }
 
+/** @param {number} lat @param {number} lon */
 function key(lat, lon) {
   return `${lat}:${lon}`;
 }
@@ -59,6 +61,12 @@ function nearby(index, origin, radius) {
   return result.sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
+/**
+ * @param {{lat:number,lon:number}} origin
+ * @param {PackAddress} item
+ * @param {number|null} heading
+ * @param {number} range
+ */
 function point(origin, item, heading, range) {
   const bearing = bearingDegrees(origin, item);
   const distance = distanceInMeters(origin, item);
@@ -66,12 +74,23 @@ function point(origin, item, heading, range) {
   return radarPoint(Number(bearing), heading, Number(distance), range);
 }
 
+/**
+ * @param {RadarContextIndex} index
+ * @param {{lat:number,lon:number}|null|undefined} target
+ */
 function nearestStreet(index, target) {
   if (!hasCoordinates(target)) return "";
   const origin = { lat: Number(target?.lat), lon: Number(target?.lon) };
   return String(nearby(index, origin, 160)[0]?.item?.street || "");
 }
 
+/**
+ * @param {string} street
+ * @param {{item:PackAddress,distanceMeters:number}[]} entries
+ * @param {{lat:number,lon:number}} origin
+ * @param {number|null} heading
+ * @param {number} range
+ */
 function roadFor(street, entries, origin, heading, range) {
   if (entries.length < 2) return null;
 
@@ -110,6 +129,13 @@ function roadFor(street, entries, origin, heading, range) {
  * Approximate orientation context. Address points are visual building cues;
  * repeated addresses on one named street form a simple local street axis.
  * They are not cadastral footprints or a pedestrian route.
+ */
+/**
+ * @param {RadarContextIndex | null | undefined} index
+ * @param {{lat:number,lon:number}|null|undefined} position
+ * @param {{lat:number,lon:number}|null|undefined} target
+ * @param {number|null} heading
+ * @param {number} range
  */
 export function buildRadarContext(index, position, target, heading, range) {
   const empty = { buildings: [], roads: [], targetStreet: "" };
