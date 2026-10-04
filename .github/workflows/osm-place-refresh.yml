@@ -1,4 +1,4 @@
-name: Refresh OpenStreetMap place pack
+name: Refresh OpenStreetMap offline data
 
 on:
   schedule:
@@ -13,14 +13,14 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: osm-place-refresh
+  group: osm-data-refresh
   cancel-in-progress: false
 
 jobs:
   refresh:
     if: github.event_name != 'push' || github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,8 +37,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Keep previous pack for review diff
-        run: cp public/places/foli-places.json "$RUNNER_TEMP/foli-places-before.json"
+      - name: Keep previous packs for review diff
+        run: |
+          cp public/places/foli-places.json "$RUNNER_TEMP/foli-places-before.json"
+          cp public/addresses/foli-addresses.json "$RUNNER_TEMP/foli-addresses-before.json"
 
       - name: Build real Föli place pack from OpenStreetMap
         shell: bash
@@ -59,19 +61,41 @@ jobs:
           done
           test "$built" -eq 1
 
-      - name: Verify generated pack
-        run: npm run verify:place-pack
+      - name: Build real Föli address pack from OpenStreetMap
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoints=(
+            "https://overpass-api.de/api/interpreter"
+            "https://overpass.kumi.systems/api/interpreter"
+            "https://overpass.nchc.org.tw/api/interpreter"
+          )
+          built=0
+          for endpoint in "${endpoints[@]}"; do
+            echo "Trying $endpoint"
+            if npm run build:address-pack -- --endpoint "$endpoint"; then
+              built=1
+              break
+            fi
+          done
+          test "$built" -eq 1
+
+      - name: Verify generated packs
+        run: |
+          npm run verify:place-pack
+          npm run verify:address-pack
 
       - name: Build review report
         shell: bash
         run: |
           node scripts/place-pack-diff.mjs             "$RUNNER_TEMP/foli-places-before.json"             public/places/foli-places.json > "$RUNNER_TEMP/osm-place-refresh.md"
+          node scripts/address-pack-diff.mjs             "$RUNNER_TEMP/foli-addresses-before.json"             public/addresses/foli-addresses.json >> "$RUNNER_TEMP/osm-place-refresh.md"
 
       - name: Detect data change
         id: change
         shell: bash
         run: |
-          if git diff --quiet -- public/places/foli-places.json; then
+          if git diff --quiet --             public/places/foli-places.json             public/addresses/foli-addresses.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -88,13 +112,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$branch"
-          git add public/places/foli-places.json
-          git commit -m "Refresh Föli OpenStreetMap place pack"
+          git add             public/places/foli-places.json             public/addresses/foli-addresses.json
+          git commit -m "Refresh Föli OpenStreetMap offline data"
           git push --force-with-lease origin "$branch"
 
           existing="$(gh pr list --state open --head "$branch" --json number --jq '.[0].number // empty')"
           if [ -n "$existing" ]; then
             gh pr edit "$existing" --body-file "$RUNNER_TEMP/osm-place-refresh.md"
           else
-            gh pr create               --base master               --head "$branch"               --title "Refresh Föli OpenStreetMap place pack"               --body-file "$RUNNER_TEMP/osm-place-refresh.md"
+            gh pr create               --base master               --head "$branch"               --title "Refresh Föli OpenStreetMap offline data"               --body-file "$RUNNER_TEMP/osm-place-refresh.md"
           fi
