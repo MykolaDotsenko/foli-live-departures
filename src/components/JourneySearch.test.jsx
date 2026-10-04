@@ -1,11 +1,12 @@
 import {
+  cleanup,
   fireEvent,
   render,
   screen,
   waitFor,
   within,
 } from "@testing-library/react";
-import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { resetLanguageForTests } from "../i18n";
 
 const placeSearch = vi.hoisted(() => ({
@@ -18,7 +19,16 @@ vi.mock("../hooks/usePlaceSearch", () => ({
   default: placeSearch.hook,
 }));
 
+const placePack = vi.hoisted(() => ({ load: vi.fn() }));
+
+vi.mock("../api/placePack", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadPlacePack: placePack.load,
+}));
+
 import JourneySearch from "./JourneySearch";
+import { parsePlacePack } from "../api/placePack";
+import { forgetPositionForTests, rememberPosition } from "../utils/sessionPosition";
 
 const stops = [
   { id: "4", name: "Turun linna", lat: 60.435, lon: 22.228 },
@@ -46,6 +56,8 @@ const prisma = {
 };
 
 beforeEach(() => {
+  forgetPositionForTests();
+  placePack.load.mockReset().mockResolvedValue([]);
   resetLanguageForTests("en");
   placeSearch.search.mockReset().mockResolvedValue([]);
   placeSearch.clear.mockReset();
@@ -100,7 +112,7 @@ test("keeps local stop suggestions instant and makes no network request while ty
   fireEvent.change(input, { target: { value: "Turun" } });
 
   const list = screen.getByRole("listbox", {
-    name: "Destination stop suggestions",
+    name: "Destination suggestions",
   });
   fireEvent.click(
     within(list).getByRole("option", { name: /Turun linna.*Stop 4/i })
@@ -327,35 +339,67 @@ test("packaged app keeps address text local and offers the official planner hand
   });
 
   renderSearch();
-  const input = screen.getByRole("combobox", {
-    name: "Stop, address or place",
-  });
-  // The link is there from the start; the note waits for text to keep.
+  // No address search here, so the field does not promise one.
+  const input = screen.getByRole("combobox", { name: "Stop or place" });
+  expect(
+    screen.getByText("Choose Home, Work, School, a Föli stop or a place such as Prisma.")
+  ).toBeInTheDocument();
+  // The link is there from the start; the note waits for an address.
   expect(
     screen.getByRole("link", { name: "Open Turku journey planner" })
   ).toBeInTheDocument();
-  expect(
-    screen.queryByText(/keeps address and place text on this device/i)
-  ).not.toBeInTheDocument();
+  expect(screen.queryByText(/Street addresses aren’t searched here/)).not.toBeInTheDocument();
 
-  fireEvent.change(input, { target: { value: "Prisma Itäharju" } });
-  expect(
-    screen.getByText(/keeps address and place text on this device/i)
-  ).toBeInTheDocument();
+  fireEvent.change(input, { target: { value: "Tampereentie 12" } });
+  expect(screen.getByText(/Street addresses aren’t searched here/)).toBeInTheDocument();
   fireEvent.click(
     screen.getByRole("button", { name: "Search destination" })
   );
 
   expect(placeSearch.search).not.toHaveBeenCalled();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Direct address and place search is unavailable here"
+    "No stop or place matches “Tampereentie 12”. For a street address, use the official Turku journey planner."
   );
   expect(
     screen.getByRole("link", { name: "Open Turku journey planner" })
   ).toHaveAttribute("href", "https://turku.digitransit.fi/");
-  expect(
-    screen.getByText(/keeps address and place text on this device/i)
-  ).toBeInTheDocument();
+});
+
+// A stop chosen from the list fills the field with its name, and the note
+// about keeping address text then explained something nobody had typed.
+test("a chosen stop does not bring up the address note", () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+  const props = { ...renderSearch() };
+  const input = screen.getByRole("combobox", { name: "Stop or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Turun" } });
+  expect(screen.getByRole("option", { name: /Turun linna/ })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("option", { name: /Turun linna/ }));
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[0]);
+  cleanup();
+  render(
+    <JourneySearch
+      {...props}
+      destination={{
+        id: "stop:4",
+        kind: "public-stop",
+        label: "Turun linna",
+        primaryStopId: "4",
+        acceptableStopIds: ["4"],
+      }}
+    />
+  );
+  const reopened = screen.getByRole("combobox", { name: "Stop or place" });
+  fireEvent.change(reopened, { target: { value: "Turun linna" } });
+  expect(screen.queryByText(/Street addresses aren’t searched here/)).not.toBeInTheDocument();
 });
 
 test("provider failure is not misreported as a valid zero-match result", async () => {
@@ -616,7 +660,7 @@ test("a destination typed with a slip is offered its stop", () => {
 });
 
 // With address search off, the field's own example ("Prisma Itäharju")
-// led straight to "Direct address and place search is unavailable here".
+// led straight to "address search is unavailable here".
 test("the example in the field is one the app can find", () => {
   placeSearch.hook.mockReturnValue({
     results: [],
@@ -628,8 +672,8 @@ test("the example in the field is one the app can find", () => {
   });
   renderSearch();
   expect(
-    screen.getByRole("combobox", { name: "Stop, address or place" })
-  ).toHaveAttribute("placeholder", "e.g. Kauppatori");
+    screen.getByRole("combobox", { name: "Stop or place" })
+  ).toHaveAttribute("placeholder", "e.g. Kauppatori or Prisma");
 });
 
 test("with address search on, the example still shows a place", () => {
@@ -637,4 +681,181 @@ test("with address search on, the example still shows a place", () => {
   expect(
     screen.getByRole("combobox", { name: "Stop, address or place" })
   ).toHaveAttribute("placeholder", "e.g. Prisma Itäharju or Kauppatori");
+});
+
+// The destination field called itself a combobox, but its list answered
+// only to touch: arrow keys did nothing, Escape left it open, and Tab
+// moved focus onto an option that the list then removed, dropping a
+// keyboard user to the top of the page. It now works like stop search.
+test("the destination list works from the keyboard", () => {
+  const props = renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kauppatori" } });
+
+  const list = screen.getByRole("listbox", { name: "Destination suggestions" });
+  const options = within(list).getAllByRole("option");
+  expect(options).toHaveLength(2);
+  // Not Tab stops: focus stays in the field while the list is open.
+  expect(within(list).queryAllByRole("button")).toHaveLength(0);
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-activedescendant", options[0].id);
+  expect(options[0]).toHaveAttribute("aria-selected", "true");
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-activedescendant", options[1].id);
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(props.onChooseStop).toHaveBeenCalledWith(stops[2]);
+});
+
+test("Escape closes the destination list and typing opens it again", () => {
+  renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "Kaup" } });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(input).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  expect(input).toHaveAttribute("aria-expanded", "true");
+  fireEvent.change(input, { target: { value: "Kaupp" } });
+  expect(screen.getByRole("listbox")).toBeInTheDocument();
+});
+
+// "Lidl" found nothing: places were only searched through a provider that
+// is off. The places shipped with the app are listed instead, nearest
+// first once the passenger lets the app use their location.
+describe("places shipped with the app", () => {
+  const packPlaces = parsePlacePack({
+    fields: ["id", "name", "lat", "lon", "street", "city", "nameSv"],
+    places: [
+      ["n1", "Lidl Kupittaa", 60.4489, 22.2925, "Uudenmaankatu 18", "Turku"],
+      ["n2", "Lidl Runosmäki", 60.4905, 22.258, "Runosmäentie 4", "Turku"],
+      ["w5", "Prisma Länsikeskus", 60.463, 22.216, "Tampereentie 2", "Turku"],
+    ],
+  });
+
+  function packagedSearch(overrides = {}) {
+    placeSearch.hook.mockReturnValue({
+      results: [],
+      status: "idle",
+      error: "",
+      search: placeSearch.search,
+      clear: placeSearch.clear,
+      directEnabled: false,
+    });
+    placePack.load.mockResolvedValue(packPlaces);
+    return renderSearch(overrides);
+  }
+
+  async function typeIn(text) {
+    const input = screen.getByRole("combobox", { name: "Stop or place" });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: text } });
+    await screen.findAllByRole("option", { name: /Lidl|Prisma/ });
+    return input;
+  }
+
+  test("does not promise address search for an empty destination", () => {
+    packagedSearch();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Search destination" })
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Enter a stop or place."
+    );
+  });
+
+  test("lists the Lidls and asks before sorting them by distance", async () => {
+    const coords = { latitude: 60.489, longitude: 22.253, accuracy: 20 };
+    const getCurrentPosition = vi.fn((success) => success({ coords }));
+    vi.stubGlobal("navigator", { ...globalThis.navigator, geolocation: { getCurrentPosition } });
+    try {
+      packagedSearch();
+      const input = await typeIn("Lidl");
+      const list = screen.getByRole("listbox", { name: "Destination suggestions" });
+      expect(within(list).getAllByRole("option").map((option) => option.textContent)).toEqual([
+        "Lidl KupittaaUudenmaankatu 18, Turku",
+        "Lidl RunosmäkiRunosmäentie 4, Turku",
+      ]);
+      expect(screen.getByRole("link", { name: "© OpenStreetMap contributors" })).toBeInTheDocument();
+      expect(getCurrentPosition).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole("button", { name: /Nearest to me first/ }));
+      await waitFor(() =>
+        expect(within(list).getAllByRole("option")[0]).toHaveTextContent("Lidl Runosmäki")
+      );
+      expect(getCurrentPosition).toHaveBeenCalledTimes(1);
+      expect(within(list).getAllByRole("option")[0]).toHaveTextContent(/\d+ m$/);
+      expect(within(list).getAllByRole("option")[1]).toHaveTextContent(/km$/);
+      expect(screen.queryByRole("button", { name: /Nearest to me first/ })).not.toBeInTheDocument();
+      expect(input).toHaveFocus();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  test("a location already shared sorts them at once", async () => {
+    rememberPosition({ lat: 60.4489, lon: 22.29 });
+    packagedSearch();
+    await typeIn("lidl");
+    const options = screen.getAllByRole("option");
+    expect(options[0]).toHaveTextContent("Lidl Kupittaa");
+    expect(screen.queryByRole("button", { name: /Nearest to me first/ })).not.toBeInTheDocument();
+  });
+
+  test("choosing a place makes it the destination, from the keyboard too", async () => {
+    const props = packagedSearch();
+    const input = await typeIn("prisma tamperentie");
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(props.onChooseExternalPlace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "w5",
+        title: "Prisma Länsikeskus",
+        subtitle: "Tampereentie 2, Turku",
+        provider: "osm-places",
+      })
+    );
+    expect(input).toHaveValue("Prisma Länsikeskus");
+  });
+
+  test("Search opens the list instead of sending the text anywhere", async () => {
+    packagedSearch();
+    const input = await typeIn("Lidl");
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Search destination" }));
+    expect(screen.getByRole("listbox", { name: "Destination suggestions" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(placeSearch.search).not.toHaveBeenCalled();
+  });
+
+  test("keeps the mobile in-flow suggestions stable while Submit takes the pointer", async () => {
+    packagedSearch();
+    const input = await typeIn("Lidl");
+    const submit = screen.getByRole("button", { name: "Search destination" });
+
+    fireEvent.pointerDown(submit);
+    fireEvent.blur(input, { relatedTarget: null });
+
+    expect(
+      screen.getByRole("listbox", { name: "Destination suggestions" })
+    ).toBeInTheDocument();
+
+    fireEvent.pointerUp(submit);
+  });
+
+  test("Tab moves into the list's own controls without closing it", async () => {
+    packagedSearch();
+    const input = await typeIn("Lidl");
+    const nearest = screen.getByRole("button", { name: /Nearest to me first/ });
+    fireEvent.blur(input, { relatedTarget: nearest });
+    expect(screen.getByRole("listbox")).toBeInTheDocument();
+  });
 });

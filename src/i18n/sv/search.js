@@ -91,7 +91,6 @@ export default {
   Change: "Ändra",
   Clear: "Rensa",
   "Saved destinations": "Sparade destinationer",
-  "Destination stop suggestions": "Förslag på hållplatser vid destinationen",
   "Nearby stops for {destination}": "Hållplatser nära {destination}",
   "Choose the best fit or switch back to pure distance.":
     "Välj det bästa alternativet eller byt tillbaka till enbart avstånd.",
@@ -187,6 +186,20 @@ export default {
   "Search destination": "Sök destination",
   "Choose Home, Work, School, a Föli stop, address or place.":
     "Välj Hem, Arbete, Skola, en Föli-hållplats, adress eller plats.",
+  "Destination suggestions":
+    "Förslag på destinationer",
+  "Stop or place":
+    "Hållplats eller plats",
+  "e.g. Kauppatori or Prisma":
+    "t.ex. Kauppatori eller Prisma",
+  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
+    "Välj Hem, Arbete, Skola, en Föli-hållplats eller en plats som Prisma.",
+  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
+    "Gatuadresser söks inte här. Använd Åbos officiella reseplanerare för adresser.",
+  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
+    "Ingen hållplats eller plats matchar ”{query}”. Använd Åbos officiella reseplanerare för gatuadresser.",
+  "Nearest to me first":
+    "Närmast mig först",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
     "Hållplatsförslag stannar på den här enheten. Plats-/adresstext skickas till OpenStreetMap först när du trycker på Sök; upprepade sökningar cachelagras bara under den här webbläsarsessionen.",
   "Places & addresses": "Platser och adresser",
@@ -195,10 +208,6 @@ export default {
   "© OpenStreetMap contributors": "© OpenStreetMap-bidragsgivare",
   "Place search is temporarily unavailable. Föli stop search still works.":
     "Platssökning är tillfälligt otillgänglig. Sökning efter Föli-hållplatser fungerar fortfarande.",
-  "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app.":
-    "Direkt sökning efter adresser och platser är inte tillgänglig här. Använd Åbos officiella reseplanerare; Föli-hållplatssökning fungerar fortfarande i appen.",
-  "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
-    "Appen behåller adress- och platstext på den här enheten när direkt platssökning inte är tillgänglig. Använd Åbos officiella reseplanerare för adress- och POI-sökning.",
   "Open Turku journey planner": "Öppna Åbos reseplanerare",
   "Journey timing and preference": "Restid och ruttpreferens",
   When: "När",
@@ -292,6 +301,7 @@ export default {
     "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
+  "Enter a stop or place.": "Ange en hållplats eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Platssökning kräver internetanslutning. Du kan fortfarande välja en Föli-hållplats bland förslagen.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":

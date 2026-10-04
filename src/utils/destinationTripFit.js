@@ -34,9 +34,8 @@ export function resolveBoardingOccurrence(
   aimedDepartureEpochSec = null
 ) {
   const stopId = String(boardingStopId || "");
-  const occurrences = stopTimes.filter(
-    (item) => String(item.stopId) === stopId && item.pickupType !== 1
-  );
+  const visits = stopTimes.filter((item) => String(item.stopId) === stopId);
+  const occurrences = visits.filter((item) => item.pickupType !== 1);
   if (occurrences.length === 0) return null;
 
   const sequence = finiteNumber(boardingSequence);
@@ -47,14 +46,19 @@ export function resolveBoardingOccurrence(
     if (exact) return exact;
   }
 
-  if (occurrences.length === 1) return occurrences[0];
+  // Only a stop the trip visits once is unambiguous. A loop that starts and
+  // ends here has one boarding visit and one arrival, and the board lists
+  // both under the same trip: matched to the start, the bus ending its loop
+  // became a ride that never happens.
+  if (visits.length === 1) return occurrences[0];
 
   const index = resolveRideBoardingIndex(
     stopTimes,
     stopId,
     aimedDepartureEpochSec
   );
-  return index >= 0 ? stopTimes[index] : null;
+  const resolved = index >= 0 ? stopTimes[index] : null;
+  return resolved && resolved.pickupType !== 1 ? resolved : null;
 }
 
 /**

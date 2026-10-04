@@ -58,6 +58,9 @@ jobs:
       - name: Verify production place-search policy
         run: npm run verify:place-search-policy
 
+      - name: Verify place pack
+        run: npm run verify:place-pack
+
       - name: Verify live Föli health-signal workflow
         run: npm run verify:live-contract
 

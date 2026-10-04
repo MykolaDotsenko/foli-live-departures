@@ -36,6 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
+import { rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -471,6 +472,7 @@ function NearbyStops({
       );
 
       setPosition(nextPosition);
+      rememberPosition(nextPosition);
       setStatus("success");
 
       const closest = nearest[0];
@@ -557,8 +559,11 @@ function NearbyStops({
                 })
               : t("Near you")}
           </h2>
+          {/* Until a location is found there is nothing to choose from:
+              asking for "the best fit" left a passenger with a destination
+              looking for options that the button below has to fetch. */}
           <p className={styles.description}>
-            {destination
+            {destination && position
               ? t("Choose the best fit or switch back to pure distance.")
               : t("Uses your location once. It isn’t saved.")}
           </p>
@@ -646,6 +651,7 @@ function NearbyStops({
                 if (radarSeededPositionRef.current) return;
                 radarSeededPositionRef.current = true;
                 setPosition(nextPosition);
+                rememberPosition(nextPosition);
                 setStatus("success");
                 setError("");
               }}

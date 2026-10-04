@@ -1,13 +1,43 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { loadPlacePack } from "../api/placePack";
 import { placeLabel } from "../hooks/useSavedPlaces";
 import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
+import { formatDistance } from "../utils/geo";
+import { findPlaces } from "../utils/localPlaces";
+import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
+import { recentPosition, rememberPosition } from "../utils/sessionPosition";
 import { findSimilarStops, findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
 import { formatClock } from "../utils/time";
 import styles from "./JourneySearch.module.css";
 import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
+const MAX_PLACE_SUGGESTIONS = 8;
+
+// Both come from OpenStreetMap, and both owe it the attribution.
+const OSM_SOURCES = new Set(["osm-nominatim", "osm-places"]);
+
+/**
+ * A place from the shipped pack, in the shape the place-destination flow
+ * takes from a search provider.
+ *
+ * @param {import("../api/placePack").PackPlace} place
+ * @returns {import("../types/journey").PlaceSearchResult}
+ */
+function packPlaceResult(place) {
+  return {
+    id: place.id,
+    title: place.name,
+    subtitle: [place.street, place.city].filter(Boolean).join(", "),
+    lat: place.lat,
+    lon: place.lon,
+    category: "",
+    type: "",
+    provider: "osm-places",
+    licence: "ODbL-1.0",
+  };
+}
 
 /** @param {{ compact?: boolean }} props */
 function OpenStreetMapAttribution({ compact = false }) {
@@ -117,15 +147,104 @@ export default function JourneySearch({
         : findSimilarStops(stops, value, MAX_SUGGESTIONS),
     [matches, stops, value]
   );
-  const showSuggestions = focused && value.trim() && suggestions.length > 0;
+  // Shops, health care, schools and other places from the pack shipped
+  // with the app: "Lidl" lists the Lidls, nearest first once the passenger
+  // has let the app use their location. Nothing typed leaves the phone.
+  const [packPlaces, setPackPlaces] = useState(
+    /** @type {import("../api/placePack").PackPlace[]} */ ([])
+  );
+  const [origin, setOrigin] = useState(recentPosition);
+  const [locating, setLocating] = useState(false);
+  const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
+  // On narrow screens suggestions are in normal flow above the submit button.
+  // A pointer press on Submit blurs the input before click; closing the list
+  // during that blur would move the button away from the pointer and cancel
+  // the click. Keep the list stable until the form submit itself closes it.
+  const submitPointerDownRef = useRef(false);
+  const wantsPlaces = focused || Boolean(value.trim());
+  useEffect(() => {
+    if (!wantsPlaces || packPlaces.length > 0) return undefined;
+    let current = true;
+    loadPlacePack().then((loaded) => {
+      if (current && loaded.length > 0) setPackPlaces(loaded);
+    });
+    return () => {
+      current = false;
+    };
+  }, [wantsPlaces, packPlaces.length]);
+  const placeMatches = useMemo(
+    () =>
+      findPlaces(packPlaces, value, {
+        origin,
+        limit: MAX_PLACE_SUGGESTIONS,
+      }),
+    [packPlaces, value, origin]
+  );
+  const options = useMemo(
+    () => [
+      ...suggestions.map((stop) => ({
+        kind: "stop",
+        key: `stop:${stop.id}`,
+        stop,
+        place: null,
+      })),
+      ...placeMatches.map((place) => ({
+        kind: "place",
+        key: `place:${place.id}`,
+        stop: null,
+        place,
+      })),
+    ],
+    [suggestions, placeMatches]
+  );
+  const showSuggestions = focused && value.trim() && options.length > 0;
+  const [activeIndex, setActiveIndex] = useState(-1);
+
+  // Keyboard selection can move past the visible part of a long list.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document
+      .getElementById(`journey-destination-option-${activeIndex}`)
+      ?.scrollIntoView?.({ block: "nearest" });
+  }, [activeIndex]);
 
   const chooseStop = (stop) => {
+    setActiveIndex(-1);
     onChooseStop(stop);
     placeSearch.clear();
     setValue(stop.name || String(stop.id));
     setFocused(false);
     setError("");
     if (compact) setExpanded(false);
+  };
+
+  // As in stop search: the field is a combobox, so its list answers to the
+  // keyboard. Its options were buttons, and Tab moved focus onto one that
+  // the list then removed, dropping a keyboard user to the top of the page.
+  const handleKeyDown = (event) => {
+    if (!showSuggestions) {
+      if (event.key === "ArrowDown" && value.trim() && options.length > 0) {
+        event.preventDefault();
+        setFocused(true);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveIndex((index) => (index + 1) % options.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveIndex((index) =>
+        index <= 0 ? options.length - 1 : index - 1
+      );
+    } else if (event.key === "Enter" && activeIndex >= 0) {
+      event.preventDefault();
+      chooseOption(options[activeIndex]);
+    } else if (event.key === "Escape") {
+      setActiveIndex(-1);
+      setFocused(false);
+    }
   };
 
   const choosePlace = (place) => {
@@ -163,19 +282,53 @@ export default function JourneySearch({
     }
 
     placeSearch.clear();
+    setActiveIndex(-1);
     setValue(place.title);
     setFocused(false);
     setError("");
     if (compact) setExpanded(false);
   };
 
+  /** @param {(typeof options)[number] | undefined} option */
+  const chooseOption = (option) => {
+    if (option?.kind === "stop" && option.stop) chooseStop(option.stop);
+    else if (option?.kind === "place" && option.place) {
+      chooseExternalPlace(packPlaceResult(option.place));
+    }
+  };
+
+  // Asked for here, once, like "Find nearest stop": the places are then
+  // listed nearest first, and the fix is kept only in memory.
+  const listNearestFirst = async () => {
+    if (locating) return;
+    setLocating(true);
+    setError("");
+    try {
+      const position = await requestOneTimePosition(navigator.geolocation);
+      rememberPosition(position);
+      setOrigin({ lat: position.lat, lon: position.lon });
+      setActiveIndex(-1);
+      inputRef.current?.focus();
+      setFocused(true);
+    } catch (locationError) {
+      setError(t(locationErrorMessage(locationError)));
+    } finally {
+      setLocating(false);
+    }
+  };
+
   const submit = async (event) => {
     event.preventDefault();
+    submitPointerDownRef.current = false;
     const rawQuery = value.trim();
     const query = normalizeStopQuery(value);
 
     if (!query) {
-      setError(t("Enter a stop, address or place."));
+      setError(
+        directPlaceSearchEnabled
+          ? t("Enter a stop, address or place.")
+          : t("Enter a stop or place.")
+      );
       return;
     }
 
@@ -195,17 +348,40 @@ export default function JourneySearch({
       return;
     }
 
-    setFocused(suggestions.length > 0);
+    // Without a provider, the places shipped with the app are the answer:
+    // their list opens; with nothing to list, the passenger is told where
+    // a street address can be found.
+    if (!directPlaceSearchEnabled) {
+      setFocused(options.length > 0);
+      setError(
+        options.length > 0
+          ? ""
+          : t(
+              "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.",
+              { query: rawQuery }
+            )
+      );
+      return;
+    }
+
+    // An explicit provider search replaces autocomplete with its submitted
+    // results. Keeping the local popup open here can cover those results and
+    // the submit control, especially on a phone.
+    setActiveIndex(-1);
+    setFocused(false);
 
     if (!online) {
+      setFocused(options.length > 0);
       setError(
-        suggestions.length > 0
-          ? t(
-              "Place search needs a connection. You can still choose a Föli stop from the suggestions."
-            )
-          : t(
-              "Place search needs a connection. Search by Föli stop name or number while offline."
-            )
+        placeMatches.length > 0
+          ? ""
+          : suggestions.length > 0
+            ? t(
+                "Place search needs a connection. You can still choose a Föli stop from the suggestions."
+              )
+            : t(
+                "Place search needs a connection. Search by Föli stop name or number while offline."
+              )
       );
       return;
     }
@@ -215,28 +391,22 @@ export default function JourneySearch({
       return;
     }
 
-    if (!directPlaceSearchEnabled) {
-      setError(
-        t(
-          "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
-        )
-      );
-      return;
-    }
-
     setError("");
     const results = await placeSearch.search(rawQuery, language);
     if (results === null) return;
 
     if (results.length === 0) {
+      setFocused(options.length > 0);
       setError(
-        suggestions.length > 0
-          ? t(
-              "No matching place or address was found. You can still choose a Föli stop from the suggestions."
-            )
-          : t(
-              "No matching stop, place or address was found. Try a more specific destination."
-            )
+        placeMatches.length > 0
+          ? ""
+          : suggestions.length > 0
+            ? t(
+                "No matching place or address was found. You can still choose a Föli stop from the suggestions."
+              )
+            : t(
+                "No matching stop, place or address was found. Try a more specific destination."
+              )
       );
     }
   };
@@ -274,7 +444,7 @@ export default function JourneySearch({
           <span className={styles.compactPlan}>
             {planSummary(timeConstraint, preference)}
           </span>
-          {destination.source === "osm-nominatim" && (
+          {OSM_SOURCES.has(destination.source) && (
             <OpenStreetMapAttribution compact />
           )}
         </span>
@@ -321,7 +491,7 @@ export default function JourneySearch({
         <div className={styles.destination} role="status">
           <span>{t("Going to")}</span>
           <strong>{destinationLabel(destination)}</strong>
-          {destination.source === "osm-nominatim" && (
+          {OSM_SOURCES.has(destination.source) && (
             <OpenStreetMapAttribution />
           )}
         </div>
@@ -348,29 +518,48 @@ export default function JourneySearch({
 
 
       <form onSubmit={submit} noValidate>
+        {/* Street addresses are only searched with a place provider; the
+            label promised them when none was there. */}
         <label htmlFor="journey-destination" className={styles.label}>
-          {t("Stop, address or place")}
+          {directPlaceSearchEnabled
+            ? t("Stop, address or place")
+            : t("Stop or place")}
         </label>
         <div className={styles.searchRow}>
-          <div className={styles.inputWrap}>
+          {/* Focus moving into the list's own controls keeps it open:
+              leaving the field closed it under a keyboard user's Tab. */}
+          <div
+            className={styles.inputWrap}
+            onFocus={() => {
+              setFocused(true);
+              setOrigin((current) => current || recentPosition());
+            }}
+            onBlur={(event) => {
+              if (event.currentTarget.contains(event.relatedTarget)) return;
+              if (submitPointerDownRef.current) return;
+              setActiveIndex(-1);
+              setFocused(false);
+            }}
+          >
             <input
+              ref={inputRef}
               id="journey-destination"
               value={value}
               onChange={(event) => {
                 setValue(event.target.value);
                 setError("");
+                setActiveIndex(-1);
                 setFocused(true);
                 placeSearch.clear();
               }}
-              onFocus={() => setFocused(true)}
-              onBlur={() => setFocused(false)}
+              onKeyDown={handleKeyDown}
               className={styles.input}
               // Where address search is off, the address example led
               // straight to "unavailable here".
               placeholder={
                 directPlaceSearchEnabled
                   ? t("e.g. Prisma Itäharju or Kauppatori")
-                  : t("e.g. Kauppatori")
+                  : t("e.g. Kauppatori or Prisma")
               }
               autoComplete="off"
               inputMode="search"
@@ -378,36 +567,110 @@ export default function JourneySearch({
               aria-expanded={Boolean(showSuggestions)}
               aria-controls="journey-destination-suggestions"
               aria-autocomplete="list"
+              aria-activedescendant={
+                showSuggestions && activeIndex >= 0
+                  ? `journey-destination-option-${activeIndex}`
+                  : undefined
+              }
               aria-invalid={Boolean(error)}
             />
             {showSuggestions && (
               <div
-                id="journey-destination-suggestions"
                 className={styles.suggestions}
-                role="listbox"
-                aria-label={t("Destination stop suggestions")}
+                onPointerDown={(event) => {
+                  // A tap on the list must not take focus from the field.
+                  if (!(event.target instanceof HTMLAnchorElement)) {
+                    event.preventDefault();
+                  }
+                }}
               >
-                {suggestions.map((stop) => (
-                  <button
-                    key={stop.id}
-                    type="button"
-                    role="option"
-                    className={styles.suggestion}
-                    onPointerDown={(event) => event.preventDefault()}
-                    onClick={() => chooseStop(stop)}
-                  >
-                    <strong>
-                      <StopName stop={stop} />
-                    </strong>
-                    <span>{t("Stop {id}", { id: stop.id })}</span>
-                  </button>
-                ))}
+                <div
+                  id="journey-destination-suggestions"
+                  role="listbox"
+                  aria-label={t("Destination suggestions")}
+                >
+                  {options.map((option, index) =>
+                    option.kind === "stop" && option.stop ? (
+                      <div
+                        key={option.key}
+                        id={`journey-destination-option-${index}`}
+                        role="option"
+                        aria-selected={index === activeIndex}
+                        className={styles.suggestion}
+                        onClick={() => chooseOption(option)}
+                      >
+                        <strong>
+                          <StopName stop={option.stop} />
+                        </strong>
+                        <span>{t("Stop {id}", { id: option.stop.id })}</span>
+                      </div>
+                    ) : option.place ? (
+                      <div
+                        key={option.key}
+                        id={`journey-destination-option-${index}`}
+                        role="option"
+                        aria-selected={index === activeIndex}
+                        className={styles.suggestion}
+                        data-place="true"
+                        onClick={() => chooseOption(option)}
+                      >
+                        <span className={styles.placeText}>
+                          <strong>{option.place.name}</strong>
+                          {(option.place.street || option.place.city) && (
+                            <small>
+                              {[option.place.street, option.place.city]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </small>
+                          )}
+                        </span>
+                        {option.place.distanceMeters !== null && (
+                          <span>{formatDistance(option.place.distanceMeters)}</span>
+                        )}
+                      </div>
+                    ) : null
+                  )}
+                </div>
+                {placeMatches.length > 0 && (
+                  <div className={styles.placeFooter}>
+                    {!origin && (
+                      <button
+                        type="button"
+                        className={styles.nearestButton}
+                        onClick={listNearestFirst}
+                        aria-busy={locating}
+                      >
+                        <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
+                        {locating ? t("Locating…") : t("Nearest to me first")}
+                      </button>
+                    )}
+                    <p className={styles.placeAttribution}>
+                      {t("Place search data")} ·{" "}
+                      <a
+                        href="https://www.openstreetmap.org/copyright"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {t("© OpenStreetMap contributors")}
+                      </a>
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
           <button
             type="submit"
             className={styles.submit}
+            onPointerDown={() => {
+              submitPointerDownRef.current = true;
+            }}
+            onPointerUp={() => {
+              submitPointerDownRef.current = false;
+            }}
+            onPointerCancel={() => {
+              submitPointerDownRef.current = false;
+            }}
             disabled={placeSearch.status === "loading"}
             aria-busy={placeSearch.status === "loading"}
           >
@@ -418,7 +681,9 @@ export default function JourneySearch({
         </div>
 
         <p className={styles.help}>
-          {t("Choose Home, Work, School, a Föli stop, address or place.")}
+          {directPlaceSearchEnabled
+            ? t("Choose Home, Work, School, a Föli stop, address or place.")
+            : t("Choose Home, Work, School, a Föli stop or a place such as Prisma.")}
         </p>
         {directPlaceSearchEnabled ? (
           <p className={styles.privacyNote}>
@@ -428,12 +693,16 @@ export default function JourneySearch({
           </p>
         ) : (
           <div className={styles.handoff}>
-            {/* Said once there is text to keep: before that, three lines
-                of it stood between the field and everything below. */}
-            {(value.trim() || placeSearch.status === "error") && (
+            {/* Said when the typed text finds nothing to list (most often a
+                street address), not over every search. A destination just
+                chosen from the list is not that. */}
+            {((value.trim() &&
+              options.length === 0 &&
+              value.trim() !== destinationLabel(destination)) ||
+              placeSearch.status === "error") && (
               <p className={styles.privacyNote}>
                 {t(
-                  "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search."
+                  "Street addresses aren’t searched here. For an address, use the official Turku journey planner."
                 )}
               </p>
             )}
@@ -497,7 +766,7 @@ export default function JourneySearch({
                 )
               : placeSearch.error === "external-handoff"
                 ? t(
-                    "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app."
+                    "Street addresses aren’t searched here. For an address, use the official Turku journey planner."
                   )
                 : t(
                     "Place search is temporarily unavailable. Föli stop search still works."

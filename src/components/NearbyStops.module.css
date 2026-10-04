@@ -173,9 +173,17 @@
   background: #f1f9f9;
 }
 
+/* Beside a badge and the walk link, a phone left the stop's own text a
+   column a few letters wide ("Puistok / atu" and a route over five lines).
+   The text keeps the room it needs, and the badges drop below it. */
+.stopButton {
+  flex-wrap: wrap;
+}
+
 .stopText {
   display: grid;
   min-width: 0;
+  flex: 1 1 9rem;
   gap: 3px;
 }
 
@@ -253,8 +261,10 @@
 
   .walkLink {
     min-width: 102px;
+    max-width: 8.5rem;
     border-top: 0;
     border-left: 1px solid #e1ecee;
+    text-align: center;
   }
 }
 
@@ -488,6 +498,8 @@
   display: grid;
   justify-items: end;
   gap: 5px;
+  /* On a line of their own, still at the card's right edge. */
+  margin-left: auto;
 }
 
 .bestBadge {

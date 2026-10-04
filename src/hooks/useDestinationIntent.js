@@ -72,8 +72,11 @@ export function normalizeDestinationIntent(value) {
           )
       );
     }
-    if (candidate.source === "osm-nominatim") {
-      normalized.source = "osm-nominatim";
+    if (
+      candidate.source === "osm-nominatim" ||
+      candidate.source === "osm-places"
+    ) {
+      normalized.source = candidate.source;
     }
   }
 

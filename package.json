@@ -27,6 +27,8 @@
     "verify:android-release": "node --test scripts/android-release-metadata.test.mjs && node scripts/verify-android-release.mjs",
     "verify:android-publish": "node scripts/verify-android-publish.mjs",
     "verify:place-search-policy": "node scripts/verify-place-search-policy.mjs",
+    "build:place-pack": "node scripts/build-place-pack.mjs",
+    "verify:place-pack": "node --test scripts/place-pack.test.mjs && node scripts/verify-place-pack.mjs",
     "verify:live-contract": "node scripts/verify-live-contract-workflow.mjs",
     "stamp:deployment": "node scripts/stamp-deployment.mjs",
     "verify:production-site": "node scripts/verify-production-site.mjs",

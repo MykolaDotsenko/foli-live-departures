@@ -142,7 +142,10 @@
   top: calc(100% + 5px);
   right: 0;
   left: 0;
-  overflow: hidden;
+  /* Stops and places together can outgrow a phone screen. */
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid #b8cfd3;
   border-radius: 12px;
   background: #fff;
@@ -170,15 +173,67 @@
 }
 
 .suggestion:hover,
-.suggestion:focus-visible {
+.suggestion[aria-selected="true"] {
   background: #edf8f8;
 }
 
-.suggestion span {
+.suggestion > span {
   flex: 0 0 auto;
   color: #60747c;
   font-size: 0.78rem;
   font-weight: 750;
+}
+
+/* A place: its name over its street and town, its distance beside. */
+.suggestion > .placeText {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 2px;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.placeText small {
+  color: #52666f;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.placeFooter {
+  display: grid;
+  gap: 6px;
+  padding: 8px 12px 10px;
+  border-top: 1px solid #e3edef;
+  background: #f7fbfb;
+}
+
+.nearestButton {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid #8bb9be;
+  border-radius: 10px;
+  background: #fff;
+  color: #00656f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 850;
+}
+
+.placeAttribution {
+  margin: 0;
+  color: #52666f;
+  font-size: 0.72rem;
+}
+
+.placeAttribution a {
+  color: inherit;
 }
 
 .help,
@@ -206,6 +261,12 @@
   .searchRow {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .suggestions {
+    position: static;
+    max-height: min(45vh, 360px);
+    margin-top: 5px;
   }
 
   .submit {
@@ -247,12 +308,25 @@
 
   :root[data-theme="dark"] .label,
   :root[data-theme="dark"] .help,
-  :root[data-theme="dark"] .suggestion span {
+  :root[data-theme="dark"] .suggestion > span:not(.placeText),
+  :root[data-theme="dark"] .placeText small,
+  :root[data-theme="dark"] .placeAttribution {
     color: var(--dm-muted);
   }
 
+  :root[data-theme="dark"] .placeFooter {
+    border-color: var(--dm-line);
+    background: var(--dm-surface);
+  }
+
+  :root[data-theme="dark"] .nearestButton {
+    border-color: var(--dm-line-strong);
+    background: var(--dm-raised);
+    color: var(--dm-accent);
+  }
+
   :root[data-theme="dark"] .suggestion:hover,
-  :root[data-theme="dark"] .suggestion:focus-visible {
+  :root[data-theme="dark"] .suggestion[aria-selected="true"] {
     background: var(--dm-accent-surface);
   }
 }

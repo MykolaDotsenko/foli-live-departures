@@ -95,7 +95,6 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-      "Destination stop suggestions": "Määränpääpysäkkien ehdotukset",
             "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Choose the best fit or switch back to pure distance.":
@@ -199,6 +198,20 @@ export default {
   "Search destination": "Hae määränpää",
   "Choose Home, Work, School, a Föli stop, address or place.":
     "Valitse Koti, Työ, Koulu, Fölin pysäkki, osoite tai paikka.",
+  "Destination suggestions":
+    "Määränpään ehdotukset",
+  "Stop or place":
+    "Pysäkki tai paikka",
+  "e.g. Kauppatori or Prisma":
+    "esim. Kauppatori tai Prisma",
+  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
+    "Valitse Koti, Työ, Koulu, Fölin pysäkki tai paikka, kuten Prisma.",
+  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
+    "Katuosoitteita ei haeta täällä. Käytä osoitteen hakuun Turun virallista reittiopasta.",
+  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
+    "Haulla ”{query}” ei löytynyt pysäkkiä eikä paikkaa. Käytä katuosoitteen hakuun Turun virallista reittiopasta.",
+  "Nearest to me first":
+    "Lähimmät ensin",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
     "Pysäkkiehdotukset pysyvät tällä laitteella. Paikka- tai osoiteteksti lähetetään OpenStreetMapille vasta, kun painat Hae; toistuvat haut välimuistitetaan vain tämän selainistunnon ajaksi.",
   "Places & addresses": "Paikat ja osoitteet",
@@ -207,10 +220,6 @@ export default {
   "© OpenStreetMap contributors": "© OpenStreetMapin tekijät",
   "Place search is temporarily unavailable. Föli stop search still works.":
     "Paikkahaku ei ole tilapäisesti käytettävissä. Fölin pysäkkihaku toimii edelleen.",
-  "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app.":
-    "Suora osoite- ja paikkahaku ei ole tässä käytettävissä. Käytä Turun virallista reittiopasta; Fölin pysäkkihaku toimii edelleen tässä sovelluksessa.",
-  "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
-    "Kun suora paikkahaku ei ole käytettävissä, tämä sovellus pitää osoite- ja paikkatekstin tällä laitteella. Käytä osoite- ja POI-hakuun Turun virallista reittiopasta.",
   "Open Turku journey planner": "Avaa Turun reittiopas",
   "Journey timing and preference": "Matkan aika ja reittitoive",
   When: "Milloin",
@@ -303,6 +312,7 @@ export default {
     "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
+  "Enter a stop or place.": "Kirjoita pysäkki tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Paikkahaku tarvitsee verkkoyhteyden. Voit silti valita Fölin pysäkin ehdotuksista.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":

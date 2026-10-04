@@ -66,6 +66,9 @@ export default function usePendingFocus() {
     if (!target || !target.isConnected) return;
     cancel();
     target.focus();
+    // Focus should also reveal the result. WebKit can keep a newly focused
+    // heading outside the viewport after nearby content collapses or moves.
+    target.scrollIntoView?.({ block: "nearest" });
   });
 
   return useCallback(

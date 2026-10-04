@@ -324,3 +324,58 @@ test("chooses the smallest total walking, not merely the closest boarding stop",
   expect(lessWalking?.stopId).toBe("balanced");
   expect(lessWalking?.walkingDeltaMeters).toBe(-590);
 });
+
+// One bus, two stops on its way: boarding 2.6 km back down the line got it
+// the "Fastest" badge because it boards there earlier, though both reach
+// the destination at the same moment. Equal arrival goes to less walking.
+test("an earlier boarding of the same bus is not faster", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "upline", name: "Länsikeskus", distanceMeters: 2_600 },
+      { id: "here", name: "Puistokatu", distanceMeters: 30 },
+    ],
+    fitsByStop: {
+      upline: {
+        status: "good",
+        best: departure({ tripRef: "32", arrival: 5_000, departureAt: 3_800 }),
+        departures: [
+          departure({ tripRef: "32", arrival: 5_000, departureAt: 3_800 }),
+        ],
+      },
+      here: {
+        status: "good",
+        best: departure({ tripRef: "32", arrival: 5_000, departureAt: 4_160 }),
+        departures: [
+          departure({ tripRef: "32", arrival: 5_000, departureAt: 4_160 }),
+        ],
+      },
+    },
+  });
+
+  expect(options[0]).toMatchObject({ label: "fastest", stopId: "here" });
+  expect(options.map((item) => item.stopId)).not.toContain("upline");
+});
+
+test("arrive-by still prefers the latest departure", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "upline", distanceMeters: 2_600 },
+      { id: "here", distanceMeters: 30 },
+    ],
+    fitsByStop: {
+      upline: {
+        status: "good",
+        best: departure({ tripRef: "a", arrival: 5_000, departureAt: 3_800 }),
+        departures: [departure({ tripRef: "a", arrival: 5_000, departureAt: 3_800 })],
+      },
+      here: {
+        status: "good",
+        best: departure({ tripRef: "b", arrival: 5_000, departureAt: 4_160 }),
+        departures: [departure({ tripRef: "b", arrival: 5_000, departureAt: 4_160 })],
+      },
+    },
+    timeConstraint: { mode: "arrive-by", targetTimeSec: 6_000 },
+  });
+
+  expect(options[0]).toMatchObject({ label: "latest-departure", stopId: "here" });
+});

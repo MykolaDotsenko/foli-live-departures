@@ -15,12 +15,44 @@ export function destinationFitRank(fit) {
   return 6;
 }
 
+const CATCHABLE = new Set(["at-stop", "comfortable", "likely"]);
+
+/**
+ * A stop is compared on its first realistically catchable bus. A tight
+ * first one stays the bus shown, but it must not hide a comfortable later
+ * one: standing 30 m from such a stop, the passenger was sent 700 m away
+ * as "Best" for a bus arriving no earlier.
+ *
+ * @param {any} fit
+ * @returns {any | null}
+ */
+function laterCatchableDeparture(fit) {
+  if (fit?.status !== "tight" || !Array.isArray(fit.departures)) return null;
+  return (
+    fit.departures.find(
+      (/** @type {any} */ departure) =>
+        departure !== fit.best && CATCHABLE.has(departure?.catchability)
+    ) || null
+  );
+}
+
+/**
+ * @param {any} fit
+ * @returns {number}
+ */
+function rankingClass(fit) {
+  return laterCatchableDeparture(fit)
+    ? destinationFitRank({ status: "good" })
+    : destinationFitRank(fit);
+}
+
 /**
  * @param {any} fit
  * @returns {number | null}
  */
 function destinationArrival(fit) {
-  const value = Number(fit?.best?.destinationArrivalAt);
+  const departure = laterCatchableDeparture(fit) || fit?.best;
+  const value = Number(departure?.destinationArrivalAt);
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
@@ -51,8 +83,7 @@ export function rankDestinationStops(
   const ranked = [...stops].sort((left, right) => {
     const leftFit = fitsByStop[left.id];
     const rightFit = fitsByStop[right.id];
-    const rankDifference =
-      destinationFitRank(leftFit) - destinationFitRank(rightFit);
+    const rankDifference = rankingClass(leftFit) - rankingClass(rightFit);
     if (rankDifference !== 0) return rankDifference;
 
     const leftArrival = destinationArrival(leftFit);
@@ -84,7 +115,7 @@ export function rankDestinationStops(
   const previousFit = fitsByStop[previous.id];
 
   // A stronger evidence class is a meaningful change by itself.
-  if (destinationFitRank(challengerFit) !== destinationFitRank(previousFit)) {
+  if (rankingClass(challengerFit) !== rankingClass(previousFit)) {
     return ranked;
   }
 

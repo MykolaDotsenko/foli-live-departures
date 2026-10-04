@@ -286,13 +286,17 @@ test("a returning passenger can still plan a journey from the reopened stop", as
   await page.getByRole("button", { name: "Where do you want to go?" }).click();
 
   const journey = page.locator('section[aria-labelledby="journey-search-title"]');
-  const destination = journey.getByRole("combobox", { name: "Stop, address or place" });
+  const destination = journey.getByRole("combobox", { name: "Stop or place" });
   await destination.fill("Kauppatori");
   await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
 
-  await expect(page.getByRole("heading", { name: /Nearby stops for Kauppatori/ })).toBeFocused();
+  // Focus stays on the board, where the buses to Kauppatori now come first.
+  // Sent to "Nearby stops" below it, the page scrolled them out of sight.
+  const board = page.getByRole("heading", { name: "Turun linna" });
+  await expect(board).toBeFocused();
+  await expect(board).toBeInViewport();
   await expect(page.getByRole("region", { name: "Journey destination" })).toContainText("Kauppatori");
-  await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
+  await expect(page.getByText("Trips to Kauppatori are shown first.", { exact: false })).toBeVisible();
 });
 
 test("deep links survive reload and invalid stop links recover canonically", async ({ page }) => {

@@ -9,6 +9,7 @@ import { judgeNearestStop } from "../utils/nearestStop";
 import styles from "./BusStopForm.module.css";
 import StopName from "./StopName";
 import { findSimilarStops, findStopMatches, normalizeStopQuery } from "../utils/stopSearch";
+import { rememberPosition } from "../utils/sessionPosition";
 
 const MAX_SUGGESTIONS = 6;
 
@@ -245,6 +246,7 @@ function BusStopForm({
 
     try {
       const position = await requestOneTimePosition(navigator.geolocation);
+      rememberPosition(position);
       if (superseded()) return;
       const { verdict, stop: nearest } = judgeNearestStop(
         stops,
