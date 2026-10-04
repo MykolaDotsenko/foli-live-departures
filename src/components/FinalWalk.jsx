@@ -5,6 +5,18 @@ import styles from "./ActiveJourney.module.css";
 
 /** @import { FinalWalkIntent } from "../types/journey" */
 
+function directionText(direction) {
+  if (direction === "north") return t("north");
+  if (direction === "north-east") return t("north-east");
+  if (direction === "east") return t("east");
+  if (direction === "south-east") return t("south-east");
+  if (direction === "south") return t("south");
+  if (direction === "south-west") return t("south-west");
+  if (direction === "west") return t("west");
+  if (direction === "north-west") return t("north-west");
+  return "";
+}
+
 /**
  * @param {{
  *   walk: FinalWalkIntent | null,
@@ -31,7 +43,7 @@ export default function FinalWalk({
     { lat: walk.fromLat, lon: walk.fromLon },
     { lat: walk.lat, lon: walk.lon }
   );
-  const directionLabel = direction ? t(direction) : "";
+  const directionLabel = directionText(direction);
 
   return (
     <section
