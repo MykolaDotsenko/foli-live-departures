@@ -175,17 +175,15 @@ function queryCells(cells, center, radiusMeters) {
  * @returns {{item:any,distanceMeters:number}[]}
  */
 function pointsWithin(cells, center, radiusMeters) {
-  return queryCells(cells, center, radiusMeters)
-    .map((item) => ({
-      item,
-      distanceMeters: distanceInMeters(center, item),
-    }))
-    .filter(
-      (entry) =>
-        Number.isFinite(entry.distanceMeters) &&
-        entry.distanceMeters <= radiusMeters
-    )
-    .sort((a, b) => a.distanceMeters - b.distanceMeters);
+  const result = [];
+  for (const item of queryCells(cells, center, radiusMeters)) {
+    const rawDistance = distanceInMeters(center, item);
+    if (!Number.isFinite(rawDistance)) continue;
+    const distanceMeters = Number(rawDistance);
+    if (distanceMeters > radiusMeters) continue;
+    result.push({ item, distanceMeters });
+  }
+  return result.sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
 /**
@@ -194,14 +192,15 @@ function pointsWithin(cells, center, radiusMeters) {
  */
 function nearestStreet(index, target) {
   if (!hasCoordinates(target)) return "";
+  const center = { lat: Number(target.lat), lon: Number(target.lon) };
 
   const candidates = [
     ...pointsWithin(
       index.addressCells,
-      target,
+      center,
       TARGET_STREET_RADIUS_METERS
     ),
-    ...pointsWithin(index.streetCells, target, TARGET_STREET_RADIUS_METERS),
+    ...pointsWithin(index.streetCells, center, TARGET_STREET_RADIUS_METERS),
   ].sort((a, b) => a.distanceMeters - b.distanceMeters);
 
   return String(candidates[0]?.item?.street || "");
@@ -260,15 +259,41 @@ function roadFromAddresses(street, points, origin, heading, range) {
   });
   const midpoint = unprojectMeters(origin, { x: meanX, y: meanY });
 
-  const distanceA = distanceInMeters(origin, endpointA);
-  const distanceB = distanceInMeters(origin, endpointB);
-  const distanceMid = distanceInMeters(origin, midpoint);
-  const bearingA = bearingDegrees(origin, endpointA);
-  const bearingB = bearingDegrees(origin, endpointB);
-  const bearingMid = bearingDegrees(origin, midpoint);
-  const pointA = radarPoint(bearingA, heading, distanceA, range);
-  const pointB = radarPoint(bearingB, heading, distanceB, range);
-  const labelPoint = radarPoint(bearingMid, heading, distanceMid, range);
+  const rawDistanceA = distanceInMeters(origin, endpointA);
+  const rawDistanceB = distanceInMeters(origin, endpointB);
+  const rawDistanceMid = distanceInMeters(origin, midpoint);
+  const rawBearingA = bearingDegrees(origin, endpointA);
+  const rawBearingB = bearingDegrees(origin, endpointB);
+  const rawBearingMid = bearingDegrees(origin, midpoint);
+  if (
+    !Number.isFinite(rawDistanceA) ||
+    !Number.isFinite(rawDistanceB) ||
+    !Number.isFinite(rawDistanceMid) ||
+    !Number.isFinite(rawBearingA) ||
+    !Number.isFinite(rawBearingB) ||
+    !Number.isFinite(rawBearingMid)
+  ) {
+    return null;
+  }
+
+  const pointA = radarPoint(
+    Number(rawBearingA),
+    heading,
+    Number(rawDistanceA),
+    range
+  );
+  const pointB = radarPoint(
+    Number(rawBearingB),
+    heading,
+    Number(rawDistanceB),
+    range
+  );
+  const labelPoint = radarPoint(
+    Number(rawBearingMid),
+    heading,
+    Number(rawDistanceMid),
+    range
+  );
 
   if (!pointA || !pointB || !labelPoint) return null;
 
@@ -318,13 +343,15 @@ export function buildRadarContext(index, position, target, heading, range) {
     return empty;
   }
 
+  const origin = { lat: Number(position.lat), lon: Number(position.lon) };
+  const radarRange = Number(range);
   const contextRadius = Math.min(
     MAX_CONTEXT_RADIUS_METERS,
-    Math.max(MIN_CONTEXT_RADIUS_METERS, Number(range) * 1.2)
+    Math.max(MIN_CONTEXT_RADIUS_METERS, radarRange * 1.2)
   );
   const addressEntries = pointsWithin(
     index.addressCells,
-    position,
+    origin,
     contextRadius
   );
   const targetStreet = nearestStreet(index, target);
@@ -342,7 +369,13 @@ export function buildRadarContext(index, position, target, heading, range) {
   const roadCandidates = [];
   for (const entries of byStreet.values()) {
     const street = String(entries[0]?.item?.street || "");
-    const road = roadFromAddresses(street, entries, position, heading, range);
+    const road = roadFromAddresses(
+      street,
+      entries,
+      origin,
+      heading,
+      radarRange
+    );
     if (road) roadCandidates.push(road);
   }
 
@@ -372,7 +405,7 @@ export function buildRadarContext(index, position, target, heading, range) {
     labelX: road.labelX,
     labelY: road.labelY,
     targetStreet: road.street === targetStreet,
-    showLabel: labelRoadIds.has(road.id) && Number(range) <= 500,
+    showLabel: labelRoadIds.has(road.id) && radarRange <= 500,
   }));
 
   const roadAngleByStreet = new Map(
@@ -380,22 +413,29 @@ export function buildRadarContext(index, position, target, heading, range) {
   );
   const seenBlocks = new Set();
   const buildingSize =
-    range <= 100 ? 2.8 : range <= 200 ? 2.2 : range <= 400 ? 1.7 : 1.2;
+    radarRange <= 100
+      ? 2.8
+      : radarRange <= 200
+        ? 2.2
+        : radarRange <= 400
+          ? 1.7
+          : 1.2;
   const buildings = [];
 
   for (const entry of addressEntries) {
-    if (entry.distanceMeters > range) continue;
-    const local = projectedMeters(position, entry.item);
+    if (entry.distanceMeters > radarRange) continue;
+    const local = projectedMeters(origin, entry.item);
     const blockKey = `${Math.round(local.x / 14)}:${Math.round(local.y / 14)}`;
     if (seenBlocks.has(blockKey)) continue;
     seenBlocks.add(blockKey);
 
-    const bearing = bearingDegrees(position, entry.item);
+    const rawBearing = bearingDegrees(origin, entry.item);
+    if (!Number.isFinite(rawBearing)) continue;
     const point = radarPoint(
-      bearing,
+      Number(rawBearing),
       heading,
       entry.distanceMeters,
-      range
+      radarRange
     );
     if (!point) continue;
 
