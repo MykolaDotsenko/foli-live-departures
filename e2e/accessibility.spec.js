@@ -6,17 +6,10 @@ import { seedHome } from "./support/places.js";
 import { atMorningCommute } from "./support/clock.js";
 import { scaleTextTo200Percent, openServiceUpdates } from "./support/layout.js";
 import { routeTargetStop } from "./support/ride.js";
+import { chooseLanguage, languagePicker } from "./support/language.js";
 
 async function switchToUkrainian(page) {
-  const language = await page.locator("html").getAttribute("lang");
-  if (language === "en") {
-    await page.getByRole("button", { name: "Suomeksi" }).click();
-    await expect(page.locator("html")).toHaveAttribute("lang", "fi");
-  }
-  if ((await page.locator("html").getAttribute("lang")) === "fi") {
-    await page.getByRole("button", { name: "Українською" }).click();
-  }
-  await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+  await chooseLanguage(page, "uk");
   await expect(
     page.getByRole("columnheader", { name: "Відправлення" })
   ).toBeVisible();
@@ -24,14 +17,7 @@ async function switchToUkrainian(page) {
 
 
 async function switchToSwedish(page) {
-  const language = await page.locator("html").getAttribute("lang");
-  if (language !== "uk" && language !== "sv") {
-    await switchToUkrainian(page);
-  }
-  if ((await page.locator("html").getAttribute("lang")) === "uk") {
-    await page.getByRole("button", { name: "På svenska" }).click();
-  }
-  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await chooseLanguage(page, "sv");
   await expect(
     page.getByRole("columnheader", { name: "Avgår" })
   ).toBeVisible();
@@ -337,11 +323,12 @@ test.describe("on a Finnish phone", () => {
   test.use({ locale: "fi-FI" });
 
   // Words that would only be on screen if something was left in English.
-  // Names (stops, destinations, the brand, "In English" on the switch) are
-  // taken out first; STOP in capitals is the button's own label in Finnish.
+  // Names (stops, destinations, the brand, "English" in the language list)
+  // are taken out first; STOP in capitals is the button's own label in
+  // Finnish.
   const ENGLISH_WORDS =
     /\b(?:[Tt]he|[Aa]nd|[Yy]ou|[Yy]our|[Ss]tops?|[Dd]epartures?|[Ll]oading|[Rr]efresh|[Nn]ext|[Hh]ome|[Ll]ive|[Uu]pdates?|[Aa]lert|[Rr]ide|[Nn]ear|[Ss]how|[Ff]ind|[Ss]earch|[Ss]aved|[Pp]laces|[Ww]ork|[Ss]chool|[Ll]ate|[Ee]arly|[Ss]cheduled|[Tt]imetable|[Dd]river|[Bb]ackup)\b/g;
-  const ALLOWED = ["Turku Departures", "Mykola Dotsenko", "In English", "Google Maps", "CC BY 4.0", "GitHub", "data.foli.fi"];
+  const ALLOWED = ["Turku Departures", "Mykola Dotsenko", "English", "Google Maps", "CC BY 4.0", "GitHub", "data.foli.fi"];
 
   async function englishLeftOnScreen(page) {
     let text = await page.locator("body").innerText();
@@ -349,7 +336,7 @@ test.describe("on a Finnish phone", () => {
     return [...new Set(text.match(ENGLISH_WORDS) || [])];
   }
 
-  test("the app is in Finnish, readable, and the locale cycle persists English", async ({
+  test("the app is in Finnish, readable, and a chosen language persists", async ({
     page,
   }, testInfo) => {
     if (testInfo.project.name === "chromium-mobile") await atMorningCommute(page);
@@ -379,26 +366,33 @@ test.describe("on a Finnish phone", () => {
       .analyze();
     expect(results.violations).toEqual([]);
 
-    // Locale switching follows the registry order: Finnish → Ukrainian → Swedish → English.
-    await page.getByRole("button", { name: "Українською" }).click();
-    await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+    // Every language is one choice away, in its own name.
+    const picker = page.getByRole("combobox", { name: "Kieli" });
+    await expect(picker.getByRole("option")).toHaveText([
+      "English",
+      "Suomi",
+      "Українська",
+      "Svenska",
+    ]);
+
+    await chooseLanguage(page, "uk");
     await expect(
       page.getByRole("columnheader", { name: "Відправлення" })
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "På svenska" }).click();
-    await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+    await chooseLanguage(page, "sv");
     await expect(
       page.getByRole("columnheader", { name: "Avgår" })
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "In English" }).click();
-    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await chooseLanguage(page, "en");
     await expect(page.getByRole("columnheader", { name: "Due" })).toBeVisible();
 
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
-    await expect(page.getByRole("button", { name: "Suomeksi" })).toBeVisible();
+    await expect(
+      page.getByRole("combobox", { name: "Language" })
+    ).toHaveValue("en");
     await expect(page.getByRole("columnheader", { name: "Due" })).toBeVisible();
   });
 
@@ -604,9 +598,7 @@ test("Ukrainian reflows at 320, 360 and 412 px with 200 percent text in dark mod
     await expect(
       page.getByRole("columnheader", { name: "Відправлення" })
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "På svenska" })
-    ).toBeVisible();
+    await expect(languagePicker(page)).toBeVisible();
 
     const state = await horizontalOverflow(page);
     expect(
@@ -638,7 +630,7 @@ test.describe("on a Swedish phone", () => {
 
     // The mock exposes provider-owned Swedish destination text as "Hamnen".
     await expect(page.getByText("Hamnen")).toBeVisible();
-    await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+    await expect(page.getByRole("combobox", { name: "Språk" })).toHaveValue("sv");
 
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
@@ -686,7 +678,7 @@ test("Swedish reflows at 320, 360 and 412 px with 200 percent text in dark mode"
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+    await expect(languagePicker(page)).toBeVisible();
 
     const state = await horizontalOverflow(page);
     expect(

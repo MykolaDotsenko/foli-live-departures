@@ -56,8 +56,10 @@ test("walking state asks for explicit at-stop confirmation", () => {
   expect(
     screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
   ).toBeInTheDocument();
+  // It names the button that confirms arrival instead of explaining that
+  // the app will not assume it.
   expect(
-    screen.getByText(/The app will not assume your physical location/i)
+    screen.getByText("When you get to the stop, tap “I'm at the stop”.")
   ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "I'm at the stop" }));
@@ -67,6 +69,99 @@ test("walking state asks for explicit at-stop confirmation", () => {
     "href",
     expect.stringContaining("travelmode=walking")
   );
+});
+
+// Chosen beside the stop, "Walk to Kauppatori" and a walking route read as
+// if the passenger were somewhere else. Arrival is still theirs to confirm.
+test("a passenger already beside the stop is not told to walk there", () => {
+  const onConfirmAtStop = vi.fn();
+
+  render(
+    <ActiveJourney
+      journey={journey({ distanceMeters: 8, nearStopAtSelection: true })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={onConfirmAtStop}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "You’re near Kauppatori D2" })
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Walk there" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "I'm at the stop" }));
+  expect(onConfirmAtStop).toHaveBeenCalledTimes(1);
+});
+
+// A short distance alone is no evidence: from a coarse fix the passenger
+// may be anywhere near.
+test("a short distance without an accurate fix still says to walk there", () => {
+  render(
+    <ActiveJourney
+      journey={journey({ distanceMeters: 8 })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
+  ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Walk there" })).toBeInTheDocument();
+});
+
+test("an unknown distance to the stop still says to walk there", () => {
+  render(
+    <ActiveJourney
+      journey={journey({ distanceMeters: null })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
+  ).toBeInTheDocument();
+});
+
+// "Leaves 5 min", and a minute before the bus "Leaves Due", put a board cell
+// into a sentence.
+test("says when the bus leaves in a sentence", () => {
+  const now = 1_900_000_000_000;
+  vi.spyOn(Date, "now").mockReturnValue(now);
+  const props = {
+    stop: { id: "100", lat: 60.4518, lon: 22.2666 },
+    online: true,
+    onConfirmAtStop: () => {},
+    onShowDeparture: () => {},
+    onChooseAnother: () => {},
+    onOpenStop: () => {},
+  };
+
+  const { rerender } = render(
+    <ActiveJourney
+      {...props}
+      journey={journey({ departureAt: now / 1000 + 5 * 60 })}
+    />
+  );
+  expect(screen.getByText("Leaves in 5 min")).toBeInTheDocument();
+
+  rerender(
+    <ActiveJourney {...props} journey={journey({ departureAt: now / 1000 + 30 })} />
+  );
+  expect(screen.getByText("Leaves now")).toBeInTheDocument();
+  expect(screen.queryByText(/Due/)).not.toBeInTheDocument();
 });
 
 test("waiting state points to the pinned selected departure", () => {
@@ -169,17 +264,16 @@ test("paused monitoring makes returning to the selected stop the primary action"
   );
 
   expect(
-    screen.getByText(
-      "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
-    )
+    screen.getByText("Your bus isn’t updated while another stop is open.")
   ).toBeInTheDocument();
 
   expect(
     screen.queryByRole("button", { name: "I'm at the stop" })
   ).not.toBeInTheDocument();
 
+  // The button names the stop it returns to.
   fireEvent.click(
-    screen.getByRole("button", { name: "Return to selected stop" })
+    screen.getByRole("button", { name: "Back to Kauppatori D2" })
   );
   expect(onOpenStop).toHaveBeenCalledTimes(1);
   expect(onConfirmAtStop).not.toHaveBeenCalled();
@@ -201,7 +295,7 @@ test("degraded monitoring never implies the live departure is current", () => {
 
   expect(
     screen.getByText(
-      "Live monitoring is temporarily unavailable. The selected departure may be out of date."
+      "Can’t update your bus right now. Its time may be out of date."
     )
   ).toBeInTheDocument();
 });
@@ -550,7 +644,7 @@ test("gives explicit cross-platform next actions on transfer leg 2", () => {
     screen.getByText("Walk about 90 m to Kauppatori D4 for line 7.")
   ).toBeInTheDocument();
   expect(
-    screen.getByText(/When you reach the transfer stop, confirm it here/i)
+    screen.getByText("When you get to the transfer stop, tap “I'm at the stop”.")
   ).toBeInTheDocument();
 
   rerender(

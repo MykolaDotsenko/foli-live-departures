@@ -30,7 +30,7 @@ test("saves Home as a privacy-first safe arrival zone", async ({
   const saveHome = page.getByRole("button", { name: "Save Home" });
   await expect(saveHome).toBeEnabled();
   await expect(
-    page.getByText("Yes, this is the right stop for Home.")
+    page.getByText("Save only if this is the right stop for Home.")
   ).toBeVisible();
   await saveHome.click();
 
@@ -67,10 +67,14 @@ test("the place setup keeps keyboard focus as it opens and closes", async ({
   await page.goto("/?stop=164");
   const card = page.locator('[data-place="school"]');
   const useStop = card.getByRole("button", { name: "Use Kauppatori for School" });
-  await expect(card).toBeVisible();
+  const folded = card.getByRole("button", { expanded: false });
+  // The card is drawn at once, its "Use Kauppatori" once the stop list has
+  // loaded: looked for at once, a slow load sent a desktop down the phone's
+  // path below.
+  await expect(useStop.or(folded)).toBeVisible();
   if (!(await useStop.isVisible())) {
     // A phone folds the card to its summary until tapped.
-    await card.getByRole("button", { expanded: false }).click();
+    await folded.click();
   }
 
   await useStop.focus();

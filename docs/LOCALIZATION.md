@@ -57,8 +57,11 @@ The detailed Ukrainian acceptance and remaining review plan is in
 `src/i18n/i18n.test.js` protects dictionary completeness, placeholders,
 stale/unused keys, plural behavior and fail-closed lazy-pack loading for the
 implemented locales. Source-level tests also reject literal English accessible
-labels that bypass the translator. Browser QA exercises the full registry cycle
-`en → fi → uk → sv → en` and dedicated Ukrainian/Swedish production flows.
+labels that bypass the translator. The header's language picker lists every
+registry language in its own name (English, Suomi, Українська, Svenska), so any
+language is one choice away; it replaced a button that named only the next
+language in turn. Browser QA chooses Ukrainian, Swedish and English from it
+directly and runs dedicated Ukrainian/Swedish production flows.
 Both added locales have explicit layout, 200% text, dark-theme, axe,
 offline/PWA, Ride/recovery and Android persistence coverage rather than relying
 on dictionary completeness alone.

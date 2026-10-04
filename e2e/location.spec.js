@@ -65,7 +65,7 @@ test("finds the nearest stop from one-time browser geolocation", async ({
   await expect(page).toHaveURL(/stop=164/);
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
   await expect(page.getByText("Nearest", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Selected stop ≈/)).toBeVisible();
+  await expect(page.getByText(/^Kauppatori is .+ away$/)).toBeVisible();
 
   const walkLink = page.getByRole("link", {
     name: "Walk there: Kauppatori, stop 164, in Google Maps",

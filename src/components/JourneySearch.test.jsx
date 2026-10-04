@@ -362,7 +362,7 @@ test("packaged app resolves a shipped address locally without calling the provid
   expect(input).toHaveAttribute("placeholder", "e.g. Tampereentie 12 or Prisma");
   expect(
     screen.getByText(
-      "Stops, places and addresses are searched on this device. No destination text leaves this device."
+      "Searched on this device: nothing you type here is sent anywhere."
     )
   ).toBeInTheDocument();
 

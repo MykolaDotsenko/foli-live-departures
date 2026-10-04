@@ -1,28 +1,64 @@
-import { useState } from "react";
-import { setLanguage, useLanguage } from "../i18n";
-import { nextLocaleDefinition } from "../i18n/locales";
+import { useRef, useState } from "react";
+import { getLanguage, setLanguage, t, useLanguage } from "../i18n";
+import { LOCALES, localeDefinition } from "../i18n/locales";
 
+// Every language the app speaks, each in its own name, in one list. A button
+// naming only the next language in turn made a Ukrainian on an English phone
+// go through Finnish to reach Ukrainian, and never said which languages there
+// were. The phone's own picker opens anywhere on the pill: the select covers
+// it, unseen, and the pill shows what it holds.
 export default function LanguageSwitch() {
   const language = useLanguage();
-  const other = nextLocaleDefinition(language);
-  const [loading, setLoading] = useState(false);
+  const [pending, setPending] = useState("");
+  // The passenger's latest choice. A language pack can take a moment to
+  // load the first time; a choice made meanwhile was dropped, and the
+  // picker went back to the first one. It follows once that one lands.
+  const wanted = useRef("");
+  const shown = localeDefinition(pending || language);
 
-  const changeLanguage = () => {
-    if (loading) return;
-    setLoading(true);
-    void setLanguage(other.code).finally(() => setLoading(false));
+  /** @param {string} code */
+  const load = (code) => {
+    setPending(code);
+    void setLanguage(code).finally(() => {
+      const next = wanted.current;
+      if (next !== code && next !== getLanguage()) {
+        load(next);
+      } else {
+        wanted.current = "";
+        setPending("");
+      }
+    });
+  };
+
+  /** @param {import("react").ChangeEvent<HTMLSelectElement>} event */
+  const changeLanguage = (event) => {
+    const code = event.target.value;
+    wanted.current = code;
+    if (pending) setPending(code);
+    else if (code !== language) load(code);
   };
 
   return (
-    <button
-      type="button"
-      className="language-switch"
-      lang={other.code}
-      aria-busy={loading || undefined}
-      disabled={loading}
-      onClick={changeLanguage}
-    >
-      {other.switchLabel}
-    </button>
+    <span className="language-switch">
+      <svg className="language-switch-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M1.5 8a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0-13 0h13M8 1.5c-3.6 3.6-3.6 9.4 0 13M8 1.5c3.6 3.6 3.6 9.4 0 13" />
+      </svg>
+      <span aria-hidden="true" lang={shown.code}>
+        {shown.nativeLabel}
+      </span>
+      <span className="language-switch-chevron" aria-hidden="true" />
+      <select
+        aria-label={t("Language")}
+        aria-busy={pending ? true : undefined}
+        value={shown.code}
+        onChange={changeLanguage}
+      >
+        {LOCALES.map((locale) => (
+          <option key={locale.code} value={locale.code} lang={locale.code}>
+            {locale.nativeLabel}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }

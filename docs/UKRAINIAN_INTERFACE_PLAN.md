@@ -161,7 +161,7 @@ Automated and merge-gated:
 - [x] Ukrainian first-visit language selection in locale-unit tests;
 - [x] plural-rule tests for counts such as 1, 2, 5, 21, 22, 25;
 - [x] generated lazy locale-pack validation, including HTTP failure, malformed payload and non-string-entry fail-closed paths;
-- [x] cross-browser registry cycle **FI → UK → SV → EN**, asserting Ukrainian UI is actually rendered;
+- [x] cross-browser language picker, choosing **UK → SV → EN** directly from Finnish, asserting Ukrainian UI is actually rendered;
 - [x] dedicated Ukrainian Ride Mode component tests, including NEXT/NOW safety semantics;
 - [x] dedicated transfer/recovery Ukrainian component tests with explicit-selection/no-silent-switch assertions;
 - [x] Ukrainian-specific axe WCAG A/AA pass after switching into Ukrainian;

@@ -2,7 +2,7 @@ import useClockTick from "../hooks/useClockTick";
 import { t, useLanguage } from "../i18n";
 import { formatDistance } from "../utils/geo";
 import { buildWalkingDirectionsUrl } from "../utils/maps";
-import { formatClock, formatDue } from "../utils/time";
+import { formatClock, formatDue, minutesUntil } from "../utils/time";
 import styles from "./ActiveJourney.module.css";
 
 function itineraryContext(journey) {
@@ -60,6 +60,15 @@ function currentLegUsesSameTransferStop(journey) {
   );
 }
 
+// Chosen beside the boarding stop, on a fix accurate enough to tell (see
+// activeJourneyFromOption): telling the passenger to walk there read as if
+// they were somewhere else. Arrival is still theirs to confirm.
+function isNearBoardingStop(journey) {
+  return (
+    journey?.nearStopAtSelection === true && !isTransferContinuationLeg(journey)
+  );
+}
+
 function phaseTitle(journey) {
   if (journey.phase === "recovery") return t("Choose another route");
   if (journey.phase === "waiting") {
@@ -68,7 +77,21 @@ function phaseTitle(journey) {
   if (currentLegUsesSameTransferStop(journey)) {
     return t("Stay at {stop}", { stop: journey.stopName });
   }
+  if (isNearBoardingStop(journey)) {
+    return t("You’re near {stop}", { stop: journey.stopName });
+  }
   return t("Walk to {stop}", { stop: journey.stopName });
+}
+
+// "Leaves 5 min" and, a minute before, "Leaves Due" put a departure-board
+// cell into a sentence.
+function leavesText(departureAt, nowMs) {
+  const minutes = minutesUntil(departureAt, nowMs);
+  if (minutes !== null && minutes <= 1) return t("Leaves now");
+  if (minutes !== null && minutes <= 90) {
+    return t("Leaves in {minutes} min", { minutes });
+  }
+  return t("Leaves {due}", { due: formatDue(departureAt, nowMs) });
 }
 
 function destinationText(journey) {
@@ -211,7 +234,9 @@ export default function ActiveJourney({
   const sameTransferStop = currentLegUsesSameTransferStop(journey);
   const hasFutureLeg = Boolean(itinerary?.next && itinerary?.nextTransfer);
   const walkingUrl =
-    online && !sameTransferStop ? buildWalkingDirectionsUrl(stop) : "";
+    online && !sameTransferStop && !isNearBoardingStop(journey)
+      ? buildWalkingDirectionsUrl(stop)
+      : "";
 
   return (
     <section
@@ -247,11 +272,7 @@ export default function ActiveJourney({
         <strong>
           {t("Line {line}", { line: journey.lineRef || "—" })}
         </strong>
-        <span>
-          {t("Leaves {due}", {
-            due: formatDue(journey.departureAt, nowMs),
-          })}
-        </span>
+        <span>{leavesText(journey.departureAt, nowMs)}</span>
         {journey.destinationKind === "external-place" &&
         journey.journeyArrivalAt ? (
           <span>
@@ -301,18 +322,16 @@ export default function ActiveJourney({
                   distance: formatDistance(journey.distanceMeters),
                 })}
           </p>
+          {/* Arrival is never assumed from a location; the note names the
+              button that confirms it instead of explaining that policy. */}
           <p className={styles.note}>
             {continuationLeg
               ? sameTransferStop
                 ? t(
                     "You are at the transfer stop. Confirm it below before waiting for the next bus."
                   )
-                : t(
-                    "When you reach the transfer stop, confirm it here. The app will not assume your physical location."
-                  )
-              : t(
-                  "When you reach the stop, confirm it here. The app will not assume your physical location."
-                )}
+                : t("When you get to the transfer stop, tap “I'm at the stop”.")
+              : t("When you get to the stop, tap “I'm at the stop”.")}
           </p>
         </>
       )}
@@ -363,9 +382,7 @@ export default function ActiveJourney({
         journey.phase !== "recovery" &&
         monitoringState === "paused" && (
           <p className={styles.monitoringNotice} role="status">
-            {t(
-              "Live monitoring is paused while another stop is open. Return to the selected stop to resume it."
-            )}
+            {t("Your bus isn’t updated while another stop is open.")}
           </p>
         )}
 
@@ -373,9 +390,7 @@ export default function ActiveJourney({
         journey.phase !== "recovery" &&
         monitoringState === "degraded" && (
           <p className={styles.monitoringNotice} role="status">
-            {t(
-              "Live monitoring is temporarily unavailable. The selected departure may be out of date."
-            )}
+            {t("Can’t update your bus right now. Its time may be out of date.")}
           </p>
         )}
 
@@ -387,7 +402,7 @@ export default function ActiveJourney({
               className={styles.primaryButton}
               onClick={onOpenStop}
             >
-              {t("Return to selected stop")}
+              {t("Back to {stop}", { stop: journey.stopName })}
             </button>
           )}
 

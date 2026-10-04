@@ -80,8 +80,8 @@ export default {
   // A place not set up yet
   "Tick at least one stop to save.": "Valitse vähintään yksi pysäkki, niin voit tallentaa.",
   "Not set": "Ei vielä tallennettu",
-  "Not at the stop? Search for it first, then choose it here.":
-    "Et ole pysäkillä? Hae se ensin ja valitse se sitten tästä.",
+  "Not at the place now? Search for its stop at the top of the page, then tap “Use …” above.":
+    "Et ole nyt paikan luona? Hae sen pysäkki sivun yläosasta ja napauta sitten yllä ”Käytä pysäkkiä …”.",
   "Use my location": "Käytä sijaintiani",
   "Use {name}": "Käytä pysäkkiä {name}",
 
@@ -89,12 +89,12 @@ export default {
   "Choose stops for Home": "Valitse kodin pysäkit",
   "Choose stops for School": "Valitse koulun pysäkit",
   "Choose stops for Work": "Valitse työpaikan pysäkit",
-  "Tick the stops you use to get Home, and mark one as the main stop.":
-    "Valitse pysäkit, joita käytät kotimatkalla, ja merkitse yksi pääpysäkiksi.",
-  "Tick the stops you use to get to School, and mark one as the main stop.":
-    "Valitse pysäkit, joita käytät koulumatkalla, ja merkitse yksi pääpysäkiksi.",
-  "Tick the stops you use to get to Work, and mark one as the main stop.":
-    "Valitse pysäkit, joita käytät työmatkalla, ja merkitse yksi pääpysäkiksi.",
+  "Tick the stops you use to get Home.":
+    "Valitse pysäkit, joita käytät kotimatkalla.",
+  "Tick the stops you use to get to School.":
+    "Valitse pysäkit, joita käytät koulumatkalla.",
+  "Tick the stops you use to get to Work.":
+    "Valitse pysäkit, joita käytät työmatkalla.",
   "How this works": "Miten tämä toimii",
   Cancel: "Peruuta",
   "Review the public stop you selected and confirm that it is suitable for this destination.":
@@ -123,24 +123,26 @@ export default {
     "Jakaminen paljastaa koulun tallennettujen julkisten pysäkkien nimet ja numerot, joista voi päätellä likimääräisen alueen.",
   "Sharing Work reveals its saved public stop names and numbers, which can indicate the general area.":
     "Jakaminen paljastaa työpaikan tallennettujen julkisten pysäkkien nimet ja numerot, joista voi päätellä likimääräisen alueen.",
-  "Only public stop numbers and names are saved; your exact location is discarded.":
-    "Vain julkisten pysäkkien numerot ja nimet tallennetaan. Tarkkaa sijaintiasi ei tallenneta.",
+  "Only the stops are saved, not your location.":
+    "Vain pysäkit tallennetaan, ei sijaintiasi.",
   "Using the stop you selected manually": "Käytetään itse valitsemaasi pysäkkiä",
   "Location accuracy ±{accuracy}": "Sijainnin tarkkuus ±{accuracy}",
   "Location accuracy unavailable": "Sijainnin tarkkuus ei ole tiedossa",
   "no stop was preselected — choose and confirm an arrival stop yourself":
     "pysäkkiä ei valittu valmiiksi – valitse ja vahvista saapumispysäkki itse",
   "Main stop": "Pääpysäkki",
-  "Yes, this is the right stop for Home.": "Kyllä, tämä on oikea pysäkki kotiin.",
-  "Yes, these are the right stops for Home.":
-    "Kyllä, nämä ovat oikeat pysäkit kotiin.",
-  "Yes, this is the right stop for School.":
-    "Kyllä, tämä on oikea pysäkki kouluun.",
-  "Yes, these are the right stops for School.":
-    "Kyllä, nämä ovat oikeat pysäkit kouluun.",
-  "Yes, this is the right stop for Work.": "Kyllä, tämä on oikea pysäkki töihin.",
-  "Yes, these are the right stops for Work.":
-    "Kyllä, nämä ovat oikeat pysäkit töihin.",
+  "Save only if this is the right stop for Home.":
+    "Tallenna vain, jos tämä on oikea pysäkki kotiin.",
+  "Save only if these are the right stops for Home.":
+    "Tallenna vain, jos nämä ovat oikeat pysäkit kotiin.",
+  "Save only if this is the right stop for School.":
+    "Tallenna vain, jos tämä on oikea pysäkki kouluun.",
+  "Save only if these are the right stops for School.":
+    "Tallenna vain, jos nämä ovat oikeat pysäkit kouluun.",
+  "Save only if this is the right stop for Work.":
+    "Tallenna vain, jos tämä on oikea pysäkki töihin.",
+  "Save only if these are the right stops for Work.":
+    "Tallenna vain, jos nämä ovat oikeat pysäkit töihin.",
 
   // A place shared by link
   "Shared place": "Jaettu paikka",

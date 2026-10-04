@@ -75,20 +75,20 @@ export default {
 
   "Tick at least one stop to save.": "Markera minst en hållplats för att spara.",
   "Not set": "Inte inställt",
-  "Not at the stop? Search for it first, then choose it here.":
-    "Är du inte vid hållplatsen? Sök efter den först och välj den sedan här.",
+  "Not at the place now? Search for its stop at the top of the page, then tap “Use …” above.":
+    "Inte på platsen nu? Sök efter dess hållplats högst upp på sidan och tryck sedan på ”Använd …” ovan.",
   "Use my location": "Använd min position",
   "Use {name}": "Använd {name}",
 
   "Choose stops for Home": "Välj hållplatser för Hem",
   "Choose stops for School": "Välj hållplatser för Skola",
   "Choose stops for Work": "Välj hållplatser för Arbete",
-  "Tick the stops you use to get Home, and mark one as the main stop.":
-    "Markera hållplatserna du använder för att ta dig Hem och välj en som huvudhållplats.",
-  "Tick the stops you use to get to School, and mark one as the main stop.":
-    "Markera hållplatserna du använder för att ta dig till Skola och välj en som huvudhållplats.",
-  "Tick the stops you use to get to Work, and mark one as the main stop.":
-    "Markera hållplatserna du använder för att ta dig till Arbete och välj en som huvudhållplats.",
+  "Tick the stops you use to get Home.":
+    "Markera hållplatserna du använder för att ta dig Hem.",
+  "Tick the stops you use to get to School.":
+    "Markera hållplatserna du använder för att ta dig till Skola.",
+  "Tick the stops you use to get to Work.":
+    "Markera hållplatserna du använder för att ta dig till Arbete.",
   "How this works": "Så fungerar det",
   Cancel: "Avbryt",
   "Review the public stop you selected and confirm that it is suitable for this destination.":
@@ -116,23 +116,26 @@ export default {
     "Om du delar Skola visas sparade offentliga hållplatsnamn och nummer, vilket kan avslöja det ungefärliga området.",
   "Sharing Work reveals its saved public stop names and numbers, which can indicate the general area.":
     "Om du delar Arbete visas sparade offentliga hållplatsnamn och nummer, vilket kan avslöja det ungefärliga området.",
-  "Only public stop numbers and names are saved; your exact location is discarded.":
-    "Endast offentliga hållplatsnummer och namn sparas; din exakta position kastas bort.",
+  "Only the stops are saved, not your location.":
+    "Bara hållplatserna sparas, inte din position.",
   "Using the stop you selected manually": "Använder hållplatsen du valde manuellt",
   "Location accuracy ±{accuracy}": "Positionsnoggrannhet ±{accuracy}",
   "Location accuracy unavailable": "Positionsnoggrannhet saknas",
   "no stop was preselected — choose and confirm an arrival stop yourself":
     "ingen hållplats valdes i förväg — välj och bekräfta själv en ankomsthållplats",
   "Main stop": "Huvudhållplats",
-  "Yes, this is the right stop for Home.": "Ja, det här är rätt hållplats för Hem.",
-  "Yes, these are the right stops for Home.":
-    "Ja, det här är rätt hållplatser för Hem.",
-  "Yes, this is the right stop for School.": "Ja, det här är rätt hållplats för Skola.",
-  "Yes, these are the right stops for School.":
-    "Ja, det här är rätt hållplatser för Skola.",
-  "Yes, this is the right stop for Work.": "Ja, det här är rätt hållplats för Arbete.",
-  "Yes, these are the right stops for Work.":
-    "Ja, det här är rätt hållplatser för Arbete.",
+  "Save only if this is the right stop for Home.":
+    "Spara bara om det här är rätt hållplats för Hem.",
+  "Save only if these are the right stops for Home.":
+    "Spara bara om det här är rätt hållplatser för Hem.",
+  "Save only if this is the right stop for School.":
+    "Spara bara om det här är rätt hållplats för Skola.",
+  "Save only if these are the right stops for School.":
+    "Spara bara om det här är rätt hållplatser för Skola.",
+  "Save only if this is the right stop for Work.":
+    "Spara bara om det här är rätt hållplats för Arbete.",
+  "Save only if these are the right stops for Work.":
+    "Spara bara om det här är rätt hållplatser för Arbete.",
 
   "Shared place": "Delad plats",
   "Only add places from people you trust. The stops show roughly where this place is, though never an address.":

@@ -69,14 +69,16 @@ export default {
   "Near you": "Nära dig",
   "Uses your location once. It isn’t saved.":
     "Använder din position en gång. Den sparas inte.",
+  "The radar shows the way to a stop as you walk.":
+    "Radarn visar vägen till en hållplats medan du går.",
   "Locating…": "Hämtar position…",
   "Update location": "Uppdatera position",
   "Getting stop locations…": "Hämtar hållplatsernas positioner…",
   "Location search is temporarily unavailable; stop search still works normally.":
     "Positionssökning är tillfälligt otillgänglig; hållplatssökning fungerar fortfarande normalt.",
-  "One-time location only": "Position används bara en gång",
-  "Accuracy ±{accuracy}": "Noggrannhet ±{accuracy}",
-  "Selected stop ≈ {distance} away": "Vald hållplats ≈ {distance} bort",
+  "Location found": "Position hittad",
+  "Location found · ±{accuracy}": "Position hittad · ±{accuracy}",
+  "{stop} is {distance} away": "{stop} ligger {distance} bort",
   "Nearest Föli stops": "Närmaste Föli-hållplatser",
   "Distances are approximate straight-line distances. “Walk there” opens an external walking route in Google Maps.":
     "Avstånden är ungefärliga fågelvägsavstånd. ”Gå dit” öppnar en extern gångrutt i Google Maps.",
@@ -92,8 +94,8 @@ export default {
   Clear: "Rensa",
   "Saved destinations": "Sparade destinationer",
   "Nearby stops for {destination}": "Hållplatser nära {destination}",
-  "Choose the best fit or switch back to pure distance.":
-    "Välj det bästa alternativet eller byt tillbaka till enbart avstånd.",
+  "Tap a stop to see when its buses leave.":
+    "Tryck på en hållplats för att se dess avgångar.",
   "Nearby stop sorting": "Sortering av närliggande hållplatser",
   "Best for {destination}": "Bäst för {destination}",
   "Checking routes…": "Kontrollerar rutter…",
@@ -106,7 +108,9 @@ export default {
   "No direct option to {destination} is shown soon":
     "Inget direktalternativ till {destination} visas inom kort",
   "Departure check unavailable": "Avgångskontroll är inte tillgänglig",
-  "Route suitability is uncertain": "Ruttens lämplighet är osäker",
+  "Can’t tell if you’ll make it in time": "Oklart om du hinner i tid",
+  "Couldn’t check where these buses go":
+    "Kunde inte kontrollera vart bussarna går",
   "Line {line}": "Linje {line}",
   "arrive about {time}": "fram cirka {time}",
   Best: "Bäst",
@@ -142,8 +146,6 @@ export default {
   "Timetable estimate": "Tidtabellsprognos",
   "Realtime uncertain": "Realtidsdata osäkra",
   Estimate: "Prognos",
-  "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
-    "Direktalternativ använder aktuella Föli-data och ungefärligt fågelvägsavstånd till påstigningshållplatsen.",
   "Checking a little farther…": "Kontrollerar lite längre bort…",
   "Checked {count} nearby stops": "Kontrollerade {count} närliggande hållplatser",
 
@@ -151,24 +153,27 @@ export default {
   "Choose another route": "Välj en annan rutt",
   "Wait for line {line}": "Vänta på linje {line}",
   "Walk to {stop}": "Gå till {stop}",
+  "You’re near {stop}": "Du är nära {stop}",
   "Stay at {stop}": "Stanna vid {stop}",
   "Stay here for line {line}.": "Stanna här och vänta på linje {line}.",
   "Walk about {distance} to {stop} for line {line}.":
     "Gå cirka {distance} till {stop} för linje {line}.",
   "You are at the transfer stop. Confirm it below before waiting for the next bus.":
     "Du är vid byteshållplatsen. Bekräfta den nedan innan du väntar på nästa buss.",
-  "When you reach the transfer stop, confirm it here. The app will not assume your physical location.":
-    "När du når byteshållplatsen, bekräfta den här. Appen antar inte din fysiska position.",
+  "When you get to the transfer stop, tap “I'm at the stop”.":
+    "När du är vid byteshållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Wait here for line {line}.": "Vänta här på linje {line}.",
   "When line {line} arrives, open the selected departure and start the Get-off alert.":
     "När linje {line} kommer, öppna den valda avgången och starta avstigningslarmet.",
   "Show line {line} departure": "Visa avgång för linje {line}",
   "To {destination}": "Till {destination}",
   "Leaves {due}": "Avgår {due}",
+  "Leaves now": "Avgår nu",
+  "Leaves in {minutes} min": "Avgår om {minutes} min",
   "About {distance} to the boarding stop.":
     "Cirka {distance} till påstigningshållplatsen.",
-  "When you reach the stop, confirm it here. The app will not assume your physical location.":
-    "När du når hållplatsen, bekräfta den här. Appen antar inte din fysiska position.",
+  "When you get to the stop, tap “I'm at the stop”.":
+    "När du är vid hållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Your selected bus is pinned first in the departure board.":
     "Din valda buss är fäst först på avgångstavlan.",
   "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
@@ -178,11 +183,11 @@ export default {
     "Din valda buss är inte längre ett tillförlitligt alternativ.",
   "Offline: this selected plan may be out of date.":
     "Offline: den valda planen kan vara inaktuell.",
-  "Live monitoring is paused while another stop is open. Return to the selected stop to resume it.":
-    "Realtidsövervakningen är pausad medan en annan hållplats är öppen. Återgå till den valda hållplatsen för att fortsätta.",
-  "Live monitoring is temporarily unavailable. The selected departure may be out of date.":
-    "Realtidsövervakningen är tillfälligt otillgänglig. Den valda avgången kan vara inaktuell.",
-  "Return to selected stop": "Återgå till vald hållplats",
+  "Your bus isn’t updated while another stop is open.":
+    "Din buss uppdateras inte medan en annan hållplats är öppen.",
+  "Can’t update your bus right now. Its time may be out of date.":
+    "Det går inte att uppdatera din buss just nu. Tiden kan vara inaktuell.",
+  "Back to {stop}": "Tillbaka till {stop}",
   "I'm at the stop": "Jag är vid hållplatsen",
   "Show selected departure": "Visa vald avgång",
   "Find another option": "Hitta ett annat alternativ",
@@ -342,8 +347,8 @@ export default {
   "Walking link unavailable offline.": "Länk till gångrutt är inte tillgänglig offline.",
   Done: "Klar",
   "e.g. Tampereentie 12 or Prisma": "t.ex. Tampereentie 12 eller Prisma",
-  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
-    "Hållplatser, platser och adresser söks på den här enheten. Ingen destinationstext lämnar enheten.",
+  "Searched on this device: nothing you type here is sent anywhere.":
+    "Sökningen görs på den här enheten: det du skriver skickas ingenstans.",
   "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
     "Offline-data från OpenStreetMap innehåller kanske inte alla adresser. Använd Åbos officiella reseplanerare för en bredare sökning.",
   "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":

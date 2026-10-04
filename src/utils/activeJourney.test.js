@@ -61,6 +61,27 @@ describe("active journey transitions", () => {
     });
   });
 
+  // "You're near" needs a fix that can tell: 20 m from a fix good only to
+  // ±300 m is no evidence of being at the stop, and neither is a fix whose
+  // accuracy is unknown.
+  test("counts as beside the stop only on a fix accurate enough to tell", () => {
+    const near = (distanceMeters, positionAccuracyM) =>
+      activeJourneyFromOption(
+        option({ distanceMeters, positionAccuracyM }),
+        destination,
+        1_000_000
+      ).nearStopAtSelection;
+
+    expect(near(8, 15)).toBe(true);
+    expect(near(30, 30)).toBe(true);
+    expect(near(8, 300)).toBe(false);
+    expect(near(8, null)).toBe(false);
+    expect(near(8, undefined)).toBe(false);
+    expect(near(45, 10)).toBe(false);
+    expect(near(Number.POSITIVE_INFINITY, 10)).toBe(false);
+    expect(near(undefined, 10)).toBe(false);
+  });
+
   test("rejects malformed journey selections", () => {
     expect(
       activeJourneyFromOption(

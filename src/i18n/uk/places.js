@@ -71,19 +71,19 @@ export default {
     "Найближча зупинка Föli за {distance}. Підійдіть ближче до місця перед збереженням.",
   "Tick at least one stop to save.": "Позначте принаймні одну зупинку для збереження.",
   "Not set": "Не налаштовано",
-  "Not at the stop? Search for it first, then choose it here.":
-    "Ви не на потрібній зупинці? Спочатку знайдіть її, а потім виберіть тут.",
+  "Not at the place now? Search for its stop at the top of the page, then tap “Use …” above.":
+    "Ви зараз не в цьому місці? Знайдіть потрібну зупинку пошуком угорі сторінки, а потім натисніть «Використати …» вище.",
   "Use my location": "Використати моє місцезнаходження",
   "Use {name}": "Використати {name}",
   "Choose stops for Home": "Виберіть зупинки для Дому",
   "Choose stops for School": "Виберіть зупинки для Школи",
   "Choose stops for Work": "Виберіть зупинки для Роботи",
-  "Tick the stops you use to get Home, and mark one as the main stop.":
-    "Позначте зупинки, якими користуєтеся, щоб дістатися Дому, і виберіть одну основною.",
-  "Tick the stops you use to get to School, and mark one as the main stop.":
-    "Позначте зупинки, якими користуєтеся, щоб дістатися до Школи, і виберіть одну основною.",
-  "Tick the stops you use to get to Work, and mark one as the main stop.":
-    "Позначте зупинки, якими користуєтеся, щоб дістатися до Роботи, і виберіть одну основною.",
+  "Tick the stops you use to get Home.":
+    "Позначте зупинки, якими користуєтеся, щоб дістатися Дому.",
+  "Tick the stops you use to get to School.":
+    "Позначте зупинки, якими користуєтеся, щоб дістатися до Школи.",
+  "Tick the stops you use to get to Work.":
+    "Позначте зупинки, якими користуєтеся, щоб дістатися до Роботи.",
   "How this works": "Як це працює",
   Cancel: "Скасувати",
   "Review the public stop you selected and confirm that it is suitable for this destination.":
@@ -111,20 +111,26 @@ export default {
     "Поширення Школи розкриває назви й номери збережених публічних зупинок, що може приблизно вказати район.",
   "Sharing Work reveals its saved public stop names and numbers, which can indicate the general area.":
     "Поширення Роботи розкриває назви й номери збережених публічних зупинок, що може приблизно вказати район.",
-  "Only public stop numbers and names are saved; your exact location is discarded.":
-    "Зберігаються лише публічні номери й назви зупинок; точне місцезнаходження відкидається.",
+  "Only the stops are saved, not your location.":
+    "Зберігаються лише зупинки, а не ваше місцезнаходження.",
   "Using the stop you selected manually": "Використовується зупинка, яку ви вибрали вручну",
   "Location accuracy ±{accuracy}": "Точність місцезнаходження ±{accuracy}",
   "Location accuracy unavailable": "Точність місцезнаходження недоступна",
   "no stop was preselected — choose and confirm an arrival stop yourself":
     "зупинку не вибрано автоматично — виберіть і підтвердьте зупинку прибуття самостійно",
   "Main stop": "Основна зупинка",
-  "Yes, this is the right stop for Home.": "Так, це правильна зупинка для Дому.",
-  "Yes, these are the right stops for Home.": "Так, це правильні зупинки для Дому.",
-  "Yes, this is the right stop for School.": "Так, це правильна зупинка для Школи.",
-  "Yes, these are the right stops for School.": "Так, це правильні зупинки для Школи.",
-  "Yes, this is the right stop for Work.": "Так, це правильна зупинка для Роботи.",
-  "Yes, these are the right stops for Work.": "Так, це правильні зупинки для Роботи.",
+  "Save only if this is the right stop for Home.":
+    "Зберігайте, лише якщо це правильна зупинка для Дому.",
+  "Save only if these are the right stops for Home.":
+    "Зберігайте, лише якщо це правильні зупинки для Дому.",
+  "Save only if this is the right stop for School.":
+    "Зберігайте, лише якщо це правильна зупинка для Школи.",
+  "Save only if these are the right stops for School.":
+    "Зберігайте, лише якщо це правильні зупинки для Школи.",
+  "Save only if this is the right stop for Work.":
+    "Зберігайте, лише якщо це правильна зупинка для Роботи.",
+  "Save only if these are the right stops for Work.":
+    "Зберігайте, лише якщо це правильні зупинки для Роботи.",
   "Shared place": "Спільне місце",
   "Only add places from people you trust. The stops show roughly where this place is, though never an address.":
     "Додавайте місця лише від людей, яким довіряєте. Зупинки приблизно показують район місця, але ніколи не адресу.",

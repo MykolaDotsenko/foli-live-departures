@@ -22,7 +22,6 @@ import {
   LANGUAGE_CODES,
   isSupportedLanguage,
   localeDefinition,
-  nextLocaleDefinition,
 } from "./locales";
 
 const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -223,7 +222,7 @@ test("follows the first language the phone lists that the app speaks", () => {
   expect(preferredLanguage([undefined, null, ""])).toBe("en");
 });
 
-test("locale registry is the source of truth for formatting, speech and switching", () => {
+test("locale registry is the source of truth for formatting, speech and the language list", () => {
   expect(LANGUAGE_CODES).toEqual(["en", "fi", "uk", "sv"]);
   expect(localeDefinition("fi")).toMatchObject({
     nativeLabel: "Suomi",
@@ -237,16 +236,11 @@ test("locale registry is the source of truth for formatting, speech and switchin
   expect(speechLocale("fi")).toBe("fi-FI");
   expect(speechLocale("uk")).toBe("uk-UA");
   expect(speechLocale("sv")).toBe("sv-FI");
-  expect(nextLocaleDefinition("en").code).toBe("fi");
-  expect(nextLocaleDefinition("fi").code).toBe("uk");
-  expect(nextLocaleDefinition("uk").code).toBe("sv");
-  expect(nextLocaleDefinition("sv").code).toBe("en");
   expect(isSupportedLanguage("en")).toBe(true);
   expect(isSupportedLanguage("uk")).toBe(true);
   expect(isSupportedLanguage("sv")).toBe(true);
   expect(isSupportedLanguage("xx")).toBe(false);
   expect(localeDefinition("xx").code).toBe("en");
-  expect(nextLocaleDefinition(/** @type {any} */ ("xx")).code).toBe("en");
 });
 
 test("switching language updates the page, remembers the choice and tells listeners", () => {

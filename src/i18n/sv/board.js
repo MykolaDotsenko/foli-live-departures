@@ -43,6 +43,9 @@ export default {
   "Save {name} to favourites": "Spara {name} som favorit",
   "Remove favourite": "Ta bort favorit",
   "Save favourite": "Spara som favorit",
+  "Saved. You’ll find it under the stop search.":
+    "Sparad. Du hittar den under hållplatssökningen.",
+  "Removed from favourites.": "Borttagen från favoriter.",
   "Updated {time}": "Uppdaterad {time}",
   "Refreshing…": "Uppdaterar…",
   Refresh: "Uppdatera",
@@ -116,8 +119,8 @@ export default {
   "Next stops": "Nästa hållplatser",
   "short|Next stops": "Hållplatser",
   "Next stops · timetable times": "Nästa hållplatser · tidtabellstider",
-  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
-    "En vanlig klocktid är en publicerad tidtabellstidpunkt. ”Cirka” är ungefärlig tid mellan tidpunkterna.",
+  "Exact times are from the timetable. “Around” means an estimate.":
+    "Exakta tider kommer från tidtabellen. ”Cirka” betyder en uppskattning.",
   "Loading planned stops…": "Laddar planerade hållplatser…",
   "Next stops are temporarily unavailable.":
     "Nästa hållplatser är tillfälligt otillgängliga.",

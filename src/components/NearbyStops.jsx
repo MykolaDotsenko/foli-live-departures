@@ -104,7 +104,12 @@ function fitStatusText(fit, destinationLabel, isBest) {
     });
   }
   if (fit.status === "unavailable") return t("Departure check unavailable");
-  return t("Route suitability is uncertain");
+  // "Route suitability is uncertain" said neither which part was unknown
+  // nor what to do: either a bus goes there and there is no telling whether
+  // the passenger reaches it in time, or its route could not be read.
+  return fit.best
+    ? t("Can’t tell if you’ll make it in time")
+    : t("Couldn’t check where these buses go");
 }
 
 function NearbyStopCard({
@@ -433,7 +438,7 @@ function NearbyStops({
     radarButtonRef.current?.focus();
   }, [radarOpen]);
 
-  const selectedStopDistance = useMemo(() => {
+  const selectedStop = useMemo(() => {
     if (!position) return null;
 
     const activeStop = stops.find(
@@ -441,10 +446,11 @@ function NearbyStops({
     );
     if (!activeStop) return null;
 
-    return distanceInMeters(position, {
+    const distance = distanceInMeters(position, {
       lat: activeStop.lat,
       lon: activeStop.lon,
     });
+    return Number.isFinite(distance) ? { stop: activeStop, distance } : null;
   }, [activeStopId, position, stops]);
 
   const locate = async () => {
@@ -577,11 +583,18 @@ function NearbyStops({
           </h2>
           {/* Until a location is found there is nothing to choose from:
               asking for "the best fit" left a passenger with a destination
-              looking for options that the button below has to fetch. */}
+              looking for options that the button below has to fetch. Once
+              found, the line says what a stop card does; "switch back to
+              pure distance" described the sorting buttons beside it. */}
+          {/* "Open stop radar" said nothing of what a radar is for; the
+              line says so as long as the button is there. */}
           <p className={styles.description}>
             {destination && position
-              ? t("Choose the best fit or switch back to pure distance.")
-              : t("Uses your location once. It isn’t saved.")}
+              ? t("Tap a stop to see when its buses leave.")
+              : t("Uses your location once. It isn’t saved.")}{" "}
+            <span id="stop-radar-hint">
+              {t("The radar shows the way to a stop as you walk.")}
+            </span>
           </p>
         </div>
 
@@ -612,6 +625,7 @@ function NearbyStops({
             onClick={radarOpen ? closeRadar : openRadar}
             aria-expanded={radarOpen}
             aria-controls="stop-radar-panel"
+            aria-describedby="stop-radar-hint"
             aria-disabled={
               !hasStopCoordinates || !liveRadarSupported ? "true" : undefined
             }
@@ -684,19 +698,22 @@ function NearbyStops({
 
       {position && !radarOpen && (
         <>
+          {/* What the fix found, in a passenger's words. "One-time location
+              only" repeated the line above the button, and "Selected stop ≈
+              <10 m away" left the passenger to work out which stop that was. */}
           <div className={styles.meta} role="status" aria-live="polite">
-            <span>{t("One-time location only")}</span>
-            {position.accuracy !== null && (
+            <span>
+              {position.accuracy !== null
+                ? t("Location found · ±{accuracy}", {
+                    accuracy: formatAccuracy(position.accuracy),
+                  })
+                : t("Location found")}
+            </span>
+            {selectedStop && (
               <span>
-                {t("Accuracy ±{accuracy}", {
-                  accuracy: formatAccuracy(position.accuracy),
-                })}
-              </span>
-            )}
-            {Number.isFinite(selectedStopDistance) && (
-              <span>
-                {t("Selected stop ≈ {distance} away", {
-                  distance: formatDistance(selectedStopDistance),
+                {t("{stop} is {distance} away", {
+                  stop: stopLabel(selectedStop.stop),
+                  distance: formatDistance(selectedStop.distance),
                 })}
               </span>
             )}
@@ -723,7 +740,15 @@ function NearbyStops({
             <JourneyOptions
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
-              onSelectJourney={onSelectJourney}
+              onSelectJourney={
+                onSelectJourney
+                  ? (option) =>
+                      onSelectJourney({
+                        ...option,
+                        positionAccuracyM: position.accuracy ?? null,
+                      })
+                  : null
+              }
               onOpenStop={onSelect}
             />
           )}

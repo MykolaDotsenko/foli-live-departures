@@ -106,10 +106,10 @@ export default function TripJourneyDetails({
       {expanded && (
         <div className={styles.panel}>
           <p className={styles.kicker}>{t("Next stops · timetable times")}</p>
+          {/* "A published timetable timepoint" is the timetable's own
+              term; a passenger needs only to know which times are exact. */}
           <p className={styles.timeLegend}>
-            {t(
-              "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints."
-            )}
+            {t("Exact times are from the timetable. “Around” means an estimate.")}
           </p>
 
           {status === "loading" && (

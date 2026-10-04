@@ -62,14 +62,16 @@ export default {
     "Дві зупинки майже однаково близько. Виберіть ту, що обслуговує ваш напрямок.",
   "Near you": "Поруч із вами",
   "Uses your location once. It isn’t saved.": "Використовує ваше місцезнаходження один раз. Воно не зберігається.",
+  "The radar shows the way to a stop as you walk.":
+    "Радар показує напрямок до зупинки, поки ви йдете.",
   "Locating…": "Визначаємо місцезнаходження…",
   "Update location": "Оновити місцезнаходження",
   "Getting stop locations…": "Завантажуємо координати зупинок…",
   "Location search is temporarily unavailable; stop search still works normally.":
     "Пошук за місцезнаходженням тимчасово недоступний; звичайний пошук зупинок працює.",
-  "One-time location only": "Місцезнаходження лише один раз",
-  "Accuracy ±{accuracy}": "Точність ±{accuracy}",
-  "Selected stop ≈ {distance} away": "Вибрана зупинка ≈ {distance} звідси",
+  "Location found": "Місцезнаходження визначено",
+  "Location found · ±{accuracy}": "Місцезнаходження визначено · ±{accuracy}",
+  "{stop} is {distance} away": "{stop} — за {distance}",
   "Nearest Föli stops": "Найближчі зупинки Föli",
   "Distances are approximate straight-line distances. “Walk there” opens an external walking route in Google Maps.":
     "Відстані приблизні й виміряні по прямій. «Прокласти пішки» відкриває зовнішній пішохідний маршрут у Google Maps.",
@@ -84,8 +86,8 @@ export default {
   Clear: "Очистити",
   "Saved destinations": "Збережені пункти призначення",
   "Nearby stops for {destination}": "Зупинки поруч для {destination}",
-  "Choose the best fit or switch back to pure distance.":
-    "Виберіть найкращий варіант або поверніться до сортування лише за відстанню.",
+  "Tap a stop to see when its buses leave.":
+    "Натисніть на зупинку, щоб побачити її відправлення.",
   "Nearby stop sorting": "Сортування зупинок поруч",
   "Best for {destination}": "Найкраще для {destination}",
   "Checking routes…": "Перевіряємо маршрути…",
@@ -97,7 +99,9 @@ export default {
   "No direct option to {destination} is shown soon":
     "Найближчим часом не видно прямого варіанта до {destination}",
   "Departure check unavailable": "Перевірка відправлень недоступна",
-  "Route suitability is uncertain": "Придатність маршруту невизначена",
+  "Can’t tell if you’ll make it in time": "Невідомо, чи встигнете",
+  "Couldn’t check where these buses go":
+    "Не вдалося перевірити, куди їдуть ці автобуси",
   "Line {line}": "Маршрут {line}",
   "arrive about {time}": "прибуття близько {time}",
   Best: "Найкраще",
@@ -131,31 +135,32 @@ export default {
   "Timetable estimate": "Оцінка за розкладом",
   "Realtime uncertain": "Актуальні дані невизначені",
   Estimate: "Оцінка",
-  "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
-    "Прямі варіанти використовують поточні дані Föli та приблизну відстань по прямій до зупинки посадки.",
   "Checking a little farther…": "Перевіряємо трохи далі…",
   "Checked {count} nearby stops": "Перевірено {count} зупинок поруч",
   "Active journey": "Активна поїздка",
   "Choose another route": "Вибрати інший маршрут",
   "Wait for line {line}": "Чекайте маршрут {line}",
   "Walk to {stop}": "Ідіть до {stop}",
+  "You’re near {stop}": "Ви біля зупинки {stop}",
   "Stay at {stop}": "Залишайтеся на {stop}",
   "Stay here for line {line}.": "Залишайтеся тут і чекайте маршрут {line}.",
   "Walk about {distance} to {stop} for line {line}.":
     "Пройдіть близько {distance} до {stop} для маршруту {line}.",
   "You are at the transfer stop. Confirm it below before waiting for the next bus.":
     "Ви на зупинці пересадки. Підтвердьте це нижче перед очікуванням наступного автобуса.",
-  "When you reach the transfer stop, confirm it here. The app will not assume your physical location.":
-    "Коли дістанетеся зупинки пересадки, підтвердьте це тут. Застосунок не припускатиме ваше фізичне місцезнаходження.",
+  "When you get to the transfer stop, tap “I'm at the stop”.":
+    "Коли дійдете до зупинки пересадки, натисніть «Я на зупинці».",
   "Wait here for line {line}.": "Чекайте тут маршрут {line}.",
   "When line {line} arrives, open the selected departure and start the Get-off alert.":
     "Коли прибуде маршрут {line}, відкрийте вибране відправлення й увімкніть сповіщення про вихід.",
   "Show line {line} departure": "Показати відправлення маршруту {line}",
   "To {destination}": "До {destination}",
   "Leaves {due}": "Відправлення {due}",
+  "Leaves now": "Відправляється зараз",
+  "Leaves in {minutes} min": "Відправлення через {minutes} хв",
   "About {distance} to the boarding stop.": "Близько {distance} до зупинки посадки.",
-  "When you reach the stop, confirm it here. The app will not assume your physical location.":
-    "Коли дістанетеся зупинки, підтвердьте це тут. Застосунок не припускатиме ваше фізичне місцезнаходження.",
+  "When you get to the stop, tap “I'm at the stop”.":
+    "Коли дійдете до зупинки, натисніть «Я на зупинці».",
   "Your selected bus is pinned first in the departure board.":
     "Вибраний автобус закріплено першим на табло відправлень.",
   "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
@@ -163,11 +168,11 @@ export default {
   "Your selected bus was cancelled.": "Вибраний автобус скасовано.",
   "Your selected bus is no longer a reliable option.": "Вибраний автобус більше не є надійним варіантом.",
   "Offline: this selected plan may be out of date.": "Без мережі: вибраний план може бути застарілим.",
-  "Live monitoring is paused while another stop is open. Return to the selected stop to resume it.":
-    "Актуальний моніторинг призупинено, поки відкрита інша зупинка. Поверніться до вибраної зупинки, щоб продовжити.",
-  "Live monitoring is temporarily unavailable. The selected departure may be out of date.":
-    "Актуальний моніторинг тимчасово недоступний. Дані вибраного відправлення можуть бути застарілими.",
-  "Return to selected stop": "Повернутися до вибраної зупинки",
+  "Your bus isn’t updated while another stop is open.":
+    "Дані вашого автобуса не оновлюються, поки відкрита інша зупинка.",
+  "Can’t update your bus right now. Its time may be out of date.":
+    "Зараз не вдається оновити дані вашого автобуса. Час може бути неточним.",
+  "Back to {stop}": "Назад до зупинки {stop}",
   "I'm at the stop": "Я на зупинці",
   "Show selected departure": "Показати вибране відправлення",
   "Find another option": "Знайти інший варіант",
@@ -320,8 +325,8 @@ export default {
   "Walking link unavailable offline.": "Посилання на пішохідний маршрут недоступне без мережі.",
   Done: "Готово",
   "e.g. Tampereentie 12 or Prisma": "напр. Tampereentie 12 або Prisma",
-  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
-    "Зупинки, місця й адреси шукаються на цьому пристрої. Текст пункту призначення не залишає пристрій.",
+  "Searched on this device: nothing you type here is sent anywhere.":
+    "Пошук відбувається на цьому пристрої: те, що ви вводите, нікуди не надсилається.",
   "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
     "Офлайн-дані OpenStreetMap можуть містити не всі адреси. Для ширшого пошуку скористайтеся офіційним планувальником маршрутів Turku.",
   "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":

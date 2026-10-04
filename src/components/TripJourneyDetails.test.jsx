@@ -63,7 +63,7 @@ test("loads the planned sequence only after the user opens Next stops", async ()
   expect(mocks.fetchTripStopTimes).toHaveBeenCalledTimes(1);
   expect(
     screen.getByText(
-      "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints."
+      "Exact times are from the timetable. “Around” means an estimate."
     )
   ).toBeInTheDocument();
   expect(screen.getByText("Puistokatu")).toBeInTheDocument();

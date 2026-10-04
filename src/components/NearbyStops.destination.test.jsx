@@ -93,7 +93,7 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     screen.getByText("Uses your location once. It isn’t saved.")
   ).toBeInTheDocument();
   expect(
-    screen.queryByText("Choose the best fit or switch back to pure distance.")
+    screen.queryByText("Tap a stop to see when its buses leave.")
   ).not.toBeInTheDocument();
 
   fireEvent.click(
@@ -104,7 +104,7 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     name: "Nearby Föli stops for Home stop",
   });
   expect(
-    screen.getByText("Choose the best fit or switch back to pure distance.")
+    screen.getByText("Tap a stop to see when its buses leave.")
   ).toBeInTheDocument();
 
   await waitFor(() => {
@@ -123,4 +123,115 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
   const nearestOrder = within(group).getAllByRole("button");
   expect(nearestOrder[0]).toHaveAccessibleName(/Closer wrong side, stop 100/i);
   expect(nearestOrder).toHaveLength(3);
+});
+
+// "Route suitability is uncertain" said neither what was unknown nor what to
+// do about it.
+test("says which part of an uncertain stop is unknown", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": { status: "uncertain", best: null },
+      "200": {
+        status: "uncertain",
+        best: {
+          lineRef: "18",
+          departureAt: Math.floor(Date.now() / 1000) + 600,
+          destinationArrivalAt: Math.floor(Date.now() / 1000) + 1_800,
+        },
+      },
+      "300": { status: "no-direct", best: null },
+    },
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((success) =>
+        success({
+          coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 20 },
+        })
+      ),
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={() => {}}
+    />
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+
+  expect(
+    await screen.findByText("Couldn’t check where these buses go")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Can’t tell if you’ll make it in time")
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/suitability/i)).not.toBeInTheDocument();
+});
+
+// "You're near" on the chosen journey needs to know how good the fix was:
+// the option carries the accuracy its distance was measured with, and the
+// radar keeps saying what it is for once the results are in.
+test("a chosen option carries the accuracy of the fix it was measured from", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: null,
+        departures: [
+          {
+            tripRef: "trip-1",
+            lineRef: "18",
+            destinationStopId: "900",
+            departureAt: now + 600,
+            destinationArrivalAt: now + 1_800,
+            catchability: "comfortable",
+            liveState: "live",
+          },
+        ],
+      },
+    },
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((success) =>
+        success({
+          coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 20 },
+        })
+      ),
+    },
+  });
+  const onSelectJourney = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={() => {}}
+      onSelectJourney={onSelectJourney}
+    />
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+
+  const options = await screen.findByRole("region", {
+    name: "Best ways to Home stop",
+  });
+  fireEvent.click(within(options).getAllByRole("button")[0]);
+  expect(onSelectJourney).toHaveBeenCalledWith(
+    expect.objectContaining({ stopId: "100", positionAccuracyM: 20 })
+  );
+
+  expect(
+    screen.getByRole("button", { name: "Open stop radar" })
+  ).toHaveAccessibleDescription("The radar shows the way to a stop as you walk.");
 });

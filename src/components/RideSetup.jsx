@@ -601,10 +601,13 @@ export default function RideSetup({
               >
                 {t("Start get-off alert")}
               </button>
+              {/* Greyed out with no word of why, the button read as broken:
+                  until a stop is chosen, the line under it says so, short
+                  enough not to grow the bar pinned to a phone's bottom. */}
               <span className={styles.departureContext}>
                 {chosenStop
                   ? `${t("Get off at {name}", { name: optionName(chosenStop) })} · `
-                  : ""}
+                  : `${t("Choose your stop first")} · `}
                 {departureContext(arrival)}
               </span>
             </div>

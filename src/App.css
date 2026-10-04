@@ -184,11 +184,38 @@ input:focus-visible,
   cursor: pointer;
 }
 
-.language-switch::after,
 .theme-switch::after {
   position: absolute;
   inset: -10px -6px;
   content: "";
+}
+
+.language-switch-icon {
+  width: 1.05em;
+  height: 1.05em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4px;
+}
+
+.language-switch-chevron::before {
+  content: "▾";
+  font-size: 0.85em;
+}
+
+/* The phone's own language picker, unseen, over the whole pill and the same
+   44px-equivalent target as the other pills. */
+.language-switch select {
+  position: absolute;
+  top: -10px;
+  left: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 20px);
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  /* Below 16px, iOS zooms the page into a focused select. */
+  font-size: 16px;
 }
 
 .theme-switch-icon {
@@ -210,7 +237,7 @@ input:focus-visible,
   border-color: #7fb0b6;
 }
 
-.language-switch:focus-visible,
+.language-switch:has(select:focus-visible),
 .theme-switch:focus-visible {
   outline: 3px solid #007985;
   outline-offset: 2px;
@@ -645,7 +672,7 @@ input:focus-visible,
     background: var(--dm-raised);
   }
 
-  :root[data-theme="dark"] .language-switch:focus-visible,
+  :root[data-theme="dark"] .language-switch:has(select:focus-visible),
   :root[data-theme="dark"] .theme-switch:focus-visible {
     outline-color: var(--dm-focus);
   }

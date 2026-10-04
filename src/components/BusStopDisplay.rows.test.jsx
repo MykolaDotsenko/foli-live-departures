@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -368,6 +368,44 @@ test("the favourite button keeps one name and says whether it is saved", () => {
       pressed: true,
     })
   ).toBe(favourite);
+});
+
+// Ticking the star filled it and said nothing: a favourite is listed under
+// the stop search, but never beside its own board.
+test("ticking the star says it worked and where to find the stop", () => {
+  vi.useFakeTimers();
+  try {
+    let saved = false;
+    const props = () => ({
+      ...board([departure()]).props,
+      isFavorite: saved,
+      onToggleFavorite: () => {
+        saved = !saved;
+      },
+    });
+    const { rerender } = render(<BusStopDisplay {...props()} />);
+    const star = screen.getByRole("button", {
+      name: "Save Kauppatori to favourites",
+    });
+
+    fireEvent.click(star);
+    rerender(<BusStopDisplay {...props()} />);
+    const said = screen.getAllByText("Saved. You’ll find it under the stop search.");
+    // Seen once, and heard from a region that was already in the page.
+    expect(said).toHaveLength(2);
+    expect(said.filter((node) => node.getAttribute("role") === "status")).toHaveLength(1);
+
+    fireEvent.click(star);
+    rerender(<BusStopDisplay {...props()} />);
+    expect(screen.getAllByText("Removed from favourites.")).toHaveLength(2);
+
+    act(() => {
+      vi.advanceTimersByTime(8000);
+    });
+    expect(screen.queryByText("Removed from favourites.")).not.toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 // A label on a plain div is not read; as a group its name is.

@@ -45,6 +45,9 @@ export default {
   "Save {name} to favourites": "Lisää suosikkeihin: {name}",
   "Remove favourite": "Poista suosikki",
   "Save favourite": "Lisää suosikiksi",
+  "Saved. You’ll find it under the stop search.":
+    "Tallennettu. Löydät sen pysäkkihaun alta.",
+  "Removed from favourites.": "Poistettu suosikeista.",
   "Updated {time}": "Päivitetty klo {time}",
   "Refreshing…": "Päivitetään…",
   Refresh: "Päivitä",
@@ -121,8 +124,8 @@ export default {
   // A narrow phone's labels, so a row's two actions share one line.
   "short|Next stops": "Pysäkit",
   "Next stops · timetable times": "Seuraavat pysäkit · aikataulun ajat",
-  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
-    "Pelkkä kellonaika on julkaistu aikataulun aikapiste. ”Noin” tarkoittaa aikapisteiden välistä likimääräistä aikaa.",
+  "Exact times are from the timetable. “Around” means an estimate.":
+    "Tarkat ajat ovat aikataulusta. ”Noin” tarkoittaa arviota.",
   "Loading planned stops…": "Ladataan pysäkkejä…",
   "Next stops are temporarily unavailable.":
     "Seuraavat pysäkit eivät ole juuri nyt saatavilla.",

@@ -236,9 +236,9 @@ test("does not present a missing final walk as zero metres", () => {
   );
 
   expect(screen.queryByText(/final walk/i)).not.toBeInTheDocument();
+  // No walk to explain, so no note: the stop list's own distance note
+  // follows the options.
   expect(
-    screen.getByText(
-      "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
-    )
-  ).toBeInTheDocument();
+    screen.queryByText(/real walking route can be longer/i)
+  ).not.toBeInTheDocument();
 });

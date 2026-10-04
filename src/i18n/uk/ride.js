@@ -182,6 +182,7 @@ export default {
   "We cannot work out a reliable plan for that stop on this trip. Try another stop, or start the ride from a different departure.":
     "Не вдається скласти надійний план для цієї зупинки на цьому рейсі. Спробуйте іншу зупинку або почніть поїздку з іншого відправлення.",
   "Start get-off alert": "Увімкнути сповіщення про вихід",
+  "Choose your stop first": "Спершу виберіть зупинку",
   "Switch get-off alert to line {line}? Your current alert will end.":
     "Перемкнути сповіщення про вихід на маршрут {line}? Поточне сповіщення завершиться.",
   "Switch get-off alert to this trip? Your current alert will end.":

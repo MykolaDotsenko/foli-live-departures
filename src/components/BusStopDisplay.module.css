@@ -49,6 +49,13 @@
   font-size: 0.8rem;
 }
 
+.favoriteNote {
+  margin: 4px 0 0;
+  color: #00656f;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
 .favoriteButton,
 .refreshButton,
 .retryButton {
@@ -80,6 +87,35 @@
   min-height: 40px;
   padding: 0 13px;
   border-radius: 10px;
+}
+
+/* An icon, square like the star beside the stop's name. */
+.refreshButton {
+  display: grid;
+  width: 40px;
+  padding: 0;
+  place-items: center;
+  color: #007985;
+}
+
+.refreshButton svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.refreshButton[aria-disabled="true"] svg {
+  animation: refresh-spin 0.9s linear infinite;
+}
+
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .refreshButton:hover:not([aria-disabled="true"]),
@@ -537,12 +573,6 @@
 }
 
 @media (max-width: 430px) {
-  .refreshButton {
-    min-height: 38px;
-    padding-inline: 10px;
-    font-size: 0.76rem;
-  }
-
   .table th {
     font-size: 0.7rem;
   }
@@ -567,6 +597,10 @@
   .refreshButton,
   .retryButton {
     min-height: 44px;
+  }
+
+  .refreshButton {
+    width: 44px;
   }
 
   .stopMeta,
@@ -660,8 +694,16 @@
     grid-area: filter;
   }
 
+  /* A row of its own below the rest, only while it is shown. */
+  .header[data-filterable="true"] .favoriteNote {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  /* Under the end of "Filter lines", where the eye looks for it. */
   .header[data-filterable="true"] .refreshButton {
     grid-area: refresh;
+    justify-self: end;
   }
 
   /* Thumb-sized on a phone, like every other control on the board. */
@@ -774,11 +816,10 @@
       "title title"
       "meta meta"
       "filter refresh";
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
-  .header[data-filterable="true"] .filterButton,
-  .header[data-filterable="true"] .refreshButton {
+  .header[data-filterable="true"] .filterButton {
     padding-inline: 8px;
   }
 
@@ -947,7 +988,9 @@
     color: var(--dm-soft);
   }
 
-  :root[data-theme="dark"] .favoriteButton {
+  :root[data-theme="dark"] .favoriteButton,
+  :root[data-theme="dark"] .refreshButton,
+  :root[data-theme="dark"] .favoriteNote {
     color: var(--dm-accent);
   }
 

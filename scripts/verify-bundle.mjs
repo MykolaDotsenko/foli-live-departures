@@ -33,8 +33,17 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // same three-build sample. CSS module names are allocated in processing
 // order, which moves the gzip total by about ±40 bytes from build to build,
 // so the reviewed cap is 181,300 bytes. Raw bytes stay inside 640,000.
-const MAX_SHIPPED_JS_CSS_BYTES = 640_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 181_300;
+//
+// The passenger-clarity pass (2026-10-04: a language picker listing every
+// language in its own name instead of a button cycling through them, which
+// keeps the latest choice while a pack loads, a confirmation after ★, a
+// compact refresh icon, "You're near" at the stop on an accurate fix,
+// plain-language copy and hints by the stop radar and the get-off alert's
+// Start) measures 641,720–641,768 raw and 181,831–181,905 gzip bytes; master
+// measured 639,293–639,429 raw and 181,017–181,053 gzip in the same session.
+// The reviewed caps are 642,500 raw and 182,100 gzip bytes.
+const MAX_SHIPPED_JS_CSS_BYTES = 642_500;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 182_100;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 

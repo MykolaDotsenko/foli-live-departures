@@ -207,6 +207,7 @@ export default {
   "We cannot work out a reliable plan for that stop on this trip. Try another stop, or start the ride from a different departure.":
     "Emme pysty laatimaan luotettavaa suunnitelmaa tälle pysäkille tällä vuorolla. Kokeile toista pysäkkiä tai aloita matka toisesta lähdöstä.",
   "Start get-off alert": "Käynnistä pysäkkihälytys",
+  "Choose your stop first": "Valitse ensin pysäkki",
   "Switch get-off alert to line {line}? Your current alert will end.":
     "Vaihdetaanko pysäkkihälytys linjalle {line}? Nykyinen hälytys päättyy.",
   "Switch get-off alert to this trip? Your current alert will end.":
