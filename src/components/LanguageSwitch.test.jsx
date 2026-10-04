@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test } from "vitest";
 import LanguageSwitch from "./LanguageSwitch";
 import BusStopDisplay from "./BusStopDisplay";
@@ -12,48 +12,70 @@ afterEach(() => {
   localStorage.clear();
 });
 
-test("cycles every enabled language in its own words and persists each choice", async () => {
+// A button naming only the next language made a Ukrainian on an English
+// phone go through Finnish, and never said which languages there were.
+test("lists every language in its own name and switches to any in one step", async () => {
   render(<LanguageSwitch />);
 
-  const toFinnish = screen.getByRole("button", { name: "Suomeksi" });
-  expect(toFinnish).toHaveAttribute("lang", "fi");
-  fireEvent.click(toFinnish);
+  const picker = screen.getByRole("combobox", { name: "Language" });
+  expect(picker).toHaveValue("en");
+  const options = within(picker).getAllByRole("option");
+  expect(options.map((option) => option.textContent)).toEqual([
+    "English",
+    "Suomi",
+    "Українська",
+    "Svenska",
+  ]);
+  expect(options.map((option) => option.getAttribute("lang"))).toEqual([
+    "en",
+    "fi",
+    "uk",
+    "sv",
+  ]);
 
-  await waitFor(() => {
-    expect(document.documentElement.lang).toBe("fi");
-    expect(localStorage.getItem("foli-language-v1")).toBe("fi");
-    expect(screen.getByRole("button", { name: "Українською" })).not.toBeDisabled();
-  });
-
-  const toUkrainian = screen.getByRole("button", { name: "Українською" });
-  expect(toUkrainian).toHaveAttribute("lang", "uk");
-  fireEvent.click(toUkrainian);
-
+  // Straight to Ukrainian, not through Finnish.
+  fireEvent.change(picker, { target: { value: "uk" } });
   await waitFor(() => {
     expect(document.documentElement.lang).toBe("uk");
     expect(localStorage.getItem("foli-language-v1")).toBe("uk");
-    expect(screen.getByRole("button", { name: "På svenska" })).not.toBeDisabled();
   });
+  expect(screen.getByRole("combobox", { name: "Мова" })).toHaveValue("uk");
 
-  const toSwedish = screen.getByRole("button", { name: "På svenska" });
-  expect(toSwedish).toHaveAttribute("lang", "sv");
-  fireEvent.click(toSwedish);
-
+  fireEvent.change(screen.getByRole("combobox", { name: "Мова" }), {
+    target: { value: "sv" },
+  });
   await waitFor(() => {
     expect(document.documentElement.lang).toBe("sv");
     expect(localStorage.getItem("foli-language-v1")).toBe("sv");
-    expect(screen.getByRole("button", { name: "In English" })).not.toBeDisabled();
   });
 
-  const toEnglish = screen.getByRole("button", { name: "In English" });
-  expect(toEnglish).toHaveAttribute("lang", "en");
-  fireEvent.click(toEnglish);
+  fireEvent.change(screen.getByRole("combobox", { name: "Språk" }), {
+    target: { value: "fi" },
+  });
+  await waitFor(() => {
+    expect(document.documentElement.lang).toBe("fi");
+    expect(localStorage.getItem("foli-language-v1")).toBe("fi");
+  });
+  expect(screen.getByRole("combobox", { name: "Kieli" })).toHaveValue("fi");
 
+  fireEvent.change(screen.getByRole("combobox", { name: "Kieli" }), {
+    target: { value: "en" },
+  });
   await waitFor(() => {
     expect(document.documentElement.lang).toBe("en");
     expect(localStorage.getItem("foli-language-v1")).toBe("en");
-    expect(screen.getByRole("button", { name: "Suomeksi" })).not.toBeDisabled();
   });
+});
+
+// The pill shows the language in use in its own name; the select over it
+// is what a screen reader and the phone's picker use.
+test("shows the language in use on the pill", async () => {
+  resetLanguageForTests("fi");
+  const { container } = render(<LanguageSwitch />);
+
+  const label = container.querySelector('.language-switch > span[lang="fi"]');
+  expect(label).toHaveTextContent("Suomi");
+  expect(label).toHaveAttribute("aria-hidden", "true");
 });
 
 const NOW = Math.floor(Date.now() / 1000);
@@ -115,7 +137,9 @@ test("a board already on screen follows a switch of language", () => {
   );
   expect(screen.getByText("No upcoming departures.")).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Suomeksi" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+    target: { value: "fi" },
+  });
   rerender(<LanguageSwitch />);
 
   expect(screen.getByText("Ei tulevia lähtöjä.")).toBeInTheDocument();
@@ -130,13 +154,16 @@ test("the search form, and an error already shown in it, follow the language", (
       onSubmit={() => {}}
     />
   );
-  fireEvent.change(screen.getByRole("combobox"), { target: { value: "zzz" } });
-  fireEvent.submit(screen.getByRole("combobox").closest("form"));
+  const search = screen.getByRole("combobox", { name: "Find your stop" });
+  fireEvent.change(search, { target: { value: "zzz" } });
+  fireEvent.submit(search.closest("form"));
   expect(
     screen.getByText("Choose a stop from the suggestions or enter its stop number.")
   ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Suomeksi" }));
+  fireEvent.change(screen.getByRole("combobox", { name: "Language" }), {
+    target: { value: "fi" },
+  });
 
   expect(screen.getByLabelText("Etsi pysäkki")).toHaveAttribute(
     "placeholder",
@@ -268,9 +295,7 @@ test("follows a language change made in another tab without rewriting storage", 
 
   await waitFor(() => {
     expect(document.documentElement.lang).toBe("fi");
-    expect(
-      screen.getByRole("button", { name: "Українською" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Kieli" })).toHaveValue("fi");
   });
   expect(localStorage.getItem("foli-language-v1")).toBe("fi");
 });
@@ -285,6 +310,5 @@ test("applies an imported language immediately when this origin had no explicit 
   });
 
   expect(document.documentElement.lang).toBe("fi");
-  const nextLanguage = screen.getByRole("button", { name: "Українською" });
-  expect(nextLanguage).toHaveAttribute("lang", "uk");
+  expect(screen.getByRole("combobox", { name: "Kieli" })).toHaveValue("fi");
 });

@@ -95,7 +95,7 @@ These came out of the verification round and are not yet re-scored.
 
 **Places, offline and first run**
 - One location button on a first visit, not two a thumb apart.
-- My Places says its promise once, and "Not at the stop?" once, under all three places.
+- My Places says its promise once, and "Not at the place now?" once, under all three places.
 - The offline notice is two lines, and the Home card does not repeat it.
 - The printed card labels backup stops in Finnish and English.
 - Developer words are gone from the copy: "coordinates", "catalogue", "realtime feed", "stop sequence".

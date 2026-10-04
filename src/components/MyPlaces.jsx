@@ -290,10 +290,14 @@ function MyPlaces({
       )}
 
       {/* Said once, under all three: in each empty card it repeated the
-          heading's promise three times over. */}
+          heading's promise three times over. "Use my location" finds the
+          stops near the place, so what matters is being at the place, not
+          at its stop; and the way round it names the button to press. */}
       {PLACE_PRESETS.some((preset) => !placesById.get(preset.id)) && (
         <p className={styles.meta}>
-          {t("Not at the stop? Search for it first, then choose it here.")}
+          {t(
+            "Not at the place now? Search for its stop at the top of the page, then tap “Use …” above."
+          )}
         </p>
       )}
 

@@ -195,6 +195,7 @@ export default {
   "We cannot work out a reliable plan for that stop on this trip. Try another stop, or start the ride from a different departure.":
     "Vi kan inte skapa en tillförlitlig plan för den hållplatsen på den här turen. Prova en annan hållplats eller starta resan från en annan avgång.",
   "Start get-off alert": "Starta avstigningslarm",
+  "Choose your stop first": "Välj hållplats först",
   "Switch get-off alert to line {line}? Your current alert will end.":
     "Byta avstigningslarm till linje {line}? Ditt nuvarande larm avslutas.",
   "Switch get-off alert to this trip? Your current alert will end.":

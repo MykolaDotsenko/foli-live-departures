@@ -1,7 +1,28 @@
+import { useEffect, useState } from "react";
 import styles from "../BusStopDisplay.module.css";
 import { t } from "../../i18n";
 import { formatClock, formatElapsedAge } from "../../utils/time";
 import { LineFilterButton } from "./LineFilter";
+
+// How long the word after ★ stays.
+const FAVORITE_NOTE_MS = 8000;
+
+// Ticking ★ filled the star and nothing else: a favourite is listed under
+// the stop search, but never while its own board is open, so nothing on
+// screen said it had worked or where to find it.
+function favoriteNoteText(note) {
+  if (note === "saved") return t("Saved. You’ll find it under the stop search.");
+  if (note === "removed") return t("Removed from favourites.");
+  return "";
+}
+
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M16 10a6 6 0 1 1-1.8-4.3M16 3.5v3.2h-3.2" />
+    </svg>
+  );
+}
 
 // The top of the board: which stop this is, whether it is saved, how old
 // its times are, and the controls that change what the board shows.
@@ -27,6 +48,19 @@ function BoardHeader({
   unknownStop = false,
   showRefresh = true,
 }) {
+  const [favoriteNote, setFavoriteNote] = useState({ stopId: "", note: "" });
+  const shownNote =
+    favoriteNote.stopId === stopId ? favoriteNoteText(favoriteNote.note) : "";
+
+  useEffect(() => {
+    if (!favoriteNote.note) return undefined;
+    const timer = globalThis.setTimeout(
+      () => setFavoriteNote({ stopId: "", note: "" }),
+      FAVORITE_NOTE_MS
+    );
+    return () => globalThis.clearTimeout(timer);
+  }, [favoriteNote]);
+
   return (
     <header
       className={styles.header}
@@ -53,7 +87,13 @@ function BoardHeader({
             <button
               type="button"
               className={styles.favoriteButton}
-              onClick={onToggleFavorite}
+              onClick={() => {
+                onToggleFavorite?.();
+                setFavoriteNote({
+                  stopId,
+                  note: isFavorite ? "removed" : "saved",
+                });
+              }}
               // One name, and pressed says whether it is saved. A name that
               // changed with the state as well read "Remove Kauppatori from
               // favourites, pressed", which says the opposite of itself.
@@ -77,6 +117,17 @@ function BoardHeader({
             .filter(Boolean)
             .join(" · ")}
         </p>
+        {/* Heard from a region always in the page, so it is announced: a
+            live region added at that moment often is not. Seen only while
+            there is something to say, so an empty line takes no room. */}
+        <p className={styles.srOnly} role="status">
+          {shownNote}
+        </p>
+        {shownNote && (
+          <p className={styles.favoriteNote} aria-hidden="true">
+            {shownNote}
+          </p>
+        )}
       </div>
 
       {/* Beside the stop's name, not in a row of its own: on an iPhone
@@ -93,6 +144,9 @@ function BoardHeader({
         {/* Busy rather than disabled: a disabled button drops keyboard
             focus to the page, and this one is busy every half minute. */}
         {/* A number Föli does not have gets nothing new from asking again. */}
+        {/* An icon: the board refreshes itself every half minute, and a
+            "Refresh" button as large as "Filter lines" took half the
+            header for something rarely needed. */}
         {!unknownStop && showRefresh && (
           <button
             type="button"
@@ -101,8 +155,10 @@ function BoardHeader({
               if (!loading && !refreshing) onRefresh?.();
             }}
             aria-disabled={loading || refreshing ? "true" : undefined}
+            aria-label={refreshing ? t("Refreshing…") : t("Refresh")}
+            title={refreshing ? t("Refreshing…") : t("Refresh")}
           >
-            {refreshing ? t("Refreshing…") : t("Refresh")}
+            <RefreshIcon />
           </button>
         )}
       </div>

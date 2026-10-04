@@ -817,9 +817,10 @@ export default function JourneySearch({
         ) : (
           <>
             <div className={styles.handoff}>
+              {/* One promise, once: two sentences said the same thing. */}
               <p className={styles.privacyNote}>
                 {t(
-                  "Stops, places and addresses are searched on this device. No destination text leaves this device."
+                  "Searched on this device: nothing you type here is sent anywhere."
                 )}
               </p>
               {online && (

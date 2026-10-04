@@ -2,6 +2,7 @@
 import { expect, test } from "./support/test.js";
 import { seedHome } from "./support/places.js";
 import { mockFoli } from "./support/foli.js";
+import { chooseLanguage } from "./support/language.js";
 
 test("production PWA reopens offline with My Places and driver help", async ({
   page,
@@ -199,10 +200,7 @@ test("production PWA reopens offline in persisted Ukrainian", async ({
   await page.goto("/?stop=164");
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Suomeksi" }).click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "fi");
-  await page.getByRole("button", { name: "Українською" }).click();
-  await expect(page.locator("html")).toHaveAttribute("lang", "uk");
+  await chooseLanguage(page, "uk");
   await expect(
     page.getByRole("columnheader", { name: "Відправлення" })
   ).toBeVisible();
@@ -228,7 +226,7 @@ test("production PWA reopens offline in persisted Ukrainian", async ({
   await expect(
     page.getByRole("columnheader", { name: "Відправлення" })
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "På svenska" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Мова" })).toHaveValue("uk");
   await expect
     .poll(() =>
       page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))
@@ -247,11 +245,7 @@ test("production PWA reopens offline in persisted Swedish", async ({
   await page.goto("/?stop=164");
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Suomeksi" }).click();
-  await page.getByRole("button", { name: "Українською" }).click();
-  await page.getByRole("button", { name: "På svenska" }).click();
-
-  await expect(page.locator("html")).toHaveAttribute("lang", "sv");
+  await chooseLanguage(page, "sv");
   await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
   await expect
     .poll(() =>
@@ -273,7 +267,7 @@ test("production PWA reopens offline in persisted Swedish", async ({
 
   await expect(page.locator("html")).toHaveAttribute("lang", "sv");
   await expect(page.getByRole("columnheader", { name: "Avgår" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "In English" })).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Språk" })).toHaveValue("sv");
   await expect
     .poll(() =>
       page.evaluate(() => globalThis.localStorage.getItem("foli-language-v1"))

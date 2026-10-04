@@ -62,7 +62,9 @@ test("requests location only after user action and selects a clear nearest stop"
   await waitFor(() => expect(onSelect).toHaveBeenCalledWith("164"));
   expect(getCurrentPosition).toHaveBeenCalledTimes(1);
   expect(screen.getByText("Nearest")).toBeInTheDocument();
-  expect(screen.getByText(/Accuracy ±20 m/)).toBeInTheDocument();
+  expect(screen.getByText("Location found · ±20 m")).toBeInTheDocument();
+  // The distance names the stop it is to: the one open on the page.
+  expect(screen.getByText(/^Turun linna is .+ away$/)).toBeInTheDocument();
   expect(
     screen.getByText(/external walking route in Google Maps/i)
   ).toBeInTheDocument();
@@ -559,16 +561,16 @@ test("stop radar seeds Nearby once instead of streaming every GPS fix into plann
   // StopRadar itself consumes the second fix asynchronously through its hook
   // state, while the parent Nearby snapshot deliberately remains the first
   // fix, so planning is not restarted by every step. Its stale distances
-  // are hidden meanwhile: "Selected stop ≈ 440 m away" stood under a radar
+  // are hidden meanwhile: "Kauppatori is 440 m away" stood under a radar
   // showing 40 m. 25 m is rounded by formatAccuracy() to the passenger-
   // facing 30 m bucket.
   await screen.findByText(/GPS accuracy ±30 m/);
-  expect(screen.queryByText(/^Accuracy ±/)).not.toBeInTheDocument();
-  expect(screen.queryByText("One-time location only")).not.toBeInTheDocument();
+  expect(screen.queryByText(/^Location found/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/ is .+ away$/)).not.toBeInTheDocument();
 
   // Closed, Nearby comes back from where the radar last was.
   fireEvent.click(screen.getByRole("button", { name: "Close radar" }));
-  expect(await screen.findByText(/^Accuracy ±30 m$/)).toBeInTheDocument();
+  expect(await screen.findByText("Location found · ±30 m")).toBeInTheDocument();
 });
 
 test("the radar's Open target stop goes to the page's own stop opener", async () => {

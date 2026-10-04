@@ -223,19 +223,21 @@ export default function JourneyOptions({
         ))}
       </div>
 
-      <p className={styles.note}>
-        {recovery
-          ? t(
-              "These options start from the transfer area. Your journey changes only after you choose one."
-            )
-          : options.some((option) => hasFinalWalk(option.departure))
+      {/* Only what changes how to read the cards. A note that the options
+          used "current Föli data and approximate straight-line distance"
+          repeated the distance note under the stop list below them. */}
+      {(recovery ||
+        options.some((option) => hasFinalWalk(option.departure))) && (
+        <p className={styles.note}>
+          {recovery
             ? t(
-                "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer."
+                "These options start from the transfer area. Your journey changes only after you choose one."
               )
             : t(
-                "Direct options use current Föli data and approximate straight-line distance to the boarding stop."
+                "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer."
               )}
-      </p>
+        </p>
+      )}
     </section>
   );
 }

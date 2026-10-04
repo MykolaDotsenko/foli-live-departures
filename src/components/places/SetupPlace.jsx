@@ -86,9 +86,7 @@ export default function SetupPlace({
         </p>
       </details>
       <p className={styles.privacy}>
-        {t(
-          "Only public stop numbers and names are saved; your exact location is discarded."
-        )}
+        {t("Only the stops are saved, not your location.")}
       </p>
 
       <p className={styles.meta}>
@@ -153,9 +151,9 @@ export default function SetupPlace({
         })}
       </div>
 
-      {/* Save is the explicit confirmation. Keeping the sentence visible
-          preserves the safety cue without forcing a second checkbox for a
-          decision the passenger has already made. */}
+      {/* Save is the explicit confirmation. The sentence says so: written
+          as the passenger's own "Yes, this is the right stop", in a box,
+          it looked like something to tick or press. */}
       {selectedStops.length > 0 && (
         <p className={styles.confirmSafe}>{confirmationLabel}</p>
       )}

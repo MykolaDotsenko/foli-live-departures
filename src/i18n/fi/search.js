@@ -72,14 +72,16 @@ export default {
   "Near you": "Lähelläsi",
   "Uses your location once. It isn’t saved.":
     "Käyttää sijaintiasi kerran. Sitä ei tallenneta.",
+  "The radar shows the way to a stop as you walk.":
+    "Tutka näyttää suunnan pysäkille kävellessäsi.",
   "Locating…": "Paikannetaan…",
   "Update location": "Päivitä sijainti",
   "Getting stop locations…": "Haetaan pysäkkien sijainteja…",
   "Location search is temporarily unavailable; stop search still works normally.":
     "Sijaintihaku ei ole juuri nyt käytettävissä. Pysäkkihaku toimii normaalisti.",
-  "One-time location only": "Sijaintia ei seurata",
-  "Accuracy ±{accuracy}": "Tarkkuus ±{accuracy}",
-  "Selected stop ≈ {distance} away": "Valittu pysäkki ≈ {distance} päässä",
+  "Location found": "Sijainti löytyi",
+  "Location found · ±{accuracy}": "Sijainti löytyi · ±{accuracy}",
+  "{stop} is {distance} away": "{stop} on {distance} päässä",
   "Nearest Föli stops": "Lähimmät Fölin pysäkit",
   "Distances are approximate straight-line distances. “Walk there” opens an external walking route in Google Maps.":
     "Etäisyydet ovat likimääräisiä linnuntie-etäisyyksiä. ”Kävele sinne” avaa kävelyreitin Google Mapsissa.",
@@ -97,8 +99,8 @@ export default {
   "Saved destinations": "Tallennetut määränpäät",
             "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
-  "Choose the best fit or switch back to pure distance.":
-    "Valitse sopivin vaihtoehto tai vaihda takaisin etäisyysjärjestykseen.",
+  "Tap a stop to see when its buses leave.":
+    "Napauta pysäkkiä, niin näet sen lähdöt.",
   "Nearby stop sorting": "Lähipysäkkien järjestys",
   "Best for {destination}": "Paras määränpäähän {destination}",
   "Checking routes…": "Tarkistetaan reittejä…",
@@ -112,7 +114,9 @@ export default {
   "No direct option to {destination} is shown soon":
     "Lähiaikoina ei näy suoraa vaihtoehtoa määränpäähän {destination}",
   "Departure check unavailable": "Lähtöjen tarkistus ei ole käytettävissä",
-  "Route suitability is uncertain": "Reitin sopivuus on epävarma",
+  "Can’t tell if you’ll make it in time": "Ei tiedetä, ehditkö ajoissa",
+  "Couldn’t check where these buses go":
+    "Näiden bussien reittiä ei voitu tarkistaa",
   "Line {line}": "Linja {line}",
   "arrive about {time}": "perillä noin {time}",
   Best: "Paras",
@@ -150,8 +154,6 @@ export default {
   "Timetable estimate": "Aikatauluarvio",
   "Realtime uncertain": "Reaaliaikatieto epävarma",
   Estimate: "Arvio",
-  "Direct options use current Föli data and approximate straight-line distance to the boarding stop.":
-    "Suorat vaihtoehdot käyttävät Fölin nykyisiä tietoja ja likimääräistä linnuntie-etäisyyttä lähtöpysäkille.",
   "Checking a little farther…": "Tarkistetaan hieman kauempaa…",
   "Checked {count} nearby stops": "Tarkistettiin {count} lähipysäkkiä",
 
@@ -161,23 +163,26 @@ export default {
   "Choose another route": "Valitse toinen reitti",
   "Wait for line {line}": "Odota linjaa {line}",
   "Walk to {stop}": "Kävele pysäkille {stop}",
+  "You’re near {stop}": "Olet lähellä pysäkkiä {stop}",
   "Stay at {stop}": "Pysy pysäkillä {stop}",
   "Stay here for line {line}.": "Pysy tässä ja odota linjaa {line}.",
   "Walk about {distance} to {stop} for line {line}.":
     "Kävele noin {distance} pysäkille {stop} linjaa {line} varten.",
   "You are at the transfer stop. Confirm it below before waiting for the next bus.":
     "Olet vaihtopysäkillä. Vahvista pysäkki alta ennen seuraavan bussin odottamista.",
-  "When you reach the transfer stop, confirm it here. The app will not assume your physical location.":
-    "Kun saavut vaihtopysäkille, vahvista se tässä. Sovellus ei oleta sijaintiasi automaattisesti.",
+  "When you get to the transfer stop, tap “I'm at the stop”.":
+    "Kun olet vaihtopysäkillä, napauta ”Olen pysäkillä”.",
   "Wait here for line {line}.": "Odota tässä linjaa {line}.",
   "When line {line} arrives, open the selected departure and start the Get-off alert.":
     "Kun linja {line} saapuu, avaa valittu lähtö ja käynnistä poistumishälytys.",
   "Show line {line} departure": "Näytä linjan {line} lähtö",
   "To {destination}": "Määränpää {destination}",
   "Leaves {due}": "Lähtö {due}",
+  "Leaves now": "Lähtee nyt",
+  "Leaves in {minutes} min": "Lähtee {minutes} min päästä",
   "About {distance} to the boarding stop.": "Noin {distance} lähtöpysäkille.",
-  "When you reach the stop, confirm it here. The app will not assume your physical location.":
-    "Kun saavut pysäkille, vahvista se tässä. Sovellus ei oleta sijaintiasi automaattisesti.",
+  "When you get to the stop, tap “I'm at the stop”.":
+    "Kun olet pysäkillä, napauta ”Olen pysäkillä”.",
   "Your selected bus is pinned first in the departure board.":
     "Valitsemasi bussi on kiinnitetty lähtötaulun ensimmäiseksi.",
   "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
@@ -187,11 +192,11 @@ export default {
     "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
   "Offline: this selected plan may be out of date.":
     "Offline: valittu suunnitelma voi olla vanhentunut.",
-  "Live monitoring is paused while another stop is open. Return to the selected stop to resume it.":
-    "Live-seuranta on tauolla, koska toinen pysäkki on avoinna. Palaa valitulle pysäkille jatkaaksesi seurantaa.",
-  "Live monitoring is temporarily unavailable. The selected departure may be out of date.":
-    "Live-seuranta ei ole tilapäisesti käytettävissä. Valitun lähdön tiedot voivat olla vanhentuneita.",
-  "Return to selected stop": "Palaa valitulle pysäkille",
+  "Your bus isn’t updated while another stop is open.":
+    "Bussisi tietoja ei päivitetä, kun toinen pysäkki on auki.",
+  "Can’t update your bus right now. Its time may be out of date.":
+    "Bussisi tietoja ei juuri nyt voi päivittää. Aika voi olla vanhentunut.",
+  "Back to {stop}": "Takaisin pysäkille {stop}",
   "I'm at the stop": "Olen pysäkillä",
   "Show selected departure": "Näytä valittu lähtö",
   "Find another option": "Etsi toinen vaihtoehto",
@@ -359,8 +364,8 @@ export default {
   Done: "Valmis",
 
   "e.g. Tampereentie 12 or Prisma": "esim. Tampereentie 12 tai Prisma",
-  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
-    "Pysäkit, paikat ja osoitteet haetaan tällä laitteella. Määränpään tekstiä ei lähetetä tältä laitteelta.",
+  "Searched on this device: nothing you type here is sent anywhere.":
+    "Haku tehdään tällä laitteella: kirjoittamaasi ei lähetetä minnekään.",
   "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
     "Offline-OpenStreetMap-aineisto ei välttämättä sisällä kaikkia osoitteita. Laajempaa hakua varten käytä Turun virallista reittiopasta.",
   "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":

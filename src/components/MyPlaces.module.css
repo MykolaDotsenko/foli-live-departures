@@ -438,14 +438,9 @@
 }
 
 
+/* A plain sentence over Save: in a bordered box it looked like a button. */
 .confirmSafe {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  padding: 10px 11px;
-  border: 1px solid #b8d4d7;
-  border-radius: 10px;
-  background: #f7fbfb;
+  margin: 0;
   color: #294851;
   font-size: 0.8rem;
   font-weight: 750;
@@ -760,8 +755,7 @@
   }
 
   :root[data-theme="dark"] .importStops > span,
-  :root[data-theme="dark"] .candidate,
-  :root[data-theme="dark"] .confirmSafe {
+  :root[data-theme="dark"] .candidate {
     border-color: var(--dm-line);
     background: var(--dm-sunken);
   }

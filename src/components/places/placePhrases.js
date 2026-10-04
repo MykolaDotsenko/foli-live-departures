@@ -10,9 +10,9 @@ import { msg, t } from "../../i18n";
 export const PLACE_PHRASES = {
   home: {
     go: msg("Get me Home"),
-    choose: msg("Tick the stops you use to get Home, and mark one as the main stop."),
-    rightStop: msg("Yes, this is the right stop for Home."),
-    rightStops: msg("Yes, these are the right stops for Home."),
+    choose: msg("Tick the stops you use to get Home."),
+    rightStop: msg("Save only if this is the right stop for Home."),
+    rightStops: msg("Save only if these are the right stops for Home."),
     backupAdvice: msg(
       "Add backup stops only if you know they are suitable and familiar for arriving at Home."
     ),
@@ -35,9 +35,9 @@ export const PLACE_PHRASES = {
   },
   school: {
     go: msg("Go to School"),
-    choose: msg("Tick the stops you use to get to School, and mark one as the main stop."),
-    rightStop: msg("Yes, this is the right stop for School."),
-    rightStops: msg("Yes, these are the right stops for School."),
+    choose: msg("Tick the stops you use to get to School."),
+    rightStop: msg("Save only if this is the right stop for School."),
+    rightStops: msg("Save only if these are the right stops for School."),
     backupAdvice: msg(
       "Add backup stops only if you know they are suitable and familiar for arriving at School."
     ),
@@ -60,9 +60,9 @@ export const PLACE_PHRASES = {
   },
   work: {
     go: msg("Go to Work"),
-    choose: msg("Tick the stops you use to get to Work, and mark one as the main stop."),
-    rightStop: msg("Yes, this is the right stop for Work."),
-    rightStops: msg("Yes, these are the right stops for Work."),
+    choose: msg("Tick the stops you use to get to Work."),
+    rightStop: msg("Save only if this is the right stop for Work."),
+    rightStops: msg("Save only if these are the right stops for Work."),
     backupAdvice: msg(
       "Add backup stops only if you know they are suitable and familiar for arriving at Work."
     ),

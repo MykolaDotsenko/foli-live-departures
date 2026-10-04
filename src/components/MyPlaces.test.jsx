@@ -86,8 +86,9 @@ test("sets up Home from one-time location and saves only public safe stops", asy
 
   const saveHome = screen.getByRole("button", { name: "Save Home" });
   expect(saveHome).toBeEnabled();
+  // A sentence over Save, not something to tick: Save is the confirmation.
   expect(
-    screen.getByText("Yes, this is the right stop for Home.")
+    screen.getByText("Save only if this is the right stop for Home.")
   ).toBeInTheDocument();
   fireEvent.click(saveHome);
 
@@ -396,7 +397,7 @@ test("adds backup stops to a place only after explicit opt-in", async () => {
   fireEvent.click(choices[1]);
   expect(saveHome).toBeEnabled();
   expect(
-    screen.getByText("Yes, these are the right stops for Home.")
+    screen.getByText("Save only if these are the right stops for Home.")
   ).toBeInTheDocument();
   expect(screen.getAllByRole("radio", { name: /Main stop/i })).toHaveLength(2);
   fireEvent.click(saveHome);
@@ -623,7 +624,7 @@ test("sets up a place in Finnish, confirming it in the place's own words", () =>
   const save = screen.getByRole("button", { name: "Tallenna koulu" });
   expect(save).toBeEnabled();
   expect(
-    screen.getByText("Kyllä, tämä on oikea pysäkki kouluun.")
+    screen.getByText("Tallenna vain, jos tämä on oikea pysäkki kouluun.")
   ).toBeInTheDocument();
   fireEvent.click(save);
 
@@ -938,8 +939,13 @@ test("each main-stop choice is named for its stop", async () => {
   await screen.findByRole("heading", { name: "Choose stops for Home" });
 
   // One selected stop is necessarily the main stop, so there is no
-  // redundant radio until the passenger explicitly adds a backup.
+  // redundant radio until the passenger explicitly adds a backup, and the
+  // instruction does not ask for a main stop there is nothing to mark with.
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+  expect(
+    screen.getByText("Tick the stops you use to get Home.")
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/main stop/i)).not.toBeInTheDocument();
 
   fireEvent.click(
     screen.getByRole("checkbox", { name: /Puistokatu.*Stop 32/i })

@@ -37,6 +37,9 @@ export default {
   "Save {name} to favourites": "Додати {name} до обраного",
   "Remove favourite": "Прибрати з обраного",
   "Save favourite": "Додати до обраного",
+  "Saved. You’ll find it under the stop search.":
+    "Збережено. Ви знайдете її під пошуком зупинок.",
+  "Removed from favourites.": "Прибрано з обраного.",
   "Updated {time}": "Оновлено {time}",
   "Refreshing…": "Оновлення…",
   Refresh: "Оновити",
@@ -106,10 +109,10 @@ export default {
     "Актуальні часи — це оцінки Föli, отримані від самих автобусів. Відстань до автобуса — це пряма від його останньої переданої позиції. «За розкладом» означає, що Föli зараз не має актуальних даних для цього рейсу.",
   "Hide stops": "Сховати зупинки",
   "Next stops": "Наступні зупинки",
-  "short|Next stops": "Наступні",
+  "short|Next stops": "Зупинки",
   "Next stops · timetable times": "Наступні зупинки · часи за розкладом",
-  "A plain clock time is a published timetable timepoint. “Around” is approximate between timepoints.":
-    "Час без позначки — опублікований часовий пункт розкладу. «Приблизно» означає оцінку між такими пунктами.",
+  "Exact times are from the timetable. “Around” means an estimate.":
+    "Точний час — за розкладом. «Близько» означає приблизну оцінку.",
   "Loading planned stops…": "Завантаження запланованих зупинок…",
   "Next stops are temporarily unavailable.": "Наступні зупинки тимчасово недоступні.",
   "No later stops are listed.": "Подальших зупинок не вказано.",

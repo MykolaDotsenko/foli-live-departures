@@ -15,6 +15,7 @@ export default {
   Light: "Vaalea",
   "Use dark theme": "Käytä tummaa teemaa",
   "Use light theme": "Käytä vaaleaa teemaa",
+  Language: "Kieli",
   "Choose a bus stop": "Valitse bussipysäkki",
   "Install on iPhone": "Asenna iPhoneen",
   "For iPhone notifications, add Turku Departures to your Home Screen: Share → Add to Home Screen. Keep this app open during a get-off alert.":

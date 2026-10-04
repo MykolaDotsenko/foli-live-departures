@@ -210,32 +210,24 @@ const ukrainianLocale = await retry(
   "Android Ukrainian locale switch",
   async () => {
     const switched = await evaluate(`(() => {
-      const findButton = (label) =>
-        [...document.querySelectorAll("button")].find(
-          (button) => (button.textContent || "").trim() === label
-        );
-
+      // The header's language picker lists every language; Ukrainian is
+      // one choice, as a passenger makes it.
+      const picker = document.querySelector(".language-switch select");
       const lang = document.documentElement.lang || "";
-      if (lang === "en") {
-        const toFinnish = findButton("Suomeksi");
-        if (!toFinnish) return { ready: false, lang, reason: "missing-Suomeksi" };
-        toFinnish.click();
-        return { ready: false, lang, action: "to-fi" };
-      }
-      if (lang === "fi") {
-        const toUkrainian = findButton("Українською");
-        if (!toUkrainian) {
-          return { ready: false, lang, reason: "missing-Ukrainian-switch" };
+      if (!picker) return { ready: false, lang, reason: "missing-language-picker" };
+      if (lang !== "uk") {
+        if (picker.value !== "uk") {
+          picker.value = "uk";
+          picker.dispatchEvent(new Event("change", { bubbles: true }));
         }
-        toUkrainian.click();
         return { ready: false, lang, action: "to-uk" };
       }
 
       return {
         ready:
-          lang === "uk" &&
           localStorage.getItem("foli-language-v1") === "uk" &&
-          Boolean(findButton("På svenska")),
+          picker.value === "uk" &&
+          [...picker.options].map((option) => option.value).join() === "en,fi,uk,sv",
         lang,
         stored: localStorage.getItem("foli-language-v1"),
         body: document.body.innerText.slice(0, 800)

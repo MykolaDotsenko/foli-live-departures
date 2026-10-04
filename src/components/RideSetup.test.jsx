@@ -619,3 +619,28 @@ test("reads each exit stop in Finnish, with its place badge set apart", async ()
     screen.getByRole("heading", { level: 2, name: "Where do you want to get off?" })
   ).toBeInTheDocument();
 });
+
+// Greyed out with no word of why, the start button read as broken.
+test("says what to do while there is no stop to start for", async () => {
+  mocks.fetchTripDetails.mockResolvedValue(null);
+  mocks.fetchTripStopTimes.mockResolvedValue([
+    { stopId: "164", departureTime: "17:41:00", stopSequence: 1, dropOffType: 0 },
+    {
+      stopId: "32",
+      arrivalTime: "17:46:00",
+      departureTime: "17:46:00",
+      stopSequence: 2,
+      dropOffType: 0,
+    },
+  ]);
+  renderSetup();
+
+  const start = await screen.findByRole("button", { name: "Start get-off alert" });
+  expect(start).toBeDisabled();
+  expect(screen.getByText(/^Choose your stop first · /)).toBeInTheDocument();
+
+  fireEvent.click(screen.getByDisplayValue("2"));
+  expect(start).toBeEnabled();
+  expect(screen.queryByText(/Choose your stop first/)).not.toBeInTheDocument();
+  expect(screen.getByText(/^Get off at Puistokatu · /)).toBeInTheDocument();
+});
