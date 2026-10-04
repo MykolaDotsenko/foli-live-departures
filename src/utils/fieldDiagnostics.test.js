@@ -71,6 +71,7 @@ test("evidence stores freshness classes but no GPS distances or coordinates", ()
       onRoute: true,
       shapeUsable: true,
       distanceM: 25,
+      accuracyM: 25,
       latitude: 60.45,
       longitude: 22.26,
     },
@@ -101,7 +102,7 @@ test("diagnostic quality buckets remain useful without storing precise fixes", (
     {
       gpsAgeSec: 24,
       providerPositionAgeSec: 48,
-      trackingHealth: "delayed",
+      trackingHealth: "stale",
       etaSource: "location",
       notificationPermission: "granted",
     },
@@ -114,7 +115,7 @@ test("diagnostic quality buckets remain useful without storing precise fixes", (
   );
 
   expect(evidence).toMatchObject({
-    providerHealth: "delayed",
+    providerHealth: "stale",
     providerAge: "stale",
     etaSource: "location",
     notificationPermission: "granted",
@@ -184,7 +185,7 @@ test("records a bounded deterministic local trace and explicit finish", () => {
 
   const report = buildFieldDiagnosticReport();
   const parsed = JSON.parse(report);
-  expect(parsed.schema).toBe(1);
+  expect(parsed.schema).toBe(2);
   expect(parsed.build.sha).toBe("a".repeat(40));
   expect(parsed.ride.tripRef).toBe("trip-public");
   expect(parsed.finishedAt).toEqual(expect.any(Number));
