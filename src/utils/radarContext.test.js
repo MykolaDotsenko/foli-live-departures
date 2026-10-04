@@ -71,8 +71,8 @@ function pack() {
 describe("radar context", () => {
   it("indexes the shipped address data once and derives local roads/building cues", () => {
     const index = createRadarContextIndex(pack());
-    expect(index.addressCount).toBe(6);
-    expect(index.streetCount).toBe(1);
+    expect(index).toBeInstanceOf(Map);
+    expect([...index.values()].flat()).toHaveLength(6);
 
     const context = buildRadarContext(
       index,
@@ -83,7 +83,6 @@ describe("radar context", () => {
     );
 
     expect(context.targetStreet).toBe("Aurakatu");
-    expect(context.sourceAddressCount).toBeGreaterThanOrEqual(5);
     expect(context.roads.map((road) => road.street)).toEqual(
       expect.arrayContaining(["Aurakatu", "Eerikinkatu"])
     );
@@ -122,10 +121,7 @@ describe("radar context", () => {
   });
 
   it("fails open when context data is missing and never blocks the radar", () => {
-    expect(createRadarContextIndex(null)).toMatchObject({
-      addressCount: 0,
-      streetCount: 0,
-    });
+    expect(createRadarContextIndex(null).size).toBe(0);
     expect(
       buildRadarContext(
         createRadarContextIndex(null),
@@ -138,7 +134,6 @@ describe("radar context", () => {
       buildings: [],
       roads: [],
       targetStreet: "",
-      sourceAddressCount: 0,
     });
   });
 
