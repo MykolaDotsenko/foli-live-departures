@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { loadAddressPack } from "../api/addressPack";
 import { loadPlacePack } from "../api/placePack";
 import { placeLabel } from "../hooks/useSavedPlaces";
 import usePlaceSearch from "../hooks/usePlaceSearch";
 import { t, useLanguage } from "../i18n";
 import { formatDistance } from "../utils/geo";
+import { findAddresses } from "../utils/localAddresses";
 import { findPlaces } from "../utils/localPlaces";
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { recentPosition, rememberPosition } from "../utils/sessionPosition";
@@ -14,9 +16,10 @@ import StopName from "./StopName";
 
 const MAX_SUGGESTIONS = 6;
 const MAX_PLACE_SUGGESTIONS = 8;
+const MAX_ADDRESS_SUGGESTIONS = 6;
 
-// Both come from OpenStreetMap, and both owe it the attribution.
-const OSM_SOURCES = new Set(["osm-nominatim", "osm-places"]);
+// All three sources come from OpenStreetMap and owe it attribution.
+const OSM_SOURCES = new Set(["osm-nominatim", "osm-places", "osm-addresses"]);
 
 /**
  * A place from the shipped pack, in the shape the place-destination flow
@@ -35,6 +38,29 @@ function packPlaceResult(place) {
     category: "",
     type: "",
     provider: "osm-places",
+    licence: "ODbL-1.0",
+  };
+}
+
+/**
+ * @param {import("../api/addressPack").PackAddress | import("../api/addressPack").PackStreet} address
+ * @returns {import("../types/journey").PlaceSearchResult}
+ */
+function packAddressResult(address) {
+  return {
+    id: address.id,
+    title: address.title,
+    subtitle: [
+      address.city,
+      address.kind === "street" ? t("Street midpoint") : "",
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    lat: address.lat,
+    lon: address.lon,
+    category: "address",
+    type: address.kind,
+    provider: "osm-addresses",
     licence: "ODbL-1.0",
   };
 }
@@ -153,6 +179,12 @@ export default function JourneySearch({
   const [packPlaces, setPackPlaces] = useState(
     /** @type {import("../api/placePack").PackPlace[]} */ ([])
   );
+  const [packAddresses, setPackAddresses] = useState(
+    /** @type {import("../api/addressPack").ParsedAddressPack} */ ({
+      addresses: [],
+      streets: [],
+    })
+  );
   const [origin, setOrigin] = useState(recentPosition);
   const [locating, setLocating] = useState(false);
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -172,6 +204,37 @@ export default function JourneySearch({
       current = false;
     };
   }, [wantsPlaces, packPlaces.length]);
+
+  // The address pack is larger than the POI pack. Do not parse it merely
+  // because the planner opened; load it after three typed characters. The
+  // generated service worker still precaches it for true offline use.
+  const wantsAddresses = value.trim().length >= 3;
+  useEffect(() => {
+    if (
+      !wantsAddresses ||
+      packAddresses.addresses.length > 0 ||
+      packAddresses.streets.length > 0
+    ) {
+      return undefined;
+    }
+    let current = true;
+    loadAddressPack().then((loaded) => {
+      if (
+        current &&
+        (loaded.addresses.length > 0 || loaded.streets.length > 0)
+      ) {
+        setPackAddresses(loaded);
+      }
+    });
+    return () => {
+      current = false;
+    };
+  }, [
+    wantsAddresses,
+    packAddresses.addresses.length,
+    packAddresses.streets.length,
+  ]);
+
   const placeMatches = useMemo(
     () =>
       findPlaces(packPlaces, value, {
@@ -180,6 +243,14 @@ export default function JourneySearch({
       }),
     [packPlaces, value, origin]
   );
+  const addressMatches = useMemo(
+    () =>
+      findAddresses(packAddresses, value, {
+        origin,
+        limit: MAX_ADDRESS_SUGGESTIONS,
+      }),
+    [packAddresses, value, origin]
+  );
   const options = useMemo(
     () => [
       ...suggestions.map((stop) => ({
@@ -187,15 +258,24 @@ export default function JourneySearch({
         key: `stop:${stop.id}`,
         stop,
         place: null,
+        address: null,
+      })),
+      ...addressMatches.map((address) => ({
+        kind: "address",
+        key: `address:${address.id}`,
+        stop: null,
+        place: null,
+        address,
       })),
       ...placeMatches.map((place) => ({
         kind: "place",
         key: `place:${place.id}`,
         stop: null,
         place,
+        address: null,
       })),
     ],
-    [suggestions, placeMatches]
+    [suggestions, addressMatches, placeMatches]
   );
   const showSuggestions = focused && value.trim() && options.length > 0;
   const [activeIndex, setActiveIndex] = useState(-1);
@@ -292,7 +372,9 @@ export default function JourneySearch({
   /** @param {(typeof options)[number] | undefined} option */
   const chooseOption = (option) => {
     if (option?.kind === "stop" && option.stop) chooseStop(option.stop);
-    else if (option?.kind === "place" && option.place) {
+    else if (option?.kind === "address" && option.address) {
+      chooseExternalPlace(packAddressResult(option.address));
+    } else if (option?.kind === "place" && option.place) {
       chooseExternalPlace(packPlaceResult(option.place));
     }
   };
@@ -324,11 +406,7 @@ export default function JourneySearch({
     const query = normalizeStopQuery(value);
 
     if (!query) {
-      setError(
-        directPlaceSearchEnabled
-          ? t("Enter a stop, address or place.")
-          : t("Enter a stop or place.")
-      );
+      setError(t("Enter a stop, address or place."));
       return;
     }
 
@@ -348,6 +426,30 @@ export default function JourneySearch({
       return;
     }
 
+    // A shipped address/street match always wins over an external provider.
+    // If Submit races the lazy pack, await the same-origin file here.
+    let submittedAddressMatches = addressMatches;
+    if (
+      rawQuery.length >= 3 &&
+      submittedAddressMatches.length === 0 &&
+      packAddresses.addresses.length === 0 &&
+      packAddresses.streets.length === 0
+    ) {
+      const loaded = await loadAddressPack();
+      submittedAddressMatches = findAddresses(loaded, rawQuery, {
+        origin,
+        limit: MAX_ADDRESS_SUGGESTIONS,
+      });
+      if (loaded.addresses.length > 0 || loaded.streets.length > 0) {
+        setPackAddresses(loaded);
+      }
+    }
+    if (submittedAddressMatches.length > 0) {
+      setFocused(true);
+      setError("");
+      return;
+    }
+
     // Without a provider, the places shipped with the app are the answer:
     // their list opens; with nothing to list, the passenger is told where
     // a street address can be found.
@@ -357,7 +459,7 @@ export default function JourneySearch({
         options.length > 0
           ? ""
           : t(
-              "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.",
+              "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.",
               { query: rawQuery }
             )
       );
@@ -518,12 +620,8 @@ export default function JourneySearch({
 
 
       <form onSubmit={submit} noValidate>
-        {/* Street addresses are only searched with a place provider; the
-            label promised them when none was there. */}
         <label htmlFor="journey-destination" className={styles.label}>
-          {directPlaceSearchEnabled
-            ? t("Stop, address or place")
-            : t("Stop or place")}
+          {t("Stop, address or place")}
         </label>
         <div className={styles.searchRow}>
           {/* Focus moving into the list's own controls keeps it open:
@@ -559,7 +657,7 @@ export default function JourneySearch({
               placeholder={
                 directPlaceSearchEnabled
                   ? t("e.g. Prisma Itäharju or Kauppatori")
-                  : t("e.g. Kauppatori or Prisma")
+                  : t("e.g. Tampereentie 12 or Prisma")
               }
               autoComplete="off"
               inputMode="search"
@@ -604,6 +702,33 @@ export default function JourneySearch({
                         </strong>
                         <span>{t("Stop {id}", { id: option.stop.id })}</span>
                       </div>
+                    ) : option.kind === "address" && option.address ? (
+                      <div
+                        key={option.key}
+                        id={`journey-destination-option-${index}`}
+                        role="option"
+                        aria-selected={index === activeIndex}
+                        className={styles.suggestion}
+                        data-address="true"
+                        onClick={() => chooseOption(option)}
+                      >
+                        <span className={styles.placeText}>
+                          <strong>{option.address.title}</strong>
+                          <small>
+                            {[
+                              option.address.city,
+                              option.address.kind === "street"
+                                ? t("Street midpoint")
+                                : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </small>
+                        </span>
+                        {option.address.distanceMeters !== null && (
+                          <span>{formatDistance(option.address.distanceMeters)}</span>
+                        )}
+                      </div>
                     ) : option.place ? (
                       <div
                         key={option.key}
@@ -631,7 +756,7 @@ export default function JourneySearch({
                     ) : null
                   )}
                 </div>
-                {placeMatches.length > 0 && (
+                {(placeMatches.length > 0 || addressMatches.length > 0) && (
                   <div className={styles.placeFooter}>
                     {!origin && (
                       <button
@@ -681,9 +806,7 @@ export default function JourneySearch({
         </div>
 
         <p className={styles.help}>
-          {directPlaceSearchEnabled
-            ? t("Choose Home, Work, School, a Föli stop, address or place.")
-            : t("Choose Home, Work, School, a Föli stop or a place such as Prisma.")}
+          {t("Choose Home, Work, School, a Föli stop, address or place.")}
         </p>
         {directPlaceSearchEnabled ? (
           <p className={styles.privacyNote}>
@@ -692,31 +815,34 @@ export default function JourneySearch({
             )}
           </p>
         ) : (
-          <div className={styles.handoff}>
-            {/* Said when the typed text finds nothing to list (most often a
-                street address), not over every search. A destination just
-                chosen from the list is not that. */}
-            {((value.trim() &&
-              options.length === 0 &&
-              value.trim() !== destinationLabel(destination)) ||
-              placeSearch.status === "error") && (
+          <>
+            <div className={styles.handoff}>
               <p className={styles.privacyNote}>
                 {t(
-                  "Street addresses aren’t searched here. For an address, use the official Turku journey planner."
+                  "Stops, places and addresses are searched on this device. No destination text leaves this device."
                 )}
               </p>
-            )}
-            {online && (
-              <a
-                className={styles.handoffLink}
-                href="https://turku.digitransit.fi/"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {t("Open Turku journey planner")}
-              </a>
-            )}
-          </div>
+              {online && (
+                <a
+                  className={styles.handoffLink}
+                  href="https://turku.digitransit.fi/"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("Open Turku journey planner")}
+                </a>
+              )}
+            </div>
+            {value.trim() &&
+              options.length === 0 &&
+              value.trim() !== destinationLabel(destination) && (
+                <p className={styles.privacyNote}>
+                  {t(
+                    "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner."
+                  )}
+                </p>
+              )}
+          </>
         )}
 
         {placeSearch.results.length > 0 && (
@@ -766,7 +892,7 @@ export default function JourneySearch({
                 )
               : placeSearch.error === "external-handoff"
                 ? t(
-                    "Street addresses aren’t searched here. For an address, use the official Turku journey planner."
+                    "Online place search is unavailable. Local stop, address and place search still works."
                   )
                 : t(
                     "Place search is temporarily unavailable. Föli stop search still works."
