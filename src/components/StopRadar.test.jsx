@@ -3,8 +3,7 @@ import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
 const addressPack = vi.hoisted(() => ({ load: vi.fn() }));
 
-vi.mock("../api/addressPack", async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock("../api/addressPack", () => ({
   loadAddressPack: addressPack.load,
 }));
 
