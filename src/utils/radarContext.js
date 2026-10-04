@@ -117,11 +117,8 @@ function roadFor(street, entries, origin, heading, range) {
     y1: a.y,
     x2: b.x,
     y2: b.y,
-    labelX: (a.x + b.x) / 2,
-    labelY: (a.y + b.y) / 2,
     nearestDistance: entries[0].distanceMeters,
     count: entries.length,
-    angle: (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI,
   };
 }
 
@@ -181,21 +178,13 @@ export function buildRadarContext(index, position, target, heading, range) {
       b.count - a.count
   );
 
-  const selected = roadCandidates.slice(0, MAX_ROADS);
-  const angles = new Map(selected.map((road) => [road.street, road.angle]));
-  const roads = selected.map((road, indexValue) => ({
-    id: road.id,
+  const roads = roadCandidates.slice(0, MAX_ROADS).map((road) => ({
     street: road.street,
     x1: road.x1,
     y1: road.y1,
     x2: road.x2,
     y2: road.y2,
-    labelX: road.labelX,
-    labelY: road.labelY,
     targetStreet: road.street === targetStreet,
-    showLabel:
-      radarRange <= 500 &&
-      (road.street === targetStreet || indexValue < 2),
   }));
 
   const seen = new Set();
@@ -214,8 +203,6 @@ export function buildRadarContext(index, position, target, heading, range) {
       x: p.x,
       y: p.y,
       size,
-      rotation: Number(angles.get(entry.item.street) || 0),
-      street: entry.item.street,
       targetStreet: entry.item.street === targetStreet,
     });
     if (buildings.length >= MAX_BUILDINGS) break;
