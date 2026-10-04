@@ -1,5 +1,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+
+const addressPack = vi.hoisted(() => ({ load: vi.fn() }));
+
+vi.mock("../api/addressPack", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadAddressPack: addressPack.load,
+}));
+
 import StopRadar from "./StopRadar";
 
 const stops = [
@@ -12,6 +20,13 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
   navigator,
   "geolocation"
 );
+
+beforeEach(() => {
+  addressPack.load.mockReset().mockResolvedValue({
+    addresses: [],
+    streets: [],
+  });
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -133,6 +148,96 @@ test("shows a conservative arrival state and compass fallback notice", async () 
 
 // Two platforms of one stop: the radar used a 2 km scale for a target 50 m
 // away, and neither dots nor list said which Kauppatori was which.
+test("adds offline street/building context without stealing stop interaction", async () => {
+  const live = installLiveLocation();
+  addressPack.load.mockResolvedValue({
+    addresses: [
+      {
+        id: "a1",
+        street: "Aurakatu",
+        streetKey: "aurakatu",
+        house: "1",
+        lat: 60.4513,
+        lon: 22.2664,
+      },
+      {
+        id: "a2",
+        street: "Aurakatu",
+        streetKey: "aurakatu",
+        house: "3",
+        lat: 60.4517,
+        lon: 22.2664,
+      },
+      {
+        id: "a3",
+        street: "Aurakatu",
+        streetKey: "aurakatu",
+        house: "5",
+        lat: 60.4521,
+        lon: 22.2664,
+      },
+      {
+        id: "b1",
+        street: "Eerikinkatu",
+        streetKey: "eerikinkatu",
+        house: "10",
+        lat: 60.4518,
+        lon: 22.2659,
+      },
+      {
+        id: "b2",
+        street: "Eerikinkatu",
+        streetKey: "eerikinkatu",
+        house: "12",
+        lat: 60.4518,
+        lon: 22.267,
+      },
+    ],
+    streets: [
+      {
+        id: "street:aurakatu",
+        street: "Aurakatu",
+        streetKey: "aurakatu",
+        lat: 60.4518,
+        lon: 22.26645,
+      },
+    ],
+  });
+
+  render(
+    <StopRadar
+      stops={stops}
+      initialTargetStopId="164"
+      compassPermission="unavailable"
+      onClose={vi.fn()}
+    />
+  );
+
+  live.deliver({
+    latitude: 60.45125,
+    longitude: 22.2662,
+    accuracy: 8,
+  });
+
+  expect(await screen.findByText("Offline street context")).toBeInTheDocument();
+  expect(screen.getByText("Near Aurakatu")).toBeInTheDocument();
+  expect(
+    screen.getByText(/Street lines and building cues are approximate/i)
+  ).toBeInTheDocument();
+
+  const radar = screen.getByRole("group", {
+    name: /Radar showing nearby stops/,
+  });
+  expect(radar.querySelectorAll("svg rect").length).toBeGreaterThan(0);
+  expect(radar.querySelectorAll("svg line").length).toBeGreaterThan(1);
+  expect(
+    radar.querySelector('[data-target-street="true"]')
+  ).not.toBeNull();
+
+  // Context is aria-hidden and non-interactive: only stop markers are buttons.
+  expect(within(radar).getAllByRole("button").length).toBeGreaterThan(0);
+});
+
 test("tells two stops of one name apart and scales to the walk", async () => {
   const live = installLiveLocation();
   const platforms = [
@@ -156,6 +261,9 @@ test("tells two stops of one name apart and scales to the walk", async () => {
   const chooser = screen.getByRole("group", { name: "Choose radar target" });
   expect(within(chooser).getByText(/Stop 164/)).toBeInTheDocument();
   expect(within(chooser).getByText(/Stop 166/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Another stop named Kauppatori .* stop 164/i)
+  ).toBeInTheDocument();
 
   const radar = screen.getByRole("group", { name: /Radar showing nearby stops/ });
   expect(within(radar).getByRole("button", { name: /Guide to Kauppatori, stop 166/ })).toHaveTextContent("166");
