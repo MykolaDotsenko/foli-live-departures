@@ -109,10 +109,10 @@ export default function StopRadar({
   const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
-  const [contextState, setContextState] = useState({
-    status: "idle",
-    index: null,
-  });
+  const [contextStatus, setContextStatus] = useState("idle");
+  const [contextIndex, setContextIndex] = useState(() =>
+    createRadarContextIndex(null)
+  );
   const { status, position, error, heading, headingSource, pageVisible } =
     useStopRadar({
       active: true,
@@ -137,26 +137,25 @@ export default function StopRadar({
     ) || null;
 
   useEffect(() => {
-    if (!position || contextState.status !== "idle") return undefined;
+    if (!position || contextStatus !== "idle") return undefined;
 
     let current = true;
-    setContextState({ status: "loading", index: null });
-    loadAddressPack()
+    setContextStatus("loading");
+    Promise.resolve()
+      .then(() => loadAddressPack())
       .then((pack) => {
         if (!current) return;
-        setContextState({
-          status: "ready",
-          index: createRadarContextIndex(pack),
-        });
+        setContextIndex(createRadarContextIndex(pack));
+        setContextStatus("ready");
       })
       .catch(() => {
-        if (current) setContextState({ status: "unavailable", index: null });
+        if (current) setContextStatus("unavailable");
       });
 
     return () => {
       current = false;
     };
-  }, [contextState.status, position]);
+  }, [contextStatus, position]);
 
   const targetDistance =
     position && targetStop ? distanceInMeters(position, targetStop) : null;
@@ -207,13 +206,13 @@ export default function StopRadar({
   const mapContext = useMemo(
     () =>
       buildRadarContext(
-        contextState.index,
+        contextIndex,
         position,
         targetStop,
         heading,
         range
       ),
-    [contextState.index, heading, position, range, targetStop]
+    [contextIndex, heading, position, range, targetStop]
   );
 
   const sameNameStop = useMemo(() => {
