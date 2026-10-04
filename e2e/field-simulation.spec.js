@@ -177,6 +177,14 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   await seedHome(page);
   await startRide(page, { gps: true });
 
+  // Recreate the mobile WebView once so the restored ride performs an
+  // immediate fresh provider fetch. With live ETA <= 90 s, the production
+  // state machine must enter NEXT before straight-line GPS is allowed to arm
+  // the missed-stop latch.
+  await page.reload();
+  const ridePanel = page.locator('section[aria-labelledby="ride-mode-title"]');
+  await expect(ridePanel).toHaveAttribute("data-stage", "next");
+
   const nearFix = {
     latitude: 60.44945,
     longitude: 22.255,
@@ -188,9 +196,7 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   // The missed-stop safety latch deliberately ignores a "near" sample until
   // Ride Mode is already at NEXT. Confirm that stage, then submit the same
   // precise fix once more to arm wasNearTarget before moving away.
-  await expect(
-    page.getByRole("heading", { name: "Your stop is next" })
-  ).toBeVisible();
+  await expect(ridePanel).toHaveAttribute("data-stage", "next");
   await setRideGeolocation(page, nearFix);
 
   await setRideGeolocation(page, {
