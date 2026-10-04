@@ -83,7 +83,6 @@ export default {
   Change: "Змінити",
   Clear: "Очистити",
   "Saved destinations": "Збережені пункти призначення",
-  "Destination stop suggestions": "Підказки зупинок призначення",
   "Nearby stops for {destination}": "Зупинки поруч для {destination}",
   "Choose the best fit or switch back to pure distance.":
     "Виберіть найкращий варіант або поверніться до сортування лише за відстанню.",
@@ -171,6 +170,20 @@ export default {
   "Search destination": "Шукати пункт призначення",
   "Choose Home, Work, School, a Föli stop, address or place.":
     "Виберіть Дім, Роботу, Школу, зупинку Föli, адресу або місце.",
+  "Destination suggestions":
+    "Підказки пункту призначення",
+  "Stop or place":
+    "Зупинка або місце",
+  "e.g. Kauppatori or Prisma":
+    "напр. Kauppatori або Prisma",
+  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
+    "Виберіть Дім, Роботу, Школу, зупинку Föli або місце, як-от Prisma.",
+  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
+    "Адреси тут не шукаються. Щоб знайти адресу, скористайтеся офіційним планувальником маршрутів Турку.",
+  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
+    "За запитом «{query}» немає ні зупинки, ні місця. Щоб знайти адресу, скористайтеся офіційним планувальником маршрутів Турку.",
+  "Nearest to me first":
+    "Спершу найближчі до мене",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
     "Підказки зупинок залишаються на цьому пристрої. Текст місця/адреси надсилається до OpenStreetMap лише після натискання «Шукати»; повторні пошуки кешуються тільки в цій сесії браузера.",
   "Places & addresses": "Місця й адреси",
@@ -179,10 +192,6 @@ export default {
   "© OpenStreetMap contributors": "© Учасники OpenStreetMap",
   "Place search is temporarily unavailable. Föli stop search still works.":
     "Пошук місць тимчасово недоступний. Пошук зупинок Föli продовжує працювати.",
-  "Direct address and place search is unavailable here. Use the official Turku journey planner; Föli stop search still works in this app.":
-    "Прямий пошук адрес і місць тут недоступний. Скористайтеся офіційним планувальником маршрутів Турку; пошук зупинок Föli у застосунку продовжує працювати.",
-  "This app keeps address and place text on this device when direct place search is unavailable. Use the official Turku journey planner for address and POI search.":
-    "Коли прямий пошук місць недоступний, цей застосунок залишає текст адреси чи місця на пристрої. Для пошуку адрес і POI скористайтеся офіційним планувальником маршрутів Турку.",
   "Open Turku journey planner": "Відкрити планувальник маршрутів Турку",
   "Journey timing and preference": "Час поїздки та пріоритет",
   When: "Коли",

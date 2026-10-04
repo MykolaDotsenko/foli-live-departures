@@ -76,7 +76,7 @@ const MIN_SIMILAR_QUERY_LENGTH = 4;
  * @param {number} limit
  * @returns {number}
  */
-function typoDistance(a, b, limit) {
+export function typoDistance(a, b, limit) {
   if (Math.abs(a.length - b.length) > limit) return limit + 1;
   /** @type {number[][]} */
   const d = Array.from({ length: a.length + 1 }, (_, i) =>

@@ -28,7 +28,8 @@ export interface DestinationIntent {
   lat?: number;
   lon?: number;
   finalWalkDistanceByStop?: Record<string, number>;
-  source?: "osm-nominatim";
+  /** OpenStreetMap, from the place provider or the shipped place pack. */
+  source?: "osm-nominatim" | "osm-places";
 }
 
 export interface PlaceSearchBoundingBox {
@@ -48,7 +49,7 @@ export interface PlaceSearchResult {
   type: string;
   osmType?: "node" | "way" | "relation" | "";
   boundingBox?: PlaceSearchBoundingBox | null;
-  provider: "nominatim";
+  provider: "nominatim" | "osm-places";
   licence: string;
 }
 

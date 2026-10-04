@@ -17,7 +17,10 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // The complete shipped app must remain within the original release budget;
  // lazy locale splitting may reduce startup cost, but it must not be used to
  // hide total bundle growth.
-const MAX_SHIPPED_JS_CSS_BYTES = 625_000;
+// Raised once, from 625,000, for on-device place search (destination
+// suggestions from the shipped OpenStreetMap place pack, 2026-10-04): about
+// 5 KB of code and styles. Startup and gzip budgets stay as they were.
+const MAX_SHIPPED_JS_CSS_BYTES = 632_000;
 const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 180_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;

@@ -122,7 +122,7 @@ export function prepareExternalPlaceDestination({
     lat: place.lat,
     lon: place.lon,
     finalWalkDistanceByStop,
-    source: "osm-nominatim",
+    source: place.provider === "osm-places" ? "osm-places" : "osm-nominatim",
   };
 
   return { ok: true, reason: "ready", destination };

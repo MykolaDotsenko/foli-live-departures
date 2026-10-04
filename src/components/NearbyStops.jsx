@@ -36,6 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
+import { rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -471,6 +472,7 @@ function NearbyStops({
       );
 
       setPosition(nextPosition);
+      rememberPosition(nextPosition);
       setStatus("success");
 
       const closest = nearest[0];
@@ -649,6 +651,7 @@ function NearbyStops({
                 if (radarSeededPositionRef.current) return;
                 radarSeededPositionRef.current = true;
                 setPosition(nextPosition);
+                rememberPosition(nextPosition);
                 setStatus("success");
                 setError("");
               }}

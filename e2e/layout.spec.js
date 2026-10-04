@@ -132,7 +132,7 @@ test("a first visit leads with the stop search, then the destination", async ({
   await page.goto("/");
   const stopSearch = page.getByRole("combobox", { name: "Find your stop" });
   const destination = page.getByRole("combobox", {
-    name: "Stop, address or place",
+    name: "Stop or place",
   });
   const plan = page.getByText("Leave now · Balanced");
   const when = page.getByRole("combobox", { name: "When" });

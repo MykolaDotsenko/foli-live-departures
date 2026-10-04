@@ -19,6 +19,21 @@ const providerResult = [
   },
 ];
 
+// Two places near the mocked stops, in the shipped pack's format.
+const placePack = {
+  version: 1,
+  generatedAt: "2026-10-04T00:00:00Z",
+  source: "OpenStreetMap, via the Overpass API",
+  license: "ODbL-1.0",
+  attribution: "© OpenStreetMap contributors",
+  licenseUrl: "https://www.openstreetmap.org/copyright",
+  fields: ["id", "name", "lat", "lon", "street", "city", "nameSv"],
+  places: [
+    ["n1", "Lidl Kauppatori", 60.453, 22.268, "Aurakatu 1", "Turku"],
+    ["n2", "Lidl Linnankatu", 60.4372, 22.2361, "Linnankatu 80", "Turku"],
+  ],
+};
+
 test.describe("reviewed direct-provider activation harness", () => {
   // Production deliberately omits Nominatim from connect-src. A future direct
   // provider activation therefore requires a reviewed CSP change as well as
@@ -94,34 +109,88 @@ test("production policy keeps address text local and hands off without contactin
       body: JSON.stringify(providerResult),
     });
   });
+  await page.route("**/places/foli-places.json", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify(placePack) })
+  );
 
   await page.goto("/");
   const journey = page.locator('section[aria-labelledby="journey-search-title"]');
-  const input = journey.getByRole("combobox", { name: "Stop, address or place" });
+  // No address search here, so the field does not promise one.
+  const input = journey.getByRole("combobox", { name: "Stop or place" });
 
   await expect(
     journey.getByRole("link", { name: "Open Turku journey planner" })
   ).toBeVisible();
 
-  await input.fill("Prisma Itäharju");
+  await input.fill("Tampereentie 12");
   await page.waitForTimeout(150);
   expect(providerCalls).toBe(0);
+  await expect(journey.getByText(/Street addresses aren’t searched here/)).toBeVisible();
 
   await journey.getByRole("button", { name: "Search destination" }).click();
 
   await expect(journey.getByRole("alert")).toContainText(
-    "Direct address and place search is unavailable here"
+    "No stop or place matches “Tampereentie 12”."
   );
   await expect(
     journey.getByRole("link", { name: "Open Turku journey planner" })
   ).toHaveAttribute("href", "https://turku.digitransit.fi/");
-  await expect(
-    journey.getByText(/keeps address and place text on this device/i)
-  ).toBeVisible();
   expect(providerCalls).toBe(0);
 
   const a11y = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
     .analyze();
   expect(a11y.violations).toEqual([]);
+});
+
+// "Lidl" found nothing: places were only searched through a provider that
+// is off in production. The places shipped with the app are listed while
+// typing, nearest first once the passenger lets the app use their location,
+// and nothing typed leaves the phone.
+test("places shipped with the app are listed nearest first and become the destination", async ({
+  page,
+  context,
+}) => {
+  const outbound = [];
+  page.on("request", (request) => {
+    const url = new URL(request.url());
+    if (!["127.0.0.1", "localhost"].includes(url.hostname) && !url.hostname.endsWith("foli.fi")) {
+      outbound.push(request.url());
+    }
+  });
+  await page.route("**/places/foli-places.json", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify(placePack) })
+  );
+  await context.grantPermissions(["geolocation"]);
+  await context.setGeolocation({ latitude: 60.4362, longitude: 22.2345, accuracy: 15 });
+
+  await page.goto("/");
+  const journey = page.locator('section[aria-labelledby="journey-search-title"]');
+  const input = journey.getByRole("combobox", { name: "Stop or place" });
+  await input.fill("Lidl");
+
+  const list = journey.getByRole("listbox", { name: "Destination suggestions" });
+  await expect(list.getByRole("option")).toHaveText([
+    /Lidl Kauppatori/,
+    /Lidl Linnankatu/,
+  ]);
+  await expect(journey.getByRole("link", { name: "© OpenStreetMap contributors" })).toBeVisible();
+
+  await journey.getByRole("button", { name: "Nearest to me first" }).click();
+  await expect(list.getByRole("option").first()).toContainText("Lidl Linnankatu");
+  await expect(list.getByRole("option").first()).toContainText(/\d+ m/);
+  await expect(input).toBeFocused();
+
+  const a11y = await new AxeBuilder({ page })
+    .include('section[aria-labelledby="journey-search-title"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect(a11y.violations).toEqual([]);
+
+  await list.getByRole("option").first().click();
+  await expect(journey.getByRole("status")).toContainText("Lidl Linnankatu");
+  await expect(
+    page.getByRole("heading", { name: /Nearby stops for Lidl Linnankatu/ })
+  ).toBeVisible();
+  expect(outbound).toEqual([]);
 });
