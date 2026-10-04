@@ -56,14 +56,20 @@ const MAX_BUILDINGS = 48;
 const MAX_ROADS = 8;
 const MIN_ROAD_SPAN_METERS = 24;
 
+/** @param {number} value */
 function cellNumber(value) {
   return Math.floor(Number(value) / CELL_DEGREES);
 }
 
+/** @param {number} latCell @param {number} lonCell */
 function cellKey(latCell, lonCell) {
   return `${latCell}:${lonCell}`;
 }
 
+/**
+ * @param {Map<string, any[]>} map
+ * @param {PackAddress | PackStreet} item
+ */
 function addToCell(map, item) {
   const key = cellKey(cellNumber(item.lat), cellNumber(item.lon));
   const current = map.get(key);
@@ -103,11 +109,16 @@ export function createRadarContextIndex(pack) {
   };
 }
 
+/** @param {number} lat */
 function metersPerLongitudeDegree(lat) {
   const cosine = Math.cos((Number(lat) * Math.PI) / 180);
   return 111_320 * Math.max(0.2, Math.abs(cosine));
 }
 
+/**
+ * @param {{lat:number,lon:number}} origin
+ * @param {{lat:number,lon:number}} point
+ */
 function projectedMeters(origin, point) {
   return {
     x:
@@ -117,6 +128,10 @@ function projectedMeters(origin, point) {
   };
 }
 
+/**
+ * @param {{lat:number,lon:number}} origin
+ * @param {{x:number,y:number}} point
+ */
 function unprojectMeters(origin, point) {
   return {
     lat: Number(origin.lat) + Number(point.y) / 111_320,
@@ -153,6 +168,12 @@ function queryCells(cells, center, radiusMeters) {
   return result;
 }
 
+/**
+ * @param {Map<string, any[]>} cells
+ * @param {{lat:number,lon:number}} center
+ * @param {number} radiusMeters
+ * @returns {{item:any,distanceMeters:number}[]}
+ */
 function pointsWithin(cells, center, radiusMeters) {
   return queryCells(cells, center, radiusMeters)
     .map((item) => ({
@@ -167,6 +188,10 @@ function pointsWithin(cells, center, radiusMeters) {
     .sort((a, b) => a.distanceMeters - b.distanceMeters);
 }
 
+/**
+ * @param {RadarContextIndex} index
+ * @param {{lat:number,lon:number}|null|undefined} target
+ */
 function nearestStreet(index, target) {
   if (!hasCoordinates(target)) return "";
 
@@ -182,6 +207,13 @@ function nearestStreet(index, target) {
   return String(candidates[0]?.item?.street || "");
 }
 
+/**
+ * @param {string} street
+ * @param {{item:PackAddress,distanceMeters:number}[]} points
+ * @param {{lat:number,lon:number}} origin
+ * @param {number|null} heading
+ * @param {number} range
+ */
 function roadFromAddresses(street, points, origin, heading, range) {
   if (points.length < 2) return null;
 
