@@ -120,6 +120,28 @@
   font-weight: 850;
 }
 
+.confidence {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.confidence[data-confidence="high"] {
+  font-weight: 900;
+}
+
+.confidence[data-confidence="low"] {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+
 .card[data-risk="tight"] .risk {
   color: #805515;
 }
