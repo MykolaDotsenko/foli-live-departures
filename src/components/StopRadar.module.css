@@ -88,16 +88,6 @@
   font-weight: 900;
 }
 
-.contextPill {
-  padding: 4px 7px;
-  border: 1px solid #c5d8d9;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: #456168;
-  font-size: 0.7rem;
-  font-weight: 850;
-}
-
 .status,
 .notice,
 .error,
@@ -163,31 +153,10 @@
   stroke-width: 3px;
 }
 
-.roadLayer text {
-  stroke: rgba(248, 255, 255, 0.96);
-  stroke-width: 1.25px;
-  paint-order: stroke fill;
-  fill: #4b6269;
-  font-size: 2.7px;
-  font-weight: 850;
-  letter-spacing: -0.02em;
-  text-anchor: middle;
-}
-
-.roadLayer text[data-target-street="true"] {
-  fill: #006c76;
-  font-weight: 950;
-}
-
 .buildingLayer rect {
   fill: rgba(75, 98, 105, 0.2);
   stroke: rgba(75, 98, 105, 0.24);
   stroke-width: 0.35px;
-}
-
-.buildingLayer rect[data-target-street="true"] {
-  fill: rgba(0, 121, 133, 0.2);
-  stroke: rgba(0, 121, 133, 0.35);
 }
 
 .targetConnector {
@@ -384,15 +353,6 @@
   z-index: 6;
 }
 
-.marker[data-target="true"]::before {
-  position: absolute;
-  inset: 1px;
-  border: 2px solid rgba(183, 115, 0, 0.5);
-  border-radius: 50%;
-  content: "";
-  pointer-events: none;
-}
-
 .marker[data-target="true"] > span {
   min-width: 40px;
   height: 40px;
@@ -433,28 +393,6 @@
   color: #556a70;
   font-size: 0.78rem;
   line-height: 1.4;
-}
-
-.streetCue {
-  width: fit-content;
-  padding: 3px 7px;
-  border-radius: 999px;
-  background: #e9f5f4;
-  color: #1b6267;
-  font-size: 0.75rem;
-  font-weight: 850;
-}
-
-.platformWarning {
-  margin-top: 4px;
-  padding: 8px 9px;
-  border: 1px solid #e3c978;
-  border-radius: 9px;
-  background: #fff8dc;
-  color: #684800;
-  font-size: 0.76rem;
-  font-weight: 800;
-  line-height: 1.35;
 }
 
 .distance {
@@ -521,16 +459,6 @@
   line-height: 1.25;
 }
 
-.footnote,
-.contextFootnote {
-  color: #60747a;
-}
-
-.contextFootnote {
-  margin: 0;
-  font-size: 0.72rem;
-  line-height: 1.4;
-}
 
 .srOnly {
   position: absolute;
@@ -572,10 +500,8 @@
   .targetLabel,
   .targetName,
   .targetMeta,
-  .streetCue,
   .direction,
   .targetNote,
-  .platformWarning,
   .arrival,
   .openStopButton {
     grid-column: 1 / -1;
@@ -642,13 +568,11 @@
 
   :root[data-theme="dark"] .subtitle,
   :root[data-theme="dark"] .modeRow,
-  :root[data-theme="dark"] .contextPill,
   :root[data-theme="dark"] .targetLabel,
   :root[data-theme="dark"] .targetMeta,
   :root[data-theme="dark"] .targetNote,
   :root[data-theme="dark"] .stopChooser small,
-  :root[data-theme="dark"] .footnote,
-  :root[data-theme="dark"] .contextFootnote {
+  :root[data-theme="dark"] .footnote {
     color: var(--dm-muted);
   }
 
@@ -687,11 +611,6 @@
     background-size: 25% 25%, 25% 25%, auto, auto;
   }
 
-  :root[data-theme="dark"] .contextPill {
-    border-color: var(--dm-line);
-    background: var(--dm-raised);
-  }
-
   :root[data-theme="dark"] .roadLayer line {
     stroke: rgba(174, 199, 202, 0.45);
   }
@@ -700,34 +619,9 @@
     stroke: rgba(77, 208, 196, 0.7);
   }
 
-  :root[data-theme="dark"] .roadLayer text {
-    stroke: var(--dm-sunken);
-    fill: var(--dm-muted);
-  }
-
-  :root[data-theme="dark"] .roadLayer text[data-target-street="true"] {
-    fill: var(--dm-soft);
-  }
-
   :root[data-theme="dark"] .buildingLayer rect {
     fill: rgba(174, 199, 202, 0.16);
     stroke: rgba(174, 199, 202, 0.22);
-  }
-
-  :root[data-theme="dark"] .buildingLayer rect[data-target-street="true"] {
-    fill: rgba(77, 208, 196, 0.19);
-    stroke: rgba(77, 208, 196, 0.35);
-  }
-
-  :root[data-theme="dark"] .streetCue {
-    background: var(--dm-accent-surface);
-    color: var(--dm-soft);
-  }
-
-  :root[data-theme="dark"] .platformWarning {
-    border-color: var(--dm-warn-line);
-    background: var(--dm-warn-surface);
-    color: var(--dm-warn-text);
   }
 
   :root[data-theme="dark"] .ringOne,
@@ -769,29 +663,11 @@
   }
 
   .marker > span,
-  .targetNeedle,
-  .contextLayer {
+  .targetNeedle {
     transition:
       top 180ms linear,
       left 180ms linear,
-      transform 180ms linear,
-      opacity 180ms ease;
-  }
-
-  .marker[data-target="true"]::before {
-    animation: radar-target-pulse 1.8s ease-out infinite;
-  }
-}
-
-@keyframes radar-target-pulse {
-  0% {
-    opacity: 0.9;
-    transform: scale(0.9);
-  }
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(1.45);
+      transform 180ms linear;
   }
 }
 
@@ -810,21 +686,4 @@
     outline: 3px solid Highlight;
   }
 
-  .roadLayer line,
-  .targetConnector,
-  .buildingLayer rect {
-    stroke: CanvasText;
-  }
-
-  .roadLayer text {
-    fill: CanvasText;
-    stroke: Canvas;
-  }
-
-  .streetCue,
-  .platformWarning {
-    border: 1px solid CanvasText;
-    background: Canvas;
-    color: CanvasText;
-  }
 }
