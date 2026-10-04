@@ -189,8 +189,8 @@ test("adds offline street/building context without stealing stop interaction", a
   const radar = screen.getByRole("group", {
     name: /Radar showing nearby stops/,
   });
-  expect(radar.querySelectorAll("svg rect").length).toBeGreaterThan(0);
-  expect(radar.querySelectorAll("svg line").length).toBeGreaterThan(1);
+  expect(radar.querySelectorAll("svg path")).toHaveLength(2);
+  expect(radar.querySelectorAll("svg line")).toHaveLength(1);
   // Context is aria-hidden and non-interactive: only stop markers are buttons.
   expect(within(radar).getAllByRole("button").length).toBeGreaterThan(0);
 });
