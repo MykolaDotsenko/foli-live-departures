@@ -333,7 +333,7 @@ With direct provider search off, "Lidl" or "Prisma Itäharju" found nothing. Nam
 
 Street/address search now also stays on-device. The app ships `public/addresses/foli-addresses.json`, generated from OpenStreetMap through Overpass:
 
-- **33,405 address points + 7,227 named streets** in the current Föli municipalities at bootstrap;
+- **33,288 address points + 7,213 named streets** in the current Föli municipalities at bootstrap;
 - exact/prefix house-number search, street-only search and bounded typo tolerance for sufficiently long street names;
 - bare house numbers are never accepted as destinations;
 - the pack is lazy-parsed after meaningful input, but same-origin/public assets are precached for offline use;
