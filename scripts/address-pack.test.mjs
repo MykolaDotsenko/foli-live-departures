@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
-import { expect, test } from "vitest";
+import assert from "node:assert/strict";
+import test from "node:test";
 import {
   ADDRESS_FIELDS,
   STREET_FIELDS,
@@ -32,8 +33,8 @@ const elements = [
 
 test("compacts real addresses and deduplicates road segments", () => {
   const rows = addressRows([...elements, elements[1]]);
-  expect(rows.addresses).toEqual([["Tampereentie", "12", 60.45, 22.26, "Turku"]]);
-  expect(rows.streets).toEqual([
+  assert.deepEqual(rows.addresses, [["Tampereentie", "12", 60.45, 22.26, "Turku"]]);
+  assert.deepEqual(rows.streets, [
     ["Linnankatu", 60.44, 22.25, ""],
     ["Tampereentie", 60.46, 22.27, ""],
   ]);
@@ -56,9 +57,9 @@ test("pack carries ODbL metadata and verifier contracts", () => {
     ]),
   };
   const pack = addressPack(rows, "2026-10-04T00:00:00Z");
-  expect(pack.addressFields).toEqual(ADDRESS_FIELDS);
-  expect(pack.streetFields).toEqual(STREET_FIELDS);
-  expect(pack.license).toBe("ODbL-1.0");
+  assert.deepEqual(pack.addressFields, ADDRESS_FIELDS);
+  assert.deepEqual(pack.streetFields, STREET_FIELDS);
+  assert.equal(pack.license, "ODbL-1.0");
   const body = JSON.stringify(pack);
-  expect(addressPackProblems(pack, Buffer.byteLength(body))).toEqual([]);
+  assert.deepEqual(addressPackProblems(pack, Buffer.byteLength(body)), []);
 });
