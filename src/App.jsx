@@ -45,7 +45,6 @@ import {
   activeJourneyHeading,
   finalWalkHeading,
   firstJourneyOption,
-  nearbyHeading,
   pageHeading,
   placeCardControl,
   recoveryJourneyTarget,
@@ -833,7 +832,10 @@ function App() {
             below the board as one line. A returning passenger reopens on
             their last stop, and with nothing here "Where do you want to go?"
             was out of reach. Below the board, it never pushes a departure
-            off the first screen. */}
+            off the first screen. Once a destination is chosen it leaves for
+            the line above the board, and focus goes to the board's heading:
+            sent below it, the page scrolled the buses to that destination,
+            now listed first, out of sight. */}
         {!ride.session && !finalWalk && stopId && !journey.destination && (
           <JourneySearch
             key="journey-entry"
@@ -841,16 +843,16 @@ function App() {
             compact
             destination={null}
             onChoosePlace={(place) => {
-              requestFocus(nearbyHeading);
+              requestFocus(pageHeading);
               chooseJourneyPlace(place);
             }}
             onChooseStop={(stop) => {
-              requestFocus(nearbyHeading);
+              requestFocus(pageHeading);
               chooseJourneyStop(stop);
             }}
             onChooseExternalPlace={(place) => {
               const prepared = chooseJourneyExternalPlace(place);
-              if (prepared?.ok) requestFocus(nearbyHeading);
+              if (prepared?.ok) requestFocus(pageHeading);
               return prepared;
             }}
           />
