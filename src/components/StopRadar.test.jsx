@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { resetAddressPackForTests } from "../api/addressPack";
+import {
+  loadAddressPack,
+  resetAddressPackForTests,
+} from "../api/addressPack";
 import StopRadar from "./StopRadar";
 
 const stops = [
@@ -161,6 +164,9 @@ test("shows a conservative arrival state and compass fallback notice", async () 
 // away, and neither dots nor list said which Kauppatori was which.
 test("adds offline street/building context without stealing stop interaction", async () => {
   const live = installLiveLocation();
+  const loadedPack = await loadAddressPack();
+  expect(loadedPack.addresses).toHaveLength(5);
+  expect(loadedPack.streets).toHaveLength(1);
 
   render(
     <StopRadar
