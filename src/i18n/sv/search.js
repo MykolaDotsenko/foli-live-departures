@@ -334,4 +334,14 @@ export default {
     "Gångavståndet är ungefärlig vägledning baserad på fågelvägsavstånd. Den verkliga gångrutten kan vara längre.",
   "Walking link unavailable offline.": "Länk till gångrutt är inte tillgänglig offline.",
   Done: "Klar",
+  "e.g. Tampereentie 12 or Prisma": "t.ex. Tampereentie 12 eller Prisma",
+  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
+    "Hållplatser, platser och adresser söks på den här enheten. Ingen destinationstext lämnar enheten.",
+  "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
+    "Offline-data från OpenStreetMap innehåller kanske inte alla adresser. Använd Åbos officiella reseplanerare för en bredare sökning.",
+  "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":
+    "Den lokala sökningen hittade ingen hållplats, adress eller plats för “{query}”. Prova Åbos officiella reseplanerare för en bredare sökning.",
+  "Online place search is unavailable. Local stop, address and place search still works.":
+    "Platssökning online är inte tillgänglig. Lokal sökning efter hållplatser, adresser och platser fungerar fortfarande.",
+  "Street midpoint": "Ungefärlig mittpunkt på gatan",
 };

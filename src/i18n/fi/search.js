@@ -351,4 +351,14 @@ export default {
     "Kävelyreittilinkki ei ole käytettävissä offline-tilassa.",
   Done: "Valmis",
 
+  "e.g. Tampereentie 12 or Prisma": "esim. Tampereentie 12 tai Prisma",
+  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
+    "Pysäkit, paikat ja osoitteet haetaan tällä laitteella. Määränpään tekstiä ei lähetetä tältä laitteelta.",
+  "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
+    "Offline-OpenStreetMap-aineisto ei välttämättä sisällä kaikkia osoitteita. Laajempaa hakua varten käytä Turun virallista reittiopasta.",
+  "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":
+    "Paikallisesta hausta ei löytynyt pysäkkiä, osoitetta tai paikkaa “{query}”. Kokeile laajempaa hakua Turun virallisessa reittioppaassa.",
+  "Online place search is unavailable. Local stop, address and place search still works.":
+    "Verkkopaikkahaku ei ole käytettävissä. Paikallinen pysäkki-, osoite- ja paikkahaku toimii edelleen.",
+  "Street midpoint": "Kadun likimääräinen keskikohta",
 };

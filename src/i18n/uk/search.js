@@ -312,4 +312,14 @@ export default {
     "Піша відстань — приблизна оцінка по прямій. Реальний маршрут може бути довшим.",
   "Walking link unavailable offline.": "Посилання на пішохідний маршрут недоступне без мережі.",
   Done: "Готово",
+  "e.g. Tampereentie 12 or Prisma": "напр. Tampereentie 12 або Prisma",
+  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
+    "Зупинки, місця й адреси шукаються на цьому пристрої. Текст пункту призначення не залишає пристрій.",
+  "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
+    "Офлайн-дані OpenStreetMap можуть містити не всі адреси. Для ширшого пошуку скористайтеся офіційним планувальником маршрутів Turku.",
+  "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":
+    "Локальний пошук не знайшов зупинку, адресу чи місце “{query}”. Для ширшого пошуку скористайтеся офіційним планувальником маршрутів Turku.",
+  "Online place search is unavailable. Local stop, address and place search still works.":
+    "Онлайн-пошук місць недоступний. Локальний пошук зупинок, адрес і місць продовжує працювати.",
+  "Street midpoint": "Приблизна середина вулиці",
 };
