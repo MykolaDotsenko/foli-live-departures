@@ -156,6 +156,11 @@ export default function JourneySearch({
   const [origin, setOrigin] = useState(recentPosition);
   const [locating, setLocating] = useState(false);
   const inputRef = useRef(/** @type {HTMLInputElement | null} */ (null));
+  // On narrow screens suggestions are in normal flow above the submit button.
+  // A pointer press on Submit blurs the input before click; closing the list
+  // during that blur would move the button away from the pointer and cancel
+  // the click. Keep the list stable until the form submit itself closes it.
+  const submitPointerDownRef = useRef(false);
   const wantsPlaces = focused || Boolean(value.trim());
   useEffect(() => {
     if (!wantsPlaces || packPlaces.length > 0) return undefined;
@@ -314,6 +319,7 @@ export default function JourneySearch({
 
   const submit = async (event) => {
     event.preventDefault();
+    submitPointerDownRef.current = false;
     const rawQuery = value.trim();
     const query = normalizeStopQuery(value);
 
@@ -530,6 +536,7 @@ export default function JourneySearch({
             }}
             onBlur={(event) => {
               if (event.currentTarget.contains(event.relatedTarget)) return;
+              if (submitPointerDownRef.current) return;
               setActiveIndex(-1);
               setFocused(false);
             }}
@@ -655,6 +662,15 @@ export default function JourneySearch({
           <button
             type="submit"
             className={styles.submit}
+            onPointerDown={() => {
+              submitPointerDownRef.current = true;
+            }}
+            onPointerUp={() => {
+              submitPointerDownRef.current = false;
+            }}
+            onPointerCancel={() => {
+              submitPointerDownRef.current = false;
+            }}
             disabled={placeSearch.status === "loading"}
             aria-busy={placeSearch.status === "loading"}
           >
