@@ -192,7 +192,7 @@ function pointsWithin(cells, center, radiusMeters) {
  */
 function nearestStreet(index, target) {
   if (!hasCoordinates(target)) return "";
-  const center = { lat: Number(target.lat), lon: Number(target.lon) };
+  const center = { lat: Number(target?.lat), lon: Number(target?.lon) };
 
   const candidates = [
     ...pointsWithin(
@@ -343,7 +343,7 @@ export function buildRadarContext(index, position, target, heading, range) {
     return empty;
   }
 
-  const origin = { lat: Number(position.lat), lon: Number(position.lon) };
+  const origin = { lat: Number(position?.lat), lon: Number(position?.lon) };
   const radarRange = Number(range);
   const contextRadius = Math.min(
     MAX_CONTEXT_RADIUS_METERS,
