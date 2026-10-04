@@ -175,13 +175,16 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
 
   await page.goto("/?stop=164&fieldtest=1");
   await seedHome(page);
-  await startRide(page, { gps: true });
 
-  // Recreate the mobile WebView once so the restored ride performs an
-  // immediate fresh provider fetch. With live ETA <= 90 s, the production
-  // state machine must enter NEXT before straight-line GPS is allowed to arm
-  // the missed-stop latch.
-  await page.reload();
+  // NEXT must come from live transit evidence before straight-line GPS may
+  // arm the missed-stop latch. Register the response wait before Start so no
+  // browser can race the first exit-stop SIRI answer.
+  const targetAnswered = page.waitForResponse(
+    "https://data.foli.fi/siri/sm/32"
+  );
+  await startRide(page, { gps: true });
+  await targetAnswered;
+
   const ridePanel = page.locator('section[aria-labelledby="ride-mode-title"]');
   await expect(ridePanel).toHaveAttribute("data-stage", "next");
 
@@ -193,12 +196,8 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   await setRideGeolocation(page, nearFix);
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
-  // The missed-stop safety latch deliberately ignores a "near" sample until
-  // Ride Mode is already at NEXT. Confirm that stage, then submit the same
-  // precise fix once more to arm wasNearTarget before moving away.
-  await expect(ridePanel).toHaveAttribute("data-stage", "next");
-  await setRideGeolocation(page, nearFix);
-
+  // NEXT is already established, so this precise near fix has armed
+  // wasNearTarget. Moving far away now is valid location evidence of a miss.
   await setRideGeolocation(page, {
     latitude: 60.4533,
     longitude: 22.255,
