@@ -83,7 +83,7 @@ test("simulated phone ride survives weak GPS and an app restart before arrival",
   await page.getByRole("button", { name: "I'm getting off" }).click();
 
   const report = await page.evaluate(() =>
-    JSON.parse(sessionStorage.getItem("turku-field-diagnostics-v2") || "null")
+    JSON.parse(window.sessionStorage.getItem("turku-field-diagnostics-v2") || "null")
   );
   expect(report.schema).toBe(2);
   expect(report.ride.tripRef).toBe("trip-164-1");
@@ -137,7 +137,7 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   ).toBeVisible();
 
   const report = await page.evaluate(() =>
-    JSON.parse(sessionStorage.getItem("turku-field-diagnostics-v2") || "null")
+    JSON.parse(window.sessionStorage.getItem("turku-field-diagnostics-v2") || "null")
   );
   expect(report.events.some((event) => event.stage === "missed")).toBe(true);
   const serialized = JSON.stringify(report);
