@@ -8,7 +8,7 @@ import {
   placeRows,
 } from "./place-pack.mjs";
 
-test("the query covers the six Föli municipalities", () => {
+test("the query covers the seven current Föli municipalities", () => {
   const query = overpassQuery();
   for (const name of ["Turku", "Kaarina", "Raisio", "Naantali", "Lieto", "Rusko"]) {
     assert.match(query, new RegExp(`area\\["name"="${name}"\\]`));
