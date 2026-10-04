@@ -46,8 +46,8 @@ The radar adds a lightweight map-like background without introducing a map SDK o
 - nearby address points become subtle **building cues** rather than claimed building footprints;
 - repeated address points on one named street are reduced to an approximate street axis;
 - the context rotates with the same compass/motion heading as stop markers, so roads do not remain north-up while the radar rotates;
-- at most 48 building cues and 8 street axes are drawn, and the context is capped to the closest 500 m so it cannot turn into a dense general-purpose map;
-- the street nearest the selected target is highlighted and named in the target card when available;
+- at most 40 building cues and 6 street axes are drawn, and the context is capped to the closest 500 m so it cannot turn into a dense general-purpose map;
+- the street nearest the selected target is named in the target card when available;
 - the line from the passenger to the target is a straight-line orientation connector, **not** a walking route;
 - all context SVG is `aria-hidden` and `pointer-events: none`, so stop markers remain the only interactive objects inside the radar.
 
