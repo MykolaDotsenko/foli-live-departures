@@ -47,7 +47,13 @@ export default function useStopRadar({
   const [compassHeading, setCompassHeading] = useState(null);
   const [motionHeading, setMotionHeading] = useState(null);
   const [motionHeadingAt, setMotionHeadingAt] = useState(0);
-  const previousPositionRef = useRef(null);
+  // Where the walk was last measured from. It moves on only once a
+  // direction is read from it (or it is too old to read one), so a walker's
+  // 1.4 m between fixes adds up to the jitter floor instead of never
+  // reaching it.
+  const anchorRef = useRef(null);
+  // The fix on screen, kept through background pauses and passing gaps.
+  const lastFixRef = useRef(null);
   const onPositionRef = useRef(onPosition);
   onPositionRef.current = onPosition;
 
@@ -64,15 +70,18 @@ export default function useStopRadar({
       setStatus("idle");
       setPosition(null);
       setError("");
-      previousPositionRef.current = null;
+      anchorRef.current = null;
+      lastFixRef.current = null;
       setMotionHeading(null);
       setMotionHeadingAt(0);
       return undefined;
     }
     if (!pageVisible) {
+      // The last fix stays on screen, shown as waiting for a new one when
+      // the page comes back: a locked phone woke to an empty radar, target
+      // and all, until GPS answered. No direction is read across the gap.
       setStatus("paused");
-      setPosition(null);
-      previousPositionRef.current = null;
+      anchorRef.current = null;
       setMotionHeading(null);
       setMotionHeadingAt(0);
       return undefined;
@@ -99,6 +108,8 @@ export default function useStopRadar({
         };
 
         if (!hasCoordinates(next)) {
+          anchorRef.current = null;
+          lastFixRef.current = null;
           setStatus("error");
           setPosition(null);
           setError(msg("Live location returned an invalid position."));
@@ -107,10 +118,17 @@ export default function useStopRadar({
 
         const directHeading = normalizeDegrees(fix?.coords?.heading);
         const speed = nonNegativeFiniteOrNull(fix?.coords?.speed);
+        const anchor = anchorRef.current;
+        const anchorFresh =
+          anchor &&
+          Math.abs(next.timestamp - anchor.timestamp) <=
+            RADAR_MOVEMENT_HEADING_MAX_AGE_MS;
         const nextMotionHeading =
           directHeading !== null && (speed === null || speed >= 0.5)
             ? directHeading
-            : movementHeading(previousPositionRef.current, next);
+            : anchorFresh
+              ? movementHeading(anchor, next)
+              : null;
 
         if (nextMotionHeading !== null) {
           setMotionHeading((current) =>
@@ -119,7 +137,8 @@ export default function useStopRadar({
           setMotionHeadingAt(Date.now());
         }
 
-        previousPositionRef.current = next;
+        if (!anchorFresh || nextMotionHeading !== null) anchorRef.current = next;
+        lastFixRef.current = next;
         setPosition(next);
         setStatus("active");
         setError("");
@@ -131,14 +150,12 @@ export default function useStopRadar({
         // Clearing the radar on it blanked the screen and threw away the
         // direction of travel, which then never built up between errors.
         // The last fix stays, marked as waiting; only a refusal ends it.
-        if (
-          locationError?.code !== PERMISSION_DENIED &&
-          previousPositionRef.current
-        ) {
+        if (locationError?.code !== PERMISSION_DENIED && lastFixRef.current) {
           setStatus("stale");
           return;
         }
-        previousPositionRef.current = null;
+        anchorRef.current = null;
+        lastFixRef.current = null;
         setPosition(null);
         setMotionHeading(null);
         setMotionHeadingAt(0);
@@ -164,7 +181,10 @@ export default function useStopRadar({
     }
 
     const onOrientation = (event) => {
-      const next = headingFromOrientationEvent(event);
+      const next = headingFromOrientationEvent(
+        event,
+        globalThis.screen?.orientation?.angle ?? globalThis.orientation
+      );
       if (next === null) return;
       setCompassHeading((current) => smoothHeading(current, next));
     };
@@ -217,15 +237,19 @@ export default function useStopRadar({
         ? "motion"
         : "north";
 
+  // Back from the background, the new watch has not answered yet: the last
+  // position is shown as waiting for it, not as lost.
+  const shownStatus = status === "locating" && position ? "stale" : status;
+
   return useMemo(
     () => ({
-      status,
+      status: shownStatus,
       position,
       error,
       heading,
       headingSource,
       pageVisible,
     }),
-    [error, heading, headingSource, pageVisible, position, status]
+    [error, heading, headingSource, pageVisible, position, shownStatus]
   );
 }

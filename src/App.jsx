@@ -393,9 +393,10 @@ function App() {
     setStopId(nextStopId);
   };
 
-  // A saved stop's chip leaves the list once its stop is open, so the
-  // button pressed is gone. Focus goes to the board it opened, and a screen
-  // reader starts at the new stop's name.
+  // A saved stop's chip leaves the list once its stop is open, and the stop
+  // radar closes on "Open target stop", so the button pressed is gone. Focus
+  // goes to the board it opened, and a screen reader starts at the new
+  // stop's name.
   const selectSavedStop = (nextStopId) => {
     requestFocus(pageHeading);
     selectStop(nextStopId);
@@ -881,6 +882,7 @@ function App() {
           onSelectJourney={selectJourneyOption}
           onSelectTransferJourney={selectTransferJourneyOption}
           onSelect={selectStop}
+          onOpenStop={selectSavedStop}
         />
         )}
 

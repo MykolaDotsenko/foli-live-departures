@@ -2,6 +2,9 @@
   display: grid;
   gap: 14px;
   padding: 16px;
+  /* A long Swedish compound at 200% text widened the panel past a phone's
+     screen. */
+  overflow-wrap: anywhere;
   border: 1px solid #b7d3d6;
   border-radius: 18px;
   background:
@@ -130,23 +133,24 @@
     #f8ffff;
 }
 
+/* Street axes, then building cues as the second path. */
 .contextLayer {
   position: absolute;
   inset: 0;
   z-index: 1;
   width: 100%;
   height: 100%;
+  fill: none;
   pointer-events: none;
-}
-
-.contextLayer path:first-child,
-.contextLayer > line {
   stroke: #4668;
-  stroke-width: 2.2px;
+  stroke-linecap: round;
+  stroke-width: 1.8px;
 }
 
 .contextLayer path + path {
-  fill: #4663;
+  stroke-linecap: square;
+  stroke-opacity: 0.4;
+  stroke-width: 2px;
 }
 
 .radar::before,
@@ -267,16 +271,15 @@
   transform: translate(-50%, -50%);
 }
 
+/* From the passenger to the target marker's edge; top, length and turn
+   are set inline. */
 .targetNeedle {
   position: absolute;
-  top: 18%;
   left: calc(50% - 1px);
   z-index: 2;
   width: 2px;
-  height: 32%;
   border-radius: 999px;
   background: linear-gradient(to top, rgba(240, 174, 35, 0.08), #e0a323);
-  transform: rotate(0deg);
   transform-origin: 50% 100%;
 }
 
@@ -292,6 +295,7 @@
   transform: translateX(-50%) rotate(-45deg);
 }
 
+/* A stop number never wraps: "4321" broke as "432 / 1" in the target. */
 .marker {
   position: absolute;
   top: 50%;
@@ -308,6 +312,7 @@
   color: #fff;
   cursor: pointer;
   transform: translate(-50%, -50%);
+  white-space: nowrap;
 }
 
 .marker > span {
@@ -587,11 +592,12 @@
   :root[data-theme="dark"] .radar {
     border-color: var(--dm-line);
     background:
-      linear-gradient(rgba(77, 208, 196, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(77, 208, 196, 0.08) 1px, transparent 1px),
       radial-gradient(circle at center, rgba(77, 208, 196, 0.1), transparent 62%),
       var(--dm-sunken);
-    background-size: 25% 25%, 25% 25%, auto, auto;
+  }
+
+  :root[data-theme="dark"] .contextLayer {
+    stroke: #8aa9;
   }
 
   :root[data-theme="dark"] .ringOne,
@@ -625,19 +631,15 @@
   }
 }
 
+/* The arrow and the markers move together, without transitions: turning
+   the arrow by CSS took the long way round whenever the target crossed
+   straight ahead (358° to 2° spun it a full turn), and it lagged the
+   markers, which never animated. */
 @media (prefers-reduced-motion: no-preference) {
   .accuracyHalo {
     transition:
       width 400ms ease,
       height 400ms ease;
-  }
-
-  .marker > span,
-  .targetNeedle {
-    transition:
-      top 180ms linear,
-      left 180ms linear,
-      transform 180ms linear;
   }
 }
 

@@ -28,8 +28,12 @@ afterEach(() => {
   } else {
     delete navigator.geolocation;
   }
+  // jsdom keeps visibilityState on the prototype: a test that hid the page
+  // and failed before showing it again left every later test paused.
   if (originalVisibility) {
     Object.defineProperty(document, "visibilityState", originalVisibility);
+  } else {
+    delete document.visibilityState;
   }
 });
 
@@ -230,11 +234,13 @@ test("drops stale compass heading across background and waits for fresh orientat
   act(() => setVisibility("hidden"));
   await waitFor(() => expect(result.current.status).toBe("paused"));
   await waitFor(() => expect(result.current.headingSource).toBe("north"));
-  expect(result.current.position).toBeNull();
   expect(clearWatch).toHaveBeenCalledWith(21);
+  // A locked phone woke to an empty radar: the last fix stays on screen...
+  expect(result.current.position).toMatchObject({ lat: 60.4518 });
 
   act(() => setVisibility("visible"));
-  await waitFor(() => expect(result.current.status).toBe("locating"));
+  // ...shown as waiting for the new watch's first fix.
+  await waitFor(() => expect(result.current.status).toBe("stale"));
   expect(result.current.headingSource).toBe("north");
 });
 
@@ -284,7 +290,7 @@ test("does not infer motion direction across a background pause", async () => {
   await waitFor(() => expect(result.current.headingSource).toBe("north"));
 
   act(() => setVisibility("visible"));
-  await waitFor(() => expect(result.current.status).toBe("locating"));
+  await waitFor(() => expect(result.current.status).toBe("stale"));
 
   // The first post-resume fix can be far away. It establishes a new baseline
   // but must not be treated as a direction-of-travel vector from stale data.
@@ -549,4 +555,144 @@ test("a gap before the first fix is still reported as an error", async () => {
   act(() => fail({ code: 3 }));
   expect(result.current.status).toBe("error");
   expect(result.current.position).toBeNull();
+});
+
+// A walker's fixes a second apart are about 1.4 m apart, under the jitter
+// floor every time: compared fix by fix, a whole walk stayed north-up.
+test("reads a walker's direction from fixes a second apart", async () => {
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 8;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  // 1.4 m north per second; 0.0000126° of latitude is about 1.4 m.
+  for (let second = 0; second < 6; second += 1) {
+    act(() =>
+      deliver({
+        coords: { latitude: 60.4518 + second * 0.0000126, longitude: 22.2666, accuracy: 8 },
+        timestamp: 1_000 * second,
+      })
+    );
+  }
+  expect(result.current.headingSource).toBe("north");
+
+  for (let second = 6; second < 12; second += 1) {
+    act(() =>
+      deliver({
+        coords: { latitude: 60.4518 + second * 0.0000126, longitude: 22.2666, accuracy: 8 },
+        timestamp: 1_000 * second,
+      })
+    );
+  }
+  await waitFor(() => expect(result.current.headingSource).toBe("motion"));
+  expect(result.current.heading).toBeCloseTo(0, 0);
+});
+
+test("does not read a direction across fixes too far apart in time", async () => {
+  let deliver;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success) => {
+        deliver = success;
+        return 10;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  act(() =>
+    deliver({ coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 8 }, timestamp: 1 })
+  );
+  // 22 m on, but long after: drift, not a walk the radar watched.
+  act(() =>
+    deliver({
+      coords: { latitude: 60.452, longitude: 22.2666, accuracy: 8 },
+      timestamp: RADAR_MOVEMENT_HEADING_MAX_AGE_MS + 1_001,
+    })
+  );
+  expect(result.current.status).toBe("active");
+  expect(result.current.headingSource).toBe("north");
+});
+
+test("a passing gap after a background pause keeps the last fix on screen", async () => {
+  let deliver;
+  let fail;
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      watchPosition: vi.fn((success, error) => {
+        deliver = success;
+        fail = error;
+        return 12;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+
+  const { result } = renderHook(() =>
+    useStopRadar({ active: true, compassPermission: "unavailable" })
+  );
+
+  act(() =>
+    deliver({ coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 8 }, timestamp: 1 })
+  );
+  act(() => setVisibility("hidden"));
+  await waitFor(() => expect(result.current.status).toBe("paused"));
+  act(() => setVisibility("visible"));
+  await waitFor(() => expect(result.current.status).toBe("stale"));
+
+  act(() => fail({ code: 3 }));
+  expect(result.current.status).toBe("stale");
+  expect(result.current.position).toMatchObject({ lat: 60.4518 });
+  expect(result.current.error).toBe("");
+});
+
+test("turns the compass with the screen when the phone is on its side", async () => {
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { watchPosition: vi.fn(() => 13), clearWatch: vi.fn() },
+  });
+  const originalOrientation = Object.getOwnPropertyDescriptor(globalThis.screen, "orientation");
+  Object.defineProperty(globalThis.screen, "orientation", {
+    configurable: true,
+    value: { angle: 90 },
+  });
+
+  try {
+    const { result } = renderHook(() =>
+      useStopRadar({ active: true, compassPermission: "granted" })
+    );
+
+    // The phone's top edge points west; turned a quarter to the left, the
+    // top of its screen points north.
+    act(() => {
+      const event = new Event("deviceorientation");
+      Object.defineProperty(event, "webkitCompassHeading", { value: 270 });
+      globalThis.dispatchEvent(event);
+    });
+    await waitFor(() => expect(result.current.headingSource).toBe("compass"));
+    expect(result.current.heading).toBeCloseTo(0, 5);
+  } finally {
+    if (originalOrientation) {
+      Object.defineProperty(globalThis.screen, "orientation", originalOrientation);
+    } else {
+      delete globalThis.screen.orientation;
+    }
+  }
 });

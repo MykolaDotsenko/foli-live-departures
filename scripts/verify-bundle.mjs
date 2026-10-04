@@ -24,8 +24,17 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // 180,520 gzip bytes, so the reviewed complete-app cap is tightened from the
 // earlier 182,000 allocation to 181,000 bytes. The eager startup transfer cap
 // remains unchanged at 180,000 bytes.
+//
+// The stop-radar walking fixes (2026-10-04: street axes along each street's
+// addresses, direction of travel at walking pace, arrival hysteresis,
+// throttled screen-reader guidance, focus on open and on "Open target stop",
+// a wake lock while guiding, a stale last fix through background pauses)
+// measure 181,011–181,082 gzip bytes; master measured 180,498–180,525 in the
+// same three-build sample. CSS module names are allocated in processing
+// order, which moves the gzip total by about ±40 bytes from build to build,
+// so the reviewed cap is 181,300 bytes. Raw bytes stay inside 640,000.
 const MAX_SHIPPED_JS_CSS_BYTES = 640_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 181_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 181_300;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 
