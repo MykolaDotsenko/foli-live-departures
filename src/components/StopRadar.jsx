@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { loadAddressPack } from "../api/addressPack";
 import { t, useLanguage } from "../i18n";
 import useStopRadar from "../hooks/useStopRadar";
 import {
@@ -11,6 +12,10 @@ import {
   relativeDirectionKey,
 } from "../utils/stopRadar";
 import { distanceInMeters, formatAccuracy, formatDistance, hasCoordinates } from "../utils/geo";
+import {
+  buildRadarContext,
+  createRadarContextIndex,
+} from "../utils/radarContext";
 import { stopLabel } from "../utils/stopNames";
 import styles from "./StopRadar.module.css";
 
@@ -103,6 +108,9 @@ export default function StopRadar({
   const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
+  const [contextIndex, setContextIndex] = useState(() =>
+    createRadarContextIndex(null)
+  );
   const { status, position, error, heading, headingSource, pageVisible } =
     useStopRadar({
       active: true,
@@ -125,6 +133,21 @@ export default function StopRadar({
       (stop) =>
         String(stop?.id || "") === targetStopId && hasCoordinates(stop)
     ) || null;
+
+  const hasLivePosition = Boolean(position);
+
+  useEffect(() => {
+    if (!hasLivePosition) return undefined;
+
+    let current = true;
+    loadAddressPack().then((pack) => {
+      if (current) setContextIndex(createRadarContextIndex(pack));
+    });
+
+    return () => {
+      current = false;
+    };
+  }, [hasLivePosition]);
 
   const targetDistance =
     position && targetStop ? distanceInMeters(position, targetStop) : null;
@@ -172,6 +195,17 @@ export default function StopRadar({
     (stop) => String(stop.id) === targetStopId
   )?.point;
 
+  const mapContext = useMemo(
+    () =>
+      buildRadarContext(
+        contextIndex,
+        position,
+        targetStop,
+        heading,
+        range
+      ),
+    [contextIndex, heading, position, range, targetStop]
+  );
 
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
@@ -275,6 +309,39 @@ export default function StopRadar({
                   : t("Radar showing nearby Föli stops.")
               }
             >
+              <svg
+                className={styles.contextLayer}
+                viewBox="0 0 100 100"
+                aria-hidden="true"
+              >
+                {mapContext.roads.map((road) => (
+                  <line
+                    key={road.street}
+                    x1={road.x1}
+                    y1={road.y1}
+                    x2={road.x2}
+                    y2={road.y2}
+                  />
+                ))}
+                {mapContext.buildings.map((building) => (
+                  <rect
+                    key={building.id}
+                    x={building.x - building.size / 2}
+                    y={building.y - building.size / 2}
+                    width={building.size}
+                    height={building.size}
+                  />
+                ))}
+                {targetPoint && (
+                  <line
+                    x1="50"
+                    y1="50"
+                    x2={targetPoint.x}
+                    y2={targetPoint.y}
+                  />
+                )}
+              </svg>
+
               <span className={styles.northLabel} aria-hidden="true">
                 {headingSource === "north" ? t("N") : "↑"}
               </span>
@@ -348,6 +415,11 @@ export default function StopRadar({
                   <span className={styles.targetMeta}>
                     {t("Stop {id}", { id: targetStop.id })}
                   </span>
+                  {mapContext.targetStreet && (
+                    <span className={styles.targetMeta}>
+                      {mapContext.targetStreet}
+                    </span>
+                  )}
                   <span className={styles.distance}>
                     {formatDistance(targetDistance)}
                   </span>
@@ -430,6 +502,9 @@ export default function StopRadar({
 
           <p className={styles.footnote}>
             {t("The arrow uses compass north when available. Otherwise the radar is north-up or uses your recent direction of travel. Distances are straight-line estimates, not a safe walking route.")}
+            {(mapContext.roads.length > 0 || mapContext.buildings.length > 0) && (
+              <>{" · "}{t("© OpenStreetMap contributors")}</>
+            )}
           </p>
         </>
       )}

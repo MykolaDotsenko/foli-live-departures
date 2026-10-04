@@ -1,5 +1,9 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import {
+  loadAddressPack,
+  resetAddressPackForTests,
+} from "../api/addressPack";
 import StopRadar from "./StopRadar";
 
 const stops = [
@@ -12,6 +16,31 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
   navigator,
   "geolocation"
 );
+
+const radarAddressPack = {
+  addressFields: ["street", "house", "lat", "lon", "city"],
+  streetFields: ["street", "lat", "lon", "city"],
+  addresses: [
+    ["Aurakatu", "1", 60.4513, 22.2664, "Turku"],
+    ["Aurakatu", "3", 60.4517, 22.2664, "Turku"],
+    ["Aurakatu", "5", 60.4521, 22.2664, "Turku"],
+    ["Eerikinkatu", "10", 60.4518, 22.2659, "Turku"],
+    ["Eerikinkatu", "12", 60.4518, 22.267, "Turku"],
+  ],
+  streets: [["Aurakatu", 60.4518, 22.26645, "Turku"]],
+};
+
+function mockAddressPack(raw = radarAddressPack) {
+  vi.spyOn(globalThis, "fetch").mockResolvedValue({
+    ok: true,
+    json: async () => raw,
+  });
+}
+
+beforeEach(() => {
+  resetAddressPackForTests();
+  mockAddressPack();
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -133,6 +162,39 @@ test("shows a conservative arrival state and compass fallback notice", async () 
 
 // Two platforms of one stop: the radar used a 2 km scale for a target 50 m
 // away, and neither dots nor list said which Kauppatori was which.
+test("adds offline street/building context without stealing stop interaction", async () => {
+  const live = installLiveLocation();
+  const loadedPack = await loadAddressPack();
+  expect(loadedPack.addresses).toHaveLength(5);
+  expect(loadedPack.streets).toHaveLength(1);
+
+  render(
+    <StopRadar
+      stops={stops}
+      initialTargetStopId="164"
+      compassPermission="unavailable"
+      onClose={vi.fn()}
+    />
+  );
+
+  live.deliver({
+    latitude: 60.45125,
+    longitude: 22.2662,
+    accuracy: 8,
+  });
+
+  expect(await screen.findByText("Aurakatu")).toBeInTheDocument();
+  expect(screen.getByText(/OpenStreetMap contributors/i)).toBeInTheDocument();
+
+  const radar = screen.getByRole("group", {
+    name: /Radar showing nearby stops/,
+  });
+  expect(radar.querySelectorAll("svg rect").length).toBeGreaterThan(0);
+  expect(radar.querySelectorAll("svg line").length).toBeGreaterThan(1);
+  // Context is aria-hidden and non-interactive: only stop markers are buttons.
+  expect(within(radar).getAllByRole("button").length).toBeGreaterThan(0);
+});
+
 test("tells two stops of one name apart and scales to the walk", async () => {
   const live = installLiveLocation();
   const platforms = [

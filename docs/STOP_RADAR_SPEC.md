@@ -36,6 +36,23 @@ With a compass or direction of travel, a soft cone marks the top of the radar as
 
 Relative/uncalibrated orientation is never presented as north-referenced compass guidance.
 
+## Offline spatial context
+
+The radar adds a lightweight map-like background without introducing a map SDK or a new network destination:
+
+- it reuses the already-shipped OpenStreetMap address pack;
+- the pack is loaded lazily only after the radar has a live position;
+- a small in-memory grid index prevents scanning all 33k+ address rows on every GPS fix;
+- nearby address points become subtle **building cues** rather than claimed building footprints;
+- repeated address points on one named street are reduced to an approximate street axis;
+- the context rotates with the same compass/motion heading as stop markers, so roads do not remain north-up while the radar rotates;
+- at most 40 building cues and 6 street axes are drawn, and the context is capped to the closest 500 m so it cannot turn into a dense general-purpose map;
+- the street nearest the selected target is named in the target card when available;
+- the line from the passenger to the target is a straight-line orientation connector, **not** a walking route;
+- all context SVG is `aria-hidden` and `pointer-events: none`, so stop markers remain the only interactive objects inside the radar.
+
+The context fails open: if the address pack cannot be loaded, the GPS/compass radar continues to work exactly as before.
+
 ## Distance and safety
 
 - Distance is WGS84 straight-line distance, updated from live GPS.
@@ -51,10 +68,11 @@ Relative/uncalibrated orientation is never presented as north-referenced compass
 - No GPS sample, compass heading or radar target is persisted.
 - GPS/orientation remains on-device.
 - No new network destination or analytics event is introduced.
+- Street/building context reuses the same-origin ODbL address pack that the destination search already ships and caches.
 - The component is lazy-loaded so the main bundle does not pay the full radar UI cost until requested.
 
 ## Acceptance evidence
 
-Automated acceptance covers geometry, compass semantics, GPS-jitter rejection, sensor cleanup, explicit target switching, arrival uncertainty, lazy UI integration, mobile E2E and the normal PWA/CSP/bundle/accessibility gates.
+Automated acceptance covers geometry, compass semantics, GPS-jitter rejection, sensor cleanup, explicit target switching, arrival uncertainty, offline street/building context, lazy UI integration, mobile E2E and the normal PWA/CSP/bundle/accessibility gates.
 
 Physical Android/iPhone compass calibration and outdoor walking remain part of the existing physical-device manual gates.
