@@ -301,6 +301,7 @@ export default {
     "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
+  "Enter a stop or place.": "Ange en hållplats eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Platssökning kräver internetanslutning. Du kan fortfarande välja en Föli-hållplats bland förslagen.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
