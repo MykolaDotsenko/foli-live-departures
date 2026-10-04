@@ -836,6 +836,21 @@ describe("places shipped with the app", () => {
     expect(placeSearch.search).not.toHaveBeenCalled();
   });
 
+  test("keeps the mobile in-flow suggestions stable while Submit takes the pointer", async () => {
+    packagedSearch();
+    const input = await typeIn("Lidl");
+    const submit = screen.getByRole("button", { name: "Search destination" });
+
+    fireEvent.pointerDown(submit);
+    fireEvent.blur(input, { relatedTarget: null });
+
+    expect(
+      screen.getByRole("listbox", { name: "Destination suggestions" })
+    ).toBeInTheDocument();
+
+    fireEvent.pointerUp(submit);
+  });
+
   test("Tab moves into the list's own controls without closing it", async () => {
     packagedSearch();
     const input = await typeIn("Lidl");
