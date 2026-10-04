@@ -1,0 +1,63 @@
+name: Temporary place-pack refresh
+
+on:
+  push:
+    branches:
+      - claude/tender-sagan-qtyuc6
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build real Föli place pack from OpenStreetMap
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoints=(
+            "https://overpass-api.de/api/interpreter"
+            "https://overpass.kumi.systems/api/interpreter"
+            "https://overpass.nchc.org.tw/api/interpreter"
+          )
+          built=0
+          for endpoint in "${endpoints[@]}"; do
+            echo "Trying $endpoint"
+            if npm run build:place-pack -- --endpoint "$endpoint"; then
+              built=1
+              break
+            fi
+          done
+          if [ "$built" -ne 1 ]; then
+            echo "All Overpass endpoints failed" >&2
+            exit 1
+          fi
+
+      - name: Verify place pack
+        run: npm run verify:place-pack
+
+      - name: Commit generated dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/places/foli-places.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Build Föli place pack from OpenStreetMap"
+          git push
