@@ -183,7 +183,7 @@ test("adds offline street/building context without stealing stop interaction", a
     accuracy: 8,
   });
 
-  expect(await screen.findByText("Near Aurakatu")).toBeInTheDocument();
+  expect(await screen.findByText("Aurakatu")).toBeInTheDocument();
   expect(screen.getByText(/OpenStreetMap contributors/i)).toBeInTheDocument();
 
   const radar = screen.getByRole("group", {
