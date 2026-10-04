@@ -180,16 +180,6 @@ export default {
     "Виберіть Дім, Роботу, Школу, зупинку Föli, адресу або місце.",
   "Destination suggestions":
     "Підказки пункту призначення",
-  "Stop or place":
-    "Зупинка або місце",
-  "e.g. Kauppatori or Prisma":
-    "напр. Kauppatori або Prisma",
-  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
-    "Виберіть Дім, Роботу, Школу, зупинку Föli або місце, як-от Prisma.",
-  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
-    "Адреси тут не шукаються. Щоб знайти адресу, скористайтеся офіційним планувальником маршрутів Турку.",
-  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
-    "За запитом «{query}» немає ні зупинки, ні місця. Щоб знайти адресу, скористайтеся офіційним планувальником маршрутів Турку.",
   "Nearest to me first":
     "Спершу найближчі до мене",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
@@ -287,7 +277,6 @@ export default {
   "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
     "Після посадки ввімкніть сповіщення про вихід для вибраної зупинки пересадки. Режим поїздки залишається головним до виходу, після чого Помічник маршруту продовжить із ділянки 2.",
   "Enter a stop, address or place.": "Введіть зупинку, адресу або місце.",
-  "Enter a stop or place.": "Введіть зупинку або місце.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Пошук місць потребує мережі. Ви все одно можете вибрати зупинку Föli з підказок.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
