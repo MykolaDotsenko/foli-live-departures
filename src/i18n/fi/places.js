@@ -28,7 +28,6 @@ export default {
     "Toinen samanniminen pysäkki {name} on {distance} päässä: pysäkki {id}. Tarkista pysäkkinumero.",
   "Street lines and building cues are approximate orientation aids derived from offline OpenStreetMap address data, not exact building footprints or a walking route.":
     "Katulinjat ja rakennusvihjeet ovat offline-OpenStreetMap-osoitetiedoista johdettuja likimääräisiä suunnistusvihjeitä, eivät tarkkoja rakennusten pohjapiirroksia tai kävelyreittiä.",
-  "© OpenStreetMap contributors": "© OpenStreetMapin tekijät",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Kompassitietoa ei ole saatavilla, joten pohjoinen pysyy tutkan yläreunassa. Kävellessä etäisyys ja pysäkkien sijainnit päivittyvät silti.",
   "N": "P",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Tutka näyttää lähellä olevat pysäkit. Kohde {name}, pysäkki {id}, etäisyys {distance}.",
