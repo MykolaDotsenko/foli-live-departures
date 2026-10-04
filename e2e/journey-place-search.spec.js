@@ -34,6 +34,19 @@ const placePack = {
   ],
 };
 
+const addressPack = {
+  version: 1,
+  generatedAt: "2026-10-04T00:00:00Z",
+  source: "OpenStreetMap, via the Overpass API",
+  license: "ODbL-1.0",
+  attribution: "© OpenStreetMap contributors",
+  licenseUrl: "https://www.openstreetmap.org/copyright",
+  addressFields: ["street", "house", "lat", "lon", "city"],
+  streetFields: ["street", "lat", "lon", "city"],
+  addresses: [["Tampereentie", "12", 60.4515, 22.267, "Turku"]],
+  streets: [["Tampereentie", 60.4515, 22.267, "Turku"]],
+};
+
 test.describe("reviewed direct-provider activation harness", () => {
   // Production deliberately omits Nominatim from connect-src. A future direct
   // provider activation therefore requires a reviewed CSP change as well as
@@ -98,7 +111,7 @@ test.describe("reviewed direct-provider activation harness", () => {
 });
 
 
-test("production policy keeps address text local and hands off without contacting Nominatim", async ({
+test("production policy searches shipped addresses locally without contacting Nominatim", async ({
   page,
 }) => {
   let providerCalls = 0;
@@ -112,25 +125,27 @@ test("production policy keeps address text local and hands off without contactin
   await page.route("**/places/foli-places.json", (route) =>
     route.fulfill({ contentType: "application/json", body: JSON.stringify(placePack) })
   );
+  await page.route("**/addresses/foli-addresses.json", (route) =>
+    route.fulfill({ contentType: "application/json", body: JSON.stringify(addressPack) })
+  );
 
   await page.goto("/");
   const journey = page.locator('section[aria-labelledby="journey-search-title"]');
-  // No address search here, so the field does not promise one.
-  const input = journey.getByRole("combobox", { name: "Stop or place" });
-
-  await expect(
-    journey.getByRole("link", { name: "Open Turku journey planner" })
-  ).toBeVisible();
+  const input = journey.getByRole("combobox", { name: "Stop, address or place" });
 
   await input.fill("Tampereentie 12");
-  await page.waitForTimeout(150);
+  const address = journey.getByRole("option", { name: /Tampereentie 12.*Turku/i });
+  await expect(address).toBeVisible();
   expect(providerCalls).toBe(0);
-  await expect(journey.getByText(/Street addresses aren’t searched here/)).toBeVisible();
+  await address.click();
+  await expect(journey.getByRole("status")).toContainText("Tampereentie 12");
+  expect(providerCalls).toBe(0);
 
+  await journey.getByRole("button", { name: "Clear destination" }).click();
+  await input.fill("Unknownstreet 999");
   await journey.getByRole("button", { name: "Search destination" }).click();
-
   await expect(journey.getByRole("alert")).toContainText(
-    "No stop or place matches “Tampereentie 12”."
+    "No local stop, address or place matches “Unknownstreet 999”."
   );
   await expect(
     journey.getByRole("link", { name: "Open Turku journey planner" })
@@ -166,7 +181,7 @@ test("places shipped with the app are listed nearest first and become the destin
 
   await page.goto("/");
   const journey = page.locator('section[aria-labelledby="journey-search-title"]');
-  const input = journey.getByRole("combobox", { name: "Stop or place" });
+  const input = journey.getByRole("combobox", { name: "Stop, address or place" });
   await input.fill("Lidl");
 
   const list = journey.getByRole("listbox", { name: "Destination suggestions" });
