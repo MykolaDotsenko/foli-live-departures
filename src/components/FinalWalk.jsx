@@ -1,5 +1,5 @@
 import { t, useLanguage } from "../i18n";
-import { formatDistance } from "../utils/geo";
+import { directionBetween, formatDistance } from "../utils/geo";
 import { buildWalkingDirectionsUrl } from "../utils/maps";
 import styles from "./ActiveJourney.module.css";
 
@@ -27,6 +27,11 @@ export default function FinalWalk({
     walk.distanceMeters === null
       ? ""
       : formatDistance(walk.distanceMeters);
+  const direction = directionBetween(
+    { lat: walk.fromLat, lon: walk.fromLon },
+    { lat: walk.lat, lon: walk.lon }
+  );
+  const directionLabel = direction ? t(direction) : "";
 
   return (
     <section
@@ -48,6 +53,14 @@ export default function FinalWalk({
           {distance ? ` · ≈${distance}` : ""}
         </span>
       </div>
+
+      {directionLabel && (
+        <p className={styles.note}>
+          {t("Destination is roughly {direction} from this stop.", {
+            direction: directionLabel,
+          })}
+        </p>
+      )}
 
       <p className={styles.note}>
         {t(
