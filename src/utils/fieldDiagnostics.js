@@ -1,5 +1,5 @@
-export const FIELD_DIAGNOSTICS_STORAGE_KEY = "turku-field-diagnostics-v1";
-export const FIELD_DIAGNOSTICS_SCHEMA = 1;
+export const FIELD_DIAGNOSTICS_STORAGE_KEY = "turku-field-diagnostics-v2";
+export const FIELD_DIAGNOSTICS_SCHEMA = 2;
 const MAX_EVENTS = 200;
 
 /** @returns {boolean} */
@@ -20,6 +20,28 @@ function text(value) {
 function positive(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function ageClass(value) {
+  const seconds = Number(value);
+  if (!Number.isFinite(seconds) || seconds < 0) return "unknown";
+  if (seconds <= 10) return "fresh";
+  if (seconds <= 30) return "aging";
+  return "stale";
+}
+
+function accuracyClass(value) {
+  const meters = Number(value);
+  if (!Number.isFinite(meters) || meters < 0) return "unknown";
+  if (meters <= 15) return "excellent";
+  if (meters <= 35) return "good";
+  if (meters <= 75) return "fair";
+  return "weak";
+}
+
+function allowed(value, choices, fallback = "unknown") {
+  const candidate = String(value || "");
+  return choices.includes(candidate) ? candidate : fallback;
 }
 
 /** @returns {any | null} */
@@ -112,9 +134,21 @@ export function sanitizedEvidence(
     providerHealth,
     providerMatched: Boolean(runtime?.lastLiveMatchAt),
     providerError: Boolean(runtime?.lastError),
+    providerAge: ageClass(runtime?.providerPositionAgeSec),
+    etaSource: allowed(runtime?.etaSource, ["location", "live", "schedule"]),
+    notificationPermission: allowed(
+      runtime?.notificationPermission,
+      ["unknown", "granted", "unavailable"]
+    ),
     targetListed: Boolean(runtime?.targetListed),
     targetWasAtStop: Boolean(runtime?.targetWasAtStop),
     gpsState,
+    gpsStatus: allowed(
+      gps?.status,
+      ["off", "unavailable", "starting", "weak", "off-route", "active", "error"]
+    ),
+    gpsAge: ageClass(runtime?.gpsAgeSec),
+    gpsAccuracy: accuracyClass(gps?.accuracyM),
     gpsOnRoute: Boolean(gps?.onRoute),
     gpsShapeUsable: Boolean(gps?.shapeUsable),
     transferProviderState: text(transferRevalidation?.providerState),

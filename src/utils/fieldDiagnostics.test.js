@@ -79,7 +79,13 @@ test("evidence stores freshness classes but no GPS distances or coordinates", ()
   expect(evidence).toMatchObject({
     providerHealth: "live",
     providerMatched: true,
+    providerAge: "unknown",
+    etaSource: "unknown",
+    notificationPermission: "unknown",
     gpsState: "fresh",
+    gpsStatus: "active",
+    gpsAge: "fresh",
+    gpsAccuracy: "good",
     gpsOnRoute: true,
     transferProviderState: "live",
     transferDecision: "good",
@@ -88,6 +94,38 @@ test("evidence stores freshness classes but no GPS distances or coordinates", ()
   expect(serialized).not.toContain("distance");
   expect(serialized).not.toContain("60.45");
   expect(serialized).not.toContain("22.26");
+});
+
+test("diagnostic quality buckets remain useful without storing precise fixes", () => {
+  const evidence = sanitizedEvidence(
+    {
+      gpsAgeSec: 24,
+      providerPositionAgeSec: 48,
+      trackingHealth: "delayed",
+      etaSource: "location",
+      notificationPermission: "granted",
+    },
+    {
+      status: "weak",
+      accuracyM: 140,
+      latitude: 60.451234,
+      longitude: 22.267891,
+    }
+  );
+
+  expect(evidence).toMatchObject({
+    providerHealth: "delayed",
+    providerAge: "stale",
+    etaSource: "location",
+    notificationPermission: "granted",
+    gpsAge: "aging",
+    gpsAccuracy: "weak",
+    gpsStatus: "weak",
+  });
+  const serialized = JSON.stringify(evidence);
+  expect(serialized).not.toContain("140");
+  expect(serialized).not.toContain("60.451234");
+  expect(serialized).not.toContain("22.267891");
 });
 
 test("sanitizes and deterministically orders all future-leg states", () => {
