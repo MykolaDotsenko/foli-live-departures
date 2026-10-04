@@ -13,7 +13,11 @@ for (const token of [
   "pull-requests: write",
   "npm run build:place-pack",
   "npm run verify:place-pack",
+  "npm run build:address-pack",
+  "npm run verify:address-pack",
   "scripts/place-pack-diff.mjs",
+  "scripts/address-pack-diff.mjs",
+  "public/addresses/foli-addresses.json",
   "gh pr create",
   "automation/osm-data-refresh",
 ]) {
@@ -28,4 +32,4 @@ if (!workflow.includes("github.actor != 'github-actions[bot]'")) {
 if (failures.length) {
   throw new Error(["OSM refresh workflow contract failed:", ...failures.map((x) => `- ${x}`)].join("\n"));
 }
-console.log("OSM refresh workflow verified: reviewed PR only, no automatic merge.");
+console.log("OSM refresh workflow verified: POI + address packs, reviewed PR only, no automatic merge.");
