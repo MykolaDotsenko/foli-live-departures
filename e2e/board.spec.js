@@ -286,7 +286,7 @@ test("a returning passenger can still plan a journey from the reopened stop", as
   await page.getByRole("button", { name: "Where do you want to go?" }).click();
 
   const journey = page.locator('section[aria-labelledby="journey-search-title"]');
-  const destination = journey.getByRole("combobox", { name: "Stop or place" });
+  const destination = journey.getByRole("combobox", { name: "Stop, address or place" });
   await destination.fill("Kauppatori");
   await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
 
