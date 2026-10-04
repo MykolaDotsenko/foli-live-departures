@@ -88,6 +88,14 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     />
   );
 
+  // Nothing to choose from yet: the passenger is told what the button does.
+  expect(
+    screen.getByText("Uses your location once. It isn’t saved.")
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText("Choose the best fit or switch back to pure distance.")
+  ).not.toBeInTheDocument();
+
   fireEvent.click(
     screen.getByRole("button", { name: "Find nearest stop" })
   );
@@ -95,6 +103,9 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
   const group = await screen.findByRole("group", {
     name: "Nearby Föli stops for Home stop",
   });
+  expect(
+    screen.getByText("Choose the best fit or switch back to pure distance.")
+  ).toBeInTheDocument();
 
   await waitFor(() => {
     const buttons = within(group).getAllByRole("button");
