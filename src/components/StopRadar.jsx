@@ -136,8 +136,10 @@ export default function StopRadar({
         String(stop?.id || "") === targetStopId && hasCoordinates(stop)
     ) || null;
 
+  const hasLivePosition = Boolean(position);
+
   useEffect(() => {
-    if (!position || contextStatus !== "idle") return undefined;
+    if (!hasLivePosition) return undefined;
 
     let current = true;
     setContextStatus("loading");
@@ -155,7 +157,7 @@ export default function StopRadar({
     return () => {
       current = false;
     };
-  }, [contextStatus, position]);
+  }, [hasLivePosition]);
 
   const targetDistance =
     position && targetStop ? distanceInMeters(position, targetStop) : null;
