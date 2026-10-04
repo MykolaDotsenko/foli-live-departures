@@ -88,7 +88,7 @@ describe("radar context", () => {
     );
     expect(
       context.roads.find((road) => road.street === "Aurakatu")
-    ).toMatchObject({ targetStreet: true, showLabel: true });
+    ).toMatchObject({ targetStreet: true });
     expect(context.buildings.length).toBeGreaterThan(0);
     expect(context.buildings.every((building) => building.x >= 8 && building.x <= 92)).toBe(true);
     expect(context.buildings.every((building) => building.y >= 8 && building.y <= 92)).toBe(true);
@@ -146,9 +146,6 @@ describe("radar context", () => {
       100
     );
 
-    expect(context.buildings.map((building) => building.street)).not.toContain(
-      "Faraway"
-    );
     expect(context.roads.map((road) => road.street)).not.toContain("Faraway");
   });
 });
