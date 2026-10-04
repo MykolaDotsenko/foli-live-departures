@@ -319,11 +319,9 @@ export default function JourneySearch({
 
     if (!query) {
       setError(
-        t(
-          directPlaceSearchEnabled
-            ? "Enter a stop, address or place."
-            : "Enter a stop or place."
-        )
+        directPlaceSearchEnabled
+          ? t("Enter a stop, address or place.")
+          : t("Enter a stop or place.")
       );
       return;
     }
