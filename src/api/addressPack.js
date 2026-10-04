@@ -57,6 +57,7 @@ export function parseAddressPack(raw) {
     return { addresses: [], streets: [] };
   }
 
+  /** @type {PackAddress[]} */
   const addresses = [];
   for (const row of raw.addresses) {
     if (!Array.isArray(row)) continue;
@@ -88,6 +89,7 @@ export function parseAddressPack(raw) {
     });
   }
 
+  /** @type {PackStreet[]} */
   const streets = [];
   for (const row of raw.streets) {
     if (!Array.isArray(row)) continue;
