@@ -17,7 +17,7 @@ export const PLACE_PACK_FIELDS = [
   "nameSv",
 ];
 
-// The six Föli municipalities.
+// The seven current Föli municipalities.
 export const FOLI_MUNICIPALITIES = [
   "Turku",
   "Kaarina",
@@ -25,14 +25,15 @@ export const FOLI_MUNICIPALITIES = [
   "Naantali",
   "Lieto",
   "Rusko",
+  "Paimio",
 ];
 
-// Generous around the six municipalities, for the verifier's sanity check.
+// Generous around all seven municipalities (including Naantali's archipelago), for the verifier's sanity check.
 export const FOLI_AREA_BOUNDS = {
-  south: 60.2,
-  north: 60.75,
-  west: 21.6,
-  east: 22.75,
+  south: 60.05,
+  north: 60.85,
+  west: 21.2,
+  east: 23.15,
 };
 
 // Raw JSON is fetched once, when the destination field is first used, and
