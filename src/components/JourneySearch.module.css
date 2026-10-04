@@ -263,6 +263,12 @@
     grid-template-columns: 1fr;
   }
 
+  .suggestions {
+    position: static;
+    max-height: min(45vh, 360px);
+    margin-top: 5px;
+  }
+
   .submit {
     width: 100%;
   }
