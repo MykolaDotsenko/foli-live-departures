@@ -4,8 +4,6 @@ import { bearingDegrees, radarPoint } from "./stopRadar";
 /** @import { ParsedAddressPack, PackAddress } from "../api/addressPack" */
 
 /** @typedef {Map<string, PackAddress[]>} RadarContextIndex */
-/** @typedef {[string, {x:number,y:number}, {x:number,y:number}, number, number]} RoadCue */
-
 const CELL_DEGREES = 0.006;
 const MAX_CONTEXT_METERS = 500;
 const MAX_BUILDINGS = 40;
@@ -91,36 +89,6 @@ function nearestStreet(index, target) {
 }
 
 /**
- * @param {string} street
- * @param {{item:PackAddress,distanceMeters:number}[]} entries
- * @param {{lat:number,lon:number}} origin
- * @param {number|null} heading
- * @param {number} range
- * @returns {RoadCue | null}
- */
-function roadFor(street, entries, origin, heading, range) {
-  if (entries.length < 2) return null;
-
-  const first = entries[0];
-  let second = null;
-  let span = 0;
-  for (const candidate of entries.slice(1)) {
-    const raw = distanceInMeters(first.item, candidate.item);
-    if (Number.isFinite(raw) && Number(raw) > span) {
-      span = Number(raw);
-      second = candidate;
-    }
-  }
-  if (!second || span < MIN_ROAD_SPAN_METERS) return null;
-
-  const a = point(origin, first.item, heading, range);
-  const b = point(origin, second.item, heading, range);
-  return a && b
-    ? [street, a, b, entries[0].distanceMeters, entries.length]
-    : null;
-}
-
-/**
  * Approximate orientation context. It reuses the shipped address pack and
  * emits two compact SVG paths rather than dozens of React SVG children.
  *
@@ -153,35 +121,34 @@ export function buildRadarContext(index, position, target, heading, range) {
   );
   const targetStreet = nearestStreet(index, target);
 
-  const streets = new Map();
-  for (const entry of entries) {
-    const name = String(entry.item.street || "");
-    if (!name) continue;
-    const group = streets.get(name);
-    if (group) group.push(entry);
-    else streets.set(name, [entry]);
-  }
+  const usedStreets = new Set();
+  let roadPath = "";
+  let roadCount = 0;
+  for (let i = 0; i < entries.length && roadCount < MAX_ROADS; i += 1) {
+    const first = entries[i];
+    const street = String(first.item.street || "");
+    if (!street || usedStreets.has(street)) continue;
 
-  /** @type {RoadCue[]} */
-  const roads = [];
-  for (const [street, group] of streets) {
-    const road = roadFor(street, group, origin, heading, radarRange);
-    if (road) roads.push(road);
-  }
-  roads.sort(
-    (a, b) =>
-      Number(b[0] === targetStreet) - Number(a[0] === targetStreet) ||
-      a[3] - b[3] ||
-      b[4] - a[4]
-  );
+    let second = null;
+    for (let j = i + 1; j < entries.length; j += 1) {
+      const candidate = entries[j];
+      if (candidate.item.street !== street) continue;
+      const span = distanceInMeters(first.item, candidate.item);
+      if (Number.isFinite(span) && Number(span) >= MIN_ROAD_SPAN_METERS) {
+        second = candidate;
+        break;
+      }
+    }
+    if (!second) continue;
 
-  const roadPath = roads
-    .slice(0, MAX_ROADS)
-    .map(
-      (road) =>
-        `M${crisp(road[1].x)} ${crisp(road[1].y)}L${crisp(road[2].x)} ${crisp(road[2].y)}`
-    )
-    .join("");
+    const a = point(origin, first.item, heading, radarRange);
+    const b = point(origin, second.item, heading, radarRange);
+    if (!a || !b) continue;
+
+    roadPath += `M${crisp(a.x)} ${crisp(a.y)}L${crisp(b.x)} ${crisp(b.y)}`;
+    usedStreets.add(street);
+    roadCount += 1;
+  }
 
   const seen = new Set();
   const size =
