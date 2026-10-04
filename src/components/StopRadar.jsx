@@ -109,7 +109,6 @@ export default function StopRadar({
   const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
-  const [contextStatus, setContextStatus] = useState("idle");
   const [contextIndex, setContextIndex] = useState(() =>
     createRadarContextIndex(null)
   );
@@ -142,17 +141,9 @@ export default function StopRadar({
     if (!hasLivePosition) return undefined;
 
     let current = true;
-    setContextStatus("loading");
-    Promise.resolve()
-      .then(() => loadAddressPack())
-      .then((pack) => {
-        if (!current) return;
-        setContextIndex(createRadarContextIndex(pack));
-        setContextStatus("ready");
-      })
-      .catch(() => {
-        if (current) setContextStatus("unavailable");
-      });
+    loadAddressPack().then((pack) => {
+      if (current) setContextIndex(createRadarContextIndex(pack));
+    });
 
     return () => {
       current = false;
