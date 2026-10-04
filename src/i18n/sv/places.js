@@ -27,7 +27,6 @@ export default {
     "En annan hållplats med namnet {name} ligger {distance} bort: hållplats {id}. Kontrollera hållplatsnumret.",
   "Street lines and building cues are approximate orientation aids derived from offline OpenStreetMap address data, not exact building footprints or a walking route.":
     "Gatulinjer och byggnadsmarkeringar är ungefärliga orienteringshjälpmedel från offline-adressdata i OpenStreetMap, inte exakta byggnadskonturer eller en gångväg.",
-  "© OpenStreetMap contributors": "© OpenStreetMap-bidragsgivare",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Kompassdata är inte tillgänglig, så norr stannar uppåt i radarn. När du går uppdateras ändå avstånd och hållplatsernas lägen.",
   "N": "N",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Radarn visar hållplatser i närheten. Mål {name}, hållplats {id}, {distance} bort.",
