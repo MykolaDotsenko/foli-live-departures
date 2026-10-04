@@ -337,6 +337,16 @@ export default {
   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
     "Platssökningen är tillfälligt hastighetsbegränsad. Vänta en stund och försök igen; Föli-hållplatssökningen fungerar fortfarande.",
   "Final walk": "Sista gångsträckan",
+  "Destination is roughly {direction} from this stop.":
+    "Destinationen ligger ungefär {direction} från den här hållplatsen.",
+  north: "norrut",
+  "north-east": "nordost",
+  east: "österut",
+  "south-east": "sydost",
+  south: "söderut",
+  "south-west": "sydväst",
+  west: "västerut",
+  "north-west": "nordväst",
   "Walk to {destination}": "Gå till {destination}",
   "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
     "Gångavståndet är ungefärlig vägledning baserad på fågelvägsavstånd. Den verkliga gångrutten kan vara längre.",
