@@ -197,14 +197,8 @@ export default function StopRadar({
 
   const mapContext = useMemo(
     () =>
-      buildRadarContext(
-        contextIndex,
-        position,
-        targetStop,
-        heading,
-        range
-      ),
-    [contextIndex, heading, position, range, targetStop]
+      buildRadarContext(contextIndex, position, heading, range),
+    [contextIndex, heading, position, range]
   );
 
   const guidanceText =
@@ -401,11 +395,6 @@ export default function StopRadar({
                   <span className={styles.targetMeta}>
                     {t("Stop {id}", { id: targetStop.id })}
                   </span>
-                  {mapContext.targetStreet && (
-                    <span className={styles.targetMeta}>
-                      {mapContext.targetStreet}
-                    </span>
-                  )}
                   <span className={styles.distance}>
                     {formatDistance(targetDistance)}
                   </span>
@@ -488,9 +477,7 @@ export default function StopRadar({
 
           <p className={styles.footnote}>
             {t("The arrow uses compass north when available. Otherwise the radar is north-up or uses your recent direction of travel. Distances are straight-line estimates, not a safe walking route.")}
-            {(mapContext.roadPath || mapContext.buildingPath) && (
-              <>{" · "}{t("© OpenStreetMap contributors")}</>
-            )}
+            {" · © OpenStreetMap contributors"}
           </p>
         </>
       )}
