@@ -2,13 +2,9 @@ import { distanceInMeters, hasCoordinates } from "./geo";
 import { bearingDegrees, radarPoint } from "./stopRadar";
 
 /** @import { ParsedAddressPack, PackAddress } from "../api/addressPack" */
-
 /** @typedef {Map<string, PackAddress[]>} RadarContextIndex */
+
 const CELL_DEGREES = 0.006;
-const MAX_CONTEXT_METERS = 500;
-const MAX_BUILDINGS = 40;
-const MAX_ROADS = 6;
-const MIN_ROAD_SPAN_METERS = 24;
 
 /** @param {number} value */
 function cell(value) {
@@ -20,13 +16,9 @@ function key(lat, lon) {
   return `${lat}:${lon}`;
 }
 
-/** @param {number} value */
-function crisp(value) {
-  return Math.round(value * 10) / 10;
-}
-
 /**
- * Compact grid for the address data already shipped by destination search.
+ * Index the already-shipped OSM address points once. The radar then reads only
+ * the surrounding cells instead of scanning the complete pack on every fix.
  * @param {ParsedAddressPack | null | undefined} pack
  * @returns {RadarContextIndex}
  */
@@ -49,20 +41,19 @@ export function createRadarContextIndex(pack) {
  * @param {number} radius
  */
 function nearby(index, origin, radius) {
-  const centerLat = cell(origin.lat);
-  const centerLon = cell(origin.lon);
+  const lat = cell(origin.lat);
+  const lon = cell(origin.lon);
   const result = [];
-
   for (let y = -1; y <= 1; y += 1) {
     for (let x = -1; x <= 1; x += 1) {
-      for (const item of index.get(key(centerLat + y, centerLon + x)) || []) {
-        const raw = distanceInMeters(origin, item);
-        if (!Number.isFinite(raw) || Number(raw) > radius) continue;
-        result.push({ item, distanceMeters: Number(raw) });
+      for (const item of index.get(key(lat + y, lon + x)) || []) {
+        const distance = distanceInMeters(origin, item);
+        if (!Number.isFinite(distance) || Number(distance) > radius) continue;
+        result.push({ item, distance: Number(distance) });
       }
     }
   }
-  return result.sort((a, b) => a.distanceMeters - b.distanceMeters);
+  return result.sort((a, b) => a.distance - b.distance);
 }
 
 /**
@@ -79,27 +70,17 @@ function point(origin, item, heading, range) {
 }
 
 /**
- * @param {RadarContextIndex} index
- * @param {{lat:number,lon:number}|null|undefined} target
- */
-function nearestStreet(index, target) {
-  if (!hasCoordinates(target)) return "";
-  const origin = { lat: Number(target?.lat), lon: Number(target?.lon) };
-  return String(nearby(index, origin, 160)[0]?.item?.street || "");
-}
-
-/**
- * Approximate orientation context. It reuses the shipped address pack and
- * emits two compact SVG paths rather than dozens of React SVG children.
+ * Produce two compact SVG paths: approximate local street axes and address
+ * blocks used only as orientation cues. They are not cadastral footprints or
+ * pedestrian routing.
  *
  * @param {RadarContextIndex | null | undefined} index
  * @param {{lat:number,lon:number}|null|undefined} position
- * @param {{lat:number,lon:number}|null|undefined} target
  * @param {number|null} heading
  * @param {number} range
  */
-export function buildRadarContext(index, position, target, heading, range) {
-  const empty = { buildingPath: "", roadPath: "", targetStreet: "" };
+export function buildRadarContext(index, position, heading, range) {
+  const empty = { buildingPath: "", roadPath: "" };
   if (
     !(index instanceof Map) ||
     !hasCoordinates(position) ||
@@ -109,32 +90,24 @@ export function buildRadarContext(index, position, target, heading, range) {
     return empty;
   }
 
-  const origin = {
-    lat: Number(position?.lat),
-    lon: Number(position?.lon),
-  };
+  const origin = { lat: Number(position?.lat), lon: Number(position?.lon) };
   const radarRange = Number(range);
-  const entries = nearby(
-    index,
-    origin,
-    Math.min(MAX_CONTEXT_METERS, Math.max(120, radarRange * 1.2))
-  );
-  const targetStreet = nearestStreet(index, target);
+  const entries = nearby(index, origin, Math.min(500, radarRange));
 
-  const usedStreets = new Set();
+  const used = new Set();
   let roadPath = "";
   let roadCount = 0;
-  for (let i = 0; i < entries.length && roadCount < MAX_ROADS; i += 1) {
+  for (let i = 0; i < entries.length && roadCount < 6; i += 1) {
     const first = entries[i];
     const street = String(first.item.street || "");
-    if (!street || usedStreets.has(street)) continue;
+    if (!street || used.has(street)) continue;
 
     let second = null;
     for (let j = i + 1; j < entries.length; j += 1) {
       const candidate = entries[j];
       if (candidate.item.street !== street) continue;
       const span = distanceInMeters(first.item, candidate.item);
-      if (Number.isFinite(span) && Number(span) >= MIN_ROAD_SPAN_METERS) {
+      if (Number.isFinite(span) && Number(span) >= 24) {
         second = candidate;
         break;
       }
@@ -144,30 +117,17 @@ export function buildRadarContext(index, position, target, heading, range) {
     const a = point(origin, first.item, heading, radarRange);
     const b = point(origin, second.item, heading, radarRange);
     if (!a || !b) continue;
-
-    roadPath += `M${crisp(a.x)} ${crisp(a.y)}L${crisp(b.x)} ${crisp(b.y)}`;
-    usedStreets.add(street);
+    roadPath += `M${Math.round(a.x)} ${Math.round(a.y)}L${Math.round(b.x)} ${Math.round(b.y)}`;
+    used.add(street);
     roadCount += 1;
   }
 
-  const seen = new Set();
-  const size =
-    radarRange <= 100 ? 2.8 : radarRange <= 200 ? 2.2 : radarRange <= 400 ? 1.7 : 1.2;
   let buildingPath = "";
-  let count = 0;
-  for (const entry of entries) {
-    if (entry.distanceMeters > radarRange) continue;
+  for (const entry of entries.slice(0, 40)) {
     const p = point(origin, entry.item, heading, radarRange);
     if (!p) continue;
-    const block = `${Math.round(p.x / 3)}:${Math.round(p.y / 3)}`;
-    if (seen.has(block)) continue;
-    seen.add(block);
-    const x = crisp(p.x - size / 2);
-    const y = crisp(p.y - size / 2);
-    buildingPath += `M${x} ${y}h${size}v${size}h-${size}z`;
-    count += 1;
-    if (count >= MAX_BUILDINGS) break;
+    buildingPath += `M${Math.round(p.x) - 1} ${Math.round(p.y) - 1}h2v2h-2z`;
   }
 
-  return { buildingPath, roadPath, targetStreet };
+  return { buildingPath, roadPath };
 }
