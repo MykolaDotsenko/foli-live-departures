@@ -14,14 +14,20 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
   "geolocation"
 );
 
-const emptyAddressPack = {
+const radarAddressPack = {
   addressFields: ["street", "house", "lat", "lon", "city"],
   streetFields: ["street", "lat", "lon", "city"],
-  addresses: [],
-  streets: [],
+  addresses: [
+    ["Aurakatu", "1", 60.4513, 22.2664, "Turku"],
+    ["Aurakatu", "3", 60.4517, 22.2664, "Turku"],
+    ["Aurakatu", "5", 60.4521, 22.2664, "Turku"],
+    ["Eerikinkatu", "10", 60.4518, 22.2659, "Turku"],
+    ["Eerikinkatu", "12", 60.4518, 22.267, "Turku"],
+  ],
+  streets: [["Aurakatu", 60.4518, 22.26645, "Turku"]],
 };
 
-function mockAddressPack(raw = emptyAddressPack) {
+function mockAddressPack(raw = radarAddressPack) {
   vi.spyOn(globalThis, "fetch").mockResolvedValue({
     ok: true,
     json: async () => raw,
@@ -155,20 +161,6 @@ test("shows a conservative arrival state and compass fallback notice", async () 
 // away, and neither dots nor list said which Kauppatori was which.
 test("adds offline street/building context without stealing stop interaction", async () => {
   const live = installLiveLocation();
-  vi.restoreAllMocks();
-  resetAddressPackForTests();
-  mockAddressPack({
-    addressFields: ["street", "house", "lat", "lon", "city"],
-    streetFields: ["street", "lat", "lon", "city"],
-    addresses: [
-      ["Aurakatu", "1", 60.4513, 22.2664, "Turku"],
-      ["Aurakatu", "3", 60.4517, 22.2664, "Turku"],
-      ["Aurakatu", "5", 60.4521, 22.2664, "Turku"],
-      ["Eerikinkatu", "10", 60.4518, 22.2659, "Turku"],
-      ["Eerikinkatu", "12", 60.4518, 22.267, "Turku"],
-    ],
-    streets: [["Aurakatu", 60.4518, 22.26645, "Turku"]],
-  });
 
   render(
     <StopRadar
