@@ -71,12 +71,10 @@ describe("radar context", () => {
     const context = buildRadarContext(
       index,
       { lat: 60.4518, lon: 22.2662 },
-      { lat: 60.4519, lon: 22.26642 },
       0,
       200
     );
 
-    expect(context.targetStreet).toBe("Aurakatu");
     expect(context.roadPath).toMatch(/^M/);
     expect(context.roadPath).toContain("L");
     expect(context.buildingPath).toMatch(/^M/);
@@ -88,14 +86,12 @@ describe("radar context", () => {
     const north = buildRadarContext(
       index,
       { lat: 60.4518, lon: 22.2662 },
-      { lat: 60.4519, lon: 22.26642 },
       0,
       200
     );
     const east = buildRadarContext(
       index,
       { lat: 60.4518, lon: 22.2662 },
-      { lat: 60.4519, lon: 22.26642 },
       90,
       200
     );
@@ -110,14 +106,12 @@ describe("radar context", () => {
       buildRadarContext(
         createRadarContextIndex(null),
         { lat: 60.4518, lon: 22.2662 },
-        { lat: 60.4519, lon: 22.26642 },
         null,
         100
       )
     ).toEqual({
       buildingPath: "",
       roadPath: "",
-      targetStreet: "",
     });
   });
 
@@ -136,7 +130,6 @@ describe("radar context", () => {
         ])
       ),
       { lat: 60.4518, lon: 22.2662 },
-      { lat: 60.4519, lon: 22.26642 },
       null,
       100
     );
