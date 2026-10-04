@@ -1,4 +1,4 @@
-name: Temporary OSM geometry diagnostic
+name: Temporary place-pack refresh
 
 on:
   push:
@@ -6,33 +6,61 @@ on:
       - claude/tender-sagan-qtyuc6
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: temporary-place-pack-refresh
+  cancel-in-progress: true
 
 jobs:
-  diagnose:
+  refresh:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 10
     steps:
-      - name: Inspect problematic OSM way
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build real Föli place pack from OpenStreetMap
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
-          import json, urllib.request
-          url = "https://api.openstreetmap.org/api/0.6/way/394920306/full.json"
-          req = urllib.request.Request(url, headers={"User-Agent": "foli-live-departures-diagnostic"})
-          with urllib.request.urlopen(req, timeout=30) as response:
-              data = json.load(response)
-          way = next(e for e in data["elements"] if e["type"] == "way" and e["id"] == 394920306)
-          nodes = {e["id"]: e for e in data["elements"] if e["type"] == "node"}
-          coords = [(nodes[n]["lat"], nodes[n]["lon"]) for n in way["nodes"] if n in nodes]
-          print("tags=", json.dumps(way.get("tags", {}), ensure_ascii=False, sort_keys=True))
-          print("nodes=", len(coords))
-          print("lat_min=", min(lat for lat, _ in coords), "lat_max=", max(lat for lat, _ in coords))
-          print("lon_min=", min(lon for _, lon in coords), "lon_max=", max(lon for _, lon in coords))
-          print("bbox_center=", (
-              (min(lat for lat, _ in coords) + max(lat for lat, _ in coords)) / 2,
-              (min(lon for _, lon in coords) + max(lon for _, lon in coords)) / 2,
-          ))
-          PY
+          endpoints=(
+            "https://overpass-api.de/api/interpreter"
+            "https://overpass.kumi.systems/api/interpreter"
+          )
+          built=0
+          for endpoint in "${endpoints[@]}"; do
+            echo "Trying $endpoint"
+            if npm run build:place-pack -- --endpoint "$endpoint"; then
+              built=1
+              break
+            fi
+          done
+          if [ "$built" -ne 1 ]; then
+            echo "All Overpass endpoints failed" >&2
+            exit 1
+          fi
+
+      - name: Verify place pack
+        run: npm run verify:place-pack
+
+      - name: Commit generated dataset
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/places/foli-places.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Build Föli place pack from OpenStreetMap"
+          git push
