@@ -350,9 +350,6 @@ export default function StopRadar({
                       y1={road.y1}
                       x2={road.x2}
                       y2={road.y2}
-                      data-target-street={
-                        road.targetStreet ? "true" : undefined
-                      }
                       vectorEffect="non-scaling-stroke"
                     />
                   ))}
@@ -493,7 +490,7 @@ export default function StopRadar({
                   {sameNameStop && (
                     <span className={styles.notice}>
                       {t(
-                        "Another stop named {name} is {distance} away: stop {id}. Check the stop number.",
+                        "Other {name}: stop {id}, {distance} away. Check the stop number.",
                         {
                           name: stopLabel(sameNameStop),
                           distance: formatDistance(
