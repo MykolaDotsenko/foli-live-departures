@@ -759,6 +759,16 @@ describe("places shipped with the app", () => {
     return input;
   }
 
+  test("does not promise address search for an empty destination", () => {
+    packagedSearch();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Search destination" })
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Enter a stop or place."
+    );
+  });
+
   test("lists the Lidls and asks before sorting them by distance", async () => {
     const coords = { latitude: 60.489, longitude: 22.253, accuracy: 20 };
     const getCurrentPosition = vi.fn((success) => success({ coords }));
