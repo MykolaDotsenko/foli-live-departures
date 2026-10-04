@@ -144,21 +144,16 @@
 
 .roadLayer line {
   stroke: rgba(74, 101, 108, 0.48);
-  stroke-linecap: round;
   stroke-width: 2.2px;
 }
 
 .buildingLayer rect {
   fill: rgba(75, 98, 105, 0.2);
-  stroke: rgba(75, 98, 105, 0.24);
-  stroke-width: 0.35px;
 }
 
 .targetConnector {
   stroke: rgba(183, 115, 0, 0.7);
   stroke-width: 1.8px;
-  stroke-linecap: round;
-  stroke-dasharray: 4 3;
 }
 
 .radar::before,
@@ -604,15 +599,6 @@
       radial-gradient(circle at center, rgba(77, 208, 196, 0.1), transparent 62%),
       var(--dm-sunken);
     background-size: 25% 25%, 25% 25%, auto, auto;
-  }
-
-  :root[data-theme="dark"] .roadLayer line {
-    stroke: rgba(174, 199, 202, 0.45);
-  }
-
-  :root[data-theme="dark"] .buildingLayer rect {
-    fill: rgba(174, 199, 202, 0.16);
-    stroke: rgba(174, 199, 202, 0.22);
   }
 
   :root[data-theme="dark"] .ringOne,
