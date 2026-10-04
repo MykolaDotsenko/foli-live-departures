@@ -19,14 +19,13 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // journey-confidence and route-diversity layer (2026-10-04). The latter build
 // measured 637,070 raw bytes before that allocation.
 //
-// The stop-radar offline street/building context was then aggressively trimmed
-// until the complete raw bundle fit the existing 640,000-byte cap. Its verified
-// lazy implementation measured 180,861 gzip bytes, so the complete-app transfer
-// cap receives a narrow 180,000 → 182,000-byte reviewed allocation. The eager
-// startup caps (625,000 raw / 180,000 gzip) and each lazy-asset cap remain
-// unchanged, so this cannot hide a slower initial load or an oversized chunk.
+// The stop-radar offline street/building context is emitted as compact SVG
+// paths from its lazy chunk. After optimization the complete app measures
+// 180,520 gzip bytes, so the reviewed complete-app cap is tightened from the
+// earlier 182,000 allocation to 181,000 bytes. The eager startup transfer cap
+// remains unchanged at 180,000 bytes.
 const MAX_SHIPPED_JS_CSS_BYTES = 640_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 182_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 181_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 
