@@ -4,6 +4,7 @@ import { bearingDegrees, radarPoint } from "./stopRadar";
 /** @import { ParsedAddressPack, PackAddress } from "../api/addressPack" */
 
 /** @typedef {Map<string, PackAddress[]>} RadarContextIndex */
+/** @typedef {[string, {x:number,y:number}, {x:number,y:number}, number, number]} RoadCue */
 
 const CELL_DEGREES = 0.006;
 const MAX_CONTEXT_METERS = 500;
@@ -13,12 +14,17 @@ const MIN_ROAD_SPAN_METERS = 24;
 
 /** @param {number} value */
 function cell(value) {
-  return Math.floor(Number(value) / CELL_DEGREES);
+  return Math.floor(value / CELL_DEGREES);
 }
 
 /** @param {number} lat @param {number} lon */
 function key(lat, lon) {
   return `${lat}:${lon}`;
+}
+
+/** @param {number} value */
+function crisp(value) {
+  return Math.round(value * 10) / 10;
 }
 
 /**
@@ -90,6 +96,7 @@ function nearestStreet(index, target) {
  * @param {{lat:number,lon:number}} origin
  * @param {number|null} heading
  * @param {number} range
+ * @returns {RoadCue | null}
  */
 function roadFor(street, entries, origin, heading, range) {
   if (entries.length < 2) return null;
@@ -108,26 +115,15 @@ function roadFor(street, entries, origin, heading, range) {
 
   const a = point(origin, first.item, heading, range);
   const b = point(origin, second.item, heading, range);
-  if (!a || !b) return null;
-
-  return {
-    id: `road:${street}`,
-    street,
-    x1: a.x,
-    y1: a.y,
-    x2: b.x,
-    y2: b.y,
-    nearestDistance: entries[0].distanceMeters,
-    count: entries.length,
-  };
+  return a && b
+    ? [street, a, b, entries[0].distanceMeters, entries.length]
+    : null;
 }
 
 /**
- * Approximate orientation context. Address points are visual building cues;
- * repeated addresses on one named street form a simple local street axis.
- * They are not cadastral footprints or a pedestrian route.
- */
-/**
+ * Approximate orientation context. It reuses the shipped address pack and
+ * emits two compact SVG paths rather than dozens of React SVG children.
+ *
  * @param {RadarContextIndex | null | undefined} index
  * @param {{lat:number,lon:number}|null|undefined} position
  * @param {{lat:number,lon:number}|null|undefined} target
@@ -135,7 +131,7 @@ function roadFor(street, entries, origin, heading, range) {
  * @param {number} range
  */
 export function buildRadarContext(index, position, target, heading, range) {
-  const empty = { buildings: [], roads: [], targetStreet: "" };
+  const empty = { buildingPath: "", roadPath: "", targetStreet: "" };
   if (
     !(index instanceof Map) ||
     !hasCoordinates(position) ||
@@ -166,24 +162,32 @@ export function buildRadarContext(index, position, target, heading, range) {
     else streets.set(name, [entry]);
   }
 
-  const roadCandidates = [];
+  /** @type {RoadCue[]} */
+  const roads = [];
   for (const [street, group] of streets) {
     const road = roadFor(street, group, origin, heading, radarRange);
-    if (road) roadCandidates.push(road);
+    if (road) roads.push(road);
   }
-  roadCandidates.sort(
+  roads.sort(
     (a, b) =>
-      Number(b.street === targetStreet) - Number(a.street === targetStreet) ||
-      a.nearestDistance - b.nearestDistance ||
-      b.count - a.count
+      Number(b[0] === targetStreet) - Number(a[0] === targetStreet) ||
+      a[3] - b[3] ||
+      b[4] - a[4]
   );
 
-  const roads = roadCandidates.slice(0, MAX_ROADS);
+  const roadPath = roads
+    .slice(0, MAX_ROADS)
+    .map(
+      (road) =>
+        `M${crisp(road[1].x)} ${crisp(road[1].y)}L${crisp(road[2].x)} ${crisp(road[2].y)}`
+    )
+    .join("");
 
   const seen = new Set();
   const size =
     radarRange <= 100 ? 2.8 : radarRange <= 200 ? 2.2 : radarRange <= 400 ? 1.7 : 1.2;
-  const buildings = [];
+  let buildingPath = "";
+  let count = 0;
   for (const entry of entries) {
     if (entry.distanceMeters > radarRange) continue;
     const p = point(origin, entry.item, heading, radarRange);
@@ -191,14 +195,12 @@ export function buildRadarContext(index, position, target, heading, range) {
     const block = `${Math.round(p.x / 3)}:${Math.round(p.y / 3)}`;
     if (seen.has(block)) continue;
     seen.add(block);
-    buildings.push({
-      id: entry.item.id,
-      x: p.x,
-      y: p.y,
-      size,
-    });
-    if (buildings.length >= MAX_BUILDINGS) break;
+    const x = crisp(p.x - size / 2);
+    const y = crisp(p.y - size / 2);
+    buildingPath += `M${x} ${y}h${size}v${size}h-${size}z`;
+    count += 1;
+    if (count >= MAX_BUILDINGS) break;
   }
 
-  return { buildings, roads, targetStreet };
+  return { buildingPath, roadPath, targetStreet };
 }
