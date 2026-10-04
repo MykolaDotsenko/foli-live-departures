@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { loadAddressPack } from "../api/addressPack";
-import { t, useLanguage } from "../i18n";
+import { msg, t, useLanguage } from "../i18n";
+import useRideWakeLock from "../hooks/useRideWakeLock";
 import useStopRadar from "../hooks/useStopRadar";
 import {
   bearingDegrees,
-  cardinalDirectionKey,
+  compassPoint,
   radarPoint,
   radarRangeMeters,
   radarStops,
@@ -13,20 +14,24 @@ import {
 } from "../utils/stopRadar";
 import { distanceInMeters, formatAccuracy, formatDistance, hasCoordinates } from "../utils/geo";
 import {
-  buildRadarContext,
   createRadarContextIndex,
+  radarContextPaths,
+  selectRadarContext,
 } from "../utils/radarContext";
 import { stopLabel } from "../utils/stopNames";
 import styles from "./StopRadar.module.css";
 
-function targetIsNear(position, target, distance) {
+// Arrival is claimed within 30 m at 30 m accuracy or better, and then held
+// until either passes 40 m: a passenger standing about 30 m away saw it come
+// and go with every few metres of GPS noise.
+function targetIsNear(position, target, distance, limit) {
   return (
     hasCoordinates(position) &&
     hasCoordinates(target) &&
     Number.isFinite(distance) &&
     Number.isFinite(position?.accuracy) &&
-    position.accuracy <= 30 &&
-    distance <= 30
+    position.accuracy <= limit &&
+    distance <= limit
   );
 }
 
@@ -40,59 +45,34 @@ function targetWithinUncertainty(position, distance) {
 }
 
 
-// Markers closer than this (in % of the radar's width, about 24 px on a
-// phone) would sit on top of each other as two tap targets, the lower one
-// a sliver. Only the first (the target, then the nearest) is drawn; the
-// other comes back apart as the scale narrows, and the target chooser
-// below offers it all along.
-const MIN_MARKER_GAP_PERCENT = 8;
+// Markers closer than this, in % of the radar's width, would cover each
+// other's stop numbers: 8% (about 24 px) was less than a marker is wide, so
+// two platforms of one name drew as one number over another. Only the first
+// (the target, then the nearest) is drawn; the other comes back apart as the
+// scale narrows, and the target chooser below offers it all along. The
+// target is larger, and the passenger's own dot covers a number too.
+const MARKER_GAP_PERCENT = 10.5;
+const TARGET_GAP_PERCENT = 13;
+const CENTER_GAP_PERCENT = 6;
 
-function translatedHeading(bearing) {
-  const degrees = Math.round(Number(bearing)) % 360;
-  switch (cardinalDirectionKey(bearing)) {
-    case "north":
-      return t("Head north ({degrees}°)", { degrees });
-    case "north-east":
-      return t("Head north-east ({degrees}°)", { degrees });
-    case "east":
-      return t("Head east ({degrees}°)", { degrees });
-    case "south-east":
-      return t("Head south-east ({degrees}°)", { degrees });
-    case "south":
-      return t("Head south ({degrees}°)", { degrees });
-    case "south-west":
-      return t("Head south-west ({degrees}°)", { degrees });
-    case "west":
-      return t("Head west ({degrees}°)", { degrees });
-    case "north-west":
-      return t("Head north-west ({degrees}°)", { degrees });
-    default:
-      return t("Direction unavailable");
-  }
-}
+// North-up guidance names the compass point, north clockwise.
+const HEADINGS = [
+  msg("Head north ({degrees}°)"),
+  msg("Head north-east ({degrees}°)"),
+  msg("Head east ({degrees}°)"),
+  msg("Head south-east ({degrees}°)"),
+  msg("Head south ({degrees}°)"),
+  msg("Head south-west ({degrees}°)"),
+  msg("Head west ({degrees}°)"),
+  msg("Head north-west ({degrees}°)"),
+];
 
-function translatedRelativeDirection(angle) {
-  switch (relativeDirectionKey(angle)) {
-    case "Straight ahead":
-      return t("Straight ahead");
-    case "Slightly right":
-      return t("Slightly right");
-    case "Slightly left":
-      return t("Slightly left");
-    case "To your right":
-      return t("To your right");
-    case "To your left":
-      return t("To your left");
-    case "Behind you to the right":
-      return t("Behind you to the right");
-    case "Behind you to the left":
-      return t("Behind you to the left");
-    case "Behind you":
-      return t("Behind you");
-    default:
-      return t("Direction unavailable");
-  }
-}
+// A screen reader hears the distance and the way to go once either has
+// changed enough to act on: a quarter of the distance (at least 10 m), a
+// new direction after 8 s, at once on arrival or a new target. The visible
+// card still follows every fix; announcing it did not, and a status line of
+// accuracy and scale was read out every second instead.
+const ANNOUNCE_DIRECTION_MS = 8_000;
 
 export default function StopRadar({
   stops,
@@ -105,6 +85,7 @@ export default function StopRadar({
   onClose,
 }) {
   useLanguage();
+  const panelRef = useRef(null);
   const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
@@ -117,6 +98,25 @@ export default function StopRadar({
       compassPermission,
       onPosition,
     });
+  // A walk outlasts the screen's auto-lock, which paused the radar midway.
+  // Held, like Ride Mode's, only while there is a fix to guide from.
+  useRideWakeLock(position ? "stop-radar" : "");
+
+  // On a phone the radar opened below the fold and nothing seemed to happen.
+  // Bring its top into view, so the radar the first fix draws grows down
+  // the screen, and take a screen reader to its heading, unless the
+  // passenger has moved on while it loaded.
+  useEffect(() => {
+    const active = document.activeElement;
+    if (
+      active &&
+      !active.matches("html, body, [aria-controls=stop-radar-panel]")
+    ) {
+      return;
+    }
+    panelRef.current?.scrollIntoView?.({ block: "start" });
+    document.getElementById("stop-radar-title")?.focus({ preventScroll: true });
+  }, []);
 
   const nearby = useMemo(
     () => radarStops(stops, position, targetStopId),
@@ -154,15 +154,36 @@ export default function StopRadar({
   const targetBearing =
     position && targetStop ? bearingDegrees(position, targetStop) : null;
   const targetRelativeBearing = relativeBearingDegrees(targetBearing, heading);
-  // The scale on screen, and the target it was set for: hysteresis holds
-  // a scale between fixes for one target, never across a change of target.
-  const [shown, setShown] = useState({ range: null, targetStopId });
+  // The scale and the arrival on screen, and the target they were set for:
+  // hysteresis holds them between fixes for one target, never across a
+  // change of target.
+  const [shown, setShown] = useState({
+    range: null,
+    targetStopId,
+    arrived: false,
+  });
+  const sameTarget = shown.targetStopId === targetStopId;
+  const scaleDistance =
+    targetDistance ?? (nearby.length ? Number(nearby[0].distanceMeters) : null);
   const range = radarRangeMeters(
-    targetDistance ?? (nearby.length ? Number(nearby[0].distanceMeters) : null),
-    shown.targetStopId === targetStopId ? shown.range : null
+    scaleDistance,
+    sameTarget ? shown.range : null
   );
-  if (range !== shown.range || targetStopId !== shown.targetStopId) {
-    setShown({ range, targetStopId });
+  // Only a scale set from a distance holds: the 200 m shown before the first
+  // fix kept a target 80 m away on it instead of the 100 m it fits.
+  const heldRange = scaleDistance === null ? null : range;
+  const targetAtStop = targetIsNear(
+    position,
+    targetStop,
+    targetDistance,
+    sameTarget && shown.arrived ? 40 : 30
+  );
+  if (
+    heldRange !== shown.range ||
+    !sameTarget ||
+    targetAtStop !== shown.arrived
+  ) {
+    setShown({ range: heldRange, targetStopId, arrived: targetAtStop });
   }
 
   const renderedStops = useMemo(() => {
@@ -174,18 +195,23 @@ export default function StopRadar({
     );
     const result = [];
     for (const stop of ordered) {
-      const isTarget = String(stop.id) === targetStopId;
+      const target = String(stop.id) === targetStopId;
       const distance = Number(stop.distanceMeters);
       // Off the scale, only the target is drawn, pinned to the edge.
-      if (!isTarget && distance > range) continue;
+      if (!target && distance > range) continue;
       const bearing = bearingDegrees(position, stop);
       const point = radarPoint(bearing, heading, distance, range);
       if (!point) continue;
-      const crowded = result.some(
-        (placed) =>
-          Math.hypot(placed.point.x - point.x, placed.point.y - point.y) <
-          MIN_MARKER_GAP_PERCENT
-      );
+      const crowded =
+        !target &&
+        (Math.hypot(point.x - 50, point.y - 50) < CENTER_GAP_PERCENT ||
+          result.some(
+            (placed) =>
+              Math.hypot(placed.point.x - point.x, placed.point.y - point.y) <
+              (String(placed.id) === targetStopId
+                ? TARGET_GAP_PERCENT
+                : MARKER_GAP_PERCENT)
+          ));
       if (!crowded) result.push({ ...stop, bearing, point });
     }
     return result;
@@ -194,17 +220,71 @@ export default function StopRadar({
   const targetPoint = renderedStops.find(
     (stop) => String(stop.id) === targetStopId
   )?.point;
+  // The arrow ends at the target marker's edge: at a fixed length it ran on
+  // past a near target, pointing beyond the stop.
+  const needleLength = targetPoint
+    ? Math.hypot(targetPoint.x - 50, targetPoint.y - 50) - 7
+    : 0;
 
+  // Chosen once per fix and scale; a compass turning many times a second
+  // only rotates it.
+  const context = useMemo(
+    () => selectRadarContext(contextIndex, position, range),
+    [contextIndex, position, range]
+  );
   const mapContext = useMemo(
-    () =>
-      buildRadarContext(contextIndex, position, heading, range),
-    [contextIndex, heading, position, range]
+    () => radarContextPaths(context, heading, range),
+    [context, heading, range]
   );
 
-  const guidanceText =
-    headingSource === "north" && Number.isFinite(targetBearing)
-      ? translatedHeading(targetBearing)
-      : translatedRelativeDirection(targetRelativeBearing);
+  const compass =
+    headingSource === "north" ? compassPoint(targetBearing) : null;
+  const guidanceKey =
+    compass === null
+      ? relativeDirectionKey(targetRelativeBearing)
+      : HEADINGS[compass];
+  const guidanceText = t(guidanceKey, {
+    degrees: Math.round(Number(targetBearing)) % 360,
+  });
+  const arrivalText = t(
+    "You are at the stop area. Look for the stop pole and route number."
+  );
+
+  const [spoken, setSpoken] = useState("");
+  const spokenRef = useRef(null);
+  useEffect(() => {
+    if (!targetStop || !Number.isFinite(targetDistance)) return;
+    const said = spokenRef.current;
+    const now = Date.now();
+    if (
+      said?.id === targetStopId &&
+      said.atStop === targetAtStop &&
+      Math.abs(targetDistance - said.distance) < Math.max(10, said.distance / 4) &&
+      (targetAtStop ||
+        said.key === guidanceKey ||
+        now - said.at < ANNOUNCE_DIRECTION_MS)
+    ) {
+      return;
+    }
+    spokenRef.current = {
+      id: targetStopId,
+      atStop: targetAtStop,
+      distance: targetDistance,
+      key: guidanceKey,
+      at: now,
+    };
+    setSpoken(
+      `${formatDistance(targetDistance)}. ${targetAtStop ? arrivalText : guidanceText}`
+    );
+  }, [
+    arrivalText,
+    guidanceKey,
+    guidanceText,
+    targetAtStop,
+    targetDistance,
+    targetStop,
+    targetStopId,
+  ]);
   // The GPS circle, drawn to the radar's scale: where the phone may be.
   const accuracyDiameter = Number.isFinite(position?.accuracy)
     ? Math.min(84, (84 * Number(position.accuracy)) / range)
@@ -217,14 +297,22 @@ export default function StopRadar({
         ? t("Using your direction of travel")
         : t("North-up");
 
-  const targetAtStop = targetIsNear(position, targetStop, targetDistance);
   const targetUncertain = targetWithinUncertainty(position, targetDistance);
+  const statusText =
+    status === "locating"
+      ? t("Finding your live position…")
+      : status === "stale"
+        ? t("Waiting for a new GPS fix…")
+        : status === "paused"
+          ? t("Radar paused while the app is in the background.")
+          : "";
   const compassFallback =
     ["denied", "unavailable", "error"].includes(compassPermission) &&
     headingSource !== "motion";
 
   return (
     <section
+      ref={panelRef}
       id="stop-radar-panel"
       className={styles.panel}
       aria-labelledby="stop-radar-title"
@@ -244,19 +332,12 @@ export default function StopRadar({
         </button>
       </div>
 
-      {status === "locating" && (
-        <p className={styles.status} role="status">
-          {t("Finding your live position…")}
-        </p>
-      )}
-      {status === "stale" && (
-        <p className={styles.notice} role="status">
-          {t("Waiting for a new GPS fix…")}
-        </p>
-      )}
-      {status === "paused" && (
-        <p className={styles.notice} role="status">
-          {t("Radar paused while the app is in the background.")}
+      {statusText && (
+        <p
+          className={status === "locating" ? styles.status : styles.notice}
+          role="status"
+        >
+          {statusText}
         </p>
       )}
       {error && (
@@ -264,10 +345,13 @@ export default function StopRadar({
           {t(error)}
         </p>
       )}
+      <p className={styles.srOnly} role="status">
+        {spoken}
+      </p>
 
       {position && (
         <>
-          <div className={styles.modeRow} role="status" aria-live="polite">
+          <div className={styles.modeRow}>
             <span className={styles.modePill}>{modeText}</span>
             {Number.isFinite(position.accuracy) && (
               <span>
@@ -308,53 +392,50 @@ export default function StopRadar({
                 viewBox="0 0 100 100"
                 aria-hidden="true"
               >
-                {mapContext.roadPath && <path d={mapContext.roadPath} />}
-                {mapContext.buildingPath && (
-                  <path d={mapContext.buildingPath} />
-                )}
-                {targetPoint && (
-                  <line
-                    x1="50"
-                    y1="50"
-                    x2={targetPoint.x}
-                    y2={targetPoint.y}
-                  />
-                )}
+                {/* Both always drawn, so building cues are always the
+                    second path: styled by position with the street path
+                    left out, a lone building path took the streets' look
+                    and a black fill wherever no street was near. */}
+                <path d={mapContext.roadPath} />
+                <path d={mapContext.buildingPath} />
               </svg>
 
-              <span className={styles.northLabel} aria-hidden="true">
-                {headingSource === "north" ? t("N") : "↑"}
+              {/* Drawing only: positioned against the radar, as the
+                  wrapper itself is not. */}
+              <span aria-hidden="true">
+                <span className={styles.northLabel}>
+                  {headingSource === "north" ? t("N") : "↑"}
+                </span>
+                <span className={styles.ringOne} />
+                <span className={styles.ringTwo} />
+                <span className={styles.ringThree} />
+                <span className={styles.rangeLabel}>
+                  {formatDistance(range)}
+                </span>
+                {headingSource !== "north" && (
+                  <span className={styles.headingCone} />
+                )}
+                {accuracyDiameter > 0 && (
+                  <span
+                    className={styles.accuracyHalo}
+                    style={{
+                      width: `${accuracyDiameter}%`,
+                      height: `${accuracyDiameter}%`,
+                    }}
+                  />
+                )}
+                <span className={styles.userDot} />
+                {needleLength > 0 && (
+                  <span
+                    className={styles.targetNeedle}
+                    style={{
+                      top: `${50 - needleLength}%`,
+                      height: `${needleLength}%`,
+                      transform: `rotate(${targetPoint.angle}deg)`,
+                    }}
+                  />
+                )}
               </span>
-              <span className={styles.ringOne} aria-hidden="true" />
-              <span className={styles.ringTwo} aria-hidden="true" />
-              <span className={styles.ringThree} aria-hidden="true" />
-              <span className={styles.rangeLabel} aria-hidden="true">
-                {formatDistance(range)}
-              </span>
-              {headingSource !== "north" && (
-                <span className={styles.headingCone} aria-hidden="true" />
-              )}
-              {accuracyDiameter > 0 && (
-                <span
-                  className={styles.accuracyHalo}
-                  aria-hidden="true"
-                  style={{
-                    width: `${accuracyDiameter}%`,
-                    height: `${accuracyDiameter}%`,
-                  }}
-                />
-              )}
-              <span className={styles.userDot} aria-hidden="true" />
-
-              {targetPoint && (
-                <span
-                  className={styles.targetNeedle}
-                  aria-hidden="true"
-                  style={{
-                    transform: `rotate(${targetPoint.angle}deg)`,
-                  }}
-                />
-              )}
 
               {renderedStops.map((stop) => {
                 const target = String(stop.id) === targetStopId;
@@ -410,9 +491,7 @@ export default function StopRadar({
                     </span>
                   )}
                   {targetAtStop && (
-                    <span className={styles.arrival} role="status">
-                      {t("You are at the stop area. Look for the stop pole and route number.")}
-                    </span>
+                    <span className={styles.arrival}>{arrivalText}</span>
                   )}
                   {!targetAtStop && targetUncertain && (
                     <span className={styles.targetNote}>

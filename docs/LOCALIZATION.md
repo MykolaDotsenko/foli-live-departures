@@ -44,8 +44,10 @@ The detailed Ukrainian acceptance and remaining review plan is in
   keys (`"1 stop"`, `"{count} stops"`).
 - Components call `useLanguage()` so they re-render when the language
   changes.
-- Dates use `intlLocale()`. Distances are written by hand ("1.4 km",
-  "1,4 km"), so a phone without Finnish locale data still gets the comma.
+- Dates use `intlLocale()`. Distances are written by hand ("1.4 km" in
+  English, "1,4 km" in Finnish and Swedish, "1,4 км" and "80 м" in
+  Ukrainian), so a phone without that locale's data still gets the comma
+  and the units.
   The transit clock stays 24-hour with a colon (`15:16`) in every language,
   as on Föli's stop displays.
 - A message kept in state (a search error, a share confirmation) keeps its

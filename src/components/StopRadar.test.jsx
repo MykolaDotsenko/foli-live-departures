@@ -149,15 +149,19 @@ test("shows a conservative arrival state and compass fallback notice", async () 
     accuracy: 8,
   });
 
+  const targetCard = (await screen.findByText("Target stop")).closest("div");
+  expect(targetCard).not.toBeNull();
   expect(
-    await screen.findByText(/You are at the stop area/i)
+    within(targetCard).getByText(/You are at the stop area/i)
   ).toBeInTheDocument();
   expect(
     screen.getByText(/Compass data is unavailable/i)
   ).toBeInTheDocument();
-  const targetCard = screen.getByText("Target stop").closest("div");
-  expect(targetCard).not.toBeNull();
   expect(within(targetCard).getByText("<10 m")).toBeInTheDocument();
+  // Said once, for a screen reader, with the distance.
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "<10 m. You are at the stop area. Look for the stop pole and route number."
+  );
 });
 
 // Two platforms of one stop: the radar used a 2 km scale for a target 50 m
@@ -188,10 +192,33 @@ test("adds offline street/building context without stealing stop interaction", a
   const radar = screen.getByRole("group", {
     name: /Radar showing nearby stops/,
   });
-  expect(radar.querySelectorAll("svg path")).toHaveLength(2);
-  expect(radar.querySelectorAll("svg line")).toHaveLength(1);
+  const paths = radar.querySelectorAll("svg path");
+  expect(paths).toHaveLength(2);
+  await waitFor(() => expect(paths[0].getAttribute("d")).toMatch(/^M.+L/));
+  expect(paths[1].getAttribute("d")).toMatch(/^(M\d+ \d+h0)+$/);
+  // The arrow points at the target; a line to it looked like one more street.
+  expect(radar.querySelectorAll("svg line")).toHaveLength(0);
   // Context is aria-hidden and non-interactive: only stop markers are buttons.
   expect(within(radar).getAllByRole("button").length).toBeGreaterThan(0);
+});
+
+test("draws building cues apart from streets when no street is near", async () => {
+  mockAddressPack({
+    ...radarAddressPack,
+    addresses: [["Aurakatu", "1", 60.4513, 22.2664, "Turku"]],
+  });
+  const live = installLiveLocation();
+  render(
+    <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  live.deliver({ latitude: 60.45125, longitude: 22.2662, accuracy: 8 });
+
+  const radar = await screen.findByRole("group", { name: /Radar showing nearby stops/ });
+  // Building cues stay the second path, styled as cues, with no street at
+  // all: as the only path they took the streets' look and a black fill.
+  const [streets, buildings] = radar.querySelectorAll("svg path");
+  await waitFor(() => expect(buildings.getAttribute("d")).toMatch(/^M\d+ \d+h0$/));
+  expect(streets.getAttribute("d")).toBe("");
 });
 
 test("tells two stops of one name apart and scales to the walk", async () => {
@@ -292,8 +319,144 @@ test("at the stop it stops giving a direction a few metres of GPS noise would in
   );
   live.deliver({ latitude: 60.45182, longitude: 22.26662, accuracy: 6 });
 
-  expect(await screen.findByText(/You are at the stop area/)).toBeInTheDocument();
+  const targetCard = (await screen.findByText("Target stop")).closest("div");
+  expect(within(targetCard).getByText(/You are at the stop area/)).toBeInTheDocument();
   expect(screen.queryByText(/^Head /)).not.toBeInTheDocument();
+});
+
+// About 30 m from the stop, a few metres of GPS noise made "You are at the
+// stop area" come and go on every other fix, and a screen reader said it
+// each time.
+test("holds the arrival through GPS noise at its threshold", async () => {
+  const live = installLiveLocation();
+  render(
+    <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  const arrival = () => screen.queryByText(/^You are at the stop area/);
+  // 0.0001° of latitude is about 11 m.
+  live.deliver({ latitude: 60.4518 - 0.00031, longitude: 22.2666, accuracy: 8 });
+  expect(await screen.findByText(/^Head north/)).toBeInTheDocument();
+  expect(arrival()).toBeNull();
+
+  live.deliver({ latitude: 60.4518 - 0.00025, longitude: 22.2666, accuracy: 8 });
+  await waitFor(() => expect(arrival()).toBeInTheDocument());
+
+  // Noise back out to about 34 m keeps it; walking off to 45 m ends it.
+  live.deliver({ latitude: 60.4518 - 0.00031, longitude: 22.2666, accuracy: 8 });
+  expect(arrival()).toBeInTheDocument();
+  live.deliver({ latitude: 60.4518 - 0.0004, longitude: 22.2666, accuracy: 8 });
+  await waitFor(() => expect(arrival()).toBeNull());
+});
+
+test("announces the walk when it changes enough, not every fix", async () => {
+  const live = installLiveLocation();
+  render(
+    <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  const status = () => screen.getByRole("status").textContent;
+
+  // 0.0001° of latitude is about 11 m: start about 220 m south.
+  live.deliver({ latitude: 60.4518 - 0.002, longitude: 22.2666, accuracy: 8 });
+  await waitFor(() => expect(status()).toBe("220 m. Head north (0°)"));
+
+  // A few metres on, and the accuracy and scale line changing, say nothing.
+  live.deliver({ latitude: 60.4518 - 0.00195, longitude: 22.2666, accuracy: 9 });
+  live.deliver({ latitude: 60.4518 - 0.0019, longitude: 22.2666, accuracy: 7 });
+  expect(status()).toBe("220 m. Head north (0°)");
+
+  // A quarter of the way closer is worth saying, with the direction of
+  // travel the walk has given the radar since.
+  live.deliver({ latitude: 60.4518 - 0.0014, longitude: 22.2666, accuracy: 8 });
+  await waitFor(() => expect(status()).toBe("160 m. Straight ahead"));
+});
+
+test("the arrow ends at the target marker's edge", async () => {
+  const live = installLiveLocation();
+  render(
+    <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  // About 75 m south of the stop: a 100 m scale from the first fix (the
+  // 200 m shown before it no longer holds), the target 31.5% out.
+  live.deliver({ latitude: 60.4518 - 0.000675, longitude: 22.2666, accuracy: 8 });
+
+  const radar = await screen.findByRole("group", { name: /Radar showing nearby stops/ });
+  const marker = within(radar).getByRole("button", { name: /stop 164/ });
+  const needle = [...radar.querySelectorAll("span")].find((span) =>
+    span.style.transform.startsWith("rotate")
+  );
+  const markerOut = 50 - parseFloat(marker.style.top);
+  expect(markerOut).toBeGreaterThan(30);
+  expect(parseFloat(needle.style.height)).toBeCloseTo(markerOut - 7, 5);
+  expect(parseFloat(needle.style.top)).toBeCloseTo(50 - (markerOut - 7), 5);
+});
+
+test("keeps stop numbers clear of the passenger's dot", async () => {
+  const live = installLiveLocation();
+  const here = [
+    { id: "164", name: "Kauppatori", lat: 60.4518, lon: 22.2666 },
+    { id: "170", name: "Here", lat: 60.4507, lon: 22.2666 },
+  ];
+  render(
+    <StopRadar stops={here} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+  );
+  // Standing at stop 170, guided to 164 about 120 m north.
+  live.deliver({ latitude: 60.4507, longitude: 22.2666, accuracy: 8 });
+
+  const radar = await screen.findByRole("group", { name: /Radar showing nearby stops/ });
+  expect(within(radar).getAllByRole("button")).toHaveLength(1);
+  const chooser = screen.getByRole("group", { name: "Choose radar target" });
+  expect(within(chooser).getByRole("button", { name: /Here/ })).toBeInTheDocument();
+});
+
+test("brings the radar into view and its heading into focus when it opens", async () => {
+  installLiveLocation();
+  const scrollIntoView = vi.fn();
+  const original = globalThis.Element.prototype.scrollIntoView;
+  globalThis.Element.prototype.scrollIntoView = scrollIntoView;
+  try {
+    render(
+      <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+    );
+    expect(screen.getByRole("heading", { name: "Stop radar" })).toHaveFocus();
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  } finally {
+    globalThis.Element.prototype.scrollIntoView = original;
+  }
+});
+
+test("leaves focus where the passenger went while the radar loaded", () => {
+  installLiveLocation();
+  const elsewhere = document.createElement("button");
+  document.body.append(elsewhere);
+  elsewhere.focus();
+  try {
+    render(
+      <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+    );
+    expect(elsewhere).toHaveFocus();
+  } finally {
+    elsewhere.remove();
+  }
+});
+
+test("keeps the screen awake while it guides, and lets go on close", async () => {
+  const release = vi.fn(async () => {});
+  const request = vi.fn(async () => ({ release, addEventListener: vi.fn() }));
+  Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { request } });
+  const live = installLiveLocation();
+  try {
+    const { unmount } = render(
+      <StopRadar stops={stops} initialTargetStopId="164" compassPermission="unavailable" onClose={vi.fn()} />
+    );
+    // Nothing to guide from yet: the screen may sleep while GPS answers.
+    expect(request).not.toHaveBeenCalled();
+    live.deliver();
+    await waitFor(() => expect(request).toHaveBeenCalledWith("screen"));
+    unmount();
+    await waitFor(() => expect(release).toHaveBeenCalled());
+  } finally {
+    delete navigator.wakeLock;
+  }
 });
 
 // Switching from a far target to a near one kept the far target's 2 km

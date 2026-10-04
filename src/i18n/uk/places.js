@@ -23,7 +23,7 @@ export default {
   "N": "Пн",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Радар показує зупинки поруч. Ціль: {name}, зупинка {id}, відстань {distance}.",
   "Radar showing nearby Föli stops.": "Радар показує зупинки Föli поруч.",
-  "Guide to {name}, stop {id}, {distance} away": "Навести на {name}, зупинка {id}, відстань {distance}",
+  "Guide to {name}, stop {id}, {distance} away": "Вести до {name}, зупинка {id}, відстань {distance}",
   "Target stop": "Потрібна зупинка",
   "Direction unavailable": "Напрямок недоступний",
   "Head north ({degrees}°)": "Ідіть на північ ({degrees}°)",

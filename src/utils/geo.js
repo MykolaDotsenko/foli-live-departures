@@ -163,6 +163,12 @@ export function findNearestStops(stops, position, limit = 3) {
     .slice(0, limit);
 }
 
+// Metres and kilometres as the interface language writes them: Ukrainian in
+// Cyrillic, as it already writes minutes ("хв"), the others "m" and "km".
+function distanceUnits() {
+  return intlLocale() === "uk-UA" ? ["м", "км"] : ["m", "km"];
+}
+
 /**
  * @param {number | null | undefined} distanceMeters
  * @returns {string} "" when there is no distance to show.
@@ -176,22 +182,26 @@ export function formatDistance(distanceMeters) {
     return "";
   }
 
-  if (distanceMeters < 10) return "<10 m";
+  const [m, km] = distanceUnits();
+  if (distanceMeters < 10) return `<10 ${m}`;
 
   // 996 m rounds to 1,000 m, which reads better as "1.0 km".
   const meters = Math.round(distanceMeters / 10) * 10;
-  if (meters < 1_000) return `${meters} m`;
+  if (meters < 1_000) return `${meters} ${m}`;
 
-  // "2.6 km" in English, "2,6 km" in Finnish. Written out by hand: a phone
-  // without Finnish locale data would give "2.6" from toLocaleString.
+  // "2.6 km" in English; Finnish, Swedish and Ukrainian write "2,6 km".
+  // Written out by hand: a phone without that locale's data would give
+  // "2.6" from toLocaleString.
   const kilometers = distanceMeters / 1_000;
   const tenths = kilometers.toFixed(1);
   const shown =
     Number(tenths) < 10 ? tenths : String(Math.round(kilometers));
-  return `${intlLocale() === "fi-FI" ? shown.replace(".", ",") : shown} km`;
+  return `${intlLocale() === "en-GB" ? shown : shown.replace(".", ",")} ${km}`;
 }
 
 /**
+ * An accuracy under 10 m in whole metres ("±6 m"): it is already a bound,
+ * and "±<10 m" read as a typo.
  * @param {number | null | undefined} accuracyMeters
  * @returns {string} "" when there is no accuracy to show.
  */
@@ -203,7 +213,9 @@ export function formatAccuracy(accuracyMeters) {
   ) {
     return "";
   }
-  return formatDistance(accuracyMeters);
+  return accuracyMeters < 9.5
+    ? `${Math.max(1, Math.round(accuracyMeters))} ${distanceUnits()[0]}`
+    : formatDistance(Math.max(10, accuracyMeters));
 }
 
 

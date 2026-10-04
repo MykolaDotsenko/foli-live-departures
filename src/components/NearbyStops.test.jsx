@@ -541,7 +541,7 @@ test("stop radar seeds Nearby once instead of streaming every GPS fix into plann
       timestamp: Date.now(),
     })
   );
-  await screen.findByText(/Accuracy ±10/);
+  await screen.findByText(/GPS accuracy ±10 m/);
 
   act(() =>
     deliver({
@@ -557,14 +557,56 @@ test("stop radar seeds Nearby once instead of streaming every GPS fix into plann
   );
 
   // StopRadar itself consumes the second fix asynchronously through its hook
-  // state, while the parent one-time Nearby snapshot deliberately remains the
-  // first fix. Wait for the radar render, then assert the isolation boundary.
-  // 25 m is intentionally rounded by formatAccuracy() to the passenger-facing
-  // 30 m bucket. The radar should update to that formatted second fix while
-  // Nearby stays pinned to the first 10 m seed.
+  // state, while the parent Nearby snapshot deliberately remains the first
+  // fix, so planning is not restarted by every step. Its stale distances
+  // are hidden meanwhile: "Selected stop ≈ 440 m away" stood under a radar
+  // showing 40 m. 25 m is rounded by formatAccuracy() to the passenger-
+  // facing 30 m bucket.
   await screen.findByText(/GPS accuracy ±30 m/);
-  expect(screen.getByText(/Accuracy ±10 m/)).toBeInTheDocument();
-  expect(screen.queryByText(/^Accuracy ±30 m$/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/^Accuracy ±/)).not.toBeInTheDocument();
+  expect(screen.queryByText("One-time location only")).not.toBeInTheDocument();
+
+  // Closed, Nearby comes back from where the radar last was.
+  fireEvent.click(screen.getByRole("button", { name: "Close radar" }));
+  expect(await screen.findByText(/^Accuracy ±30 m$/)).toBeInTheDocument();
+});
+
+test("the radar's Open target stop goes to the page's own stop opener", async () => {
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn(),
+      watchPosition: vi.fn((success) => {
+        success({
+          coords: { latitude: 60.45182, longitude: 22.26662, accuracy: 10 },
+          timestamp: Date.now(),
+        });
+        return 72;
+      }),
+      clearWatch: vi.fn(),
+    },
+  });
+  const onSelect = vi.fn();
+  const onOpenStop = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="32"
+      onSelect={onSelect}
+      onOpenStop={onOpenStop}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Open stop radar" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Open target stop" }));
+
+  expect(onOpenStop).toHaveBeenCalledWith("32");
+  expect(onSelect).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(screen.queryByRole("heading", { name: "Stop radar" })).not.toBeInTheDocument()
+  );
 });
 
 test("closing stop radar restores focus to its trigger without changing the board", async () => {

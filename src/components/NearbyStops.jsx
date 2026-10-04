@@ -216,6 +216,9 @@ function NearbyStops({
   onSelectJourney = null,
   onSelectTransferJourney = null,
   onSelect,
+  // The radar's "Open target stop" takes its own button away; the page
+  // passes where focus goes then (the board's heading).
+  onOpenStop = onSelect,
 }) {
   useLanguage();
   const [status, setStatus] = useState("idle");
@@ -230,6 +233,7 @@ function NearbyStops({
   const radarButtonRef = useRef(null);
   const restoreRadarFocusRef = useRef(false);
   const radarSeededPositionRef = useRef(false);
+  const radarLatestPositionRef = useRef(null);
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -402,14 +406,26 @@ function NearbyStops({
     if (!hasStopCoordinates || !liveRadarSupported) return;
     restoreRadarFocusRef.current = false;
     radarSeededPositionRef.current = false;
+    radarLatestPositionRef.current = null;
     setRadarOpen(true);
     void requestCompassPermission().then(setCompassPermission);
   };
 
-  const closeRadar = () => {
-    restoreRadarFocusRef.current = true;
+  // While the radar runs, the stops below keep its first fix (planning is
+  // not restarted by every step), and are hidden: they said "Selected stop
+  // ≈ 440 m away" under a radar showing 40 m. Closing it brings them back
+  // from where the passenger has walked to, once.
+  const leaveRadar = (restoreFocus) => {
+    const latest = radarLatestPositionRef.current;
+    if (latest) {
+      setPosition(latest);
+      rememberPosition(latest);
+    }
+    restoreRadarFocusRef.current = restoreFocus;
     setRadarOpen(false);
   };
+
+  const closeRadar = () => leaveRadar(true);
 
   useEffect(() => {
     if (radarOpen || !restoreRadarFocusRef.current) return;
@@ -648,6 +664,7 @@ function NearbyStops({
                 // subsequent live fixes isolated inside StopRadar. Otherwise
                 // every walking update can perturb stop order/accuracy and
                 // restart destination-aware Föli planning.
+                radarLatestPositionRef.current = nextPosition;
                 if (radarSeededPositionRef.current) return;
                 radarSeededPositionRef.current = true;
                 setPosition(nextPosition);
@@ -656,9 +673,8 @@ function NearbyStops({
                 setError("");
               }}
               onOpenStop={(id) => {
-                restoreRadarFocusRef.current = false;
-                setRadarOpen(false);
-                onSelect(id);
+                leaveRadar(false);
+                onOpenStop(id);
               }}
               onClose={closeRadar}
             />
@@ -666,7 +682,7 @@ function NearbyStops({
         </RadarLoadBoundary>
       )}
 
-      {position && (
+      {position && !radarOpen && (
         <>
           <div className={styles.meta} role="status" aria-live="polite">
             <span>{t("One-time location only")}</span>

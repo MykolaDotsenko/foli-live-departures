@@ -3,6 +3,7 @@ import {
   directionBetween,
   distanceInMeters,
   findNearestStops,
+  formatAccuracy,
   formatDistance,
   hasCoordinates,
   isInsideMultiPolygon,
@@ -74,6 +75,32 @@ test("writes a Finnish decimal comma without relying on the phone's locale data"
   } finally {
     resetLanguageForTests("en");
   }
+});
+
+// Swedish and Ukrainian showed "2.0 km" with an English point, and
+// Ukrainian Latin "m" beside its own "хв".
+test("writes Swedish and Ukrainian distances as those languages do", () => {
+  try {
+    resetLanguageForTests("sv");
+    expect(formatDistance(1_420)).toBe("1,4 km");
+    expect(formatDistance(84)).toBe("80 m");
+    resetLanguageForTests("uk");
+    expect(formatDistance(1_420)).toBe("1,4 км");
+    expect(formatDistance(84)).toBe("80 м");
+    expect(formatDistance(3)).toBe("<10 м");
+    expect(formatAccuracy(6)).toBe("6 м");
+  } finally {
+    resetLanguageForTests("en");
+  }
+});
+
+test("gives a small GPS accuracy in whole metres", () => {
+  expect(formatAccuracy(5.6)).toBe("6 m");
+  expect(formatAccuracy(0.2)).toBe("1 m");
+  expect(formatAccuracy(9.4)).toBe("9 m");
+  expect(formatAccuracy(9.6)).toBe("10 m");
+  expect(formatAccuracy(25)).toBe("30 m");
+  expect(formatAccuracy(null)).toBe("");
 });
 
 

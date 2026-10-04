@@ -1,3 +1,4 @@
+import { msg } from "../i18n";
 import { distanceInMeters, findNearestStops, hasCoordinates } from "./geo";
 
 export const RADAR_STOP_LIMIT = 8;
@@ -21,16 +22,6 @@ const RANGE_HEADROOM = 1.25;
 // a distance hovering at a step does not flip the scale on every fix.
 const ZOOM_IN_SHARE = 2 / 3;
 const MIN_RANGE_DISTANCE_METERS = 40;
-const CARDINAL_DIRECTIONS = [
-  "north",
-  "north-east",
-  "east",
-  "south-east",
-  "south",
-  "south-west",
-  "west",
-  "north-west",
-];
 
 /** @param {unknown} value */
 export function normalizeDegrees(value) {
@@ -102,15 +93,24 @@ export function smoothHeading(previous, next, factor = 0.24) {
  * Safari exposes webkitCompassHeading directly. Standards-based absolute
  * orientation reports alpha in the opposite sense to compass heading.
  * Relative alpha must never be presented as north-referenced guidance.
+ *
+ * Both give the heading of the phone's top edge as it stands upright. Turned
+ * on its side, the top of the screen is a quarter turn away from that edge,
+ * so the screen's own angle (screen.orientation.angle, or Safari's
+ * window.orientation) is added: without it, a landscape radar pointed 90°
+ * off.
  * @param {any} event
+ * @param {unknown} [screenAngle]
  */
-export function headingFromOrientationEvent(event) {
-  const webkit = normalizeDegrees(event?.webkitCompassHeading);
-  if (webkit !== null) return webkit;
-
-  if (event?.absolute !== true) return null;
-  const alpha = normalizeDegrees(event?.alpha);
-  return alpha === null ? null : normalizeDegrees(360 - alpha);
+export function headingFromOrientationEvent(event, screenAngle = 0) {
+  let heading = normalizeDegrees(event?.webkitCompassHeading);
+  if (heading === null && event?.absolute === true) {
+    const alpha = normalizeDegrees(event?.alpha);
+    if (alpha !== null) heading = 360 - alpha;
+  }
+  return heading === null
+    ? null
+    : normalizeDegrees(heading + (Number(screenAngle) || 0));
 }
 
 /**
@@ -135,7 +135,8 @@ export async function requestCompassPermission() {
 /**
  * GPS direction-of-travel fallback. It deliberately needs movement larger
  * than the reported uncertainty floor, otherwise normal GPS jitter becomes a
- * fake compass.
+ * fake compass. A walker covers about 1.4 m between fixes a second apart, so
+ * `previous` is where the walk was last measured from, not the last fix.
  * @param {{lat?: unknown, lon?: unknown, accuracy?: unknown} | null} previous
  * @param {{lat?: unknown, lon?: unknown, accuracy?: unknown} | null} next
  */
@@ -217,15 +218,14 @@ export function radarRangeMeters(targetDistance, currentRange = null) {
 }
 
 /**
- * One of eight compass points for a bearing, for guidance a passenger can
- * act on without reading degrees.
+ * One of eight compass points for a bearing, 0 for north clockwise to 7 for
+ * north-west, for guidance a passenger can act on without reading degrees.
  * @param {number | null | undefined} bearing
- * @returns {string | null}
+ * @returns {number | null}
  */
-export function cardinalDirectionKey(bearing) {
+export function compassPoint(bearing) {
   const normalized = normalizeDegrees(bearing);
-  if (normalized === null) return null;
-  return CARDINAL_DIRECTIONS[Math.round(normalized / 45) % 8];
+  return normalized === null ? null : Math.round(normalized / 45) % 8;
 }
 
 /**
@@ -254,20 +254,26 @@ export function radarPoint(bearing, heading, distance, range) {
 
 /**
  * Short accessible description of where the target lies relative to the
- * device/direction of travel.
+ * device/direction of travel: the English phrase, for t().
  * @param {number | null | undefined} angle
  */
 export function relativeDirectionKey(angle) {
   const normalized = normalizeDegrees(angle);
-  if (normalized === null) return "Direction unavailable";
+  if (normalized === null) return msg("Direction unavailable");
 
   const signed = ((normalized + 180) % 360) - 180;
   const absolute = Math.abs(signed);
-  if (absolute <= 15) return "Straight ahead";
-  if (absolute <= 55) return signed > 0 ? "Slightly right" : "Slightly left";
-  if (absolute <= 125) return signed > 0 ? "To your right" : "To your left";
-  if (absolute <= 165) {
-    return signed > 0 ? "Behind you to the right" : "Behind you to the left";
+  if (absolute <= 15) return msg("Straight ahead");
+  if (absolute <= 55) {
+    return signed > 0 ? msg("Slightly right") : msg("Slightly left");
   }
-  return "Behind you";
+  if (absolute <= 125) {
+    return signed > 0 ? msg("To your right") : msg("To your left");
+  }
+  if (absolute <= 165) {
+    return signed > 0
+      ? msg("Behind you to the right")
+      : msg("Behind you to the left");
+  }
+  return msg("Behind you");
 }

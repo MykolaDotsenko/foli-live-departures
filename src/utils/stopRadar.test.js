@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   bearingDegrees,
-  cardinalDirectionKey,
+  compassPoint,
   headingFromOrientationEvent,
   movementHeading,
   normalizeDegrees,
@@ -56,6 +56,17 @@ describe("stop radar geometry", () => {
     ).toBe(42);
     expect(headingFromOrientationEvent({ absolute: true, alpha: 90 })).toBe(270);
     expect(headingFromOrientationEvent({ absolute: false, alpha: 90 })).toBeNull();
+  });
+
+  // The phone's top edge points west; turned a quarter to the left
+  // (screen angle 90, Safari's window.orientation 90), the top of its
+  // screen points north. Turned to the right, -90 or 270.
+  it("gives the heading of the screen's top, not the phone's", () => {
+    expect(headingFromOrientationEvent({ webkitCompassHeading: 270 }, 90)).toBe(0);
+    expect(headingFromOrientationEvent({ webkitCompassHeading: 90 }, -90)).toBe(0);
+    expect(headingFromOrientationEvent({ absolute: true, alpha: 90 }, 270)).toBe(180);
+    expect(headingFromOrientationEvent({ absolute: true, alpha: 90 }, undefined)).toBe(270);
+    expect(headingFromOrientationEvent({ absolute: false, alpha: 90 }, 90)).toBeNull();
   });
 
   it("rejects GPS jitter as a fake movement heading", () => {
@@ -128,14 +139,14 @@ describe("stop radar geometry", () => {
     expect(radarRangeMeters(790, 2_000)).toBe(1_200);
   });
 
-  it("names the compass point of a bearing", () => {
-    expect(cardinalDirectionKey(0)).toBe("north");
-    expect(cardinalDirectionKey(22)).toBe("north");
-    expect(cardinalDirectionKey(23)).toBe("north-east");
-    expect(cardinalDirectionKey(257)).toBe("west");
-    expect(cardinalDirectionKey(315)).toBe("north-west");
-    expect(cardinalDirectionKey(359)).toBe("north");
-    expect(cardinalDirectionKey(null)).toBeNull();
+  it("names the compass point of a bearing, north clockwise", () => {
+    expect(compassPoint(0)).toBe(0);
+    expect(compassPoint(22)).toBe(0);
+    expect(compassPoint(23)).toBe(1);
+    expect(compassPoint(257)).toBe(6);
+    expect(compassPoint(315)).toBe(7);
+    expect(compassPoint(359)).toBe(0);
+    expect(compassPoint(null)).toBeNull();
   });
 
   it("produces accessible relative direction buckets", () => {
