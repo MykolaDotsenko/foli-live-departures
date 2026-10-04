@@ -279,6 +279,7 @@ export default {
   "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
     "Після посадки ввімкніть сповіщення про вихід для вибраної зупинки пересадки. Режим поїздки залишається головним до виходу, після чого Помічник маршруту продовжить із ділянки 2.",
   "Enter a stop, address or place.": "Введіть зупинку, адресу або місце.",
+  "Enter a stop or place.": "Введіть зупинку або місце.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Пошук місць потребує мережі. Ви все одно можете вибрати зупинку Föli з підказок.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
