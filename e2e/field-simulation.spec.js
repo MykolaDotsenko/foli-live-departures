@@ -33,12 +33,12 @@ async function installRideGeolocation(page, initialFix) {
 
     const geolocation = {
       getCurrentPosition(success) {
-        queueMicrotask(() => success(position()));
+        globalThis.queueMicrotask(() => success(position()));
       },
       watchPosition(success) {
         const id = nextWatchId++;
         watchers.set(id, success);
-        queueMicrotask(() => {
+        globalThis.queueMicrotask(() => {
           if (watchers.has(id)) success(position());
         });
         return id;
@@ -58,7 +58,7 @@ async function installRideGeolocation(page, initialFix) {
         fix = { ...fix, ...next };
         const current = position();
         for (const success of watchers.values()) {
-          queueMicrotask(() => success(current));
+          globalThis.queueMicrotask(() => success(current));
         }
       },
     });
