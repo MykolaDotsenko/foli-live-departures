@@ -208,16 +208,6 @@ export default {
     "Valitse Koti, Työ, Koulu, Fölin pysäkki, osoite tai paikka.",
   "Destination suggestions":
     "Määränpään ehdotukset",
-  "Stop or place":
-    "Pysäkki tai paikka",
-  "e.g. Kauppatori or Prisma":
-    "esim. Kauppatori tai Prisma",
-  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
-    "Valitse Koti, Työ, Koulu, Fölin pysäkki tai paikka, kuten Prisma.",
-  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
-    "Katuosoitteita ei haeta täällä. Käytä osoitteen hakuun Turun virallista reittiopasta.",
-  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
-    "Haulla ”{query}” ei löytynyt pysäkkiä eikä paikkaa. Käytä katuosoitteen hakuun Turun virallista reittiopasta.",
   "Nearest to me first":
     "Lähimmät ensin",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
@@ -320,7 +310,6 @@ export default {
     "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
-  "Enter a stop or place.": "Kirjoita pysäkki tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Paikkahaku tarvitsee verkkoyhteyden. Voit silti valita Fölin pysäkin ehdotuksista.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
