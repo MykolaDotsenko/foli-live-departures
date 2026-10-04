@@ -20,8 +20,8 @@ export default {
   "GPS accuracy ±{accuracy}": "Точність GPS ±{accuracy}",
   "Radar range {distance}": "Діапазон радара {distance}",
   "Near {street}": "Поруч із {street}",
-  "Another stop named {name} is {distance} away: stop {id}. Check the stop number.":
-    "Інша зупинка з назвою {name} за {distance}: зупинка {id}. Перевірте номер зупинки.",
+  "Other {name}: stop {id}, {distance} away. Check the stop number.":
+    "Інша {name}: зупинка {id}, за {distance}. Перевірте номер.",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Дані компаса недоступні, тому північ залишається вгорі радара. Під час ходьби відстань і положення зупинок усе одно оновлюються.",
   "N": "Пн",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Радар показує зупинки поруч. Ціль: {name}, зупинка {id}, відстань {distance}.",
