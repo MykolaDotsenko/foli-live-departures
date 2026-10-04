@@ -365,14 +365,17 @@ export default function JourneySearch({
     setFocused(false);
 
     if (!online) {
+      setFocused(options.length > 0);
       setError(
-        suggestions.length > 0
-          ? t(
-              "Place search needs a connection. You can still choose a Föli stop from the suggestions."
-            )
-          : t(
-              "Place search needs a connection. Search by Föli stop name or number while offline."
-            )
+        placeMatches.length > 0
+          ? ""
+          : suggestions.length > 0
+            ? t(
+                "Place search needs a connection. You can still choose a Föli stop from the suggestions."
+              )
+            : t(
+                "Place search needs a connection. Search by Föli stop name or number while offline."
+              )
       );
       return;
     }
@@ -387,14 +390,17 @@ export default function JourneySearch({
     if (results === null) return;
 
     if (results.length === 0) {
+      setFocused(options.length > 0);
       setError(
-        suggestions.length > 0
-          ? t(
-              "No matching place or address was found. You can still choose a Föli stop from the suggestions."
-            )
-          : t(
-              "No matching stop, place or address was found. Try a more specific destination."
-            )
+        placeMatches.length > 0
+          ? ""
+          : suggestions.length > 0
+            ? t(
+                "No matching place or address was found. You can still choose a Föli stop from the suggestions."
+              )
+            : t(
+                "No matching stop, place or address was found. Try a more specific destination."
+              )
       );
     }
   };
