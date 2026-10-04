@@ -22,8 +22,8 @@ export default {
   "GPS accuracy ±{accuracy}": "GPS-noggrannhet ±{accuracy}",
   "Radar range {distance}": "Radarräckvidd {distance}",
   "Near {street}": "Nära {street}",
-  "Another stop named {name} is {distance} away: stop {id}. Check the stop number.":
-    "En annan hållplats med namnet {name} ligger {distance} bort: hållplats {id}. Kontrollera hållplatsnumret.",
+  "Other {name}: stop {id}, {distance} away. Check the stop number.":
+    "Annan {name}: hållplats {id}, {distance} bort. Kontrollera numret.",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Kompassdata är inte tillgänglig, så norr stannar uppåt i radarn. När du går uppdateras ändå avstånd och hållplatsernas lägen.",
   "N": "N",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Radarn visar hållplatser i närheten. Mål {name}, hållplats {id}, {distance} bort.",
