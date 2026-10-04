@@ -334,7 +334,6 @@ export default function StopRadar({
                 ))}
                 {targetPoint && (
                   <line
-                    className={styles.targetConnector}
                     x1="50"
                     y1="50"
                     x2={targetPoint.x}
