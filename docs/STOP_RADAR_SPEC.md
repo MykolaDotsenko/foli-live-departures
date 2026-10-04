@@ -51,8 +51,6 @@ The radar adds a lightweight map-like background without introducing a map SDK o
 - the line from the passenger to the target is a straight-line orientation connector, **not** a walking route;
 - all context SVG is `aria-hidden` and `pointer-events: none`, so stop markers remain the only interactive objects inside the radar.
 
-When another nearby stop has the same public stop name, the target card explicitly names the other stop number and separation. It never claims the pair is on opposite sides of a road unless that is independently known.
-
 The context fails open: if the address pack cannot be loaded, the GPS/compass radar continues to work exactly as before.
 
 ## Distance and safety
@@ -75,6 +73,6 @@ The context fails open: if the address pack cannot be loaded, the GPS/compass ra
 
 ## Acceptance evidence
 
-Automated acceptance covers geometry, compass semantics, GPS-jitter rejection, sensor cleanup, explicit target switching, arrival uncertainty, offline street/building context, same-name-stop warnings, lazy UI integration, mobile E2E and the normal PWA/CSP/bundle/accessibility gates.
+Automated acceptance covers geometry, compass semantics, GPS-jitter rejection, sensor cleanup, explicit target switching, arrival uncertainty, offline street/building context, lazy UI integration, mobile E2E and the normal PWA/CSP/bundle/accessibility gates.
 
 Physical Android/iPhone compass calibration and outdoor walking remain part of the existing physical-device manual gates.
