@@ -329,7 +329,19 @@ With direct provider search off, "Lidl" or "Prisma Itäharju" found nothing. Nam
 - chosen places become destinations through the same external-place flow as provider results (`source: "osm-places"`);
 - `npm run verify:place-pack` fails a release on a missing, unlicensed, oversized (> 400 KB) or out-of-area pack.
 
-Street addresses are still not searched in the app; the field says "Stop or place" and the official Turku journey planner remains the handoff for an address.
+**Shipped address pack — 2026-10-04**
+
+Street/address search now also stays on-device. The app ships `public/addresses/foli-addresses.json`, generated from OpenStreetMap through Overpass:
+
+- **33,288 address points + 7,213 named streets** in the current Föli municipalities at bootstrap;
+- exact/prefix house-number search, street-only search and bounded typo tolerance for sufficiently long street names;
+- bare house numbers are never accepted as destinations;
+- the pack is lazy-parsed after meaningful input, but same-origin/public assets are precached for offline use;
+- address/street results use the same destination validation, nearby-stop evaluation and final-walk pipeline as POIs (`source: "osm-addresses"`);
+- `npm run verify:address-pack` gates schema, ODbL attribution, byte budget, minimum data volume, unique rows and Föli-area coordinates;
+- monthly OSM refresh rebuilds **both** POI and address packs, validates them, produces review diffs and opens/updates a PR; it never auto-merges.
+
+The field therefore truthfully says **"Stop, address or place"** in packaged production. The official Turku journey planner remains a wider-search fallback when the offline OSM snapshot does not contain a destination.
 
 ---
 

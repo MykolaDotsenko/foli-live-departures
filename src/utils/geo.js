@@ -51,6 +51,57 @@ export function hasCoordinates(value) {
  * @param {MaybeLatLon | null | undefined} to
  * @returns {number | null}
  */
+/**
+ * Approximate compass direction from one coordinate to another. This is
+ * deliberately not walking navigation: it remains useful offline while
+ * never implying that the straight bearing is a walkable route.
+ *
+ * @param {MaybeLatLon | null | undefined} from
+ * @param {MaybeLatLon | null | undefined} to
+ * @returns {"north"|"north-east"|"east"|"south-east"|"south"|"south-west"|"west"|"north-west"|null}
+ */
+export function directionBetween(from, to) {
+  const fromLat = coordinate(from?.lat, -90, 90);
+  const fromLon = coordinate(from?.lon, -180, 180);
+  const toLat = coordinate(to?.lat, -90, 90);
+  const toLon = coordinate(to?.lon, -180, 180);
+  if (
+    fromLat === null ||
+    fromLon === null ||
+    toLat === null ||
+    toLon === null
+  ) {
+    return null;
+  }
+
+  const lat1 = toRadians(fromLat);
+  const lat2 = toRadians(toLat);
+  const deltaLon = toRadians(toLon - fromLon);
+  const y = Math.sin(deltaLon) * Math.cos(lat2);
+  const x =
+    Math.cos(lat1) * Math.sin(lat2) -
+    Math.sin(lat1) * Math.cos(lat2) * Math.cos(deltaLon);
+  const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+  const normalized = (bearing + 360) % 360;
+  /** @type {readonly ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"]} */
+  const directions = [
+    "north",
+    "north-east",
+    "east",
+    "south-east",
+    "south",
+    "south-west",
+    "west",
+    "north-west",
+  ];
+  return directions[Math.round(normalized / 45) % 8];
+}
+
+/**
+ * @param {MaybeLatLon | null | undefined} from
+ * @param {MaybeLatLon | null | undefined} to
+ * @returns {number | null}
+ */
 export function distanceInMeters(from, to) {
   const fromLat = coordinate(from?.lat, -90, 90);
   const fromLon = coordinate(from?.lon, -180, 180);

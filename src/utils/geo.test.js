@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import {
+  directionBetween,
   distanceInMeters,
   findNearestStops,
   formatDistance,
@@ -103,4 +104,12 @@ test("checks service-area multipolygons locally and respects holes", () => {
   expect(isInsideMultiPolygon({ lat: 60.5, lon: 22.5 }, geometry)).toBe(false);
   expect(isInsideMultiPolygon({ lat: 62, lon: 24 }, geometry)).toBe(false);
   expect(isInsideMultiPolygon({ lat: null, lon: 22.2 }, geometry)).toBeNull();
+});
+test("directionBetween returns a stable eight-way compass bucket", () => {
+  const origin = { lat: 60.45, lon: 22.26 };
+  expect(directionBetween(origin, { lat: 60.46, lon: 22.26 })).toBe("north");
+  expect(directionBetween(origin, { lat: 60.45, lon: 22.27 })).toBe("east");
+  expect(directionBetween(origin, { lat: 60.44, lon: 22.26 })).toBe("south");
+  expect(directionBetween(origin, { lat: 60.45, lon: 22.25 })).toBe("west");
+  expect(directionBetween(origin, null)).toBeNull();
 });

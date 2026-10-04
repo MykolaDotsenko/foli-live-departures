@@ -126,6 +126,14 @@ export default {
   "1 option": "1 vaihtoehto",
   "{count} options": "{count} vaihtoehtoa",
   Fastest: "Nopein",
+  "High confidence": "Korkea varmuus",
+  "Medium confidence": "Kohtalainen varmuus",
+  "Low confidence": "Matala varmuus",
+  "Board line {line} now": "Nouse linjalle {line} nyt",
+  "Line {line} · you should make it": "Linja {line} · ehdit todennäköisesti hyvin",
+  "Line {line} · likely catchable": "Linja {line} · ehdit todennäköisesti",
+  "Line {line} · tight — move now": "Linja {line} · tiukka — lähde nyt",
+  "Line {line} · boarding confidence unavailable": "Linja {line} · nousuvarmuutta ei voida arvioida",
   "Less walking": "Vähemmän kävelyä",
   "Easier to catch": "Helpompi ehtiä",
   "Arrive about {time}": "Perillä noin {time}",
@@ -200,16 +208,6 @@ export default {
     "Valitse Koti, Työ, Koulu, Fölin pysäkki, osoite tai paikka.",
   "Destination suggestions":
     "Määränpään ehdotukset",
-  "Stop or place":
-    "Pysäkki tai paikka",
-  "e.g. Kauppatori or Prisma":
-    "esim. Kauppatori tai Prisma",
-  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
-    "Valitse Koti, Työ, Koulu, Fölin pysäkki tai paikka, kuten Prisma.",
-  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
-    "Katuosoitteita ei haeta täällä. Käytä osoitteen hakuun Turun virallista reittiopasta.",
-  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
-    "Haulla ”{query}” ei löytynyt pysäkkiä eikä paikkaa. Käytä katuosoitteen hakuun Turun virallista reittiopasta.",
   "Nearest to me first":
     "Lähimmät ensin",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
@@ -312,7 +310,6 @@ export default {
     "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
-  "Enter a stop or place.": "Kirjoita pysäkki tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Paikkahaku tarvitsee verkkoyhteyden. Voit silti valita Fölin pysäkin ehdotuksista.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
@@ -344,6 +341,16 @@ export default {
   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
     "Paikkahakua on tilapäisesti rajoitettu. Odota hetki ja yritä uudelleen; Fölin pysäkkihaku toimii edelleen.",
   "Final walk": "Loppukävely",
+  "Destination is roughly {direction} from this stop.":
+    "Määränpää on tältä pysäkiltä suunnilleen {direction}.",
+  north: "pohjoiseen",
+  "north-east": "koilliseen",
+  east: "itään",
+  "south-east": "kaakkoon",
+  south: "etelään",
+  "south-west": "lounaaseen",
+  west: "länteen",
+  "north-west": "luoteeseen",
   "Walk to {destination}": "Kävele määränpäähän {destination}",
   "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
     "Kävelyetäisyys on likimääräinen linnuntiearvio. Todellinen kävelyreitti voi olla pidempi.",
@@ -351,4 +358,14 @@ export default {
     "Kävelyreittilinkki ei ole käytettävissä offline-tilassa.",
   Done: "Valmis",
 
+  "e.g. Tampereentie 12 or Prisma": "esim. Tampereentie 12 tai Prisma",
+  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
+    "Pysäkit, paikat ja osoitteet haetaan tällä laitteella. Määränpään tekstiä ei lähetetä tältä laitteelta.",
+  "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
+    "Offline-OpenStreetMap-aineisto ei välttämättä sisällä kaikkia osoitteita. Laajempaa hakua varten käytä Turun virallista reittiopasta.",
+  "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":
+    "Paikallisesta hausta ei löytynyt pysäkkiä, osoitetta tai paikkaa “{query}”. Kokeile laajempaa hakua Turun virallisessa reittioppaassa.",
+  "Online place search is unavailable. Local stop, address and place search still works.":
+    "Verkkopaikkahaku ei ole käytettävissä. Paikallinen pysäkki-, osoite- ja paikkahaku toimii edelleen.",
+  "Street midpoint": "Kadun likimääräinen keskikohta",
 };

@@ -10,6 +10,8 @@ const walk = {
   lon: 22.30,
   fromStopId: "900",
   fromStopName: "Itäharju",
+  fromLat: 60.45,
+  fromLon: 22.29,
   distanceMeters: 180,
 };
 
@@ -25,6 +27,9 @@ test("shows approximate final walk and external walking action", () => {
   ).toBeInTheDocument();
   expect(screen.getByText(/Itäharju.*≈180 m/i)).toBeInTheDocument();
   expect(
+    screen.getByText(/Destination is roughly east from this stop/i)
+  ).toBeInTheDocument();
+  expect(
     screen.getByText(
       "Walking distance is approximate straight-line guidance. The real walking route can be longer."
     )
@@ -36,6 +41,20 @@ test("shows approximate final walk and external walking action", () => {
 
   fireEvent.click(screen.getByRole("button", { name: "Done" }));
   expect(onDone).toHaveBeenCalledTimes(1);
+});
+
+test("does not invent a compass direction without exit-stop coordinates", () => {
+  render(
+    <FinalWalk
+      walk={{ ...walk, fromLat: undefined, fromLon: undefined }}
+      online={false}
+      onDone={() => {}}
+    />
+  );
+
+  expect(
+    screen.queryByText(/Destination is roughly/i)
+  ).not.toBeInTheDocument();
 });
 
 test("offline final walk keeps guidance but removes the external link", () => {

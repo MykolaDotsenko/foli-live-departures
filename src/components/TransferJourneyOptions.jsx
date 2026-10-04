@@ -1,5 +1,6 @@
 import { t, useLanguage } from "../i18n";
 import { formatDistance } from "../utils/geo";
+import { transferJourneyConfidence } from "../utils/journeyConfidence";
 import { formatClock, formatDue } from "../utils/time";
 import styles from "./TransferJourneyOptions.module.css";
 
@@ -7,6 +8,13 @@ function riskText(feasibility) {
   if (feasibility?.state === "comfortable") return t("Comfortable transfer");
   if (feasibility?.state === "acceptable") return t("Reasonable transfer");
   return t("Tight transfer");
+}
+
+function confidenceText(option) {
+  const confidence = transferJourneyConfidence(option);
+  if (confidence.level === "high") return t("High confidence");
+  if (confidence.level === "medium") return t("Medium confidence");
+  return t("Low confidence");
 }
 
 function marginText(feasibility) {
@@ -174,6 +182,12 @@ export default function TransferJourneyOptions({
               <span className={styles.risk}>
                 {riskText(feasibility)}
                 {margin ? <> · {margin}</> : null}
+                <span
+                  className={styles.confidence}
+                  data-confidence={transferJourneyConfidence(option).level}
+                >
+                  {confidenceText(option)}
+                </span>
               </span>
 
               {hasFinalWalk(option) && (

@@ -29,7 +29,7 @@ export interface DestinationIntent {
   lon?: number;
   finalWalkDistanceByStop?: Record<string, number>;
   /** OpenStreetMap, from the place provider or the shipped place pack. */
-  source?: "osm-nominatim" | "osm-places";
+  source?: "osm-nominatim" | "osm-places" | "osm-addresses";
 }
 
 export interface PlaceSearchBoundingBox {
@@ -49,7 +49,7 @@ export interface PlaceSearchResult {
   type: string;
   osmType?: "node" | "way" | "relation" | "";
   boundingBox?: PlaceSearchBoundingBox | null;
-  provider: "nominatim" | "osm-places";
+  provider: "nominatim" | "osm-places" | "osm-addresses";
   licence: string;
 }
 
@@ -267,5 +267,7 @@ export interface FinalWalkIntent {
   lon: number;
   fromStopId: string;
   fromStopName: string;
+  fromLat?: number;
+  fromLon?: number;
   distanceMeters: number | null;
 }

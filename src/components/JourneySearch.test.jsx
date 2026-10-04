@@ -20,13 +20,20 @@ vi.mock("../hooks/usePlaceSearch", () => ({
 }));
 
 const placePack = vi.hoisted(() => ({ load: vi.fn() }));
+const addressPack = vi.hoisted(() => ({ load: vi.fn() }));
 
 vi.mock("../api/placePack", async (importOriginal) => ({
   ...(await importOriginal()),
   loadPlacePack: placePack.load,
 }));
 
+vi.mock("../api/addressPack", async (importOriginal) => ({
+  ...(await importOriginal()),
+  loadAddressPack: addressPack.load,
+}));
+
 import JourneySearch from "./JourneySearch";
+import { parseAddressPack } from "../api/addressPack";
 import { parsePlacePack } from "../api/placePack";
 import { forgetPositionForTests, rememberPosition } from "../utils/sessionPosition";
 
@@ -58,6 +65,9 @@ const prisma = {
 beforeEach(() => {
   forgetPositionForTests();
   placePack.load.mockReset().mockResolvedValue([]);
+  addressPack.load
+    .mockReset()
+    .mockResolvedValue({ addresses: [], streets: [] });
   resetLanguageForTests("en");
   placeSearch.search.mockReset().mockResolvedValue([]);
   placeSearch.clear.mockReset();
@@ -213,8 +223,10 @@ test("offline mode never calls external place search", async () => {
   );
 
   expect(placeSearch.search).not.toHaveBeenCalled();
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Place search needs a connection"
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Place search needs a connection"
+    )
   );
 });
 
@@ -328,7 +340,7 @@ test("keeps an opened stop board compact until the passenger asks to change dest
 });
 
 
-test("packaged app keeps address text local and offers the official planner handoff", () => {
+test("packaged app resolves a shipped address locally without calling the provider", async () => {
   placeSearch.hook.mockReturnValue({
     results: [],
     status: "idle",
@@ -337,32 +349,63 @@ test("packaged app keeps address text local and offers the official planner hand
     clear: placeSearch.clear,
     directEnabled: false,
   });
+  const local = parseAddressPack({
+    addressFields: ["street", "house", "lat", "lon", "city"],
+    streetFields: ["street", "lat", "lon", "city"],
+    addresses: [["Tampereentie", "12", 60.4515, 22.267, "Turku"]],
+    streets: [["Tampereentie", 60.4515, 22.267, "Turku"]],
+  });
+  addressPack.load.mockResolvedValue(local);
 
-  renderSearch();
-  // No address search here, so the field does not promise one.
-  const input = screen.getByRole("combobox", { name: "Stop or place" });
+  const props = renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  expect(input).toHaveAttribute("placeholder", "e.g. Tampereentie 12 or Prisma");
   expect(
-    screen.getByText("Choose Home, Work, School, a Föli stop or a place such as Prisma.")
+    screen.getByText(
+      "Stops, places and addresses are searched on this device. No destination text leaves this device."
+    )
   ).toBeInTheDocument();
-  // The link is there from the start; the note waits for an address.
-  expect(
-    screen.getByRole("link", { name: "Open Turku journey planner" })
-  ).toBeInTheDocument();
-  expect(screen.queryByText(/Street addresses aren’t searched here/)).not.toBeInTheDocument();
 
+  fireEvent.focus(input);
   fireEvent.change(input, { target: { value: "Tampereentie 12" } });
-  expect(screen.getByText(/Street addresses aren’t searched here/)).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Search destination" })
-  );
+  const option = await screen.findByRole("option", {
+    name: /Tampereentie 12.*Turku/i,
+  });
+  fireEvent.click(option);
 
+  expect(props.onChooseExternalPlace).toHaveBeenCalledWith(
+    expect.objectContaining({
+      title: "Tampereentie 12",
+      provider: "osm-addresses",
+      licence: "ODbL-1.0",
+    })
+  );
   expect(placeSearch.search).not.toHaveBeenCalled();
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "No stop or place matches “Tampereentie 12”. For a street address, use the official Turku journey planner."
+});
+
+test("an address absent from the offline pack keeps the wider-search handoff", async () => {
+  placeSearch.hook.mockReturnValue({
+    results: [],
+    status: "idle",
+    error: "",
+    search: placeSearch.search,
+    clear: placeSearch.clear,
+    directEnabled: false,
+  });
+  renderSearch();
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
+  fireEvent.change(input, { target: { value: "Unknownstreet 999" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search destination" }));
+
+  await waitFor(() =>
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "No local stop, address or place matches “Unknownstreet 999”."
+    )
   );
   expect(
     screen.getByRole("link", { name: "Open Turku journey planner" })
   ).toHaveAttribute("href", "https://turku.digitransit.fi/");
+  expect(placeSearch.search).not.toHaveBeenCalled();
 });
 
 // A stop chosen from the list fills the field with its name, and the note
@@ -377,7 +420,7 @@ test("a chosen stop does not bring up the address note", () => {
     directEnabled: false,
   });
   const props = { ...renderSearch() };
-  const input = screen.getByRole("combobox", { name: "Stop or place" });
+  const input = screen.getByRole("combobox", { name: "Stop, address or place" });
   fireEvent.focus(input);
   fireEvent.change(input, { target: { value: "Turun" } });
   expect(screen.getByRole("option", { name: /Turun linna/ })).toBeInTheDocument();
@@ -397,9 +440,9 @@ test("a chosen stop does not bring up the address note", () => {
       }}
     />
   );
-  const reopened = screen.getByRole("combobox", { name: "Stop or place" });
+  const reopened = screen.getByRole("combobox", { name: "Stop, address or place" });
   fireEvent.change(reopened, { target: { value: "Turun linna" } });
-  expect(screen.queryByText(/Street addresses aren’t searched here/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Offline OpenStreetMap data may not contain every address/)).not.toBeInTheDocument();
 });
 
 test("provider failure is not misreported as a valid zero-match result", async () => {
@@ -672,8 +715,8 @@ test("the example in the field is one the app can find", () => {
   });
   renderSearch();
   expect(
-    screen.getByRole("combobox", { name: "Stop or place" })
-  ).toHaveAttribute("placeholder", "e.g. Kauppatori or Prisma");
+    screen.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveAttribute("placeholder", "e.g. Tampereentie 12 or Prisma");
 });
 
 test("with address search on, the example still shows a place", () => {
@@ -752,7 +795,7 @@ describe("places shipped with the app", () => {
   }
 
   async function typeIn(text) {
-    const input = screen.getByRole("combobox", { name: "Stop or place" });
+    const input = screen.getByRole("combobox", { name: "Stop, address or place" });
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: text } });
     await screen.findAllByRole("option", { name: /Lidl|Prisma/ });
@@ -765,7 +808,7 @@ describe("places shipped with the app", () => {
       screen.getByRole("button", { name: "Search destination" })
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Enter a stop or place."
+      "Enter a stop, address or place."
     );
   });
 
@@ -831,7 +874,11 @@ describe("places shipped with the app", () => {
     expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Search destination" }));
-    expect(screen.getByRole("listbox", { name: "Destination suggestions" })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByRole("listbox", { name: "Destination suggestions" })
+      ).toBeInTheDocument()
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(placeSearch.search).not.toHaveBeenCalled();
   });

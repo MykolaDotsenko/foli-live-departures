@@ -118,6 +118,14 @@ export default {
   "1 option": "1 alternativ",
   "{count} options": options,
   Fastest: "Snabbast",
+  "High confidence": "Hög säkerhet",
+  "Medium confidence": "Medelhög säkerhet",
+  "Low confidence": "Låg säkerhet",
+  "Board line {line} now": "Gå ombord på linje {line} nu",
+  "Line {line} · you should make it": "Linje {line} · du bör hinna",
+  "Line {line} · likely catchable": "Linje {line} · du hinner troligen",
+  "Line {line} · tight — move now": "Linje {line} · ont om tid — gå nu",
+  "Line {line} · boarding confidence unavailable": "Linje {line} · säkerheten för påstigning kan inte bedömas",
   "Less walking": "Mindre gång",
   "Easier to catch": "Lättare att hinna",
   "Arrive about {time}": "Framme cirka {time}",
@@ -188,16 +196,6 @@ export default {
     "Välj Hem, Arbete, Skola, en Föli-hållplats, adress eller plats.",
   "Destination suggestions":
     "Förslag på destinationer",
-  "Stop or place":
-    "Hållplats eller plats",
-  "e.g. Kauppatori or Prisma":
-    "t.ex. Kauppatori eller Prisma",
-  "Choose Home, Work, School, a Föli stop or a place such as Prisma.":
-    "Välj Hem, Arbete, Skola, en Föli-hållplats eller en plats som Prisma.",
-  "Street addresses aren’t searched here. For an address, use the official Turku journey planner.":
-    "Gatuadresser söks inte här. Använd Åbos officiella reseplanerare för adresser.",
-  "No stop or place matches “{query}”. For a street address, use the official Turku journey planner.":
-    "Ingen hållplats eller plats matchar ”{query}”. Använd Åbos officiella reseplanerare för gatuadresser.",
   "Nearest to me first":
     "Närmast mig först",
   "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session.":
@@ -301,7 +299,6 @@ export default {
     "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
-  "Enter a stop or place.": "Ange en hållplats eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Platssökning kräver internetanslutning. Du kan fortfarande välja en Föli-hållplats bland förslagen.",
   "Place search needs a connection. Search by Föli stop name or number while offline.":
@@ -329,9 +326,29 @@ export default {
   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
     "Platssökningen är tillfälligt hastighetsbegränsad. Vänta en stund och försök igen; Föli-hållplatssökningen fungerar fortfarande.",
   "Final walk": "Sista gångsträckan",
+  "Destination is roughly {direction} from this stop.":
+    "Destinationen ligger ungefär {direction} från den här hållplatsen.",
+  north: "norrut",
+  "north-east": "nordost",
+  east: "österut",
+  "south-east": "sydost",
+  south: "söderut",
+  "south-west": "sydväst",
+  west: "västerut",
+  "north-west": "nordväst",
   "Walk to {destination}": "Gå till {destination}",
   "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
     "Gångavståndet är ungefärlig vägledning baserad på fågelvägsavstånd. Den verkliga gångrutten kan vara längre.",
   "Walking link unavailable offline.": "Länk till gångrutt är inte tillgänglig offline.",
   Done: "Klar",
+  "e.g. Tampereentie 12 or Prisma": "t.ex. Tampereentie 12 eller Prisma",
+  "Stops, places and addresses are searched on this device. No destination text leaves this device.":
+    "Hållplatser, platser och adresser söks på den här enheten. Ingen destinationstext lämnar enheten.",
+  "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner.":
+    "Offline-data från OpenStreetMap innehåller kanske inte alla adresser. Använd Åbos officiella reseplanerare för en bredare sökning.",
+  "No local stop, address or place matches “{query}”. Try the official Turku journey planner for a wider search.":
+    "Den lokala sökningen hittade ingen hållplats, adress eller plats för “{query}”. Prova Åbos officiella reseplanerare för en bredare sökning.",
+  "Online place search is unavailable. Local stop, address and place search still works.":
+    "Platssökning online är inte tillgänglig. Lokal sökning efter hållplatser, adresser och platser fungerar fortfarande.",
+  "Street midpoint": "Ungefärlig mittpunkt på gatan",
 };

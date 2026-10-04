@@ -23,7 +23,7 @@ Already implemented and considered part of the baseline:
 - debug APK E2E publication chain that publishes only the exact tested artifact;
 - production Android APK/AAB signing workflow, gated on exact green master CI;
 - runtime high/critical dependency audit, Android release invariants and dual raw/gzip bundle budgets;
-- production direct address/POI search fail-closed by default, with official Turku journey-planner handoff;
+- production public geocoder calls fail closed; named POIs and street addresses are searched on-device from ODbL OpenStreetMap packs, with the official Turku journey planner as a wider-search fallback;
 - leave-now / leave-at / arrive-by controls with deterministic day-boundary handling;
 - routing preferences for fewer transfers, less walking and larger transfer buffer;
 - entrance-aware destination normalization where trustworthy provider geometry is available, with fail-closed centroid/external-handoff fallback;

@@ -22,6 +22,59 @@ const baseDeparture = {
   rideDurationSec: 1_200,
 };
 
+test("shows conservative boarding guidance and categorical confidence", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "high",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Nearby",
+          distanceMeters: 120,
+          departure: {
+            ...baseDeparture,
+            lineRef: "18",
+            liveState: "live",
+            catchability: "comfortable",
+          },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+        {
+          id: "tight",
+          label: "easier-to-catch",
+          stopId: "200",
+          stopName: "Other",
+          distanceMeters: 80,
+          departure: {
+            ...baseDeparture,
+            tripRef: "tight-trip",
+            lineRef: "7",
+            liveState: "live",
+            catchability: "tight",
+          },
+          arrivalDeltaSec: 60,
+          walkingDeltaMeters: -40,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.getByText("Line 18 · you should make it")).toBeInTheDocument();
+  expect(screen.getByText("High confidence")).toHaveAttribute(
+    "data-confidence",
+    "high"
+  );
+  expect(screen.getByText("Line 7 · tight — move now")).toBeInTheDocument();
+  expect(screen.getByText("Low confidence")).toHaveAttribute(
+    "data-confidence",
+    "low"
+  );
+});
+
 test("renders only meaningful option cards and opens the chosen boarding stop", () => {
   const onOpenStop = vi.fn();
 

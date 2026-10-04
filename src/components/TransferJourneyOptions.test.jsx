@@ -32,6 +32,49 @@ const option = {
   totalWalkingDistanceM: 580,
 };
 
+test("shows transfer confidence from reliability and transfer margin", () => {
+  render(
+    <TransferJourneyOptions
+      options={[
+        {
+          ...option,
+          reliability: "high",
+          transfers: [
+            {
+              ...option.transfer,
+              feasibility: { state: "comfortable", slackSec: 360 },
+            },
+          ],
+          legs: [option.first, option.second],
+        },
+        {
+          ...option,
+          id: "tight",
+          reliability: "medium",
+          transfers: [
+            {
+              ...option.transfer,
+              feasibility: { state: "tight", slackSec: 70 },
+            },
+          ],
+          legs: [option.first, option.second],
+        },
+      ]}
+      destinationLabel="Home"
+      onSelectJourney={() => {}}
+    />
+  );
+
+  expect(screen.getByText("High confidence")).toHaveAttribute(
+    "data-confidence",
+    "high"
+  );
+  expect(screen.getByText("Low confidence")).toHaveAttribute(
+    "data-confidence",
+    "low"
+  );
+});
+
 test("renders a truthful one-transfer card and selects the concrete option", () => {
   const onSelect = vi.fn();
   render(
