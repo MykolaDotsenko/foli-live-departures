@@ -23,8 +23,6 @@ export default {
   "GPS accuracy ±{accuracy}": "GPS-tarkkuus ±{accuracy}",
   "Radar range {distance}": "Tutkan kantama {distance}",
   "Near {street}": "Lähellä katua {street}",
-  "Other {name}: stop {id}, {distance} away. Check the stop number.":
-    "Toinen {name}: pysäkki {id}, {distance} päässä. Tarkista numero.",
   "Compass data is unavailable, so the radar stays north-up. Walking still updates distance and stop positions.": "Kompassitietoa ei ole saatavilla, joten pohjoinen pysyy tutkan yläreunassa. Kävellessä etäisyys ja pysäkkien sijainnit päivittyvät silti.",
   "N": "P",
   "Radar showing nearby stops. Target {name}, stop {id}, {distance} away.": "Tutka näyttää lähellä olevat pysäkit. Kohde {name}, pysäkki {id}, etäisyys {distance}.",
