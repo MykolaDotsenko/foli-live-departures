@@ -75,6 +75,19 @@ test("simulated phone ride survives weak GPS and an app restart before arrival",
     longitude: 22.255,
     accuracy: 18,
   });
+
+  // Chromium delivers BrowserContext geolocation changes to an existing
+  // watchPosition subscription. Playwright WebKit does not consistently emit
+  // that synthetic change until navigation, so recreate the WebView there.
+  // The assertion stays strict: the ride must survive the reload and consume
+  // the newly configured precise fix.
+  if (testInfo.project.name === "webkit-mobile") {
+    await page.reload();
+    await expect(
+      page.locator('section[aria-labelledby="ride-mode-title"]')
+    ).toBeVisible();
+  }
+
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
   state.atStop = true;
