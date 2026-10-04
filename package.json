@@ -48,7 +48,8 @@
     "verify:release-readiness": "npm run verify:production-cutover && npm run verify:release-gates && npm run verify:pwa-context",
     "verify:pwa-context": "node --test scripts/verify-pwa-context.test.mjs",
     "verify:public-promotion": "node scripts/verify-release-gates.mjs --require public-promotion",
-    "verify:play-production": "node scripts/verify-release-gates.mjs --require play-production"
+    "verify:play-production": "node scripts/verify-release-gates.mjs --require play-production",
+    "verify:osm-refresh": "node scripts/verify-place-refresh-workflow.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
