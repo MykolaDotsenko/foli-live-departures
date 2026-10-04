@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { loadAddressPack } from "../api/addressPack";
 import { t, useLanguage } from "../i18n";
 import useStopRadar from "../hooks/useStopRadar";
 import {
@@ -11,6 +12,10 @@ import {
   relativeDirectionKey,
 } from "../utils/stopRadar";
 import { distanceInMeters, formatAccuracy, formatDistance, hasCoordinates } from "../utils/geo";
+import {
+  buildRadarContext,
+  createRadarContextIndex,
+} from "../utils/radarContext";
 import { stopLabel } from "../utils/stopNames";
 import styles from "./StopRadar.module.css";
 
@@ -41,6 +46,7 @@ function targetWithinUncertainty(position, distance) {
 // other comes back apart as the scale narrows, and the target chooser
 // below offers it all along.
 const MIN_MARKER_GAP_PERCENT = 8;
+const SAME_NAME_STOP_WARNING_METERS = 140;
 
 function translatedHeading(bearing) {
   const degrees = Math.round(Number(bearing)) % 360;
@@ -103,6 +109,10 @@ export default function StopRadar({
   const [targetStopId, setTargetStopId] = useState(() =>
     String(initialTargetStopId || "")
   );
+  const [contextState, setContextState] = useState({
+    status: "idle",
+    index: null,
+  });
   const { status, position, error, heading, headingSource, pageVisible } =
     useStopRadar({
       active: true,
@@ -125,6 +135,28 @@ export default function StopRadar({
       (stop) =>
         String(stop?.id || "") === targetStopId && hasCoordinates(stop)
     ) || null;
+
+  useEffect(() => {
+    if (!position || contextState.status !== "idle") return undefined;
+
+    let current = true;
+    setContextState({ status: "loading", index: null });
+    loadAddressPack()
+      .then((pack) => {
+        if (!current) return;
+        setContextState({
+          status: "ready",
+          index: createRadarContextIndex(pack),
+        });
+      })
+      .catch(() => {
+        if (current) setContextState({ status: "unavailable", index: null });
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [contextState.status, position]);
 
   const targetDistance =
     position && targetStop ? distanceInMeters(position, targetStop) : null;
@@ -172,6 +204,46 @@ export default function StopRadar({
     (stop) => String(stop.id) === targetStopId
   )?.point;
 
+  const mapContext = useMemo(
+    () =>
+      buildRadarContext(
+        contextState.index,
+        position,
+        targetStop,
+        heading,
+        range
+      ),
+    [contextState.index, heading, position, range, targetStop]
+  );
+
+  const sameNameStop = useMemo(() => {
+    if (!targetStop) return null;
+    const targetName = stopLabel(targetStop).trim().toLocaleLowerCase();
+    if (!targetName) return null;
+
+    return (
+      stops
+        .filter(
+          (stop) =>
+            String(stop?.id || "") !== targetStopId &&
+            hasCoordinates(stop) &&
+            stopLabel(stop).trim().toLocaleLowerCase() === targetName
+        )
+        .map((stop) => ({
+          ...stop,
+          distanceFromTarget: distanceInMeters(targetStop, stop),
+        }))
+        .filter(
+          (stop) =>
+            Number.isFinite(stop.distanceFromTarget) &&
+            stop.distanceFromTarget <= SAME_NAME_STOP_WARNING_METERS
+        )
+        .sort((a, b) => a.distanceFromTarget - b.distanceFromTarget)[0] || null
+    );
+  }, [stops, targetStop, targetStopId]);
+
+  const hasMapContext =
+    mapContext.roads.length > 0 || mapContext.buildings.length > 0;
 
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
@@ -241,6 +313,11 @@ export default function StopRadar({
         <>
           <div className={styles.modeRow} role="status" aria-live="polite">
             <span className={styles.modePill}>{modeText}</span>
+            {hasMapContext && (
+              <span className={styles.contextPill}>
+                {t("Offline street context")}
+              </span>
+            )}
             {Number.isFinite(position.accuracy) && (
               <span>
                 {t("GPS accuracy ±{accuracy}", {
@@ -275,6 +352,67 @@ export default function StopRadar({
                   : t("Radar showing nearby Föli stops.")
               }
             >
+              <svg
+                className={styles.contextLayer}
+                viewBox="0 0 100 100"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+              >
+                <g className={styles.roadLayer}>
+                  {mapContext.roads.map((road) => (
+                    <g key={road.id}>
+                      <line
+                        x1={road.x1}
+                        y1={road.y1}
+                        x2={road.x2}
+                        y2={road.y2}
+                        data-target-street={
+                          road.targetStreet ? "true" : undefined
+                        }
+                        vectorEffect="non-scaling-stroke"
+                      />
+                      {road.showLabel && (
+                        <text
+                          x={road.labelX}
+                          y={road.labelY}
+                          data-target-street={
+                            road.targetStreet ? "true" : undefined
+                          }
+                        >
+                          {road.street}
+                        </text>
+                      )}
+                    </g>
+                  ))}
+                </g>
+                <g className={styles.buildingLayer}>
+                  {mapContext.buildings.map((building) => (
+                    <rect
+                      key={building.id}
+                      x={building.x - building.size / 2}
+                      y={building.y - building.size * 0.38}
+                      width={building.size}
+                      height={building.size * 0.76}
+                      rx="0.45"
+                      data-target-street={
+                        building.targetStreet ? "true" : undefined
+                      }
+                      transform={`rotate(${building.rotation} ${building.x} ${building.y})`}
+                    />
+                  ))}
+                </g>
+                {targetPoint && (
+                  <line
+                    className={styles.targetConnector}
+                    x1="50"
+                    y1="50"
+                    x2={targetPoint.x}
+                    y2={targetPoint.y}
+                    vectorEffect="non-scaling-stroke"
+                  />
+                )}
+              </svg>
+
               <span className={styles.northLabel} aria-hidden="true">
                 {headingSource === "north" ? t("N") : "↑"}
               </span>
@@ -348,6 +486,11 @@ export default function StopRadar({
                   <span className={styles.targetMeta}>
                     {t("Stop {id}", { id: targetStop.id })}
                   </span>
+                  {mapContext.targetStreet && (
+                    <span className={styles.streetCue}>
+                      {t("Near {street}", { street: mapContext.targetStreet })}
+                    </span>
+                  )}
                   <span className={styles.distance}>
                     {formatDistance(targetDistance)}
                   </span>
@@ -378,6 +521,21 @@ export default function StopRadar({
                         {t("GPS accuracy is low, so distance and direction may move around.")}
                       </span>
                     )}
+
+                  {sameNameStop && (
+                    <span className={styles.platformWarning}>
+                      {t(
+                        "Another stop named {name} is {distance} away: stop {id}. Check the stop number.",
+                        {
+                          name: stopLabel(sameNameStop),
+                          distance: formatDistance(
+                            sameNameStop.distanceFromTarget
+                          ),
+                          id: sameNameStop.id,
+                        }
+                      )}
+                    </span>
+                  )}
 
                   <button
                     type="button"
@@ -426,6 +584,16 @@ export default function StopRadar({
                 );
               })}
             </div>
+          )}
+
+          {hasMapContext && (
+            <p className={styles.contextFootnote}>
+              {t(
+                "Street lines and building cues are approximate orientation aids derived from offline OpenStreetMap address data, not exact building footprints or a walking route."
+              )}
+              {" "}
+              {t("© OpenStreetMap contributors")}
+            </p>
           )}
 
           <p className={styles.footnote}>
