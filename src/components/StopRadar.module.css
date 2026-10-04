@@ -143,7 +143,7 @@
 }
 
 .contextLayer > line {
-  stroke: #4a656c7a;
+  stroke: #4668;
   stroke-width: 2.2px;
 }
 
@@ -152,7 +152,7 @@
 }
 
 .targetConnector {
-  stroke: #b77300b3;
+  stroke: #b70b;
 }
 
 .radar::before,
