@@ -312,33 +312,27 @@ export default function StopRadar({
               <svg
                 className={styles.contextLayer}
                 viewBox="0 0 100 100"
-                preserveAspectRatio="none"
                 aria-hidden="true"
               >
-                <g className={styles.roadLayer}>
-                  {mapContext.roads.map((road) => (
-                    <line
-                      key={road.street}
-                      x1={road.x1}
-                      y1={road.y1}
-                      x2={road.x2}
-                      y2={road.y2}
-                      vectorEffect="non-scaling-stroke"
-                    />
-                  ))}
-                </g>
-                <g className={styles.buildingLayer}>
-                  {mapContext.buildings.map((building) => (
-                    <rect
-                      key={building.id}
-                      x={building.x - building.size / 2}
-                      y={building.y - building.size * 0.38}
-                      width={building.size}
-                      height={building.size * 0.76}
-                      rx="0.45"
-                    />
-                  ))}
-                </g>
+                {mapContext.roads.map((road) => (
+                  <line
+                    key={road.street}
+                    x1={road.x1}
+                    y1={road.y1}
+                    x2={road.x2}
+                    y2={road.y2}
+                  />
+                ))}
+                {mapContext.buildings.map((building) => (
+                  <rect
+                    key={building.id}
+                    x={building.x - building.size / 2}
+                    y={building.y - building.size * 0.38}
+                    width={building.size}
+                    height={building.size * 0.76}
+                    rx="0.45"
+                  />
+                ))}
                 {targetPoint && (
                   <line
                     className={styles.targetConnector}
@@ -346,7 +340,6 @@ export default function StopRadar({
                     y1="50"
                     x2={targetPoint.x}
                     y2={targetPoint.y}
-                    vectorEffect="non-scaling-stroke"
                   />
                 )}
               </svg>
@@ -426,7 +419,7 @@ export default function StopRadar({
                   </span>
                   {mapContext.targetStreet && (
                     <span className={styles.targetMeta}>
-                      {t("Near {street}", { street: mapContext.targetStreet })}
+                      {mapContext.targetStreet}
                     </span>
                   )}
                   <span className={styles.distance}>
