@@ -22,6 +22,7 @@ function positive(value) {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/** @param {unknown} value */
 function ageClass(value) {
   const seconds = Number(value);
   if (!Number.isFinite(seconds) || seconds < 0) return "unknown";
@@ -30,6 +31,7 @@ function ageClass(value) {
   return "stale";
 }
 
+/** @param {unknown} value */
 function accuracyClass(value) {
   const meters = Number(value);
   if (!Number.isFinite(meters) || meters < 0) return "unknown";
@@ -39,6 +41,11 @@ function accuracyClass(value) {
   return "weak";
 }
 
+/**
+ * @param {unknown} value
+ * @param {readonly string[]} choices
+ * @param {string} [fallback]
+ */
 function allowed(value, choices, fallback = "unknown") {
   const candidate = String(value || "");
   return choices.includes(candidate) ? candidate : fallback;
