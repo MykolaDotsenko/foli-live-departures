@@ -46,7 +46,6 @@ function targetWithinUncertainty(position, distance) {
 // other comes back apart as the scale narrows, and the target chooser
 // below offers it all along.
 const MIN_MARKER_GAP_PERCENT = 8;
-const SAME_NAME_STOP_WARNING_METERS = 140;
 
 function translatedHeading(bearing) {
   const degrees = Math.round(Number(bearing)) % 360;
@@ -207,32 +206,6 @@ export default function StopRadar({
       ),
     [contextIndex, heading, position, range, targetStop]
   );
-
-  const sameNameStop = useMemo(() => {
-    if (!targetStop) return null;
-    const targetName = stopLabel(targetStop).trim().toLocaleLowerCase();
-    if (!targetName) return null;
-
-    return (
-      stops
-        .filter(
-          (stop) =>
-            String(stop?.id || "") !== targetStopId &&
-            hasCoordinates(stop) &&
-            stopLabel(stop).trim().toLocaleLowerCase() === targetName
-        )
-        .map((stop) => ({
-          ...stop,
-          distanceFromTarget: distanceInMeters(targetStop, stop),
-        }))
-        .filter(
-          (stop) =>
-            Number.isFinite(stop.distanceFromTarget) &&
-            stop.distanceFromTarget <= SAME_NAME_STOP_WARNING_METERS
-        )
-        .sort((a, b) => a.distanceFromTarget - b.distanceFromTarget)[0] || null
-    );
-  }, [stops, targetStop, targetStopId]);
 
   const guidanceText =
     headingSource === "north" && Number.isFinite(targetBearing)
@@ -486,21 +459,6 @@ export default function StopRadar({
                         {t("GPS accuracy is low, so distance and direction may move around.")}
                       </span>
                     )}
-
-                  {sameNameStop && (
-                    <span className={styles.notice}>
-                      {t(
-                        "Other {name}: stop {id}, {distance} away. Check the stop number.",
-                        {
-                          name: stopLabel(sameNameStop),
-                          distance: formatDistance(
-                            sameNameStop.distanceFromTarget
-                          ),
-                          id: sameNameStop.id,
-                        }
-                      )}
-                    </span>
-                  )}
 
                   <button
                     type="button"
