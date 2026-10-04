@@ -12,6 +12,63 @@ function mobileOnly(testInfo) {
   );
 }
 
+async function installRideGeolocation(page, initialFix) {
+  await page.addInitScript((seed) => {
+    let fix = { ...seed };
+    let nextWatchId = 1;
+    const watchers = new Map();
+
+    const position = () => ({
+      coords: {
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy: fix.accuracy,
+        altitude: null,
+        altitudeAccuracy: null,
+        heading: null,
+        speed: null,
+      },
+      timestamp: Date.now(),
+    });
+
+    const geolocation = {
+      getCurrentPosition(success) {
+        queueMicrotask(() => success(position()));
+      },
+      watchPosition(success) {
+        const id = nextWatchId++;
+        watchers.set(id, success);
+        queueMicrotask(() => {
+          if (watchers.has(id)) success(position());
+        });
+        return id;
+      },
+      clearWatch(id) {
+        watchers.delete(id);
+      },
+    };
+
+    Object.defineProperty(globalThis.navigator, "geolocation", {
+      configurable: true,
+      value: geolocation,
+    });
+    Object.defineProperty(globalThis, "__setRideGeoFix", {
+      configurable: true,
+      value(next) {
+        fix = { ...fix, ...next };
+        const current = position();
+        for (const success of watchers.values()) {
+          queueMicrotask(() => success(current));
+        }
+      },
+    });
+  }, initialFix);
+}
+
+async function setRideGeolocation(page, fix) {
+  await page.evaluate((next) => globalThis.__setRideGeoFix(next), fix);
+}
+
 async function routeMutableTarget(page, state) {
   await page.route("https://data.foli.fi/siri/sm/32", async (route) => {
     const now = Math.floor(Date.now() / 1000);
@@ -44,14 +101,12 @@ async function disableShape(page) {
 
 test("simulated phone ride survives weak GPS and an app restart before arrival", async ({
   page,
-  context,
 }, testInfo) => {
   mobileOnly(testInfo);
   const state = { atStop: false };
   await routeMutableTarget(page, state);
   await disableShape(page);
-  await context.grantPermissions(["geolocation"]);
-  await context.setGeolocation({
+  await installRideGeolocation(page, {
     latitude: 60.4518,
     longitude: 22.2666,
     accuracy: 180,
@@ -70,24 +125,11 @@ test("simulated phone ride survives weak GPS and an app restart before arrival",
     page.locator('section[aria-labelledby="ride-mode-title"]')
   ).toBeVisible();
 
-  await context.setGeolocation({
+  await setRideGeolocation(page, {
     latitude: 60.44945,
     longitude: 22.255,
     accuracy: 18,
   });
-
-  // Chromium delivers BrowserContext geolocation changes to an existing
-  // watchPosition subscription. Playwright WebKit does not consistently emit
-  // that synthetic change until navigation, so recreate the WebView there.
-  // The assertion stays strict: the ride must survive the reload and consume
-  // the newly configured precise fix.
-  if (testInfo.project.name === "webkit-mobile") {
-    await page.reload();
-    await expect(
-      page.locator('section[aria-labelledby="ride-mode-title"]')
-    ).toBeVisible();
-  }
-
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
   state.atStop = true;
@@ -116,14 +158,12 @@ test("simulated phone ride survives weak GPS and an app restart before arrival",
 
 test("simulated phone ride records a missed stop without leaking its GPS trail", async ({
   page,
-  context,
 }, testInfo) => {
   mobileOnly(testInfo);
   const state = { atStop: false };
   await routeMutableTarget(page, state);
   await disableShape(page);
-  await context.grantPermissions(["geolocation"]);
-  await context.setGeolocation({
+  await installRideGeolocation(page, {
     latitude: 60.4518,
     longitude: 22.2666,
     accuracy: 20,
@@ -133,14 +173,14 @@ test("simulated phone ride records a missed stop without leaking its GPS trail",
   await seedHome(page);
   await startRide(page, { gps: true });
 
-  await context.setGeolocation({
+  await setRideGeolocation(page, {
     latitude: 60.44945,
     longitude: 22.255,
     accuracy: 20,
   });
   await expect(page.getByText(/≈7[0-9] m from your stop/)).toBeVisible();
 
-  await context.setGeolocation({
+  await setRideGeolocation(page, {
     latitude: 60.4533,
     longitude: 22.255,
     accuracy: 20,
