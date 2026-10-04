@@ -477,7 +477,7 @@ export default function StopRadar({
 
           <p className={styles.footnote}>
             {t("The arrow uses compass north when available. Otherwise the radar is north-up or uses your recent direction of travel. Distances are straight-line estimates, not a safe walking route.")}
-            {" · © OpenStreetMap contributors"}
+            {" · "}{t("© OpenStreetMap contributors")}
           </p>
         </>
       )}
