@@ -126,15 +126,21 @@ export function selectDirectJourneyOptions({
 
   if (candidates.length === 0) return [];
 
+  // Arriving at the same moment is equally fast: boarding the same bus
+  // further back down its line only adds walking, and it had won "Fastest"
+  // by boarding earlier. Arrive-by keeps its latest-departure order.
   candidates.sort(
     (left, right) =>
-      compareJourneyTimeCandidates(
-        left.departure,
-        right.departure,
-        timeConstraint
-      ) ||
+      (timeConstraint?.mode === "arrive-by"
+        ? compareJourneyTimeCandidates(
+            left.departure,
+            right.departure,
+            timeConstraint
+          )
+        : arrivalRank(left.departure) - arrivalRank(right.departure)) ||
       catchabilityRank(left.departure) - catchabilityRank(right.departure) ||
-      left.distanceMeters - right.distanceMeters
+      left.distanceMeters - right.distanceMeters ||
+      Number(left.departure.departureAt) - Number(right.departure.departureAt)
   );
 
   const fastest = candidates[0];
