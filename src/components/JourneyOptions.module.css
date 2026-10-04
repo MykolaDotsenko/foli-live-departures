@@ -110,6 +110,37 @@
   font-weight: 700;
 }
 
+.decision {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  color: #244b45;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.confidence {
+  width: fit-content;
+  padding: 2px 6px;
+  border: 1px solid #c5d8d4;
+  border-radius: 999px;
+  background: #f4f9f8;
+  color: #48625e;
+  font-size: 0.66rem;
+  font-weight: 850;
+}
+
+.confidence[data-confidence="high"] {
+  border-color: #9bcabd;
+  color: #126351;
+}
+
+.confidence[data-confidence="low"] {
+  border-color: #d7b8a7;
+  color: #7a3f24;
+}
+
 .tradeoff {
   margin-top: auto;
   padding-top: 4px;
@@ -142,7 +173,8 @@
 
   :root[data-theme="dark"] .kicker,
   :root[data-theme="dark"] .badge,
-  :root[data-theme="dark"] .tradeoff {
+  :root[data-theme="dark"] .tradeoff,
+  :root[data-theme="dark"] .decision {
     color: var(--dm-accent);
   }
 
@@ -154,7 +186,8 @@
 
   :root[data-theme="dark"] .count,
   :root[data-theme="dark"] .meta,
-  :root[data-theme="dark"] .note {
+  :root[data-theme="dark"] .note,
+  :root[data-theme="dark"] .confidence {
     color: var(--dm-muted);
   }
 
