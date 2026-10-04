@@ -317,6 +317,20 @@ The local throttle cannot guarantee the provider's **aggregate** one-request-per
 
 Direct public-Nominatim search is disabled. The packaged WebView keeps address/POI text local and offers the official Turku journey planner. Android emulator E2E records outbound requests and fails if the tested flow contacts `nominatim.openstreetmap.org`.
 
+**Shipped place pack — 2026-10-04**
+
+With direct provider search off, "Lidl" or "Prisma Itäharju" found nothing. Named places in the six Föli municipalities (shops and shopping centres, health care, schools and universities, libraries, culture, sports, stations, the airport) now ship with the app as `public/places/foli-places.json`:
+
+- built by hand with `npm run build:place-pack` from OpenStreetMap through the Overpass API and committed; a release never contacts Overpass;
+- licensed ODbL-1.0; the file carries its licence and attribution, and every list of places and every place destination shows "© OpenStreetMap contributors";
+- matched on the device while typing (autocomplete is allowed: nothing is sent), on the place's name, narrowed by street and town, with one-slip typo tolerance;
+- sorted nearest first only from a location the passenger asked the app to use (Find nearest stop, the location button, or "Nearest to me first" in the list); that fix stays in memory for the visit and is never stored or sent;
+- available offline and in the packaged Android app, because it is same-origin data in the precache;
+- chosen places become destinations through the same external-place flow as provider results (`source: "osm-places"`);
+- `npm run verify:place-pack` fails a release on a missing, unlicensed, oversized (> 400 KB) or out-of-area pack.
+
+Street addresses are still not searched in the app; the field says "Stop or place" and the official Turku journey planner remains the handoff for an address.
+
 ---
 
 ## 6A. Client-only architecture invariant
