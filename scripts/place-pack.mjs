@@ -17,16 +17,19 @@ export const PLACE_PACK_FIELDS = [
   "nameSv",
 ];
 
-// The seven current Föli municipalities.
-export const FOLI_MUNICIPALITIES = [
-  "Turku",
-  "Kaarina",
-  "Raisio",
-  "Naantali",
-  "Lieto",
-  "Rusko",
-  "Paimio",
-];
+// The seven current Föli municipalities, pinned to their OSM administrative
+// boundary relation IDs so names such as "Rusko" cannot resolve to a
+// namesake outside Finland.
+export const FOLI_MUNICIPALITY_RELATIONS = {
+  Turku: 399906,
+  Kaarina: 2506378,
+  Raisio: 2506383,
+  Naantali: 2376175,
+  Lieto: 2380603,
+  Rusko: 2379142,
+  Paimio: 2506382,
+};
+export const FOLI_MUNICIPALITIES = Object.keys(FOLI_MUNICIPALITY_RELATIONS);
 
 // Generous around all seven municipalities (including Naantali's archipelago), for the verifier's sanity check.
 export const FOLI_AREA_BOUNDS = {
@@ -52,17 +55,13 @@ const SELECTORS = [
 
 /** The Overpass query for every named place of interest in the area. */
 export function overpassQuery() {
-  const areas = FOLI_MUNICIPALITIES.map(
-    (name) => `  area["name"="${name}"]["admin_level"="8"](area.fi);`
-  ).join("\n");
+  const relationIds = Object.values(FOLI_MUNICIPALITY_RELATIONS).join(",");
   const selectors = SELECTORS.map((selector) => `  ${selector}(area.foli);`).join(
     "\n"
   );
   return `[out:json][timeout:180];
-area["ISO3166-1"="FI"]["admin_level"="2"]->.fi;
-(
-${areas}
-)->.foli;
+rel(id:${relationIds})->.foliRelations;
+.foliRelations map_to_area -> .foli;
 (
 ${selectors}
 );
