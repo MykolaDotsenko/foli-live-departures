@@ -352,6 +352,16 @@ export default {
   "Place search is temporarily rate-limited. Wait a moment and try again; Föli stop search still works.":
     "Paikkahakua on tilapäisesti rajoitettu. Odota hetki ja yritä uudelleen; Fölin pysäkkihaku toimii edelleen.",
   "Final walk": "Loppukävely",
+  "Destination is roughly {direction} from this stop.":
+    "Määränpää on tältä pysäkiltä suunnilleen {direction}.",
+  north: "pohjoiseen",
+  "north-east": "koilliseen",
+  east: "itään",
+  "south-east": "kaakkoon",
+  south: "etelään",
+  "south-west": "lounaaseen",
+  west: "länteen",
+  "north-west": "luoteeseen",
   "Walk to {destination}": "Kävele määränpäähän {destination}",
   "Walking distance is approximate straight-line guidance. The real walking route can be longer.":
     "Kävelyetäisyys on likimääräinen linnuntiearvio. Todellinen kävelyreitti voi olla pidempi.",
