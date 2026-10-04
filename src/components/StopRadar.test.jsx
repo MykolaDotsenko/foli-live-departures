@@ -223,7 +223,7 @@ test("tells two stops of one name apart and scales to the walk", async () => {
   expect(within(chooser).getByText(/Stop 164/)).toBeInTheDocument();
   expect(within(chooser).getByText(/Stop 166/)).toBeInTheDocument();
   expect(
-    screen.getByText(/Another stop named Kauppatori .* stop 164/i)
+    screen.getByText(/Other Kauppatori: stop 164, .* away\. Check the stop number\./i)
   ).toBeInTheDocument();
 
   const radar = screen.getByRole("group", { name: /Radar showing nearby stops/ });
