@@ -4,7 +4,7 @@ The production package identity is:
 
 `io.github.mykoladotsenko.turkudepartures`
 
-The continuously published `android-latest` artifact remains a debug-signed test/sideload build. Do not treat it as the stable upgrade path.
+The continuously published `android-latest` artifact remains a debug-signed test/sideload build. It is replaced only after the exact APK from a merged `master` revision passes Android emulator E2E and checksum verification. Do not treat it as the stable production-signing upgrade path.
 
 Google Play listing/privacy/Data Safety sources and the exact AAB upload procedure live in `play/README.md`. The repository can verify the release surface and generated API-36 target, but Play Console publication remains manual evidence.
 
@@ -86,7 +86,7 @@ After publishing:
 - [ ] install over the previous production-signed APK succeeds without uninstalling;
 - [ ] saved favourites/places survive the upgrade;
 - [ ] Ride Mode can start and exit;
-- [ ] address/POI search still hands off to the official planner in native Android;
+- [ ] offline address/POI search works locally in native Android, and the official planner remains only the wider-search fallback;
 - [ ] GitHub release tag and artifact checksums match the workflow output.
 
 For Play distribution, upload the verified AAB and complete the store's privacy/data-safety declarations separately.
