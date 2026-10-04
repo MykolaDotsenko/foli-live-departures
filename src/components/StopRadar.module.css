@@ -126,11 +126,8 @@
   border: 1px solid #8db6bb;
   border-radius: 50%;
   background:
-    linear-gradient(rgba(0, 121, 133, 0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 121, 133, 0.09) 1px, transparent 1px),
     radial-gradient(circle at center, rgba(0, 121, 133, 0.08), transparent 62%),
     #f8ffff;
-  background-size: 25% 25%, 25% 25%, auto, auto;
 }
 
 .contextLayer {
@@ -144,14 +141,12 @@
 
 .contextLayer path:first-child,
 .contextLayer > line {
-  fill: none;
   stroke: #4668;
   stroke-width: 2.2px;
 }
 
 .contextLayer path + path {
   fill: #4663;
-  stroke: none;
 }
 
 .radar::before,
