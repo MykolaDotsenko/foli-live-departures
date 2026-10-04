@@ -342,12 +342,11 @@ export default function JourneySearch({
       return;
     }
 
-    setFocused(options.length > 0);
-
     // Without a provider, the places shipped with the app are the answer:
     // their list opens; with nothing to list, the passenger is told where
     // a street address can be found.
     if (!directPlaceSearchEnabled) {
+      setFocused(options.length > 0);
       setError(
         options.length > 0
           ? ""
@@ -358,6 +357,12 @@ export default function JourneySearch({
       );
       return;
     }
+
+    // An explicit provider search replaces autocomplete with its submitted
+    // results. Keeping the local popup open here can cover those results and
+    // the submit control, especially on a phone.
+    setActiveIndex(-1);
+    setFocused(false);
 
     if (!online) {
       setError(
