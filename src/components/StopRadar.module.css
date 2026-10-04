@@ -142,7 +142,7 @@
   pointer-events: none;
 }
 
-.roadLayer line {
+.contextLayer > line {
   stroke: rgba(74, 101, 108, 0.48);
   stroke-width: 2.2px;
 }
