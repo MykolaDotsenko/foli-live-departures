@@ -330,7 +330,6 @@ export default function StopRadar({
                     y={building.y - building.size * 0.38}
                     width={building.size}
                     height={building.size * 0.76}
-                    rx="0.45"
                   />
                 ))}
                 {targetPoint && (
