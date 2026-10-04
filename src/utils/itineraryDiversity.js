@@ -15,6 +15,7 @@ export function selectDiverseItineraries(ranked, limit = 3) {
   const max = Math.max(0, Math.floor(Number(limit) || 0));
   if (max === 0 || rows.length === 0) return [];
 
+  /** @param {any} option */
   const signature = (option) => {
     const legs = Array.isArray(option?.legs)
       ? option.legs
@@ -24,17 +25,18 @@ export function selectDiverseItineraries(ranked, limit = 3) {
       : option?.transfer
         ? [option.transfer]
         : [];
+    /** @param {any} leg */
+    const lineKey = (leg) => String(leg?.lineRef || "—");
+    /** @param {any} item */
+    const transferKey = (item) =>
+      [
+        String(item?.alightStopId || ""),
+        String(item?.boardStopId || ""),
+      ].join(">");
     return [
       String(option?.originStopId || ""),
-      legs.map((leg) => String(leg?.lineRef || "—")).join(">"),
-      transfers
-        .map((item) =>
-          [
-            String(item?.alightStopId || ""),
-            String(item?.boardStopId || ""),
-          ].join(">")
-        )
-        .join("|"),
+      legs.map(lineKey).join(">"),
+      transfers.map(transferKey).join("|"),
     ].join("::");
   };
 
