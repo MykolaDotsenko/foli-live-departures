@@ -10,6 +10,7 @@ import {
   resolveBoardingOccurrence,
 } from "../utils/destinationTripFit";
 import { compareItineraries } from "../utils/itinerary";
+import { selectDiverseItineraries } from "../utils/itineraryDiversity";
 import {
   compareJourneyOptions,
   journeyPlanAllowsOption,
@@ -135,7 +136,7 @@ function finalizeOptions(candidates, plan) {
       : compareItineraries(left, right)
   );
 
-  return filtered.slice(0, MAX_OPTIONS);
+  return selectDiverseItineraries(filtered, MAX_OPTIONS);
 }
 
 /**
