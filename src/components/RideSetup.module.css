@@ -76,6 +76,10 @@
   padding: 0.25rem;
   border: 0;
   display: grid;
+  /* Each card as tall as its words. On a long line the rows were shared
+     out of the box's 19rem: cards fell to their 54px minimum, and the
+     line under each stop's name ran out under the next card. */
+  grid-auto-rows: max-content;
   gap: 0.5rem;
 }
 
