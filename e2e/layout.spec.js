@@ -1,6 +1,7 @@
 // Screen layouts: phones, narrow and laptop viewports, no horizontal overflow, a departure on screen one.
 import fs from "node:fs";
 import { expect, test } from "./support/test.js";
+import { gtfsClockAt } from "./support/clock.js";
 import { seedHome } from "./support/places.js";
 
 // A phone screen is tight, so the explanatory copy was hidden below 620px —
@@ -508,4 +509,59 @@ test("iPhone install education never competes with an active departure board", a
     viewportHeight: window.innerHeight,
   }));
   expect(metrics.top).toBeLessThan(metrics.viewportHeight);
+});
+
+// On a long line the exit stops were shared out of the list's height: each
+// card fell to its 54px minimum, and the line under the stop's name ran out
+// under the next card ("…після Virusmäentie" on a phone).
+test("a long line's exit stops each show their whole text", async ({ page }) => {
+  // Phone width in every browser: there the line under a name wraps.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.route(
+    "https://data.foli.fi/gtfs/v0/20260920-120000/stop_times/trip/trip-164-1",
+    async (route) => {
+      const at = gtfsClockAt(Math.floor(Date.now() / 1000) + 205);
+      const stopIds = [
+        "164",
+        "32",
+        "4",
+        ...Array.from({ length: 11 }, (_, index) => String(901 + index)),
+      ];
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(
+          stopIds.map((stopId, index) => ({
+            stop_id: stopId,
+            arrival_time: at(index * 70),
+            departure_time: at(index * 70),
+            stop_sequence: index + 1,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: index % 3 === 0 ? 1 : 0,
+          }))
+        ),
+      });
+    }
+  );
+
+  await page.goto("/?stop=164");
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+  await page.getByRole("button", { name: "Get-off alert" }).first().click();
+
+  const stops = page.getByRole("group", { name: "Choose your exit stop" });
+  await expect(stops.getByRole("radio")).toHaveCount(13);
+
+  const layout = await stops.evaluate((list) => ({
+    // Long enough to scroll, which is when the cards were squeezed.
+    scrolls: list.scrollHeight > list.clientHeight,
+    // How far each card's words reach past its bottom edge.
+    overflows: [...list.querySelectorAll("label")].map((card) =>
+      Math.round(
+        card.querySelector("span").getBoundingClientRect().bottom -
+          card.getBoundingClientRect().bottom
+      )
+    ),
+  }));
+  expect(layout.scrolls).toBe(true);
+  expect(layout.overflows.filter((overflow) => overflow > 0)).toEqual([]);
 });
