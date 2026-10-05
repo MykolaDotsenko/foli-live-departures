@@ -55,7 +55,7 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // after the fastest, or for arrive-by the bus before), with each card saying
 // the bus's sign, where to get off, how long on the bus and when it leaves,
 // and a search for a change of bus beside a single direct bus (2026-10-05),
-// measure 645,225–645,268 raw and 182,998–183,083 gzip bytes; master
+// measure 645,210–645,268 raw and 182,998–183,095 gzip bytes; master
 // measured 643,270–643,363 raw and 182,498–182,545 gzip. The reviewed caps
 // are 646,000 raw and 183,300 gzip bytes. The startup budget is unchanged.
 const MAX_SHIPPED_JS_CSS_BYTES = 646_000;

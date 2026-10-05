@@ -6,6 +6,21 @@ const MIN_WALKING_SAVING_M = 100;
 // A backup bus leaves at least this much apart from the first choice: one
 // leaving the same minute is no second chance.
 const MIN_BACKUP_GAP_SEC = 2 * 60;
+// One run of a trip is boarded at its stops minutes apart; the timetable
+// lists the same trip again for its next service day, a day later.
+const SAME_RUN_WITHIN_SEC = 12 * 60 * 60;
+
+/**
+ * @param {NearbyDepartureFit} left
+ * @param {NearbyDepartureFit} right
+ */
+function sameRun(left, right) {
+  return (
+    left.tripRef === right.tripRef &&
+    Math.abs(Number(left.departureAt) - Number(right.departureAt)) <
+      SAME_RUN_WITHIN_SEC
+  );
+}
 
 const CATCHABILITY_RANK = {
   "at-stop": 0,
@@ -254,19 +269,19 @@ export function selectDirectJourneyOptions({
   // passenger who missed it, or needed a few more minutes, had no answer;
   // and with nothing to compare, "Fastest" said nothing. The backup is the
   // bus after the first choice that gets there first, or, arriving by a
-  // time, the bus before it, for margin. The same trip boarded at another
-  // stop is the same bus, not a second chance.
+  // time, the bus before it, for margin. The same run boarded at another
+  // stop is the same bus, not a second chance; the trip's run on its next
+  // service day, which a timetable search lists under the same trip, is.
   if (selected.length < 3) {
     const arriveBy = timeConstraint?.mode === "arrive-by";
-    const shownTrips = new Set(
-      selected.map((item) => item.departure.tripRef)
-    );
     const firstLeaves = Number(fastest.departure.departureAt);
     const backup = candidates
       .filter((candidate) => {
         const gap = Number(candidate.departure.departureAt) - firstLeaves;
         return (
-          !shownTrips.has(candidate.departure.tripRef) &&
+          !selected.some((item) =>
+            sameRun(item.departure, candidate.departure)
+          ) &&
           (arriveBy ? -gap : gap) >= MIN_BACKUP_GAP_SEC
         );
       })
