@@ -2,7 +2,7 @@ import useClockTick from "../hooks/useClockTick";
 import { t, useLanguage } from "../i18n";
 import { formatDistance } from "../utils/geo";
 import { buildWalkingDirectionsUrl } from "../utils/maps";
-import { formatClock, formatDue, minutesUntil } from "../utils/time";
+import { formatClock, formatLeaves } from "../utils/time";
 import styles from "./ActiveJourney.module.css";
 
 function itineraryContext(journey) {
@@ -85,15 +85,6 @@ function phaseTitle(journey) {
 
 // "Leaves 5 min" and, a minute before, "Leaves Due" put a departure-board
 // cell into a sentence.
-function leavesText(departureAt, nowMs) {
-  const minutes = minutesUntil(departureAt, nowMs);
-  if (minutes !== null && minutes <= 1) return t("Leaves now");
-  if (minutes !== null && minutes <= 90) {
-    return t("Leaves in {minutes} min", { minutes });
-  }
-  return t("Leaves {due}", { due: formatDue(departureAt, nowMs) });
-}
-
 function destinationText(journey) {
   return journey.destinationKind === "saved-place"
     ? t(journey.destinationLabel)
@@ -272,7 +263,7 @@ export default function ActiveJourney({
         <strong>
           {t("Line {line}", { line: journey.lineRef || "—" })}
         </strong>
-        <span>{leavesText(journey.departureAt, nowMs)}</span>
+        <span>{formatLeaves(journey.departureAt, nowMs)}</span>
         {journey.destinationKind === "external-place" &&
         journey.journeyArrivalAt ? (
           <span>

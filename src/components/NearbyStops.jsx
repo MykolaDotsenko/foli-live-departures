@@ -74,6 +74,15 @@ class RadarLoadBoundary extends Component {
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
 
+// Options that trade something off. The next bus, or the one before, is
+// always there to add: it says nothing about whether stops farther away
+// would give a real alternative.
+function tradeOffCount(options) {
+  return options.filter(
+    (option) => !["next-bus", "earlier-bus"].includes(option.label)
+  ).length;
+}
+
 function shownDestinationLabel(destination) {
   if (!destination) return "";
   return destination.kind === "saved-place"
@@ -254,6 +263,10 @@ function NearbyStops({
     () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
     [position, stops]
   );
+  const stopsById = useMemo(
+    () => new Map(stops.map((stop) => [String(stop.id), stop])),
+    [stops]
+  );
   const expandedNearbyStops = useMemo(
     () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
     [position, stops]
@@ -300,6 +313,7 @@ function NearbyStops({
     timeConstraint,
   ]);
 
+  const baseTradeOffs = tradeOffCount(baseDirectJourneyOptions);
   useEffect(() => {
     if (
       !destination ||
@@ -307,14 +321,14 @@ function NearbyStops({
       searchExpanded ||
       fitState !== "ready" ||
       expandedNearbyStops.length <= baseNearbyStops.length ||
-      baseDirectJourneyOptions.length >= 2
+      baseTradeOffs >= 2
     ) {
       return;
     }
 
     setExpandedDestinationId(destination.id);
   }, [
-    baseDirectJourneyOptions.length,
+    baseTradeOffs,
     baseNearbyStops.length,
     destination,
     expandedNearbyStops.length,
@@ -348,11 +362,13 @@ function NearbyStops({
     timeConstraint,
   ]);
 
+  // With one direct bus or none, a change of bus can still be a choice:
+  // the passenger who misses the only bus needs another way.
   const directSearchComplete =
     Boolean(destination) &&
     Boolean(position) &&
     fitState === "ready" &&
-    directJourneyOptions.length === 0 &&
+    directJourneyOptions.length < 2 &&
     (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
 
   const preferenceWantsAlternatives = ["less-walking", "more-buffer"].includes(
@@ -365,7 +381,7 @@ function NearbyStops({
     timeValid &&
     (directSearchComplete || preferenceWantsAlternatives);
 
-  const { options: transferJourneyOptions, state: transferState } =
+  const { options: foundTransferOptions, state: transferState } =
     useTransferJourneyOptions({
       enabled: shouldSearchTransfers,
       originStops: nearbyStops,
@@ -375,6 +391,19 @@ function NearbyStops({
       timeConstraint,
       routingPreference,
     });
+  // Beside the one direct bus, a change is worth showing when it gets there
+  // sooner or leaves after it. Leaving before it and arriving after it, a
+  // change is worse in every way.
+  const onlyDirect =
+    directJourneyOptions.length === 1 ? directJourneyOptions[0].departure : null;
+  const transferJourneyOptions = onlyDirect
+    ? foundTransferOptions.filter(
+        (option) =>
+          Number(option.journeyArrivalAt) <
+            Number(onlyDirect.journeyArrivalAt ?? onlyDirect.destinationArrivalAt) ||
+          Number(option.legs?.[0]?.departureAt) > Number(onlyDirect.departureAt)
+      )
+    : foundTransferOptions;
 
   const destinationSortedStops = useMemo(() => {
     const previousOrder =
@@ -754,6 +783,7 @@ function NearbyStops({
             <JourneyOptions
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
+              stopsById={stopsById}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
@@ -771,7 +801,9 @@ function NearbyStops({
             shouldSearchTransfers &&
             transferState === "loading" && (
               <p className={styles.notice} role="status">
-                {t("No direct trip found nearby. Checking options with up to two transfers…")}
+                {directJourneyOptions.length > 0
+                  ? t("Also checking options with a change of bus…")
+                  : t("No direct trip found nearby. Checking options with up to two transfers…")}
               </p>
             )}
 
@@ -796,9 +828,13 @@ function NearbyStops({
               </p>
             )}
 
+          {/* Beside the direct bus it went looking past, a failed search for
+              a change of bus is no news; asked for, or the only way, it is. */}
           {destination &&
             shouldSearchTransfers &&
-            transferState === "error" && (
+            transferState === "error" &&
+            (directJourneyOptions.length === 0 ||
+              preferenceWantsAlternatives) && (
               <p className={styles.notice} role="status">
                 {t("Transfer search is temporarily unavailable. Nearby stops remain available.")}
               </p>

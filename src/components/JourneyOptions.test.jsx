@@ -165,7 +165,7 @@ test("selects the concrete journey when orchestration is available", () => {
 
   fireEvent.click(
     screen.getByRole("button", {
-      name: /Fastest.*Line 18.*Kauppatori D2/i,
+      name: /Line 18.*Kauppatori D2/i,
     })
   );
 
@@ -241,4 +241,118 @@ test("does not present a missing final walk as zero metres", () => {
   expect(
     screen.queryByText(/real walking route can be longer/i)
   ).not.toBeInTheDocument();
+});
+
+
+test("one option says what to do with it, not that it is the fastest of one", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      stopsById={new Map([["900", { id: "900", name: "Puistokatu" }]])}
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "only",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 120,
+          departure: {
+            ...baseDeparture,
+            headsign: "Runosmäki",
+            departureAt: now + 300,
+            destinationArrivalAt: now + 1_500,
+          },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  // Nothing to compare with: no "Fastest", no "1 option", no "Earliest
+  // arrival we found".
+  expect(screen.queryByText("Fastest")).not.toBeInTheDocument();
+  expect(screen.queryByText(/^\d+ options?$/)).not.toBeInTheDocument();
+  expect(screen.queryByText(/Earliest arrival/)).not.toBeInTheDocument();
+
+  // The bus by its sign, where to get off and for how long, when it leaves,
+  // and that missing it means no other bus there.
+  expect(screen.getByText("Line 18 → Runosmäki")).toBeInTheDocument();
+  expect(
+    screen.getByText("Get off at Puistokatu · about 20 min on the bus")
+  ).toBeInTheDocument();
+  expect(screen.getByText(/^Leaves in 5 min · 120 m to stop/)).toBeInTheDocument();
+  expect(screen.getByText("The only bus there we found")).toBeInTheDocument();
+});
+
+test("the next bus is offered for missing the first one", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "first",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 120,
+          departure: baseDeparture,
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+        {
+          id: "next",
+          label: "next-bus",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 120,
+          departure: {
+            ...baseDeparture,
+            tripRef: "trip-18-next",
+            departureAt: baseDeparture.departureAt + 600,
+            destinationArrivalAt: baseDeparture.destinationArrivalAt + 600,
+          },
+          arrivalDeltaSec: 600,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.getByText("2 options")).toBeInTheDocument();
+  expect(screen.getByText("Fastest")).toBeInTheDocument();
+  expect(screen.getByText("Next bus")).toBeInTheDocument();
+  expect(
+    screen.getByText("If you miss the first one · about 10 min later")
+  ).toBeInTheDocument();
+  expect(screen.queryByText("The only bus there we found")).not.toBeInTheDocument();
+});
+
+test("at the stop, the card says where the passenger is, not that the bus is there", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      options={[
+        {
+          id: "here",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 8,
+          departure: { ...baseDeparture, catchability: "at-stop" },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  // "Board line 18 now" stood over a bus still minutes away.
+  expect(screen.getByText("Line 18 · you’re at its stop")).toBeInTheDocument();
+  expect(screen.queryByText(/Board line/)).not.toBeInTheDocument();
 });

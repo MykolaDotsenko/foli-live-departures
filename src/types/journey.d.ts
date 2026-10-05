@@ -145,6 +145,8 @@ export interface NearbyDepartureFit {
   catchability: Catchability;
   liveState: LiveState;
   rideDurationSec: number | null;
+  /** The sign on the bus, as Föli gives it. */
+  headsign?: string;
 }
 
 export type NearbyFitStatus =
@@ -169,7 +171,9 @@ export type DirectJourneyLabel =
   | "fastest"
   | "latest-departure"
   | "less-walking"
-  | "easier-to-catch";
+  | "easier-to-catch"
+  | "next-bus"
+  | "earlier-bus";
 
 export interface DirectJourneyOption {
   id: string;

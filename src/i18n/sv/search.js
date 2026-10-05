@@ -126,7 +126,7 @@ export default {
   "High confidence": "Hög säkerhet",
   "Medium confidence": "Medelhög säkerhet",
   "Low confidence": "Låg säkerhet",
-  "Board line {line} now": "Gå ombord på linje {line} nu",
+  "Line {line} · you’re at its stop": "Linje {line} · du är vid dess hållplats",
   "Line {line} · you should make it": "Linje {line} · du bör hinna",
   "Line {line} · likely catchable": "Linje {line} · du hinner troligen",
   "Line {line} · tight — move now": "Linje {line} · ont om tid — gå nu",
@@ -142,7 +142,16 @@ export default {
   "More time to catch · about {minutes} min later":
     "Mer tid att hinna · cirka {minutes} min senare",
   "More time to catch": "Mer tid att hinna",
-  "Earliest arrival we found": "Tidigaste ankomst vi hittade",
+  "Next bus": "Nästa buss",
+  "Earlier bus": "Tidigare buss",
+  "If you miss the first one · about {minutes} min later":
+    "Om du missar den första · cirka {minutes} min senare",
+  "If you miss the first one": "Om du missar den första",
+  "More margin · arrives about {minutes} min earlier":
+    "Mer marginal · framme cirka {minutes} min tidigare",
+  "More margin": "Mer marginal",
+  "The only bus there we found": "Den enda bussen dit som vi hittade",
+  "about {minutes} min on the bus": "cirka {minutes} min på bussen",
   "Live estimate": "Realtidsprognos",
   "Timetable estimate": "Tidtabellsprognos",
   "Realtime uncertain": "Realtidsdata osäkra",
@@ -245,6 +254,8 @@ export default {
     "Dessa alternativ startar från bytesområdet. Din resa ändras först när du väljer ett.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
     "Den misslyckade bussen är utesluten. Ingenting ändras förrän du väljer ett nytt alternativ.",
+  "Also checking options with a change of bus…":
+    "Kontrollerar också alternativ med byte…",
   "No direct trip found nearby. Checking options with up to two transfers…":
     "Ingen direktresa hittades i närheten. Kontrollerar alternativ med upp till två byten…",
   "No reliable option with up to two transfers was found from the nearby stops.":

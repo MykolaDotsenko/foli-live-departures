@@ -2223,6 +2223,19 @@ Examples:
 
 Do not show three options that are effectively the same route with buses two minutes apart unless frequency itself is the useful distinction.
 
+In the current implementation, direct options fill up to three with a backup whenever one exists:
+
+- **Next bus**: the bus after the fastest, at least two minutes later, with its cost, e.g. "If you miss the first one · about 7 min later".
+- **Earlier bus**: when arriving by a time, the bus before the latest departure, for margin.
+
+The same bus boarded at another stop never counts as a second choice. Here frequency is the useful distinction, and one backup is the limit.
+
+A label and a count appear only when there is something to compare. A lone option says instead that it is the only bus found.
+
+Each card shows the bus's sign, where to get off and about how long on the bus, and when it leaves ("Leaves in 5 min").
+
+With a single direct bus, options with a change of bus are searched too. They are shown only when they arrive sooner or leave later than the direct bus.
+
 ---
 
 ## 68. Dominance pruning
