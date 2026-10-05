@@ -50,8 +50,16 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // measures 643,270–643,363 raw and 182,498–182,545 gzip bytes; master
 // measured 641,685–641,788 raw and 181,861–181,903 gzip. The reviewed caps
 // are 644,000 raw and 182,700 gzip bytes. The startup budget is unchanged.
-const MAX_SHIPPED_JS_CSS_BYTES = 644_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 182_700;
+//
+// Journey options that always offer a second bus when there is one (the bus
+// after the fastest, or for arrive-by the bus before), with each card saying
+// the bus's sign, where to get off, how long on the bus and when it leaves,
+// and a search for a change of bus beside a single direct bus (2026-10-05),
+// measure 645,210–645,268 raw and 182,998–183,095 gzip bytes; master
+// measured 643,270–643,363 raw and 182,498–182,545 gzip. The reviewed caps
+// are 646,000 raw and 183,300 gzip bytes. The startup budget is unchanged.
+const MAX_SHIPPED_JS_CSS_BYTES = 646_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 183_300;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 

@@ -402,6 +402,7 @@ export async function loadDestinationAwareNearby({
       compatible.push({
         tripRef,
         lineRef: String(arrival?.lineref || ""),
+        headsign: String(arrival?.destinationdisplay || ""),
         destinationStopId: String(fit.destination?.stopId || ""),
         departureAt: Number(departureAt),
         aimedDepartureAt:

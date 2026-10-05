@@ -134,7 +134,7 @@ export default {
   "High confidence": "Korkea varmuus",
   "Medium confidence": "Kohtalainen varmuus",
   "Low confidence": "Matala varmuus",
-  "Board line {line} now": "Nouse linjalle {line} nyt",
+  "Line {line} · you’re at its stop": "Linja {line} · olet sen pysäkillä",
   "Line {line} · you should make it": "Linja {line} · ehdit todennäköisesti hyvin",
   "Line {line} · likely catchable": "Linja {line} · ehdit todennäköisesti",
   "Line {line} · tight — move now": "Linja {line} · tiukka — lähde nyt",
@@ -150,7 +150,16 @@ export default {
   "More time to catch · about {minutes} min later":
     "Enemmän aikaa ehtiä · noin {minutes} min myöhemmin",
   "More time to catch": "Enemmän aikaa ehtiä",
-  "Earliest arrival we found": "Aikaisin löytämämme saapuminen",
+  "Next bus": "Seuraava bussi",
+  "Earlier bus": "Aiempi bussi",
+  "If you miss the first one · about {minutes} min later":
+    "Jos ensimmäinen menee ohi · noin {minutes} min myöhemmin",
+  "If you miss the first one": "Jos ensimmäinen menee ohi",
+  "More margin · arrives about {minutes} min earlier":
+    "Enemmän pelivaraa · perillä noin {minutes} min aiemmin",
+  "More margin": "Enemmän pelivaraa",
+  "The only bus there we found": "Ainoa löytämämme bussi sinne",
+  "about {minutes} min on the bus": "noin {minutes} min bussissa",
   "Live estimate": "Live-arvio",
   "Timetable estimate": "Aikatauluarvio",
   "Realtime uncertain": "Reaaliaikatieto epävarma",
@@ -256,6 +265,8 @@ export default {
     "Nämä vaihtoehdot lähtevät vaihtoalueelta. Matkasi muuttuu vasta, kun valitset uuden vaihtoehdon.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
     "Epäonnistunut bussivuoro on suljettu pois. Mikään ei muutu ennen kuin valitset uuden vaihtoehdon.",
+  "Also checking options with a change of bus…":
+    "Tarkistetaan myös vaihdollisia vaihtoehtoja…",
   "No direct trip found nearby. Checking options with up to two transfers…":
     "Lähistöltä ei löytynyt suoraa matkaa. Tarkistetaan enintään kahden vaihdon vaihtoehtoja…",
   "No reliable option with up to two transfers was found from the nearby stops.":

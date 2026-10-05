@@ -115,7 +115,7 @@ export default {
   "High confidence": "Висока впевненість",
   "Medium confidence": "Середня впевненість",
   "Low confidence": "Низька впевненість",
-  "Board line {line} now": "Сідайте на маршрут {line} зараз",
+  "Line {line} · you’re at its stop": "Маршрут {line} · ви на його зупинці",
   "Line {line} · you should make it": "Маршрут {line} · ви маєте встигнути",
   "Line {line} · likely catchable": "Маршрут {line} · імовірно, ви встигнете",
   "Line {line} · tight — move now": "Маршрут {line} · мало часу — вирушайте зараз",
@@ -131,7 +131,16 @@ export default {
   "More time to catch · about {minutes} min later":
     "Більше часу, щоб встигнути · приблизно на {minutes} хв пізніше",
   "More time to catch": "Більше часу, щоб встигнути",
-  "Earliest arrival we found": "Найраніше знайдене прибуття",
+  "Next bus": "Наступний автобус",
+  "Earlier bus": "Раніший автобус",
+  "If you miss the first one · about {minutes} min later":
+    "Якщо не встигнете на перший · приблизно на {minutes} хв пізніше",
+  "If you miss the first one": "Якщо не встигнете на перший",
+  "More margin · arrives about {minutes} min earlier":
+    "Більший запас часу · прибуття приблизно на {minutes} хв раніше",
+  "More margin": "Більший запас часу",
+  "The only bus there we found": "Єдиний автобус туди, який ми знайшли",
+  "about {minutes} min on the bus": "приблизно {minutes} хв в автобусі",
   "Live estimate": "Актуальна оцінка",
   "Timetable estimate": "Оцінка за розкладом",
   "Realtime uncertain": "Актуальні дані невизначені",
@@ -226,6 +235,8 @@ export default {
     "Ці варіанти починаються із зони пересадки. Ваша поїздка зміниться лише після явного вибору.",
   "The failed bus is excluded. Nothing changes until you choose a new option.":
     "Проблемний автобус виключено. Нічого не зміниться, доки ви не виберете новий варіант.",
+  "Also checking options with a change of bus…":
+    "Перевіряємо також варіанти з пересадкою…",
   "No direct trip found nearby. Checking options with up to two transfers…":
     "Прямого маршруту поруч не знайдено. Перевіряємо варіанти максимум із двома пересадками…",
   "No reliable option with up to two transfers was found from the nearby stops.":

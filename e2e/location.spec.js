@@ -1,4 +1,5 @@
 // Location: one-time geolocation for the search field, the nearest stop and the stops near you.
+import { gtfsClockAt } from "./support/clock.js";
 import { expect, test } from "./support/test.js";
 
 test("bare URL keeps one-tap location beside search and only fills the field", async ({
@@ -385,4 +386,69 @@ test("with location refused, a destination is answered from a stop chosen by nam
       .getByRole("group", { name: "Choose your exit stop" })
       .getByRole("radio", { name: /^Puistokatu/ })
   ).toBeChecked();
+});
+
+// One bus there was all a passenger was offered, labelled "Fastest" among
+// one. The bus after it is now the choice for missing it, and each card
+// says where to get off and for how long.
+test("journey options offer the next bus too, and where to get off", async ({
+  page,
+  context,
+  baseURL,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  // Line 7 leaves the market square nine minutes on (support/foli.js) and,
+  // here, stops at Puistokatu seven minutes later.
+  await page.route(
+    "https://data.foli.fi/gtfs/v0/20260920-120000/stop_times/trip/trip-164-7",
+    async (route) => {
+      const at = gtfsClockAt(Math.floor(Date.now() / 1000) + 540);
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(
+          [
+            ["164", 0],
+            ["32", 420],
+          ].map(([stopId, offset], index) => ({
+            stop_id: stopId,
+            arrival_time: at(offset),
+            departure_time: at(offset),
+            stop_sequence: index + 1,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: 1,
+          }))
+        ),
+      });
+    }
+  );
+  await context.grantPermissions(["geolocation"], {
+    origin: new globalThis.URL(baseURL).origin,
+  });
+  await context.setGeolocation({ latitude: 60.45182, longitude: 22.26662 });
+
+  await page.goto("/");
+  const journey = page.locator('section[aria-labelledby="journey-search-title"]');
+  await journey
+    .getByRole("combobox", { name: "Stop, address or place" })
+    .fill("Puistokatu");
+  await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
+  await page.getByRole("button", { name: "Find nearest stop" }).click();
+
+  const options = page.getByRole("region", { name: "Best ways to Puistokatu" });
+  const cards = options.getByRole("button");
+  await expect(cards).toHaveCount(2);
+  await expect(options.getByText("2 options")).toBeVisible();
+
+  await expect(cards.nth(0)).toContainText("Fastest");
+  await expect(cards.nth(0)).toContainText("Line 1 → Satama");
+  await expect(cards.nth(0)).toContainText(
+    "Get off at Puistokatu · about 5 min on the bus"
+  );
+  await expect(cards.nth(1)).toContainText("Next bus");
+  await expect(cards.nth(1)).toContainText("Line 7 → Runosmäki");
+  await expect(cards.nth(1)).toContainText(
+    "If you miss the first one · about 7 min later"
+  );
 });

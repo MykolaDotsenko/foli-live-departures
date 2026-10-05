@@ -379,3 +379,100 @@ test("arrive-by still prefers the latest departure", () => {
 
   expect(options[0]).toMatchObject({ label: "latest-departure", stopId: "here" });
 });
+
+
+test("the bus after the fastest is a second choice when nothing else trades off", () => {
+  const first = departure({ tripRef: "first", arrival: 2_000, departureAt: 1_500 });
+  const sameMinute = departure({ tripRef: "same-minute", arrival: 2_100, departureAt: 1_560 });
+  const next = departure({ tripRef: "next", arrival: 2_600, departureAt: 2_100 });
+
+  const options = selectDirectJourneyOptions({
+    stops: [{ id: "a", name: "Here", distanceMeters: 80 }],
+    fitsByStop: {
+      a: { status: "good", best: first, departures: [first, sameMinute, next] },
+    },
+  });
+
+  // A bus leaving the same minute is no second chance; the next one is.
+  expect(options.map((item) => [item.label, item.departure.tripRef])).toEqual([
+    ["fastest", "first"],
+    ["next-bus", "next"],
+  ]);
+  expect(options[1].arrivalDeltaSec).toBe(600);
+});
+
+test("the same bus boarded at another stop is no second choice", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [
+      { id: "here", distanceMeters: 60 },
+      { id: "down-the-line", distanceMeters: 400 },
+    ],
+    fitsByStop: {
+      here: {
+        status: "good",
+        best: departure({ tripRef: "32", arrival: 3_000, departureAt: 2_000 }),
+        departures: [
+          departure({ tripRef: "32", arrival: 3_000, departureAt: 2_000 }),
+          departure({ tripRef: "32-later", arrival: 3_900, departureAt: 2_900 }),
+        ],
+      },
+      "down-the-line": {
+        status: "good",
+        best: departure({ tripRef: "32", arrival: 3_000, departureAt: 2_300 }),
+        departures: [
+          departure({ tripRef: "32", arrival: 3_000, departureAt: 2_300 }),
+        ],
+      },
+    },
+  });
+
+  const backup = options.find((item) => item.label === "next-bus");
+  expect(backup?.departure.tripRef).toBe("32-later");
+});
+
+test("arriving by a time, the second choice is the bus before, for margin", () => {
+  const options = selectDirectJourneyOptions({
+    stops: [{ id: "here", distanceMeters: 30 }],
+    fitsByStop: {
+      here: {
+        status: "good",
+        best: departure({ tripRef: "late", arrival: 5_000, departureAt: 4_160 }),
+        departures: [
+          departure({ tripRef: "earliest", arrival: 3_800, departureAt: 2_960 }),
+          departure({ tripRef: "before", arrival: 4_400, departureAt: 3_560 }),
+          departure({ tripRef: "late", arrival: 5_000, departureAt: 4_160 }),
+        ],
+      },
+    },
+    timeConstraint: { mode: "arrive-by", targetTimeSec: 6_000 },
+  });
+
+  expect(options.map((item) => [item.label, item.departure.tripRef])).toEqual([
+    ["latest-departure", "late"],
+    ["earlier-bus", "before"],
+  ]);
+  expect(options[1].arrivalDeltaSec).toBe(-600);
+});
+
+
+test("tomorrow's run of the same trip is a second choice, not the same bus", () => {
+  // A timetable search lists a trip once per service day. The last bus
+  // tonight and the same trip tomorrow share its ID, a day apart.
+  const tonight = departure({ tripRef: "late-1", arrival: 2_000, departureAt: 1_500 });
+  const tomorrow = departure({
+    tripRef: "late-1",
+    arrival: 2_000 + 86_400,
+    departureAt: 1_500 + 86_400,
+  });
+
+  const options = selectDirectJourneyOptions({
+    stops: [{ id: "a", distanceMeters: 90 }],
+    fitsByStop: {
+      a: { status: "good", best: tonight, departures: [tonight, tomorrow] },
+    },
+    timeConstraint: { mode: "depart-at", targetTimeSec: 1_000 },
+  });
+
+  expect(options.map((item) => item.label)).toEqual(["fastest", "next-bus"]);
+  expect(options[1].departure.departureAt).toBe(1_500 + 86_400);
+});

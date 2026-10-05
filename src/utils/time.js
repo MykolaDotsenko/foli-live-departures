@@ -208,6 +208,23 @@ export function formatDue(unixSeconds, nowMs = Date.now()) {
 }
 
 /**
+ * "Leaves in 5 min", as a sentence: a bare "5 min" beside a distance read
+ * as the walk.
+ *
+ * @param {EpochSeconds | null | undefined} departureAt
+ * @param {number} [nowMs]
+ * @returns {string}
+ */
+export function formatLeaves(departureAt, nowMs = Date.now()) {
+  const minutes = minutesUntil(departureAt, nowMs);
+  if (minutes !== null && minutes <= 1) return t("Leaves now");
+  if (minutes !== null && minutes <= 90) {
+    return t("Leaves in {minutes} min", { minutes });
+  }
+  return t("Leaves {due}", { due: formatDue(departureAt, nowMs) });
+}
+
+/**
  * @param {number | null | undefined} delaySeconds
  * @returns {string | null}
  */
