@@ -10,6 +10,7 @@ vi.mock("../hooks/useDestinationBoardFits", () => ({
 }));
 
 import BusStopDisplay from "./BusStopDisplay";
+import { formatClock } from "../utils/time";
 
 afterEach(() => {
   localStorage.clear();
@@ -74,11 +75,14 @@ test("shows matching trips first without hiding other departures", () => {
     />
   );
 
+  // One bus goes there, so it is not called the fastest, and with no
+  // ride time or stop name known nothing more is claimed about it.
   expect(
     screen.getByText(
-      "Trips to Home stop are shown first. Other departures stay below."
+      `To Home stop: line 18 at ${formatClock(now + 300)}`
     )
   ).toBeInTheDocument();
+  expect(screen.queryByText(/Fastest/)).not.toBeInTheDocument();
   expect(screen.getByText("Goes to Home stop")).toBeInTheDocument();
 
   const rows = screen.getAllByRole("row").slice(1);
@@ -175,6 +179,9 @@ test("pins the explicitly selected concrete trip above other destination matches
 
   expect(within(rows[1]).getByText("18")).toBeInTheDocument();
   expect(rows).toHaveLength(2);
+  // The chosen journey has its own panel: an answer beside it could name
+  // the earlier 18 instead of the bus the passenger chose.
+  expect(screen.queryByText(/to Home stop: line/i)).not.toBeInTheDocument();
 });
 
 
@@ -344,4 +351,177 @@ test("keeps a just-departed selected row visible during journey grace", () => {
   expect(
     screen.queryByText("Checking for the next departures…")
   ).not.toBeInTheDocument();
+});
+
+
+const homeStop = {
+  id: "stop:900",
+  kind: "public-stop",
+  label: "Home stop",
+  primaryStopId: "900",
+  acceptableStopIds: ["900"],
+};
+
+/**
+ * The board for Kauppatori with a destination, each row's fit given by
+ * line, as the trip check would have found it.
+ */
+function renderAnswer({
+  fitsByLine,
+  state = "ready",
+  arrivals,
+  stops = [],
+  cancellations = [],
+}) {
+  destinationFits.hook.mockImplementation(({ arrivals: rows, rowKeys }) => {
+    const fitsByRowKey = {};
+    rows.forEach((arrival, index) => {
+      const fit = fitsByLine[arrival.lineref];
+      if (fit) fitsByRowKey[rowKeys[index]] = fit;
+    });
+    return { fitsByRowKey, state };
+  });
+
+  render(
+    <BusStopDisplay
+      stopId="164"
+      stopName="Kauppatori"
+      stops={stops}
+      routesByShortName={new Map()}
+      serverTime={Math.floor(Date.now() / 1000)}
+      receivedAtMs={Date.now()}
+      loading={false}
+      refreshing={false}
+      error={false}
+      onRefresh={() => {}}
+      destination={homeStop}
+      cancellations={cancellations}
+      arrivals={arrivals}
+    />
+  );
+}
+
+const goesHome = (rideDurationSec) => ({
+  status: "compatible",
+  destinationStopId: "900",
+  destinationStopSequence: 8,
+  rideDurationSec,
+});
+const notServing = {
+  status: "not-serving",
+  destinationStopId: "",
+  destinationStopSequence: null,
+};
+
+test("answers with the bus that gets there first, where to get off and when", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  renderAnswer({
+    stops: [{ id: "900", name: "Puistokatu" }],
+    // Föli cancelled the 3 here, so the earliest arrival it would have made
+    // is no answer.
+    cancellations: [{ line: "3", scheduledTime: now + 60 }],
+    fitsByLine: {
+      "1": goesHome(25 * 60),
+      "3": goesHome(5 * 60),
+      "18": goesHome(10 * 60),
+    },
+    arrivals: [
+      { lineref: "3", monitored: false, aimeddeparturetime: now + 60 },
+      // First to leave, but the long way round.
+      { lineref: "1", monitored: false, aimeddeparturetime: now + 120 },
+      { lineref: "18", monitored: false, aimeddeparturetime: now + 300 },
+    ],
+  });
+
+  expect(
+    screen.getByText(
+      `Fastest to Home stop: line 18 at ${formatClock(now + 300)}`
+    )
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      `Get off at Puistokatu · arrive about ${formatClock(now + 900)}`
+    )
+  ).toBeInTheDocument();
+  // Nothing about whether the passenger makes it: without their location
+  // that is not known.
+  expect(screen.queryByText(/make it|catch/i)).not.toBeInTheDocument();
+});
+
+test("says so when none of the listed buses goes there", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  renderAnswer({
+    fitsByLine: { "1": notServing, "7": notServing },
+    arrivals: [
+      { lineref: "1", monitored: false, aimeddeparturetime: now + 120 },
+      { lineref: "7", monitored: false, aimeddeparturetime: now + 300 },
+    ],
+  });
+
+  expect(
+    screen.getByText("None of the buses listed here go to Home stop.")
+  ).toBeInTheDocument();
+  // The old note said they were "shown first" with none to show.
+  expect(screen.queryByText(/shown first/)).not.toBeInTheDocument();
+});
+
+test("does not say none goes there when a bus could not be checked", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  renderAnswer({
+    fitsByLine: {
+      "1": notServing,
+      "7": {
+        status: "unknown",
+        destinationStopId: "",
+        destinationStopSequence: null,
+      },
+    },
+    arrivals: [
+      { lineref: "1", monitored: false, aimeddeparturetime: now + 120 },
+      { lineref: "7", monitored: false, aimeddeparturetime: now + 300 },
+    ],
+  });
+
+  expect(
+    screen.getByText("Couldn’t check where these buses go")
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/None of the buses/)).not.toBeInTheDocument();
+});
+
+test("says it is checking while the trips are looked up", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  renderAnswer({
+    state: "loading",
+    fitsByLine: {},
+    arrivals: [
+      { lineref: "1", monitored: false, aimeddeparturetime: now + 120 },
+    ],
+  });
+
+  expect(
+    screen.getByText("Checking which buses go to Home stop…")
+  ).toBeInTheDocument();
+});
+
+test("keeps its answer up while the board checks a new bus", () => {
+  const now = Math.floor(Date.now() / 1000);
+
+  renderAnswer({
+    state: "loading",
+    // The 18 was checked before; the 1 has just come onto the board.
+    fitsByLine: { "18": goesHome(10 * 60) },
+    arrivals: [
+      { lineref: "1", monitored: false, aimeddeparturetime: now + 120 },
+      { lineref: "18", monitored: false, aimeddeparturetime: now + 300 },
+    ],
+  });
+
+  expect(
+    screen.getByText(`To Home stop: line 18 at ${formatClock(now + 300)}`)
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Checking which buses/)).not.toBeInTheDocument();
 });

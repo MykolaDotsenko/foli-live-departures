@@ -618,6 +618,20 @@ function NearbyStops({
                 : t("Find nearest stop")}
           </button>
 
+          {/* From where, without location: a destination chosen with location
+              off or refused led only to this button and its error. The stop
+              search above is the other way to say where the journey starts;
+              the board it opens answers for the destination. */}
+          {destination && !position && !activeStopId && !radarOpen && (
+            <button
+              type="button"
+              className={styles.locateButton}
+              onClick={() => document.getElementById("stop-search")?.focus()}
+            >
+              {t("Choose a stop by name")}
+            </button>
+          )}
+
           <button
             ref={radarButtonRef}
             type="button"

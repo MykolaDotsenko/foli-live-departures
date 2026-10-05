@@ -42,8 +42,16 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // Start) measures 641,720–641,768 raw and 181,831–181,905 gzip bytes; master
 // measured 639,293–639,429 raw and 181,017–181,053 gzip in the same session.
 // The reviewed caps are 642,500 raw and 182,100 gzip bytes.
-const MAX_SHIPPED_JS_CSS_BYTES = 642_500;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 182_100;
+//
+// Planning from a chosen stop without location (2026-10-05, the spec's "From
+// where?": a stop's board names the bus that reaches the destination first,
+// where to get off and about when, or says that none of its buses goes
+// there, and Near you points to the stop search when location is not used)
+// measures 643,270–643,363 raw and 182,498–182,545 gzip bytes; master
+// measured 641,685–641,788 raw and 181,861–181,903 gzip. The reviewed caps
+// are 644,000 raw and 182,700 gzip bytes. The startup budget is unchanged.
+const MAX_SHIPPED_JS_CSS_BYTES = 644_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 182_700;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 

@@ -2586,6 +2586,8 @@ Allow:
 
 Once origin is resolved, the same routing engine runs.
 
+In the current implementation the origin without location is a stop chosen by name. With a destination set and no stop open, Nearby offers **Choose a stop by name** beside **Find nearest stop**, and it stays there after location is refused. The chosen stop's board then answers for the destination: of the listed buses checked to go there, the one that reaches it first (its departure at this stop plus the timetable's ride), where to get off and about when. Otherwise it says that none of the listed buses goes there, or that some could not be checked. The answer says nothing about catching the bus, because without location that is not known. A saved place is an origin through its stop's board. Address/place origins and transfer options from a chosen stop remain open.
+
 ---
 
 ## 84. Reverse trip

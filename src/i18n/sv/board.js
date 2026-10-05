@@ -130,8 +130,12 @@ export default {
   "no drop-off": "endast påstigning",
   "+{count} more · final stop": "+{count} till · ändhållplats",
 
-  "Trips to {destination} are shown first. Other departures stay below.":
-    "Turer till {destination} visas först. Övriga avgångar ligger kvar nedanför.",
+  "Fastest to {destination}: line {line} at {time}":
+    "Snabbast till {destination}: linje {line} kl. {time}",
+  "To {destination}: line {line} at {time}":
+    "Till {destination}: linje {line} kl. {time}",
+  "None of the buses listed here go to {destination}.":
+    "Ingen av bussarna här går till {destination}.",
   "Other direction for {destination}": "Annan riktning mot {destination}",
   "Your bus": "Din buss",
 };

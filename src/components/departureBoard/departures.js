@@ -117,3 +117,40 @@ export function isCancelledHere(arrival, cancellations) {
     return true;
   });
 }
+
+// With a destination chosen, the bus from this stop that gets there first:
+// its departure here, as the board has it, plus the timetable's ride. Only
+// buses checked to go there count, and a cancelled or departed one does not.
+// Whether the passenger reaches the stop in time is not known here, so it
+// is not part of the answer. "compared" counts the buses whose arrival is
+// known, so the answer is only called fastest when it beat another; and
+// "unchecked" says some bus could not be checked, so "none goes there" would
+// not be known either.
+export function destinationAnswer(rows, referenceTime, cancellations) {
+  let best = null;
+  let compared = 0;
+  let unchecked = false;
+
+  for (const { arrival, fit } of rows) {
+    if (fit?.status !== "compatible") {
+      if (!fit || fit.status === "unknown") unchecked = true;
+      continue;
+    }
+    const departureAt = getDepartureTime(arrival, referenceTime);
+    if (
+      !(departureAt >= referenceTime - DEPARTED_GRACE_SECONDS) ||
+      isCancelledHere(arrival, cancellations)
+    ) {
+      continue;
+    }
+    const arrivalAt = Number.isFinite(fit.rideDurationSec)
+      ? departureAt + fit.rideDurationSec
+      : null;
+    if (arrivalAt !== null) compared += 1;
+    if (!best || (arrivalAt ?? Infinity) < (best.arrivalAt ?? Infinity)) {
+      best = { arrival, departureAt, arrivalAt, stopId: fit.destinationStopId };
+    }
+  }
+
+  return { best, compared, unchecked };
+}

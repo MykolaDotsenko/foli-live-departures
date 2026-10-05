@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchTripStopTimes } from "../api/foliApi";
 import { analyzeTripFit } from "../utils/destinationTripFit";
+import { finalWalkSecondsByStop } from "../utils/placeDestination";
 
 /** @import { DestinationIntent } from "../types/journey" */
 
@@ -11,6 +12,7 @@ const TRIP_BATCH_SIZE = 8;
  *   status: "compatible" | "other-direction" | "not-serving" | "unknown",
  *   destinationStopId: string,
  *   destinationStopSequence: number | null,
+ *   rideDurationSec?: number | null,
  * }} BoardDestinationFit
  */
 
@@ -66,6 +68,9 @@ export async function loadDestinationBoardFits({
 
   /** @type {Record<string, BoardDestinationFit>} */
   const fits = {};
+  // A place's stops are weighed by the walk after them, as the planner
+  // weighs them, so the board and the get-off alert name the stop it would.
+  const destinationExtraSecByStop = finalWalkSecondsByStop(destination);
 
   arrivals.forEach((arrival, index) => {
     const rowKey = String(rowKeys[index] || "");
@@ -89,6 +94,7 @@ export async function loadDestinationBoardFits({
       boardingSequence: null,
       boardingAimedDepartureEpochSec: arrival?.aimeddeparturetime ?? null,
       destinationStopIds: destination.acceptableStopIds,
+      destinationExtraSecByStop,
     });
 
     if (fit.compatible && fit.destination) {
@@ -100,6 +106,7 @@ export async function loadDestinationBoardFits({
         )
           ? Number(fit.destination.stopSequence)
           : null,
+        rideDurationSec: fit.rideDurationSec,
       };
       return;
     }
@@ -133,6 +140,7 @@ export default function useDestinationBoardFits({
 }) {
   const [fitsByRowKey, setFitsByRowKey] = useState({});
   const [state, setState] = useState("idle");
+  const fitsForRef = useRef("");
   const requestRef = useRef({ stopId, arrivals, rowKeys, destination });
   requestRef.current = { stopId, arrivals, rowKeys, destination };
 
@@ -162,7 +170,21 @@ export default function useDestinationBoardFits({
     ) {
       setFitsByRowKey({});
       setState("idle");
+      fitsForRef.current = "";
       return undefined;
+    }
+
+    // While the same board is checked again after a bus has left, what it
+    // knew stays up, so its answer does not blink away. Checked for another
+    // stop or destination, it said a bus went somewhere it may not.
+    const fitsFor = [
+      request.stopId,
+      request.destination.id,
+      ...request.destination.acceptableStopIds,
+    ].join("|");
+    if (fitsForRef.current !== fitsFor) {
+      fitsForRef.current = fitsFor;
+      setFitsByRowKey({});
     }
 
     const controller = new AbortController();

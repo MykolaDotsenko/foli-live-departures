@@ -35,6 +35,26 @@ export function estimateFinalWalkSeconds(distanceM) {
 }
 
 /**
+ * The walk after each stop a place can be reached from, to weigh where to
+ * get off: null for a stop or saved place, which the passenger gets off at.
+ *
+ * @param {DestinationIntent | null | undefined} destination
+ * @returns {Record<string, number> | null}
+ */
+export function finalWalkSecondsByStop(destination) {
+  if (destination?.kind !== "external-place") return null;
+  /** @type {Record<string, number>} */
+  const seconds = {};
+  for (const [stopId, distanceM] of Object.entries(
+    destination.finalWalkDistanceByStop || {}
+  )) {
+    const walk = estimateFinalWalkSeconds(distanceM);
+    if (walk !== null) seconds[stopId] = walk;
+  }
+  return seconds;
+}
+
+/**
  * @param {readonly any[]} stops
  * @param {PlaceSearchResult | null | undefined} place
  */
