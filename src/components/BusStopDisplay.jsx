@@ -15,6 +15,7 @@ import {
   byDepartureTime,
   departedSetKey,
   departureKeys,
+  destinationAnswer,
   isCancelledHere,
   upcomingDepartures,
 } from "./departureBoard/departures";
@@ -26,9 +27,11 @@ import useLineTimetable from "../hooks/useLineTimetable";
 import useTripEnrichment from "../hooks/useTripEnrichment";
 import { mergeRealtimeAndScheduled } from "../utils/gtfsSchedule";
 import { providerLanguages, t, useLanguage } from "../i18n";
+import { stopLabel } from "../utils/stopNames";
 import {
   advanceServerTime,
   elapsedSince,
+  formatClock,
   getDepartureTime,
 } from "../utils/time";
 
@@ -297,9 +300,13 @@ function BusStopDisplay({
     originalIndex: index,
   }));
 
+  // Checked again after a bus has left, the board keeps what it knew in
+  // order meanwhile.
+  const destinationChecked =
+    destinationFitState === "ready" || destinationFitState === "loading";
   if (
     selectedJourney?.stopId === stopId ||
-    (destination && destinationFitState === "ready")
+    (destination && destinationChecked)
   ) {
     destinationRows.sort((left, right) => {
       const leftRank = left.selected
@@ -323,6 +330,37 @@ function BusStopDisplay({
       ? t(destination.label)
       : destination.label
     : "";
+  // With a destination, this stop is where the journey starts, location or
+  // not: the board answers which bus, where to get off and when it gets
+  // there. A journey already chosen here has its own panel, and the answer
+  // could name another bus beside it.
+  const answering =
+    Boolean(destination) && selectedJourney?.stopId !== stopId;
+  const answer =
+    answering && destinationChecked
+      ? destinationAnswer(destinationRows, referenceTime, cancellations)
+      : null;
+  const best = answer?.best;
+  // With no answer yet, "checking", not "none goes there".
+  const checking = destinationFitState === "loading" && !best;
+  const answerBus = best && {
+    destination: destinationLabel,
+    line: best.arrival.lineref || "—",
+    time: formatClock(best.departureAt),
+  };
+  const exitStop = best ? stopsById.get(best.stopId) : null;
+  const answerDetail = [];
+  if (exitStop) {
+    answerDetail.push(t("Get off at {name}", { name: stopLabel(exitStop) }));
+  }
+  if (best?.arrivalAt) {
+    const time = formatClock(best.arrivalAt);
+    answerDetail.push(
+      exitStop
+        ? t("arrive about {time}", { time })
+        : t("Arrive about {time}", { time })
+    );
+  }
 
   const filterable = linesOnOffer.length > 1 && upcomingArrivals.length > 0;
   const showAllLines = () => setFollowedLines([]);
@@ -413,11 +451,34 @@ function BusStopDisplay({
         onShowAllLines={showAllLines}
         online={online}
       >
-        {destination && destinationFitState === "ready" && (
+        {answer && (
           <p className={styles.destinationBoardNote}>
-            {t("Trips to {destination} are shown first. Other departures stay below.", {
-              destination: destinationLabel,
-            })}
+            {best ? (
+              <>
+                {/* "Fastest" only when it beat another bus there. */}
+                <strong>
+                  {answer.compared > 1
+                    ? t(
+                        "Fastest to {destination}: line {line} at {time}",
+                        answerBus
+                      )
+                    : t("To {destination}: line {line} at {time}", answerBus)}
+                </strong>
+                {answerDetail.length > 0 && (
+                  <span>{answerDetail.join(" · ")}</span>
+                )}
+              </>
+            ) : checking ? (
+              t("Checking which buses go to {destination}…", {
+                destination: destinationLabel,
+              })
+            ) : answer.unchecked ? (
+              t("Couldn’t check where these buses go")
+            ) : (
+              t("None of the buses listed here go to {destination}.", {
+                destination: destinationLabel,
+              })
+            )}
           </p>
         )}
 

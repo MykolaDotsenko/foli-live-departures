@@ -1,6 +1,7 @@
 // Departure board: search and Back, deep links, loading and errors, filters, alerts, cancellations, tab title.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./support/test.js";
+import { gtfsClockAt } from "./support/clock.js";
 import { monitorPayload } from "./support/foli.js";
 import { openServiceUpdates } from "./support/layout.js";
 
@@ -278,6 +279,31 @@ test("a returning passenger opens on the stop they last looked at", async ({ pag
 // Reopened on their last stop, a returning passenger had no way back to
 // "Where do you want to go?": it was shown only with no stop open.
 test("a returning passenger can still plan a journey from the reopened stop", async ({ page }) => {
+  // Line 8 leaves Turun linna for the market square (support/foli.js), and
+  // its stops tell the board it gets there seven minutes later.
+  await page.route(
+    "https://data.foli.fi/gtfs/v0/20260920-120000/stop_times/trip/trip-4-8",
+    async (route) => {
+      const at = gtfsClockAt(Math.floor(Date.now() / 1000) + 205);
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(
+          [
+            ["4", 0],
+            ["164", 420],
+          ].map(([stopId, offset], index) => ({
+            stop_id: stopId,
+            arrival_time: at(offset),
+            departure_time: at(offset),
+            stop_sequence: index + 1,
+            pickup_type: 0,
+            drop_off_type: 0,
+            timepoint: 1,
+          }))
+        ),
+      });
+    }
+  );
   await page.goto("/?stop=4");
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 
@@ -296,7 +322,12 @@ test("a returning passenger can still plan a journey from the reopened stop", as
   await expect(board).toBeFocused();
   await expect(board).toBeInViewport();
   await expect(page.getByRole("region", { name: "Journey destination" })).toContainText("Kauppatori");
-  await expect(page.getByText("Trips to Kauppatori are shown first.", { exact: false })).toBeVisible();
+  // The reopened stop is where the journey starts: its board says which bus,
+  // where to get off and when, from the line's own stop times.
+  await expect(page.getByText(/^To Kauppatori: line 8 at \d\d:\d\d$/)).toBeVisible();
+  await expect(
+    page.getByText(/^Get off at Kauppatori · arrive about \d\d:\d\d$/)
+  ).toBeVisible();
 });
 
 test("deep links survive reload and invalid stop links recover canonically", async ({ page }) => {

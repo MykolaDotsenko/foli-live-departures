@@ -442,6 +442,8 @@ Allow:
 
 GPS is a convenience, not a hard dependency.
 
+Today a public stop chosen by name is the origin without location. Its board answers for the destination, and saved places work through their stops (see the appendix, §83). Address/place origins remain open.
+
 ---
 
 ## 9. Two-sided stop discovery

@@ -1131,6 +1131,12 @@
   line-height: 1.4;
 }
 
+/* Under the bus, lighter: where to get off and when. */
+.destinationBoardNote span {
+  display: block;
+  font-weight: 500;
+}
+
 .destinationFitBadge,
 .destinationDirectionNote {
   display: inline-flex;

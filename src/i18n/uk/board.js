@@ -120,8 +120,12 @@ export default {
   planned: "за планом",
   "no drop-off": "вихід заборонено",
   "+{count} more · final stop": "+ще {count} · кінцева зупинка",
-  "Trips to {destination} are shown first. Other departures stay below.":
-    "Рейси до {destination} показані першими. Інші відправлення залишаються нижче.",
+  "Fastest to {destination}: line {line} at {time}":
+    "Найшвидше до {destination}: маршрут {line} о {time}",
+  "To {destination}: line {line} at {time}":
+    "До {destination}: маршрут {line} о {time}",
+  "None of the buses listed here go to {destination}.":
+    "Жоден автобус із цього списку не їде до {destination}.",
   "Other direction for {destination}": "Інший напрямок для {destination}",
   "Your bus": "Ваш автобус",
 };

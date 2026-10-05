@@ -319,3 +319,70 @@ test("stop radar gives live distance guidance without silently switching the boa
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Stop radar" })).toHaveCount(0);
 });
+
+test("with location refused, a destination is answered from a stop chosen by name", async ({
+  page,
+}) => {
+  // The browser says no, as it does for a passenger who refused location.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_success, failure) =>
+          failure({ code: 1, message: "User denied Geolocation" }),
+        watchPosition: () => 0,
+        clearWatch: () => {},
+      },
+    });
+  });
+  await page.goto("/");
+
+  const journey = page.locator('section[aria-labelledby="journey-search-title"]');
+  await journey
+    .getByRole("combobox", { name: "Stop, address or place" })
+    .fill("Puistokatu");
+  await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
+
+  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await expect(page.getByText(/Location access is blocked/)).toBeVisible();
+
+  // Before, that error was where a destination without location ended.
+  await page.getByRole("button", { name: "Choose a stop by name" }).click();
+  const search = page.getByRole("combobox", { name: "Find your stop" });
+  await expect(search).toBeFocused();
+  await search.fill("Kauppatori");
+  await page
+    .getByRole("listbox", { name: "Matching bus stops" })
+    .getByRole("option", { name: /Kauppatori/ })
+    .first()
+    .click();
+  await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
+
+  // Line 1 stops at Puistokatu five minutes after it leaves here
+  // (support/foli.js): the board names the bus, the stop and the time.
+  const bus = page.getByText(/^To Puistokatu: line 1 at \d\d:\d\d$/);
+  const exit = page.getByText(
+    /^Get off at Puistokatu · arrive about \d\d:\d\d$/
+  );
+  await expect(bus).toBeVisible();
+  await expect(exit).toBeVisible();
+  const minutes = (text) => {
+    const [hours, mins] = text.slice(-5).split(":").map(Number);
+    return hours * 60 + mins;
+  };
+  expect(
+    (minutes(await exit.innerText()) - minutes(await bus.innerText()) + 1440) %
+      1440
+  ).toBe(5);
+
+  // The get-off alert for that bus already has Puistokatu chosen.
+  await page
+    .getByRole("row", { name: /Satama/ })
+    .getByRole("button", { name: "Get-off alert" })
+    .click();
+  await expect(
+    page
+      .getByRole("group", { name: "Choose your exit stop" })
+      .getByRole("radio", { name: /^Puistokatu/ })
+  ).toBeChecked();
+});

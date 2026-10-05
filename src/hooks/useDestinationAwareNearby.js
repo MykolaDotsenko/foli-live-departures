@@ -7,7 +7,10 @@ import {
 import { classifyCatchability } from "../utils/catchability";
 import { analyzeTripFit } from "../utils/destinationTripFit";
 import { getDepartureTime } from "../utils/time";
-import { estimateFinalWalkSeconds } from "../utils/placeDestination";
+import {
+  estimateFinalWalkSeconds,
+  finalWalkSecondsByStop,
+} from "../utils/placeDestination";
 import {
   compareJourneyTimeCandidates,
   journeyTimeAllows,
@@ -238,19 +241,7 @@ export async function loadDestinationAwareNearby({
   if (!normalizedTime.valid) return {};
   const scheduledPlanning = normalizedTime.mode !== "leave-now";
 
-  /** @type {Record<string, number> | null} */
-  const destinationExtraSecByStop =
-    destination.kind === "external-place"
-      ? Object.fromEntries(
-          Object.entries(destination.finalWalkDistanceByStop || {})
-            .map(([stopId, distanceM]) => [
-              stopId,
-              estimateFinalWalkSeconds(distanceM),
-            ])
-            .filter(([, seconds]) => Number.isFinite(Number(seconds)))
-            .map(([stopId, seconds]) => [stopId, Number(seconds)])
-        )
-      : null;
+  const destinationExtraSecByStop = finalWalkSecondsByStop(destination);
 
   const monitorResults = await Promise.allSettled(
     candidates.map(async (stop) => {

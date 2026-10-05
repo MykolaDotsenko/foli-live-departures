@@ -137,8 +137,12 @@ export default {
   "+{count} more · final stop": "+{count} lisää · päätepysäkki",
 
   // Destination-aware board
-  "Trips to {destination} are shown first. Other departures stay below.":
-    "Määränpäähän {destination} menevät lähdöt näytetään ensin. Muut lähdöt jäävät niiden alle.",
+  "Fastest to {destination}: line {line} at {time}":
+    "Nopein määränpäähän {destination}: linja {line} klo {time}",
+  "To {destination}: line {line} at {time}":
+    "Määränpäähän {destination}: linja {line} klo {time}",
+  "None of the buses listed here go to {destination}.":
+    "Mikään tässä näkyvä bussi ei mene määränpäähän {destination}.",
   "Other direction for {destination}":
     "Toinen suunta määränpäähän {destination}",
 

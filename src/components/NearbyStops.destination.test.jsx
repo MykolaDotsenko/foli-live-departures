@@ -235,3 +235,78 @@ test("a chosen option carries the accuracy of the fix it was measured from", asy
     screen.getByRole("button", { name: "Open stop radar" })
   ).toHaveAccessibleDescription("The radar shows the way to a stop as you walk.");
 });
+
+test("with location refused, a destination still has a way to say where the journey starts", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((_success, failure) => failure({ code: 1 })),
+    },
+  });
+
+  render(
+    <>
+      {/* The page's own stop search, where the button sends the passenger. */}
+      <input id="stop-search" aria-label="Find your stop" />
+      <NearbyStops
+        stops={stops}
+        coordinatesStatus="ready"
+        activeStopId=""
+        destination={destination}
+        onSelect={vi.fn()}
+      />
+    </>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  expect(
+    await screen.findByText(/Location access is blocked/)
+  ).toBeInTheDocument();
+
+  // Before, the error was all there was: a destination with location off
+  // led nowhere.
+  fireEvent.click(
+    screen.getByRole("button", { name: "Choose a stop by name" })
+  );
+  expect(screen.getByRole("textbox", { name: "Find your stop" })).toHaveFocus();
+});
+
+test("offers the stop search only while there is no stop to start from", () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+
+  const { rerender } = render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      onSelect={vi.fn()}
+    />
+  );
+  // Without a destination the stop search needs no pointer: it is what the
+  // page leads with.
+  expect(
+    screen.queryByRole("button", { name: "Choose a stop by name" })
+  ).not.toBeInTheDocument();
+
+  // With a board open, the journey starts from that stop and its board
+  // answers for the destination.
+  rerender(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+  expect(
+    screen.queryByRole("button", { name: "Choose a stop by name" })
+  ).not.toBeInTheDocument();
+});

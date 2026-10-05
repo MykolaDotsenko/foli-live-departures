@@ -3,6 +3,7 @@ import {
   DEPARTED_GRACE_SECONDS,
   departedSetKey,
   departureKeys,
+  destinationAnswer,
   isCancelledHere,
   upcomingDepartures,
 } from "./departures";
@@ -113,4 +114,46 @@ test("a row without a planned time is never taken for cancelled", () => {
       [{ line: "1", scheduledTime: NOW + 300 }]
     )
   ).toBe(false);
+});
+
+test("the destination answer is the bus there first, called fastest only against another", () => {
+  const now = 1_000_000;
+  const goes = (rideDurationSec) => ({
+    status: "compatible",
+    destinationStopId: "900",
+    rideDurationSec,
+  });
+  const row = (lineref, inSeconds, fit) => ({
+    arrival: { lineref, aimeddeparturetime: now + inSeconds },
+    fit,
+  });
+
+  // Gone a minute ago, and a bus whose ride is unknown: neither is
+  // compared, and the 18 with a known arrival is the answer.
+  const answer = destinationAnswer(
+    [
+      row("1", -60, goes(60)),
+      row("3", 120, goes(null)),
+      row("18", 300, goes(600)),
+    ],
+    now,
+    []
+  );
+  expect(answer.best).toMatchObject({
+    arrivalAt: now + 900,
+    departureAt: now + 300,
+    stopId: "900",
+  });
+  expect(answer.best.arrival.lineref).toBe("18");
+  expect(answer.compared).toBe(1);
+  expect(answer.unchecked).toBe(false);
+
+  // A row with nothing known about it keeps "none goes there" unsaid.
+  expect(
+    destinationAnswer(
+      [row("7", 120, { status: "not-serving" }), row("8", 240, null)],
+      now,
+      []
+    )
+  ).toEqual({ best: null, compared: 0, unchecked: true });
 });
