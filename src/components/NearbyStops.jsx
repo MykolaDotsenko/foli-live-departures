@@ -982,9 +982,9 @@ function NearbyStops({
             )}
 
           {destination && hasJourneyChoices ? (
-            <details className={styles.comparison}>
+            <details>
               <summary>{t("Compare nearby stops")}</summary>
-              <div className={styles.comparisonBody}>{stopComparison}</div>
+              {stopComparison}
             </details>
           ) : (
             stopComparison
