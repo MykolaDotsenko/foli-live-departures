@@ -741,77 +741,47 @@ function App() {
           />
         )}
 
-        {!ride.session && !stopId && (
-          <section
-            className="home-stop-entry"
-            aria-labelledby="home-stop-entry-title"
-          >
-            <div className="home-entry-heading">
-              <h2 id="home-stop-entry-title">{t("Find your stop")}</h2>
-            </div>
+        {/* Keep the existing stop-search surface as the parallel
+            first-class path. No second component or app mode is introduced:
+            only its position in the idle Home hierarchy changes. */}
+        <div className="top-section">
+          {!ride.session && stopId && (
+            <HomeRecovery
+              home={placesById.get("home") || null}
+              stops={stops}
+              online={online}
+              compact
+              onOpenStop={selectStop}
+            />
+          )}
 
-            <div className="search-panel">
-              <BusStopForm
-                hideLabel
-                activeStopId=""
-                stops={stops}
-                coordinatesStatus={coordinatesStatus}
-                serviceBoundary={serviceBoundary}
-                onSubmit={selectStop}
-                onEdit={noteSearchEdit}
-              />
-            </div>
-
-            <QuickStops
-              favorites={namedFavorites}
-              recents={namedRecents}
-              activeStopId=""
-              onSelect={selectSavedStop}
+          <section className="search-panel" aria-label={t("Choose a bus stop")}>
+            <BusStopForm
+              compact={Boolean(stopId) && !firstVisit}
+              activeStopId={stopId}
+              stops={stops}
+              coordinatesStatus={coordinatesStatus}
+              serviceBoundary={serviceBoundary}
+              onSubmit={selectStop}
+              onEdit={noteSearchEdit}
             />
           </section>
-        )}
 
-        {/* Once a stop is open, preserve the existing board-first commuter
-            hierarchy. On wide screens Home recovery and stop controls share
-            the top row so the first departure stays in reach. */}
-        {stopId && (
-          <div className="top-section">
-            {!ride.session && (
-              <HomeRecovery
-                home={placesById.get("home") || null}
-                stops={stops}
-                online={online}
-                compact
-                onOpenStop={selectStop}
-              />
-            )}
+          <QuickStops
+            favorites={namedFavorites}
+            recents={namedRecents}
+            activeStopId={stopId}
+            onSelect={selectSavedStop}
+          />
 
-            <section className="search-panel" aria-label={t("Choose a bus stop")}>
-              <BusStopForm
-                compact={!firstVisit}
-                activeStopId={stopId}
-                stops={stops}
-                coordinatesStatus={coordinatesStatus}
-                serviceBoundary={serviceBoundary}
-                onSubmit={selectStop}
-                onEdit={noteSearchEdit}
-              />
-            </section>
-
-            <QuickStops
-              favorites={namedFavorites}
-              recents={namedRecents}
-              activeStopId={stopId}
-              onSelect={selectSavedStop}
-            />
-
+          {stopId && (
             <ServiceAlerts
               alerts={serviceAlerts}
               error={serviceAlertsError}
               receivedAtMs={serviceAlertsReceivedAtMs}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
