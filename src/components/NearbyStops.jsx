@@ -813,6 +813,7 @@ function NearbyStops({
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
               stopsById={stopsById}
+              showBoardingConfidence={!activeOriginStop}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
