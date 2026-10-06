@@ -36,7 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
-import { rememberPosition } from "../utils/sessionPosition";
+import { recentPosition, rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -88,6 +88,30 @@ function shownDestinationLabel(destination) {
   return destination.kind === "saved-place"
     ? t(destination.label)
     : destination.label;
+}
+
+// A remembered fix may become a journey origin only when it is still
+// precise enough and plausibly inside the Föli network. This never asks the
+// browser for location: it only reuses a position the passenger explicitly
+// shared earlier in this tab.
+function reusableJourneyPosition(stops, serviceBoundary) {
+  const position = recentPosition();
+  if (
+    !position ||
+    !Number.isFinite(position.accuracy) ||
+    position.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
+  ) {
+    return null;
+  }
+
+  if (isInsideMultiPolygon(position, serviceBoundary) === false) return null;
+
+  const nearest = findNearestStops(stops, position, 1)[0];
+  if (!nearest || nearest.distanceMeters > OUTSIDE_NETWORK_WARNING_METERS) {
+    return null;
+  }
+
+  return position;
 }
 
 function fitStatusText(fit, destinationLabel, isBest) {
@@ -248,6 +272,7 @@ function NearbyStops({
   const restoreRadarFocusRef = useRef(false);
   const radarSeededPositionRef = useRef(false);
   const radarLatestPositionRef = useRef(null);
+  const reusedDestinationRef = useRef("");
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -267,6 +292,41 @@ function NearbyStops({
     () => new Map(stops.map((stop) => [String(stop.id), stop])),
     [stops]
   );
+  const activeOriginStop =
+    destination && activeStopId
+      ? stopsById.get(String(activeStopId)) || null
+      : null;
+
+  useEffect(() => {
+    const destinationId = destination?.id || "";
+    if (
+      !destinationId ||
+      activeOriginStop ||
+      position ||
+      !hasStopCoordinates ||
+      reusedDestinationRef.current === destinationId
+    ) {
+      return;
+    }
+
+    const remembered = reusableJourneyPosition(stops, serviceBoundary);
+    // Mark this destination either way. If the old fix is too approximate,
+    // do not keep reconsidering it as unrelated catalogue/boundary renders
+    // arrive; the passenger gets an explicit origin choice instead.
+    reusedDestinationRef.current = destinationId;
+    if (!remembered) return;
+
+    setPosition(remembered);
+    setStatus("success");
+    setError("");
+  }, [
+    activeOriginStop,
+    destination?.id,
+    hasStopCoordinates,
+    position,
+    serviceBoundary,
+    stops,
+  ]);
   const expandedNearbyStops = useMemo(
     () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
     [position, stops]
@@ -573,6 +633,15 @@ function NearbyStops({
     nearestChoiceIsAmbiguous(nearbyStops, position.accuracy);
   const locationDataLoading =
     coordinatesStatus === "loading" && !hasStopCoordinates;
+  const positionCanStartJourney =
+    Boolean(position) &&
+    !lowAccuracy &&
+    insideServiceArea !== false &&
+    !isFarFromNetwork;
+  const needsOriginDecision =
+    Boolean(destination) &&
+    !activeOriginStop &&
+    !positionCanStartJourney;
 
   let locationNotice = "";
   if (lowAccuracy) {
@@ -604,23 +673,24 @@ function NearbyStops({
       <div className={styles.header}>
         <div>
           <h2 id="nearby-stops-title" className={styles.heading} tabIndex={-1}>
-            {destination
-              ? t("Nearby stops for {destination}", {
-                  destination: destinationLabel,
-                })
-              : t("Near you")}
+            {activeOriginStop
+              ? t("Starting from {stop}", { stop: stopLabel(activeOriginStop) })
+              : needsOriginDecision
+                ? t("Start from where you are?")
+                : destination
+                  ? t("Nearby stops for {destination}", {
+                      destination: destinationLabel,
+                    })
+                  : t("Near you")}
           </h2>
-          {/* Until a location is found there is nothing to choose from:
-              asking for "the best fit" left a passenger with a destination
-              looking for options that the button below has to fetch. Once
-              found, the line says what a stop card does; "switch back to
-              pure distance" described the sorting buttons beside it. */}
-          {/* "Open stop radar" said nothing of what a radar is for; the
-              line says so as long as the button is there. */}
           <p className={styles.description}>
-            {destination && position
-              ? t("Tap a stop to see when its buses leave.")
-              : t("Uses your location once. It isn’t saved.")}{" "}
+            {activeOriginStop
+              ? t("The open stop is your journey start.")
+              : needsOriginDecision
+                ? t("Use your location once, or choose a starting stop. It isn’t saved.")
+                : destination && position
+                  ? t("Tap a stop to see when its buses leave.")
+                  : t("Uses your location once. It isn’t saved.")}{" "}
             <span id="stop-radar-hint">
               {t("The radar shows the way to a stop as you walk.")}
             </span>
@@ -628,36 +698,36 @@ function NearbyStops({
         </div>
 
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.locateButton}
-            onClick={() => {
-              if (status !== "locating" && hasStopCoordinates) locate();
-            }}
-            aria-disabled={
-              status === "locating" || !hasStopCoordinates ? "true" : undefined
-            }
-            aria-busy={status === "locating"}
-          >
-            <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
-            {status === "locating"
-              ? t("Locating…")
-              : position
-                ? t("Update location")
-                : t("Find nearest stop")}
-          </button>
+          {!activeOriginStop && (
+            <button
+              type="button"
+              className={styles.locateButton}
+              onClick={() => {
+                if (status !== "locating" && hasStopCoordinates) locate();
+              }}
+              aria-disabled={
+                status === "locating" || !hasStopCoordinates ? "true" : undefined
+              }
+              aria-busy={status === "locating"}
+            >
+              <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
+              {status === "locating"
+                ? t("Locating…")
+                : position
+                  ? t("Update location")
+                  : destination
+                    ? t("Use my location")
+                    : t("Find nearest stop")}
+            </button>
+          )}
 
-          {/* From where, without location: a destination chosen with location
-              off or refused led only to this button and its error. The stop
-              search above is the other way to say where the journey starts;
-              the board it opens answers for the destination. */}
-          {destination && !position && !activeStopId && !radarOpen && (
+          {needsOriginDecision && !radarOpen && (
             <button
               type="button"
               className={styles.locateButton}
               onClick={() => document.getElementById("stop-search")?.focus()}
             >
-              {t("Choose a stop by name")}
+              {t("Choose a starting stop")}
             </button>
           )}
 
