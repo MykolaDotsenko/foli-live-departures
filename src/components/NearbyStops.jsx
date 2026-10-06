@@ -938,7 +938,7 @@ function NearbyStops({
               </span>{" "}
               <button
                 type="button"
-                className={styles.noticeButton}
+                className={styles.locateButton}
                 onClick={() => onSelect(betterNearbyStop.id)}
               >
                 {t("Open {stop}", { stop: stopLabel(betterNearbyStop) })}
