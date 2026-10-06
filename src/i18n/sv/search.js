@@ -176,7 +176,6 @@ export default {
   "When you get to the transfer stop, tap “I'm at the stop”.":
     "När du är vid byteshållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Wait here for line {line}.": "Vänta här på linje {line}.",
-    "När linje {line} kommer, öppna den valda avgången och starta avstigningslarmet.",
   "Show line {line} departure": "Visa avgång för linje {line}",
   "To {destination}": "Till {destination}",
   "Leaves {due}": "Avgår {due}",
@@ -188,7 +187,6 @@ export default {
     "När du är vid hållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Your selected bus is pinned first in the departure board.":
     "Din valda buss är fäst först på avgångstavlan.",
-    "När du stiger på, använd Avstigningslarm för den avgången. Reseläget förblir styrande därefter.",
   "Your selected bus was cancelled.": "Din valda buss ställdes in.",
   "Your selected bus is no longer a reliable option.":
     "Din valda buss är inte längre ett tillförlitligt alternativ.",
