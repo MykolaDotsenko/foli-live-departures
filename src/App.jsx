@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import "./App.css";
 import AppFooter from "./app/AppFooter";
 import AppHeader from "./app/AppHeader";
@@ -64,6 +72,9 @@ import {
   completedFinalWalk,
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
+import { requestCompassPermission } from "./utils/stopRadar";
+
+const JourneyStopRadar = lazy(() => import("./components/StopRadar"));
 
 
 function announceStop(stopId, name, loading) {
@@ -103,6 +114,10 @@ function App() {
   const restoreJourneyDestination = journey.restoreDestination;
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
+  const [journeyRadarOpen, setJourneyRadarOpen] = useState(false);
+  const [journeyRadarCompass, setJourneyRadarCompass] = useState("pending");
+  const [boardingRequest, setBoardingRequest] = useState(null);
+  const boardingRequestIdRef = useRef(0);
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -570,6 +585,32 @@ function App() {
     selectStop(selectedJourney.stopId);
   };
 
+  const openJourneyRadar = () => {
+    if (!selectedJourney?.stopId || !selectedJourneyStop) return;
+    setJourneyRadarOpen(true);
+    setJourneyRadarCompass("pending");
+    void requestCompassPermission().then(setJourneyRadarCompass);
+  };
+
+  const closeJourneyRadar = () => {
+    setJourneyRadarOpen(false);
+    globalThis.requestAnimationFrame?.(() => {
+      activeJourneyHeading()?.focus({ preventScroll: true });
+    });
+  };
+
+  const confirmJourneyBoarding = () => {
+    if (!selectedJourney?.stopId || !selectedJourney.tripRef) return;
+    setJourneyRadarOpen(false);
+    boardingRequestIdRef.current += 1;
+    setBoardingRequest({
+      id: boardingRequestIdRef.current,
+      stopId: selectedJourney.stopId,
+      tripRef: selectedJourney.tripRef,
+    });
+    selectStop(selectedJourney.stopId);
+  };
+
   const currentStop = stopId
     ? {
         id: stopId,
@@ -721,9 +762,30 @@ function App() {
             monitoringState={selectedJourneyMonitoringState}
             onConfirmAtStop={confirmJourneyAtStop}
             onShowDeparture={showSelectedJourneyDeparture}
+            onBoard={confirmJourneyBoarding}
+            onGuideWithRadar={
+              selectedJourneyStop ? openJourneyRadar : null
+            }
             onChooseAnother={chooseAnotherJourney}
             onOpenStop={openSelectedJourneyStop}
           />
+        )}
+
+        {!ride.session && selectedJourney && journeyRadarOpen && (
+          <Suspense fallback={null}>
+            <JourneyStopRadar
+              stops={stops}
+              initialTargetStopId={selectedJourney.stopId}
+              recommendedTargetStopId={selectedJourney.stopId}
+              activeStopId={stopId}
+              compassPermission={journeyRadarCompass}
+              onOpenStop={(id) => {
+                setJourneyRadarOpen(false);
+                selectStop(id);
+              }}
+              onClose={closeJourneyRadar}
+            />
+          </Suspense>
         )}
 
         {!ride.session &&
@@ -832,6 +894,7 @@ function App() {
               placesById={placesById}
               destination={journey.destination}
               selectedJourney={selectedJourney}
+              boardingRequest={boardingRequest}
               onStartRide={startRide}
               activeRideTripRef={ride.session?.tripRef || ""}
               cancellations={stopCancellations}
