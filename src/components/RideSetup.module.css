@@ -134,25 +134,6 @@
   font-weight: 800;
 }
 
-.changeStop {
-  width: fit-content;
-  min-height: 44px;
-  margin-top: 0.9rem;
-  padding: 0.55rem 0.75rem;
-  border: 1px solid #b9cfd3;
-  border-radius: 0.75rem;
-  background: #fff;
-  color: #31565a;
-  font: inherit;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.changeStop:focus-visible {
-  outline: 3px solid #007985;
-  outline-offset: 2px;
-}
-
 .options {
   margin-top: 1rem;
   display: grid;
@@ -425,12 +406,6 @@
 
   :root[data-theme="dark"] .options label {
     background: var(--dm-sunken);
-  }
-
-  :root[data-theme="dark"] .changeStop {
-    border-color: var(--dm-line-strong);
-    background: var(--dm-raised);
-    color: var(--dm-text);
   }
 
   :root[data-theme="dark"] .safetyNote {
