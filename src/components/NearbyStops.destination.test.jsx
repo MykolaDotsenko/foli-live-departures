@@ -174,16 +174,13 @@ test("suggests but never auto-switches from an explicit stop when a nearby stop 
     />
   );
 
-  expect(
-    screen.getByText(
-      "A nearby stop has a meaningfully better option to Home stop."
-    )
-  ).toBeInTheDocument();
+  const suggestion = screen
+    .getByText("Best for Home stop: Farther useful")
+    .closest("div");
+  expect(suggestion).not.toBeNull();
   expect(onSelect).not.toHaveBeenCalled();
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Open Farther useful" })
-  );
+  fireEvent.click(within(suggestion).getByRole("button", { name: "Show" }));
   expect(onSelect).toHaveBeenCalledTimes(1);
   expect(onSelect).toHaveBeenCalledWith("200");
 });
@@ -227,7 +224,7 @@ test("does not suggest switching stops for a small ETA advantage", () => {
   );
 
   expect(
-    screen.queryByText(/meaningfully better option/i)
+    screen.queryByText("Best for Home stop: Farther useful")
   ).not.toBeInTheDocument();
 });
 
