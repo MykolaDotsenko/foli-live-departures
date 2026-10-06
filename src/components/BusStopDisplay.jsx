@@ -68,7 +68,6 @@ function BusStopDisplay({
   placesById,
   destination = null,
   selectedJourney = null,
-  boardingRequest = null,
   onStartRide,
   activeRideTripRef = "",
   cancellations = [],
@@ -146,7 +145,6 @@ function BusStopDisplay({
       : upcomingArrivals
   ).slice(0, MAX_VISIBLE_DEPARTURES);
   const [rideCandidateKey, setRideCandidateKey] = useState("");
-  const handledBoardingRequestRef = useRef(0);
   // The departure the open get-off setup belongs to, as last listed, and the
   // board time of the answer that listed it.
   const [setupDeparture, setSetupDeparture] = useState(null);
@@ -290,25 +288,6 @@ function BusStopDisplay({
           arrivalMatchesActiveJourney(arrival, selectedJourney)
         )
       : -1;
-  const selectedJourneyRideKey = rowKeys[selectedJourneyIndex] || "";
-
-  useEffect(() => {
-    if (
-      !boardingRequest ||
-      handledBoardingRequestRef.current === boardingRequest ||
-      !selectedJourneyRideKey
-    ) {
-      return;
-    }
-    handledBoardingRequestRef.current = boardingRequest;
-    setRideCandidateKey(selectedJourneyRideKey);
-    globalThis.requestAnimationFrame?.(() =>
-      globalThis.document
-        ?.getElementById("ride-setup-title")
-        ?.focus({ preventScroll: true })
-    );
-  }, [boardingRequest, selectedJourneyRideKey]);
-
   const { fitsByRowKey: destinationFitsByKey, state: destinationFitState } =
     useDestinationBoardFits({
       stopId,
