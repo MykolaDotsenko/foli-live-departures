@@ -107,17 +107,15 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     screen.getByText("Tap a stop to see when its buses leave.")
   ).toBeInTheDocument();
 
-  expect(
-    screen.queryByRole("group", {
-      name: "Nearby Föli stops for Home stop",
-    })
-  ).not.toBeInTheDocument();
+  const group = screen.getByRole("group", {
+    name: "Nearby Föli stops for Home stop",
+    hidden: true,
+  });
+  expect(group).not.toBeVisible();
 
   fireEvent.click(screen.getByText("Compare nearby stops"));
 
-  const group = await screen.findByRole("group", {
-    name: "Nearby Föli stops for Home stop",
-  });
+  expect(group).toBeVisible();
   await waitFor(() => {
     const buttons = within(group).getAllByRole("button");
     expect(buttons).toHaveLength(3);
@@ -183,10 +181,58 @@ test("says which part of an uncertain stop is unknown", async () => {
     screen.getByText("Can’t tell if you’ll make it in time")
   ).toBeInTheDocument();
   expect(screen.queryByText(/suitability/i)).not.toBeInTheDocument();
-  expect(screen.queryByText("Compare nearby stops")).not.toBeInTheDocument();
+  expect(screen.getByText("Compare nearby stops")).toBeInTheDocument();
   expect(
-    screen.getByRole("group", { name: "Nearby Föli stops for Home stop" })
-  ).toBeVisible();
+    screen.getByRole("group", {
+      name: "Nearby Föli stops for Home stop",
+      hidden: true,
+    })
+  ).not.toBeVisible();
+});
+
+test("keeps nearby stops expanded when no journey recommendation exists", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: Object.fromEntries(
+      stops.map((stop) => [
+        stop.id,
+        { status: "no-direct", best: null, departures: [] },
+      ])
+    ),
+  });
+
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((success) =>
+        success({
+          coords: {
+            latitude: 60.4518,
+            longitude: 22.2666,
+            accuracy: 20,
+          },
+        })
+      ),
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
+
+  const group = await screen.findByRole("group", {
+    name: "Nearby Föli stops for Home stop",
+  });
+  expect(group).toBeVisible();
+  expect(screen.queryByText("Compare nearby stops")).not.toBeInTheDocument();
 });
 
 // "You're near" on the chosen journey needs to know how good the fix was:
