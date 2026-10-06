@@ -874,7 +874,13 @@ function NearbyStops({
           )}
 
           {betterNearbyStop && (
-            <div className={styles.notice} role="status">
+            <div
+              className={styles.notice}
+              role="status"
+              aria-label={t("Best for {destination}", {
+                destination: destinationLabel,
+              })}
+            >
               <strong>
                 {t("Best for {destination}", { destination: destinationLabel })}:
               </strong>{" "}
