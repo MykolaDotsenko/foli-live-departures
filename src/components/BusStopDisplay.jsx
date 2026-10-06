@@ -68,6 +68,7 @@ function BusStopDisplay({
   placesById,
   destination = null,
   selectedJourney = null,
+  boardingRequest = null,
   onStartRide,
   activeRideTripRef = "",
   cancellations = [],
@@ -145,6 +146,7 @@ function BusStopDisplay({
       : upcomingArrivals
   ).slice(0, MAX_VISIBLE_DEPARTURES);
   const [rideCandidateKey, setRideCandidateKey] = useState("");
+  const handledBoardingRequestRef = useRef(0);
   // The departure the open get-off setup belongs to, as last listed, and the
   // board time of the answer that listed it.
   const [setupDeparture, setSetupDeparture] = useState(null);
@@ -282,6 +284,43 @@ function BusStopDisplay({
     [language]
   );
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
+
+  useEffect(() => {
+    const requestId = Number(boardingRequest?.id);
+    if (
+      !Number.isFinite(requestId) ||
+      requestId <= 0 ||
+      handledBoardingRequestRef.current === requestId ||
+      String(boardingRequest?.stopId || "") !== String(stopId) ||
+      !selectedJourney
+    ) {
+      return;
+    }
+
+    const selectedIndex = visibleArrivals.findIndex((arrival) =>
+      arrivalMatchesActiveJourney(arrival, selectedJourney)
+    );
+    const rideKey = selectedIndex >= 0 ? rowKeys[selectedIndex] : "";
+    const arrival = selectedIndex >= 0 ? visibleArrivals[selectedIndex] : null;
+    if (!rideKey || String(arrival?.tripref || "") !== boardingRequest.tripRef) {
+      return;
+    }
+
+    handledBoardingRequestRef.current = requestId;
+    setRideCandidateKey(rideKey);
+    globalThis.requestAnimationFrame?.(() => {
+      globalThis.document
+        ?.getElementById("ride-setup-title")
+        ?.focus({ preventScroll: true });
+    });
+  }, [
+    boardingRequest,
+    rowKeys,
+    selectedJourney,
+    stopId,
+    visibleArrivals,
+  ]);
+
   const { fitsByRowKey: destinationFitsByKey, state: destinationFitState } =
     useDestinationBoardFits({
       stopId,
