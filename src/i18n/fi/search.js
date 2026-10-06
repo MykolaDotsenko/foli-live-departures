@@ -175,6 +175,11 @@ export default {
 
   // Active pre-boarding journey
   "Active journey": "Aktiivinen matka",
+  "Your bus is arriving": "Bussisi on saapumassa",
+  "Board line {line}. Confirm only after you are on the bus.": "Nouse linjalle {line}. Vahvista vasta, kun olet bussissa.",
+  "Your exit stop is already selected from this journey.": "Poistumispysäkki on jo valittu tältä matkalta.",
+  "Guide me with radar": "Opasta minut tutkalla",
+  "I'm on the bus": "Olen bussissa",
   "Choose another route": "Valitse toinen reitti",
   "Wait for line {line}": "Odota linjaa {line}",
   "Walk to {stop}": "Kävele pysäkille {stop}",
