@@ -267,20 +267,12 @@ function NearbyStops({
     destination && activeStopId
       ? stopsById.get(String(activeStopId)) || null
       : null;
-  // A stop-first journey already has an explicit origin. Feed the existing
-  // nearby/routing intelligence the stop's coordinates without pretending
-  // they are the passenger's GPS position.
-  const planningOrigin = useMemo(
-    () =>
-      activeOriginStop && hasCoordinates(activeOriginStop)
-        ? {
-            lat: Number(activeOriginStop.lat),
-            lon: Number(activeOriginStop.lon),
-            accuracy: 0,
-          }
-        : position,
-    [activeOriginStop, position]
-  );
+  // A stop-first journey already has an explicit origin. Use that stop's
+  // coordinates directly; it is not presented as a GPS fix.
+  const planningOrigin =
+    activeOriginStop && hasCoordinates(activeOriginStop)
+      ? activeOriginStop
+      : position;
   const baseNearbyStops = useMemo(
     () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
     [planningOrigin, stops]
@@ -300,7 +292,7 @@ function NearbyStops({
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
     destination,
-    positionAccuracy: planningOrigin?.accuracy ?? null,
+    positionAccuracy: activeOriginStop ? 0 : position?.accuracy ?? null,
     timeConstraint,
   });
 
@@ -406,7 +398,7 @@ function NearbyStops({
       originStops: nearbyStops,
       allStops: stops,
       destination,
-      positionAccuracy: planningOrigin?.accuracy ?? null,
+      positionAccuracy: activeOriginStop ? 0 : position?.accuracy ?? null,
       timeConstraint,
       routingPreference,
     });
@@ -592,24 +584,20 @@ function NearbyStops({
     nearestChoiceIsAmbiguous(nearbyStops, position.accuracy);
   const locationDataLoading =
     coordinatesStatus === "loading" && !hasStopCoordinates;
-  const positionCanStartJourney =
-    Boolean(position) &&
-    !lowAccuracy &&
-    insideServiceArea !== false &&
-    !isFarFromNetwork;
   const needsOriginDecision =
     Boolean(destination) &&
     !activeOriginStop &&
-    !positionCanStartJourney;
+    (!position ||
+      lowAccuracy ||
+      insideServiceArea === false ||
+      isFarFromNetwork);
 
   let locationNotice = "";
-  if (activeOriginStop) {
-    locationNotice = "";
-  } else if (lowAccuracy) {
+  if (!activeOriginStop && lowAccuracy) {
     locationNotice = t(
       "Your location is approximate, so compare the nearby options before choosing."
     );
-  } else if (insideServiceArea === false) {
+  } else if (!activeOriginStop && insideServiceArea === false) {
     locationNotice = t(
       "Your location appears outside Föli’s published service area. Nearby stops are shown for reference, but none was selected automatically."
     );
@@ -641,7 +629,7 @@ function NearbyStops({
               : t("Near you")}
           </h2>
           <p className={styles.description}>
-            {destination && (position || activeOriginStop)
+            {destination && planningOrigin
               ? t("Tap a stop to see when its buses leave.")
               : t("Uses your location once. It isn’t saved.")}{" "}
             <span id="stop-radar-hint">
@@ -813,8 +801,7 @@ function NearbyStops({
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
               stopsById={stopsById}
-              showBoardingConfidence={!activeOriginStop}
-              showAccessDistance={!activeOriginStop}
+              showAccess={!activeOriginStop}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
@@ -847,7 +834,7 @@ function NearbyStops({
               <TransferJourneyOptions
                 options={transferJourneyOptions}
                 destinationLabel={destinationLabel}
-                showAccessDistance={!activeOriginStop}
+                showAccess={!activeOriginStop}
                 onSelectJourney={onSelectTransferJourney}
               />
             )}
