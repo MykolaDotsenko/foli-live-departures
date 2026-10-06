@@ -186,7 +186,6 @@ export default {
   "When you get to the transfer stop, tap “I'm at the stop”.":
     "Kun olet vaihtopysäkillä, napauta ”Olen pysäkillä”.",
   "Wait here for line {line}.": "Odota tässä linjaa {line}.",
-    "Kun linja {line} saapuu, avaa valittu lähtö ja käynnistä poistumishälytys.",
   "Show line {line} departure": "Näytä linjan {line} lähtö",
   "To {destination}": "Määränpää {destination}",
   "Leaves {due}": "Lähtö {due}",
@@ -197,7 +196,6 @@ export default {
     "Kun olet pysäkillä, napauta ”Olen pysäkillä”.",
   "Your selected bus is pinned first in the departure board.":
     "Valitsemasi bussi on kiinnitetty lähtötaulun ensimmäiseksi.",
-    "Kun nouset kyytiin, käytä kyseisen lähdön Poistumishälytystä. Ride Mode vastaa sen jälkeen matkasta.",
   "Your selected bus was cancelled.": "Valitsemasi bussi peruttiin.",
   "Your selected bus is no longer a reliable option.":
     "Valitsemasi bussi ei ole enää luotettava vaihtoehto.",
