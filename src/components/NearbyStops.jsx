@@ -806,6 +806,7 @@ function NearbyStops({
             onOpenStop(id);
           }}
           onClose={closeRadar}
+          showFallbackClose={false}
         />
       )}
 
