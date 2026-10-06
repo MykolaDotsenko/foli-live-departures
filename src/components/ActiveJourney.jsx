@@ -354,24 +354,26 @@ export default function ActiveJourney({
                 })
               : t("Your selected bus is pinned first in the departure board.")}
           </p>
-          <p className={styles.note}>
-            {hasFutureLeg
-              ? itinerary?.totalLegs > 2
-                ? t(
-                    "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
-                  )
-                : t(
-                    "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
-                  )
-              : continuationLeg
-                ? t(
-                    "When line {line} arrives, open the selected departure and start the Get-off alert.",
-                    { line: journey.lineRef || "—" }
-                  )
-                : t(
-                    "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-                  )}
-          </p>
+          {!busApproaching && (
+            <p className={styles.note}>
+              {hasFutureLeg
+                ? itinerary?.totalLegs > 2
+                  ? t(
+                      "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
+                    )
+                  : t(
+                      "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
+                    )
+                : continuationLeg
+                  ? t(
+                      "When line {line} arrives, open the selected departure and start the Get-off alert.",
+                      { line: journey.lineRef || "—" }
+                    )
+                  : t(
+                      "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+                    )}
+            </p>
+          )}
         </>
       )}
 
