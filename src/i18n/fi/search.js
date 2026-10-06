@@ -97,11 +97,6 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
-  "Starting from {stop}": "Lähtöpaikka: {stop}",
-  "Start from where you are?": "Lähdetäänkö nykyisestä sijainnistasi?",
-  "The open stop is your journey start.": "Avoinna oleva pysäkki on matkasi lähtöpysäkki.",
-  "Use your location once, or choose a starting stop. It isn’t saved.":
-    "Käytä sijaintiasi kerran tai valitse lähtöpysäkki. Sijaintia ei tallenneta.",
   "Choose a starting stop": "Valitse lähtöpysäkki",
             "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
