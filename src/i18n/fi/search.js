@@ -103,6 +103,7 @@ export default {
   "Tap a stop to see when its buses leave.":
     "Napauta pysäkkiä, niin näet sen lähdöt.",
   "Nearby stop sorting": "Lähipysäkkien järjestys",
+  "Compare nearby stops": "Vertaa lähipysäkkejä",
   "Best for {destination}": "Paras määränpäähän {destination}",
   "Checking routes…": "Tarkistetaan reittejä…",
   "Checking which buses go to {destination}…":
