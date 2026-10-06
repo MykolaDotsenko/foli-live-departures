@@ -33,7 +33,6 @@ export default {
   "e.g. Kauppatori": "напр. Kauppatori",
   "Use my location": "Використати моє місцезнаходження",
   "Find nearest stop": "Знайти найближчу зупинку",
-  "Choose a stop by name": "Вибрати зупинку за назвою",
   "Show departures": "Показати відправлення",
   Show: "Показати",
   "Matching bus stops": "Зупинки, що відповідають пошуку",
