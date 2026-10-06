@@ -166,6 +166,7 @@ export default {
   // Setup
   "Set up get-off alerts": "Aseta pysäkkihälytys",
   "Where do you want to get off?": "Millä pysäkillä jäät pois?",
+  "Change stop": "Vaihda pysäkkiä",
   "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP.":
     "Valitse pysäkkisi ja pidä tämä sivu auki ääni päällä. Sitä ei tarvitse katsoa: kerromme, kun on aika painaa STOP-nappia.",
   Cancel: "Peruuta",
