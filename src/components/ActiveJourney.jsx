@@ -222,14 +222,12 @@ export default function ActiveJourney({
 
   if (!journey) return null;
 
-  const secondsToDeparture =
-    Number(journey.departureAt) - Math.floor(nowMs / 1000);
-  const busApproaching =
+  const canBoard =
     journey.phase === "waiting" &&
     monitoringState === "active" &&
     boardingAvailable &&
-    Number.isFinite(secondsToDeparture) &&
-    Math.abs(secondsToDeparture) <= 120;
+    Math.abs(Number(journey.departureAt) - nowMs / 1000) <= 120 &&
+    onBoard;
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
@@ -354,7 +352,7 @@ export default function ActiveJourney({
                 })
               : t("Your selected bus is pinned first in the departure board.")}
           </p>
-          {!busApproaching && (
+          {!canBoard && (
             <p className={styles.note}>
               {hasFutureLeg
                 ? itinerary?.totalLegs > 2
@@ -455,13 +453,13 @@ export default function ActiveJourney({
               <button
                 type="button"
                 className={styles.primaryButton}
-                onClick={busApproaching && onBoard ? onBoard : onShowDeparture}
+                onClick={canBoard || onShowDeparture}
               >
-                {busApproaching && onBoard
+                {canBoard
                   ? t("I'm on the bus")
                   : showDepartureLabel}
               </button>
-              {busApproaching && onBoard && (
+              {canBoard && (
                 <button
                   type="button"
                   className={styles.ghostButton}
