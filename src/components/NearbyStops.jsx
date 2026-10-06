@@ -269,10 +269,12 @@ function NearbyStops({
       : null;
   // A stop-first journey already has an explicit origin. Use that stop's
   // coordinates directly; it is not presented as a GPS fix.
-  const planningOrigin =
-    activeOriginStop && hasCoordinates(activeOriginStop)
-      ? activeOriginStop
-      : position;
+  const planningOrigin = hasCoordinates(activeOriginStop)
+    ? activeOriginStop
+    : position;
+  const planningAccuracy = activeOriginStop
+    ? 0
+    : position?.accuracy ?? null;
   const baseNearbyStops = useMemo(
     () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
     [planningOrigin, stops]
@@ -292,7 +294,7 @@ function NearbyStops({
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
     destination,
-    positionAccuracy: activeOriginStop ? 0 : position?.accuracy ?? null,
+    positionAccuracy: planningAccuracy,
     timeConstraint,
   });
 
@@ -398,7 +400,7 @@ function NearbyStops({
       originStops: nearbyStops,
       allStops: stops,
       destination,
-      positionAccuracy: activeOriginStop ? 0 : position?.accuracy ?? null,
+      positionAccuracy: planningAccuracy,
       timeConstraint,
       routingPreference,
     });
@@ -805,7 +807,7 @@ function NearbyStops({
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
               stopsById={stopsById}
-              showAccess={!activeOriginStop}
+              access={!activeOriginStop}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
@@ -838,7 +840,7 @@ function NearbyStops({
               <TransferJourneyOptions
                 options={transferJourneyOptions}
                 destinationLabel={destinationLabel}
-                showAccess={!activeOriginStop}
+                access={!activeOriginStop}
                 onSelectJourney={onSelectTransferJourney}
               />
             )}
