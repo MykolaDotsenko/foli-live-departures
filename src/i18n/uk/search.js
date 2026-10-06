@@ -108,6 +108,9 @@ export default {
   Best: "Найкраще",
   "Nearby Föli stops for {destination}": "Зупинки Föli поруч для {destination}",
   "Compare nearby stops": "Порівняти зупинки поруч",
+  "A nearby stop has a meaningfully better option to {destination}.":
+    "Із сусідньої зупинки є суттєво кращий варіант до {destination}.",
+  "Open {stop}": "Відкрити {stop}",
   "Direct options": "Прямі варіанти",
   "Trip details": "Деталі поїздки",
   "Best ways to {destination}": "Найкращі варіанти до {destination}",
