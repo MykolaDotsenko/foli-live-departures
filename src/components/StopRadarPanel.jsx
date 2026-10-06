@@ -1,48 +1,6 @@
-import {
-  Component,
-  lazy,
-  Suspense,
-  useEffect,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import { requestCompassPermission } from "../utils/stopRadar";
-
-const lazyStopRadar = () => lazy(() => import("./StopRadar"));
-
-export class RadarLoadBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { failed: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onFailed?.();
-  }
-
-  render() {
-    if (!this.state.failed) return this.props.children;
-    return (
-      <div>
-        <p role="alert">
-          {t("Stop radar couldn’t open. Check your connection, then try again.")}
-        </p>
-        <button type="button" onClick={this.props.onRetry}>
-          {t("Open stop radar")}
-        </button>
-        {this.props.showClose && (
-          <button type="button" onClick={this.props.onClose}>
-            {t("Close stop radar")}
-          </button>
-        )}
-      </div>
-    );
-  }
-}
 
 export default function StopRadarPanel({
   stops,
@@ -54,39 +12,61 @@ export default function StopRadarPanel({
   onClose,
   showFallbackClose = true,
 }) {
-  const [Radar, setRadar] = useState(() => lazyStopRadar());
+  const [Radar, setRadar] = useState(null);
+  const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [compassPermission, setCompassPermission] = useState("pending");
 
   useEffect(() => {
-    setCompassPermission("pending");
+    let active = true;
+    setRadar(null);
+    setFailed(false);
+    import("./StopRadar")
+      .then((module) => {
+        if (active) setRadar(() => module.default);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [attempt]);
+
+  useEffect(() => {
     void requestCompassPermission().then(setCompassPermission);
   }, []);
 
-  const retry = () => {
-    setRadar(() => lazyStopRadar());
-    setAttempt((value) => value + 1);
-  };
+  if (failed) {
+    return (
+      <div>
+        <p role="alert">
+          {t("Stop radar couldn’t open. Check your connection, then try again.")}
+        </p>
+        <button type="button" onClick={() => setAttempt((value) => value + 1)}>
+          {t("Open stop radar")}
+        </button>
+        {showFallbackClose && (
+          <button type="button" onClick={onClose}>
+            {t("Close stop radar")}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  if (!Radar) return <p role="status">{t("Opening stop radar…")}</p>;
 
   return (
-    <RadarLoadBoundary
-      key={attempt}
-      onRetry={retry}
+    <Radar
+      stops={stops}
+      initialTargetStopId={initialTargetStopId}
+      recommendedTargetStopId={recommendedTargetStopId}
+      activeStopId={activeStopId}
+      compassPermission={compassPermission}
+      onPosition={onPosition}
+      onOpenStop={onOpenStop}
       onClose={onClose}
-      showClose={showFallbackClose}
-    >
-      <Suspense fallback={<p role="status">{t("Opening stop radar…")}</p>}>
-        <Radar
-          stops={stops}
-          initialTargetStopId={initialTargetStopId}
-          recommendedTargetStopId={recommendedTargetStopId}
-          activeStopId={activeStopId}
-          compassPermission={compassPermission}
-          onPosition={onPosition}
-          onOpenStop={onOpenStop}
-          onClose={onClose}
-        />
-      </Suspense>
-    </RadarLoadBoundary>
+    />
   );
 }
