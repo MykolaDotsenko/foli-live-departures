@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -461,12 +461,5 @@ test("explicit journey boarding opens the selected bus setup with its exit prefi
   expect(setupPanels()).toHaveLength(1);
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
 
-  await act(async () => {
-    await new Promise((resolve) =>
-      globalThis.requestAnimationFrame
-        ? globalThis.requestAnimationFrame(resolve)
-        : setTimeout(resolve, 0)
-    );
-  });
-  expect(heading).toHaveFocus();
+  await waitFor(() => expect(heading).toHaveFocus());
 });
