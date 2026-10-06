@@ -1,5 +1,9 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
+import {
+  forgetPositionForTests,
+  rememberPosition,
+} from "../utils/sessionPosition";
 
 const nearbyHook = vi.hoisted(() => ({
   useDestinationAwareNearby: vi.fn(),
@@ -31,6 +35,7 @@ const originalGeolocation = Object.getOwnPropertyDescriptor(
 );
 
 afterEach(() => {
+  forgetPositionForTests();
   vi.restoreAllMocks();
   if (originalGeolocation) {
     Object.defineProperty(navigator, "geolocation", originalGeolocation);
@@ -97,7 +102,7 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
   ).not.toBeInTheDocument();
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Find nearest stop" })
+    screen.getByRole("button", { name: "Use my location" })
   );
 
   const group = await screen.findByRole("group", {
@@ -163,7 +168,7 @@ test("says which part of an uncertain stop is unknown", async () => {
       onSelect={() => {}}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
 
   expect(
     await screen.findByText("Couldn’t check where these buses go")
@@ -221,7 +226,7 @@ test("a chosen option carries the accuracy of the fix it was measured from", asy
       onSelectJourney={onSelectJourney}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
 
   const options = await screen.findByRole("region", {
     name: "Best ways to Home stop",
@@ -262,7 +267,7 @@ test("with location refused, a destination still has a way to say where the jour
     </>
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
   expect(
     await screen.findByText(/Location access is blocked/)
   ).toBeInTheDocument();
@@ -270,9 +275,132 @@ test("with location refused, a destination still has a way to say where the jour
   // Before, the error was all there was: a destination with location off
   // led nowhere.
   fireEvent.click(
-    screen.getByRole("button", { name: "Choose a stop by name" })
+    screen.getByRole("button", { name: "Choose a starting stop" })
   );
   expect(screen.getByRole("textbox", { name: "Find your stop" })).toHaveFocus();
+});
+
+test("reuses a precise recent explicit location without prompting again", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {},
+  });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+  rememberPosition({
+    lat: 60.4518,
+    lon: 22.2666,
+    accuracy: 20,
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(
+    await screen.findByText("Location found · ±20 m")
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { name: "Nearby stops for Home stop" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Update location" })
+  ).toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+});
+
+test("does not reuse an approximate remembered location as a journey origin", () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+  rememberPosition({
+    lat: 60.4518,
+    lon: 22.2666,
+    accuracy: 800,
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Start from where you are?" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Use my location" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Choose a starting stop" })
+  ).toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+});
+
+test("uses the open stop as origin before any remembered or new GPS position", () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition,
+      watchPosition: vi.fn(),
+      clearWatch: vi.fn(),
+    },
+  });
+  rememberPosition({
+    lat: 60.4518,
+    lon: 22.2666,
+    accuracy: 10,
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Starting from Closer wrong side" })
+  ).toBeInTheDocument();
+  expect(screen.getByText("The open stop is your journey start.")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Use my location" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Choose a starting stop" })
+  ).not.toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(
+    screen.getByRole("button", { name: "Open stop radar" })
+  ).toBeInTheDocument();
 });
 
 test("offers the stop search only while there is no stop to start from", () => {
@@ -292,7 +420,7 @@ test("offers the stop search only while there is no stop to start from", () => {
   // Without a destination the stop search needs no pointer: it is what the
   // page leads with.
   expect(
-    screen.queryByRole("button", { name: "Choose a stop by name" })
+    screen.queryByRole("button", { name: "Choose a starting stop" })
   ).not.toBeInTheDocument();
 
   // With a board open, the journey starts from that stop and its board
@@ -307,6 +435,6 @@ test("offers the stop search only while there is no stop to start from", () => {
     />
   );
   expect(
-    screen.queryByRole("button", { name: "Choose a stop by name" })
+    screen.queryByRole("button", { name: "Choose a starting stop" })
   ).not.toBeInTheDocument();
 });
