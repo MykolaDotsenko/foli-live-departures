@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { forgetPositionForTests } from "../utils/sessionPosition";
+import { forgetPositionForTests, rememberPosition } from "../utils/sessionPosition";
 
 const nearbyHook = vi.hoisted(() => ({
   useDestinationAwareNearby: vi.fn(),
@@ -275,6 +275,84 @@ test("with location refused, a destination still has a way to say where the jour
     screen.getByRole("button", { name: "Choose a starting stop" })
   );
   expect(screen.getByRole("textbox", { name: "Find your stop" })).toHaveFocus();
+});
+
+test("reuses a recent accurate fix after destination search without asking again", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {},
+  });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition,
+      watchPosition: vi.fn(),
+      clearWatch: vi.fn(),
+    },
+  });
+  rememberPosition({
+    lat: 60.4518,
+    lon: 22.2666,
+    accuracy: 20,
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  await waitFor(() => {
+    expect(
+      screen.getByRole("heading", { name: "Nearby stops for Home stop" })
+    ).toBeInTheDocument();
+  });
+  expect(
+    screen.getByRole("button", { name: "Update location" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Use my location" })
+  ).not.toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+  expect(nearbyHook.useDestinationAwareNearby).toHaveBeenLastCalledWith(
+    expect.objectContaining({ positionAccuracy: 20 })
+  );
+});
+
+test("does not reuse a recent fix when its accuracy is too weak", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  rememberPosition({
+    lat: 60.4518,
+    lon: 22.2666,
+    accuracy: 120,
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  await waitFor(() => {
+    expect(
+      screen.getByRole("button", { name: "Use my location" })
+    ).toBeInTheDocument();
+  });
+  expect(
+    screen.getByRole("heading", { name: "Near you" })
+  ).toBeInTheDocument();
 });
 
 test("uses the open stop as origin without requesting GPS", () => {
