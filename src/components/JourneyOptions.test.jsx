@@ -355,6 +355,7 @@ test("a selected origin stop does not pretend the passenger is physically there"
 
   expect(screen.getByText(/Line 18/)).toBeInTheDocument();
   expect(screen.queryByText(/you’re at its stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/to stop/i)).not.toBeInTheDocument();
   expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
 });
 
