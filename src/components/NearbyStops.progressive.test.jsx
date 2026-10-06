@@ -10,6 +10,7 @@ vi.mock("../hooks/useDestinationAwareNearby", () => ({
 }));
 
 import { resetLanguageForTests } from "../i18n";
+import { forgetPositionForTests } from "../utils/sessionPosition";
 import NearbyStops from "./NearbyStops";
 
 const destination = {
@@ -37,6 +38,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  forgetPositionForTests();
   resetLanguageForTests("en");
   vi.restoreAllMocks();
   if (originalGeolocation) {
