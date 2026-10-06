@@ -771,6 +771,7 @@ function App() {
             stop={selectedJourneyStop}
             online={online}
             monitoringState={selectedJourneyMonitoringState}
+            boardingAvailable={Boolean(selectedJourneyArrival)}
             onConfirmAtStop={confirmJourneyAtStop}
             onShowDeparture={showSelectedJourneyDeparture}
             onBoard={confirmJourneyBoarding}
