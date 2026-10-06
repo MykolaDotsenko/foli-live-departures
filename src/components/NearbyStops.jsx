@@ -444,8 +444,12 @@ function NearbyStops({
   const activeStopHasCoordinates = stops.some(
     (stop) => stop.id === activeStopId && hasCoordinates(stop)
   );
+  const recommendedRadarTargetId = activeOriginStop
+    ? activeStopId
+    : bestStopId;
   const initialRadarTargetId =
-    bestStopId || (activeStopHasCoordinates ? activeStopId : "");
+    recommendedRadarTargetId ||
+    (activeStopHasCoordinates ? activeStopId : "");
 
   const openRadar = () => {
     if (!hasStopCoordinates || !liveRadarSupported) return;
@@ -724,7 +728,7 @@ function NearbyStops({
             <StopRadar
               stops={stops}
               initialTargetStopId={initialRadarTargetId}
-              recommendedTargetStopId={bestStopId}
+              recommendedTargetStopId={recommendedRadarTargetId}
               activeStopId={activeStopId}
               compassPermission={compassPermission}
               onPosition={(nextPosition) => {
