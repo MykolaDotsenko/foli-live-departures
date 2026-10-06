@@ -284,10 +284,6 @@ function NearbyStops({
     geolocationSupported &&
     typeof navigator.geolocation?.watchPosition === "function";
 
-  const baseNearbyStops = useMemo(
-    () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
-    [planningOrigin, stops]
-  );
   const stopsById = useMemo(
     () => new Map(stops.map((stop) => [String(stop.id), stop])),
     [stops]
@@ -299,14 +295,21 @@ function NearbyStops({
   // A stop-first journey already has an explicit origin. Feed the existing
   // nearby/routing intelligence the stop's coordinates without pretending
   // they are the passenger's GPS position.
-  const planningOrigin =
-    activeOriginStop && hasCoordinates(activeOriginStop)
-      ? {
-          lat: Number(activeOriginStop.lat),
-          lon: Number(activeOriginStop.lon),
-          accuracy: 0,
-        }
-      : position;
+  const planningOrigin = useMemo(
+    () =>
+      activeOriginStop && hasCoordinates(activeOriginStop)
+        ? {
+            lat: Number(activeOriginStop.lat),
+            lon: Number(activeOriginStop.lon),
+            accuracy: 0,
+          }
+        : position,
+    [activeOriginStop, position]
+  );
+  const baseNearbyStops = useMemo(
+    () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
+    [planningOrigin, stops]
+  );
 
   useEffect(() => {
     const destinationId = destination?.id || "";
