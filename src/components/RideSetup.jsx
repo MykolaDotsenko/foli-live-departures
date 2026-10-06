@@ -511,7 +511,7 @@ export default function RideSetup({
                 className={styles.close}
                 onClick={() => setChangeStop(true)}
               >
-                {t("Change stop")}
+                {t("Change")}
               </button>
             )}
 
