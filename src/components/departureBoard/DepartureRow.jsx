@@ -306,7 +306,10 @@ function DepartureRow({
               }
               preferredTargetStopSequence={
                 selectedForJourney &&
-                Number.isFinite(Number(selectedJourney?.destinationStopSequence))
+                selectedJourney?.destinationStopSequence !== null &&
+                selectedJourney?.destinationStopSequence !== undefined &&
+                selectedJourney?.destinationStopSequence !== "" &&
+                Number.isFinite(Number(selectedJourney.destinationStopSequence))
                   ? selectedJourney.destinationStopSequence
                   : servesJourneyDestination
                     ? destinationFit.destinationStopSequence
