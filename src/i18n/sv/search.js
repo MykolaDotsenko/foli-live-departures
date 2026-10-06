@@ -37,7 +37,6 @@ export default {
   "e.g. Kauppatori": "t.ex. Kauppatori",
   "Use my location": "Använd min position",
   "Find nearest stop": "Hitta närmaste hållplats",
-  "Choose a stop by name": "Välj hållplats med namn",
   "Show departures": "Visa avgångar",
   Show: "Visa",
   "Matching bus stops": "Matchande busshållplatser",
