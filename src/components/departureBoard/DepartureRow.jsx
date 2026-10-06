@@ -298,15 +298,21 @@ function DepartureRow({
                 });
               }}
               preferredTargetStopId={
-                servesJourneyDestination
-                  ? destinationFit.destinationStopId
-                  : ""
+                selectedForJourney && selectedJourney?.destinationStopId
+                  ? selectedJourney.destinationStopId
+                  : servesJourneyDestination
+                    ? destinationFit.destinationStopId
+                    : ""
               }
               preferredTargetStopSequence={
-                servesJourneyDestination
-                  ? destinationFit.destinationStopSequence
-                  : null
+                selectedForJourney &&
+                Number.isFinite(Number(selectedJourney?.destinationStopSequence))
+                  ? selectedJourney.destinationStopSequence
+                  : servesJourneyDestination
+                    ? destinationFit.destinationStopSequence
+                    : null
               }
+              journeyDriven={selectedForJourney}
               onStart={(config) => {
                 const replacingAnotherRide =
                   Boolean(activeRideTripRef) &&
