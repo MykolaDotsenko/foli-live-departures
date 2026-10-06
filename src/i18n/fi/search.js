@@ -123,10 +123,12 @@ export default {
   Best: "Paras",
   "Nearby Föli stops for {destination}":
     "Fölin lähipysäkit määränpäähän {destination}",
+  "Compare nearby stops": "Vertaa lähipysäkkejä",
 
 
   // Direct journey alternatives
   "Direct options": "Suorat vaihtoehdot",
+  "Trip details": "Matkan tiedot",
   "Best ways to {destination}": "Parhaat tavat määränpäähän {destination}",
   "1 option": "1 vaihtoehto",
   "{count} options": "{count} vaihtoehtoa",
