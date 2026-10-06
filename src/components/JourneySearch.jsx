@@ -113,6 +113,7 @@ function planSummary(timeConstraint, routingPreference) {
 
 export default function JourneySearch({
   compact = false,
+  homeEntry = false,
   stops,
   places,
   destination,
@@ -570,7 +571,7 @@ export default function JourneySearch({
     >
       <div className={styles.headingRow}>
         <div>
-          <p className={styles.kicker}>{t("Journey")}</p>
+          {!homeEntry && <p className={styles.kicker}>{t("Journey")}</p>}
           <h2 id="journey-search-title">{t("Where do you want to go?")}</h2>
         </div>
         {destination && (
@@ -805,15 +806,19 @@ export default function JourneySearch({
           </button>
         </div>
 
-        <p className={styles.help}>
-          {t("Choose Home, Work, School, a Föli stop, address or place.")}
-        </p>
-        {directPlaceSearchEnabled ? (
-          <p className={styles.privacyNote}>
-            {t(
-              "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session."
-            )}
+        {!homeEntry && (
+          <p className={styles.help}>
+            {t("Choose Home, Work, School, a Föli stop, address or place.")}
           </p>
+        )}
+        {directPlaceSearchEnabled ? (
+          !homeEntry && (
+            <p className={styles.privacyNote}>
+              {t(
+                "Stop suggestions stay on this device. Place/address text is sent to OpenStreetMap only after you press Search; repeated searches are cached only for this browser session."
+              )}
+            </p>
+          )
         ) : (
           <>
             <div className={styles.handoff}>
