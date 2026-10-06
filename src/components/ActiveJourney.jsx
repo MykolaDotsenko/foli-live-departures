@@ -222,12 +222,14 @@ export default function ActiveJourney({
 
   if (!journey) return null;
 
+  const departureAt = Number(journey.departureAt);
   const canBoard =
     journey.phase === "waiting" &&
     monitoringState === "active" &&
     boardingAvailable &&
-    Math.abs(Number(journey.departureAt) - nowMs / 1000) <= 120 &&
-    onBoard;
+    Number.isFinite(departureAt) &&
+    Math.abs(departureAt - nowMs / 1000) <= 120 &&
+    typeof onBoard === "function";
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
@@ -453,7 +455,7 @@ export default function ActiveJourney({
               <button
                 type="button"
                 className={styles.primaryButton}
-                onClick={canBoard || onShowDeparture}
+                onClick={canBoard ? onBoard : onShowDeparture}
               >
                 {canBoard
                   ? t("I'm on the bus")
