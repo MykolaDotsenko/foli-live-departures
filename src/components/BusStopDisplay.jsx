@@ -284,39 +284,30 @@ function BusStopDisplay({
     [language]
   );
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
+  const selectedJourneyIndex =
+    selectedJourney?.stopId === stopId
+      ? visibleArrivals.findIndex((arrival) =>
+          arrivalMatchesActiveJourney(arrival, selectedJourney)
+        )
+      : -1;
+  const selectedJourneyRideKey = rowKeys[selectedJourneyIndex] || "";
 
   useEffect(() => {
-    const requestId = Number(boardingRequest);
     if (
-      !Number.isFinite(requestId) ||
-      requestId <= 0 ||
-      handledBoardingRequestRef.current === requestId ||
-      String(selectedJourney?.stopId || "") !== String(stopId)
+      !boardingRequest ||
+      handledBoardingRequestRef.current === boardingRequest ||
+      !selectedJourneyRideKey
     ) {
       return;
     }
-
-    const selectedIndex = visibleArrivals.findIndex((arrival) =>
-      arrivalMatchesActiveJourney(arrival, selectedJourney)
-    );
-    const rideKey = selectedIndex >= 0 ? rowKeys[selectedIndex] : "";
-    const arrival = selectedIndex >= 0 ? visibleArrivals[selectedIndex] : null;
-    if (!rideKey || !arrival) return;
-
-    handledBoardingRequestRef.current = requestId;
-    setRideCandidateKey(rideKey);
-    globalThis.requestAnimationFrame?.(() => {
+    handledBoardingRequestRef.current = boardingRequest;
+    setRideCandidateKey(selectedJourneyRideKey);
+    globalThis.requestAnimationFrame?.(() =>
       globalThis.document
         ?.getElementById("ride-setup-title")
-        ?.focus({ preventScroll: true });
-    });
-  }, [
-    boardingRequest,
-    rowKeys,
-    selectedJourney,
-    stopId,
-    visibleArrivals,
-  ]);
+        ?.focus({ preventScroll: true })
+    );
+  }, [boardingRequest, selectedJourneyRideKey]);
 
   const { fitsByRowKey: destinationFitsByKey, state: destinationFitState } =
     useDestinationBoardFits({
@@ -330,9 +321,7 @@ function BusStopDisplay({
     arrival,
     rowKey: rowKeys[index],
     fit: destinationFitsByKey[rowKeys[index]] || null,
-    selected:
-      selectedJourney?.stopId === stopId &&
-      arrivalMatchesActiveJourney(arrival, selectedJourney),
+    selected: index === selectedJourneyIndex,
     originalIndex: index,
   }));
 
