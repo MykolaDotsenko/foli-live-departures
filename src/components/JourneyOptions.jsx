@@ -29,18 +29,7 @@ function hasFinalWalk(departure) {
   return Number.isFinite(distance) && distance >= 0;
 }
 
-function estimateSourceText(liveState, includesFinalWalk = false) {
-  if (includesFinalWalk) {
-    if (liveState === "live") return t("Live transit + approximate walk");
-    if (liveState === "schedule") {
-      return t("Timetable + approximate walk");
-    }
-    if (liveState === "delayed") {
-      return t("Realtime uncertain + approximate walk");
-    }
-    return t("Transit + approximate walk");
-  }
-
+function estimateSourceText(liveState) {
   if (liveState === "live") return t("Live estimate");
   if (liveState === "schedule") return t("Timetable estimate");
   if (liveState === "delayed") return t("Realtime uncertain");
@@ -121,14 +110,15 @@ function tradeoffText(option, single) {
   return single ? t("The only bus there we found") : "";
 }
 
-// Where to get off, how long on the bus and the walk after it: what the
-// card left to the get-off alert, and a newcomer wants before choosing.
-function exitText(departure, stopsById) {
-  const parts = [];
+function exitStopText(departure, stopsById) {
   const exitStop = stopsById?.get(String(departure?.destinationStopId || ""));
-  if (exitStop) {
-    parts.push(t("Get off at {name}", { name: stopLabel(exitStop) }));
-  }
+  return exitStop
+    ? t("Get off at {name}", { name: stopLabel(exitStop) })
+    : "";
+}
+
+function tripDetailText(departure) {
+  const parts = [];
   const ride = Number(departure?.rideDurationSec);
   if (Number.isFinite(ride) && ride > 0) {
     parts.push(
@@ -197,76 +187,85 @@ export default function JourneyOptions({
 
       <div className={styles.grid}>
         {options.map((option) => {
-          const exit = exitText(option.departure, stopsById);
+          const exit = exitStopText(option.departure, stopsById);
+          const details = tripDetailText(option.departure);
           const tradeoff = tradeoffText(option, !several);
           return (
-            <button
+            <article
               key={option.id}
-              type="button"
               className={styles.card}
               data-primary={
                 ["fastest", "latest-departure"].includes(option.label)
                   ? "true"
                   : undefined
               }
-              onClick={() => {
-                if (onSelectJourney) onSelectJourney(option);
-                else onOpenStop?.(option.stopId);
-              }}
             >
-              {several && (
-                <span className={styles.badge}>{labelText(option.label)}</span>
-              )}
-
-              <span className={styles.arrival}>
-                {hasFinalWalk(option.departure)
-                  ? t("Reach destination about {time}", {
-                      time: formatClock(displayedArrivalAt(option.departure)),
-                    })
-                  : t("Arrive about {time}", {
-                      time: formatClock(displayedArrivalAt(option.departure)),
-                    })}
-              </span>
-
-              <span className={styles.route}>
-                {/* The sign on the bus, so it is the one boarded. */}
-                <strong>
-                  {t("Line {line}", {
-                    line: option.departure.lineRef || "—",
-                  })}
-                  {option.departure.headsign
-                    ? ` → ${option.departure.headsign}`
-                    : ""}
-                </strong>
-                <span aria-hidden="true"> · </span>
-                {t("from {stop}", { stop: option.stopName })}
-              </span>
-
-              {exit && <span className={styles.route}>{exit}</span>}
-
-              <span className={styles.meta}>
-                {formatLeaves(option.departure.departureAt)} ·{" "}
-                {access && (
-                  <>
-                    {formatDistance(option.distanceMeters)} {t("to stop")} ·{" "}
-                  </>
+              <button
+                type="button"
+                className={styles.select}
+                onClick={() => {
+                  if (onSelectJourney) onSelectJourney(option);
+                  else onOpenStop?.(option.stopId);
+                }}
+              >
+                {several && (
+                  <span className={styles.badge}>{labelText(option.label)}</span>
                 )}
-                {estimateSourceText(
-                  option.departure.liveState,
-                  hasFinalWalk(option.departure)
-                )}
-              </span>
 
-              {access && (
-                <span className={styles.decision}>
-                  <strong>{boardingText(option)}</strong>
+                <span className={styles.arrival}>
+                  {hasFinalWalk(option.departure)
+                    ? t("Reach destination about {time}", {
+                        time: formatClock(displayedArrivalAt(option.departure)),
+                      })
+                    : t("Arrive about {time}", {
+                        time: formatClock(displayedArrivalAt(option.departure)),
+                      })}
                 </span>
-              )}
 
-              {tradeoff && (
-                <span className={styles.tradeoff}>{tradeoff}</span>
-              )}
-            </button>
+                <span className={styles.route}>
+                  <strong>
+                    {t("Line {line}", {
+                      line: option.departure.lineRef || "—",
+                    })}
+                    {option.departure.headsign
+                      ? ` → ${option.departure.headsign}`
+                      : ""}
+                  </strong>
+                  <span aria-hidden="true"> · </span>
+                  {t("from {stop}", { stop: option.stopName })}
+                </span>
+
+                {exit && <span className={styles.route}>{exit}</span>}
+
+                <span className={styles.meta}>
+                  {formatLeaves(option.departure.departureAt)}
+                  {access && (
+                    <>
+                      {" · "}
+                      {formatDistance(option.distanceMeters)} {t("to stop")}
+                    </>
+                  )}
+                </span>
+
+                {access && (
+                  <span className={styles.decision}>
+                    <strong>{boardingText(option)}</strong>
+                  </span>
+                )}
+
+                {tradeoff && (
+                  <span className={styles.tradeoff}>{tradeoff}</span>
+                )}
+              </button>
+
+              <details>
+                <summary>{t("Trip details")}</summary>
+                {details && <span>{details}</span>}
+                <span>
+                  {estimateSourceText(option.departure.liveState)}
+                </span>
+              </details>
+            </article>
           );
         })}
       </div>

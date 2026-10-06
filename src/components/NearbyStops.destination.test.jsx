@@ -103,9 +103,15 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     screen.getByRole("button", { name: "Use my location" })
   );
 
+  const comparison = await screen.findByText("Compare nearby stops");
+  const comparisonDetails = comparison.closest("details");
+  expect(comparisonDetails).not.toHaveAttribute("open");
+  fireEvent.click(comparison);
+
   const group = await screen.findByRole("group", {
     name: "Nearby Föli stops for Home stop",
   });
+  expect(comparisonDetails).toHaveAttribute("open");
   expect(
     screen.getByText("Tap a stop to see when its buses leave.")
   ).toBeInTheDocument();
@@ -126,6 +132,44 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
   const nearestOrder = within(group).getAllByRole("button");
   expect(nearestOrder[0]).toHaveAccessibleName(/Closer wrong side, stop 100/i);
   expect(nearestOrder).toHaveLength(3);
+});
+
+test("keeps nearby stops directly visible when no journey choice is trustworthy", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": { status: "no-direct", best: null },
+      "200": { status: "other-direction", best: null },
+      "300": { status: "unavailable", best: null },
+    },
+  });
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: {
+      getCurrentPosition: vi.fn((success) =>
+        success({
+          coords: { latitude: 60.4518, longitude: 22.2666, accuracy: 20 },
+        })
+      ),
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
+
+  const group = await screen.findByRole("group", {
+    name: "Nearby Föli stops for Home stop",
+  });
+  expect(group).toBeVisible();
+  expect(screen.queryByText("Compare nearby stops")).not.toBeInTheDocument();
 });
 
 // "Route suitability is uncertain" said neither what was unknown nor what to
@@ -229,6 +273,19 @@ test("a chosen option carries the accuracy of the fix it was measured from", asy
   const options = await screen.findByRole("region", {
     name: "Best ways to Home stop",
   });
+
+  const comparison = screen.getByText("Compare nearby stops").closest("details");
+  expect(comparison).not.toHaveAttribute("open");
+  const hiddenStops = screen.getByRole("group", {
+    name: "Nearby Föli stops for Home stop",
+    hidden: true,
+  });
+  expect(hiddenStops).not.toBeVisible();
+
+  fireEvent.click(screen.getByText("Compare nearby stops"));
+  expect(comparison).toHaveAttribute("open");
+  expect(hiddenStops).toBeVisible();
+
   fireEvent.click(within(options).getAllByRole("button")[0]);
   expect(onSelectJourney).toHaveBeenCalledWith(
     expect.objectContaining({ stopId: "100", positionAccuracyM: 20 })

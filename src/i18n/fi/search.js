@@ -123,10 +123,12 @@ export default {
   Best: "Paras",
   "Nearby Föli stops for {destination}":
     "Fölin lähipysäkit määränpäähän {destination}",
+  "Compare nearby stops": "Vertaa lähipysäkkejä",
 
 
   // Direct journey alternatives
   "Direct options": "Suorat vaihtoehdot",
+  "Trip details": "Matkan tiedot",
   "Best ways to {destination}": "Parhaat tavat määränpäähän {destination}",
   "1 option": "1 vaihtoehto",
   "{count} options": "{count} vaihtoehtoa",
@@ -343,14 +345,6 @@ export default {
   "final walk ≈ {distance}": "loppukävely ≈ {distance}",
   "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer.":
     "Saapumisaika sisältää likimääräisen loppukävelyn linnuntie-etäisyyden perusteella; todellinen kävelyreitti voi olla pidempi.",
-  "Live transit + approximate walk":
-    "Live-joukkoliikenne + likimääräinen kävely",
-  "Timetable + approximate walk":
-    "Aikataulu + likimääräinen kävely",
-  "Realtime uncertain + approximate walk":
-    "Reaaliaika epävarma + likimääräinen kävely",
-  "Transit + approximate walk":
-    "Joukkoliikenne + likimääräinen kävely",
   "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
     "Loppukävely on linnuntie-etäisyyteen perustuva likimääräinen arvio. Todellinen kävelyreitti voi olla pidempi.",
   "This place appears outside Föli’s service area. Choose a destination inside the Föli area.":

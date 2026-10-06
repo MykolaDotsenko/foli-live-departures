@@ -452,6 +452,7 @@
     color: var(--dm-warn-text);
   }
 
+
   :root[data-theme="dark"] .stopCard {
     border-color: var(--dm-line-strong);
     background: var(--dm-raised);

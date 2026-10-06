@@ -117,8 +117,10 @@ export default {
   Best: "Bäst",
   "Nearby Föli stops for {destination}":
     "Föli-hållplatser nära {destination}",
+  "Compare nearby stops": "Jämför hållplatser i närheten",
 
   "Direct options": "Direktalternativ",
+  "Trip details": "Resedetaljer",
   "Best ways to {destination}": "Bästa sätten till {destination}",
   "1 option": "1 alternativ",
   "{count} options": options,
@@ -332,10 +334,6 @@ export default {
   "final walk ≈ {distance}": "sista gångsträckan ≈ {distance}",
   "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer.":
     "Ankomsten inkluderar en ungefärlig sista gångsträcka baserad på fågelvägsavstånd; den verkliga gångrutten kan vara längre.",
-  "Live transit + approximate walk": "Realtidstrafik + ungefärlig gång",
-  "Timetable + approximate walk": "Tidtabell + ungefärlig gång",
-  "Realtime uncertain + approximate walk": "Osäker realtid + ungefärlig gång",
-  "Transit + approximate walk": "Kollektivtrafik + ungefärlig gång",
   "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
     "Den sista gångsträckan är ungefärlig vägledning baserad på fågelvägsavstånd. Den verkliga gångrutten kan vara längre.",
   "This place appears outside Föli’s service area. Choose a destination inside the Föli area.":

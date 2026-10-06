@@ -196,10 +196,20 @@ test("shows final-walk distance and door-arrival wording for external places", (
   expect(
     screen.getByText(/Reach destination about/i)
   ).toBeInTheDocument();
-  expect(screen.getByText(/final walk ≈ 240 m/i)).toBeInTheDocument();
+  const details = screen.getByText("Trip details").closest("details");
+  expect(details).not.toHaveAttribute("open");
+  expect(screen.getByText(/final walk ≈ 240 m/i)).not.toBeVisible();
   expect(
-    screen.getByText(/Live transit \+ approximate walk/i)
-  ).toBeInTheDocument();
+    screen.getByText(/Live estimate/i)
+  ).not.toBeVisible();
+
+  fireEvent.click(screen.getByText("Trip details"));
+
+  expect(details).toHaveAttribute("open");
+  expect(screen.getByText(/final walk ≈ 240 m/i)).toBeVisible();
+  expect(
+    screen.getByText(/Live estimate/i)
+  ).toBeVisible();
   expect(
     screen.getByText(/real walking route can be longer/i)
   ).toBeInTheDocument();
@@ -272,14 +282,18 @@ test("one option says what to do with it, not that it is the fastest of one", ()
   expect(screen.queryByText(/^\d+ options?$/)).not.toBeInTheDocument();
   expect(screen.queryByText(/Earliest arrival/)).not.toBeInTheDocument();
 
-  // The bus by its sign, where to get off and for how long, when it leaves,
-  // and that missing it means no other bus there.
+  // The decision surface keeps the bus, exit and catchability visible.
+  // Ride duration is secondary evidence behind the disclosure.
   expect(screen.getByText("Line 18 → Runosmäki")).toBeInTheDocument();
-  expect(
-    screen.getByText("Get off at Puistokatu · about 20 min on the bus")
-  ).toBeInTheDocument();
-  expect(screen.getByText(/^Leaves in 5 min · 120 m to stop/)).toBeInTheDocument();
+  expect(screen.getByText("Get off at Puistokatu")).toBeInTheDocument();
+  expect(screen.getByText(/^Leaves in 5 min · 120 m to stop$/)).toBeInTheDocument();
   expect(screen.getByText("The only bus there we found")).toBeInTheDocument();
+
+  const details = screen.getByText("Trip details").closest("details");
+  expect(screen.getByText("about 20 min on the bus")).not.toBeVisible();
+  fireEvent.click(screen.getByText("Trip details"));
+  expect(details).toHaveAttribute("open");
+  expect(screen.getByText("about 20 min on the bus")).toBeVisible();
 });
 
 test("the next bus is offered for missing the first one", () => {
