@@ -69,12 +69,10 @@ function isNearBoardingStop(journey) {
   );
 }
 
-function phaseTitle(journey, busApproaching = false) {
+function phaseTitle(journey) {
   if (journey.phase === "recovery") return t("Choose another route");
   if (journey.phase === "waiting") {
-    return busApproaching
-      ? t("Your bus is arriving")
-      : t("Wait for line {line}", { line: journey.lineRef || "—" });
+    return t("Wait for line {line}", { line: journey.lineRef || "—" });
   }
   if (currentLegUsesSameTransferStop(journey)) {
     return t("Stay at {stop}", { stop: journey.stopName });
@@ -253,7 +251,7 @@ export default function ActiveJourney({
         <div>
           <p className={styles.kicker}>{t("Active journey")}</p>
           <h2 id="active-journey-title" tabIndex={-1}>
-            {phaseTitle(journey, busApproaching)}
+            {phaseTitle(journey)}
           </h2>
         </div>
         <span className={styles.destination}>
@@ -348,35 +346,29 @@ export default function ActiveJourney({
       {journey.phase === "waiting" && (
         <>
           <p className={styles.primaryStatus}>
-            {busApproaching
-              ? t("Board line {line}. Confirm only after you are on the bus.", {
+            {continuationLeg
+              ? t("Wait here for line {line}.", {
                   line: journey.lineRef || "—",
                 })
-              : continuationLeg
-                ? t("Wait here for line {line}.", {
-                    line: journey.lineRef || "—",
-                  })
-                : t("Your selected bus is pinned first in the departure board.")}
+              : t("Your selected bus is pinned first in the departure board.")}
           </p>
           <p className={styles.note}>
-            {busApproaching
-              ? t("Your exit stop is already selected from this journey.")
-              : hasFutureLeg
-                ? itinerary?.totalLegs > 2
-                  ? t(
-                      "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
-                    )
-                  : t(
-                      "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
-                    )
-                : continuationLeg
-                  ? t(
-                      "When line {line} arrives, open the selected departure and start the Get-off alert.",
-                      { line: journey.lineRef || "—" }
-                    )
-                  : t(
-                      "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-                    )}
+            {hasFutureLeg
+              ? itinerary?.totalLegs > 2
+                ? t(
+                    "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
+                  )
+                : t(
+                    "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
+                  )
+              : continuationLeg
+                ? t(
+                    "When line {line} arrives, open the selected departure and start the Get-off alert.",
+                    { line: journey.lineRef || "—" }
+                  )
+                : t(
+                    "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+                  )}
           </p>
         </>
       )}
@@ -437,7 +429,7 @@ export default function ActiveJourney({
                   className={styles.ghostButton}
                   onClick={onGuideWithRadar}
                 >
-                  {t("Guide me with radar")}
+                  {t("Open stop radar")}
                 </button>
               )}
               {walkingUrl && (
