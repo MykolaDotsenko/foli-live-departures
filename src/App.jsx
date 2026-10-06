@@ -668,6 +668,15 @@ function App() {
       />
     );
 
+  const stopServiceAlerts =
+    stopId && (
+      <ServiceAlerts
+        alerts={serviceAlerts}
+        error={serviceAlertsError}
+        receivedAtMs={serviceAlertsReceivedAtMs}
+      />
+    );
+
   return (
     // The header and footer sit beside the main content, not inside it, so
     // they are the page's banner and contentinfo: inside <main> they were
@@ -851,16 +860,11 @@ function App() {
               onSelect={selectSavedStop}
             />
 
+            {stopServiceAlerts}
           </div>
         )}
 
-        {stopId && (
-          <ServiceAlerts
-            alerts={serviceAlerts}
-            error={serviceAlertsError}
-            receivedAtMs={serviceAlertsReceivedAtMs}
-          />
-        )}
+        {selectedJourney && stopServiceAlerts}
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
