@@ -133,18 +133,6 @@
   font-weight: 800;
 }
 
-.details summary {
-  padding: 8px 11px;
-  font-size: 0.72rem;
-  font-weight: 850;
-}
-
-.detailText {
-  display: block;
-  padding: 0 11px 8px;
-  font-size: 0.72rem;
-}
-
 .note {
   margin: 0;
   color: #60736f;
