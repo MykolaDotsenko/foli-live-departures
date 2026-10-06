@@ -60,7 +60,7 @@ function board(arrivals, stop = KAUPPATORI, overrides = {}) {
       placesById={new Map()}
       activeRideTripRef={overrides.activeRideTripRef || ""}
       selectedJourney={overrides.selectedJourney || null}
-      boardingRequest={overrides.boardingRequest || null}
+      boardingRequest={overrides.boardingRequest || 0}
       onStartRide={overrides.onStartRide || (() => {})}
     />
   );
@@ -447,11 +447,7 @@ test("explicit journey boarding opens the selected bus setup with its exit prefi
   render(
     board([departure()], KAUPPATORI, {
       selectedJourney,
-      boardingRequest: {
-        id: 1,
-        stopId: "164",
-        tripRef: "trip-1",
-      },
+      boardingRequest: 1,
     })
   );
 
