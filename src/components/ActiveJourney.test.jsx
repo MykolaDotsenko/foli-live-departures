@@ -210,9 +210,10 @@ test("waiting state points to the pinned selected departure", () => {
     screen.getByText("Your selected bus is pinned first in the departure board.")
   ).toBeInTheDocument();
 
-  expect(
-    screen.queryByRole("button", { name: "Show selected departure" })
-  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show selected departure" })
+  );
+  expect(onShowDeparture).toHaveBeenCalledTimes(1);
 });
 
 test("recovery clearly explains cancellation and preserves explicit choice", () => {
@@ -823,9 +824,7 @@ test("renders second and final legs of a three-leg itinerary without legacy alia
     screen.getByText("Leg 3 of 3 · continue on line 18")
   ).toBeInTheDocument();
   expect(
-    screen.getByText(
-      "When line 18 arrives, open the selected departure and start the Get-off alert."
-    )
+    screen.getByRole("button", { name: "Show line 18 departure" })
   ).toBeInTheDocument();
 });
 
@@ -889,14 +888,13 @@ test("an approaching selected bus asks for explicit boarding confirmation", () =
     )
   ).not.toBeInTheDocument();
 
+  expect(
+    screen.queryByRole("button", { name: "Show selected departure" })
+  ).not.toBeInTheDocument();
+
   fireEvent.click(screen.getByRole("button", { name: "I'm on the bus" }));
   expect(onBoard).toHaveBeenCalledTimes(1);
   expect(onShowDeparture).not.toHaveBeenCalled();
-
-  fireEvent.click(
-    screen.getByRole("button", { name: "Show selected departure" })
-  );
-  expect(onShowDeparture).toHaveBeenCalledTimes(1);
 });
 
 test("does not claim the bus is arriving when live monitoring is degraded", () => {
