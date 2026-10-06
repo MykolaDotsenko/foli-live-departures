@@ -86,6 +86,12 @@ export default {
   Change: "Змінити",
   Clear: "Очистити",
   "Saved destinations": "Збережені пункти призначення",
+  "Starting from {stop}": "Починаємо від {stop}",
+  "Start from where you are?": "Почати з вашого поточного місцезнаходження?",
+  "The open stop is your journey start.": "Відкрита зупинка — початкова зупинка вашого маршруту.",
+  "Use your location once, or choose a starting stop. It isn’t saved.":
+    "Використайте місцезнаходження один раз або виберіть початкову зупинку. Воно не зберігається.",
+  "Choose a starting stop": "Вибрати початкову зупинку",
   "Nearby stops for {destination}": "Зупинки поруч для {destination}",
   "Tap a stop to see when its buses leave.":
     "Натисніть на зупинку, щоб побачити її відправлення.",
