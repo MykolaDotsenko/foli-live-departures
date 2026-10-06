@@ -28,7 +28,10 @@ import {
   nearestChoiceIsAmbiguous,
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
-import { rankDestinationStops } from "../utils/journeyRanking";
+import {
+  materiallyBetterDestinationFit,
+  rankDestinationStops,
+} from "../utils/journeyRanking";
 import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import { directOptionMatchesActiveJourney } from "../utils/activeJourney";
 import styles from "./NearbyStops.module.css";
@@ -481,6 +484,16 @@ function NearbyStops({
     destinationSortedStops.find((stop) =>
       ["good", "tight"].includes(fitsByStop[stop.id]?.status)
     )?.id || "";
+  const betterNearbyStop =
+    activeOriginStop &&
+    bestStopId &&
+    bestStopId !== activeStopId &&
+    materiallyBetterDestinationFit(
+      fitsByStop[activeStopId],
+      fitsByStop[bestStopId]
+    )
+      ? stopsById.get(String(bestStopId)) || null
+      : null;
 
   const activeStopHasCoordinates = stops.some(
     (stop) => stop.id === activeStopId && hasCoordinates(stop)
@@ -914,6 +927,23 @@ function NearbyStops({
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
+          )}
+
+          {betterNearbyStop && (
+            <div className={styles.notice} role="status">
+              <span>
+                {t("A nearby stop has a meaningfully better option to {destination}.", {
+                  destination: destinationLabel,
+                })}
+              </span>{" "}
+              <button
+                type="button"
+                className={styles.noticeButton}
+                onClick={() => onSelect(betterNearbyStop.id)}
+              >
+                {t("Open {stop}", { stop: stopLabel(betterNearbyStop) })}
+              </button>
+            </div>
           )}
 
           {destination && directJourneyOptions.length > 0 && (
