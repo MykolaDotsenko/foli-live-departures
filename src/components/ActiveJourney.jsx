@@ -211,6 +211,7 @@ export default function ActiveJourney({
   stop,
   online = true,
   monitoringState = "active",
+  boardingAvailable = false,
   onConfirmAtStop,
   onShowDeparture,
   onBoard,
@@ -228,6 +229,7 @@ export default function ActiveJourney({
   const busApproaching =
     journey.phase === "waiting" &&
     monitoringState === "active" &&
+    boardingAvailable &&
     Number.isFinite(secondsToDeparture) &&
     secondsToDeparture <= 120 &&
     secondsToDeparture >= -120;
