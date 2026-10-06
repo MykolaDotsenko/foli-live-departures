@@ -748,7 +748,6 @@ function App() {
           >
             <div className="home-entry-heading">
               <h2 id="home-stop-entry-title">{t("Find your stop")}</h2>
-              <p>{t("Search by stop name or number.")}</p>
             </div>
 
             <div className="search-panel">
