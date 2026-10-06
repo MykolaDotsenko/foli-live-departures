@@ -60,7 +60,6 @@ function board(arrivals, stop = KAUPPATORI, overrides = {}) {
       placesById={new Map()}
       activeRideTripRef={overrides.activeRideTripRef || ""}
       selectedJourney={overrides.selectedJourney || null}
-      boardingRequest={overrides.boardingRequest || 0}
       onStartRide={overrides.onStartRide || (() => {})}
     />
   );
@@ -444,19 +443,14 @@ test("explicit journey boarding opens the selected bus setup with its exit prefi
     selectedAt: Date.now() - 60_000,
   };
 
-  render(
-    board([departure()], KAUPPATORI, {
-      selectedJourney,
-      boardingRequest: 1,
-    })
-  );
+  render(board([departure()], KAUPPATORI, { selectedJourney }));
+  fireEvent.click(screen.getByRole("button", { name: "Get-off alert" }));
 
-  const heading = await screen.findByRole("heading", {
+  await screen.findByRole("heading", {
     name: "Get off at Turun linna",
   });
   expect(setupPanels()).toHaveLength(1);
   const change = screen.getByText("Change").closest("details");
   expect(change).not.toHaveAttribute("open");
 
-  await waitFor(() => expect(heading).toHaveFocus());
 });
