@@ -200,7 +200,7 @@ test("shows final-walk distance and door-arrival wording for external places", (
   expect(details).not.toHaveAttribute("open");
   expect(screen.getByText(/final walk ≈ 240 m/i)).not.toBeVisible();
   expect(
-    screen.getByText(/Live transit \+ approximate walk/i)
+    screen.getByText(/Live estimate/i)
   ).not.toBeVisible();
 
   fireEvent.click(screen.getByText("Trip details"));
@@ -208,7 +208,7 @@ test("shows final-walk distance and door-arrival wording for external places", (
   expect(details).toHaveAttribute("open");
   expect(screen.getByText(/final walk ≈ 240 m/i)).toBeVisible();
   expect(
-    screen.getByText(/Live transit \+ approximate walk/i)
+    screen.getByText(/Live estimate/i)
   ).toBeVisible();
   expect(
     screen.getByText(/real walking route can be longer/i)
