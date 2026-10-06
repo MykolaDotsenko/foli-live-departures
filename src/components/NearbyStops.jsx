@@ -36,7 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
-import { rememberPosition } from "../utils/sessionPosition";
+import { recentPosition, rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -267,6 +267,27 @@ function NearbyStops({
     destination && activeStopId
       ? stopsById.get(String(activeStopId)) || null
       : null;
+
+  // Reuse only a location the passenger already asked the app to use, and
+  // only while its accuracy is still good enough for our conservative
+  // auto-origin threshold. This avoids a second permission prompt after
+  // "Nearest to me first" without turning an approximate fix into a claim
+  // about where the passenger is.
+  useEffect(() => {
+    if (!destination || activeOriginStop || position) return;
+    const remembered = recentPosition();
+    if (
+      !remembered ||
+      !Number.isFinite(remembered.accuracy) ||
+      remembered.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
+    ) {
+      return;
+    }
+    setPosition(remembered);
+    setStatus("success");
+    setError("");
+  }, [activeOriginStop, destination, position]);
+
   // A stop-first journey already has an explicit origin. Use that stop's
   // coordinates directly; it is not presented as a GPS fix.
   const planningOrigin = hasCoordinates(activeOriginStop)
