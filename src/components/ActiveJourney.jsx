@@ -233,11 +233,7 @@ export default function ActiveJourney({
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
-  const showDepartureLabel = continuationLeg
-    ? t("Show line {line} departure", { line: journey.lineRef || "—" })
-    : t("Show selected departure");
   const sameTransferStop = currentLegUsesSameTransferStop(journey);
-  const hasFutureLeg = Boolean(itinerary?.next && itinerary?.nextTransfer);
   const walkingUrl =
     online && !sameTransferStop && !isNearBoardingStop(journey)
       ? buildWalkingDirectionsUrl(stop)
@@ -346,35 +342,11 @@ export default function ActiveJourney({
       )}
 
       {journey.phase === "waiting" && (
-        <>
-          <p className={styles.primaryStatus}>
-            {continuationLeg
-              ? t("Wait here for line {line}.", {
-                  line: journey.lineRef || "—",
-                })
-              : t("Your selected bus is pinned first in the departure board.")}
-          </p>
-          {!canBoard && (
-            <p className={styles.note}>
-              {hasFutureLeg
-                ? itinerary?.totalLegs > 2
-                  ? t(
-                      "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
-                    )
-                  : t(
-                      "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
-                    )
-                : continuationLeg
-                  ? t(
-                      "When line {line} arrives, open the selected departure and start the Get-off alert.",
-                      { line: journey.lineRef || "—" }
-                    )
-                  : t(
-                      "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-                    )}
-            </p>
-          )}
-        </>
+        <p className={styles.primaryStatus}>
+          {continuationLeg
+            ? t("Wait here for line {line}.", { line: journey.lineRef || "—" })
+            : t("Your selected bus is pinned first in the departure board.")}
+        </p>
       )}
 
       {journey.phase === "recovery" && (
@@ -451,26 +423,19 @@ export default function ActiveJourney({
 
         {journey.phase === "waiting" &&
           monitoringState !== "paused" && (
-            <>
-              <button
-                type="button"
-                className={styles.primaryButton}
-                onClick={canBoard ? onBoard : onShowDeparture}
-              >
-                {canBoard
-                  ? t("I'm on the bus")
-                  : showDepartureLabel}
-              </button>
-              {canBoard && (
-                <button
-                  type="button"
-                  className={styles.ghostButton}
-                  onClick={onShowDeparture}
-                >
-                  {showDepartureLabel}
-                </button>
-              )}
-            </>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={canBoard ? onBoard : onShowDeparture}
+            >
+              {canBoard
+                ? t("I'm on the bus")
+                : continuationLeg
+                  ? t("Show line {line} departure", {
+                      line: journey.lineRef || "—",
+                    })
+                  : t("Show selected departure")}
+            </button>
           )}
 
         {journey.phase === "recovery" && (
