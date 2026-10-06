@@ -291,7 +291,6 @@ export default {
     "En vald framtida buss ställdes in. Välj ett nytt alternativ.",
   "A committed future bus has probably been missed. Choose a fresh option.":
     "En vald framtida buss har troligen missats. Välj ett nytt alternativ.",
-    "När du stiger på, starta avstigningslarmet för den här etappen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med nästa etapp.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Din andra buss ställdes in. Välj ett nytt alternativ.",
   "Live check: line {line} still looks catchable.":
@@ -310,7 +309,6 @@ export default {
     "Den andra bussen har troligen missats. Välj ett nytt alternativ.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
     "Det valda bytet kan inte längre fortsättas på ett tillförlitligt sätt. Välj ett nytt alternativ.",
-    "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
