@@ -87,8 +87,13 @@ test("destination-first can choose a destination without opening it as the curre
   await destination.fill("Kauppatori");
   await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
 
-  await expect(journey.getByText("Going to")).toBeVisible();
-  await expect(journey.getByText("Kauppatori", { exact: true })).toBeVisible();
+  const selectedDestination = page.getByRole("region", {
+    name: "Journey destination",
+  });
+  await expect(selectedDestination.getByText("Going to")).toBeVisible();
+  await expect(
+    selectedDestination.getByText("Kauppatori", { exact: true })
+  ).toBeVisible();
   await expect(page).not.toHaveURL(/stop=/);
   await expect(
     page.locator('section[aria-labelledby="departures-title"]')
@@ -113,7 +118,7 @@ test("destination selection collapses search and asks for an explicit origin", a
   await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
 
   await expect(
-    journey.getByRole("combobox", { name: "Stop, address or place" })
+    page.getByRole("combobox", { name: "Stop, address or place" })
   ).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "Near you" })
@@ -184,10 +189,13 @@ test("an open stop remains the origin when a destination is added", async ({
     page.getByRole("heading", { name: "Kauppatori", exact: true })
   ).toBeVisible();
 
+  await page
+    .getByRole("region", { name: "Journey" })
+    .getByRole("button", { name: "Where do you want to go?" })
+    .click();
   const journey = page.locator(
     'section[aria-labelledby="journey-search-title"]'
   );
-  await journey.getByRole("button", { name: "Where do you want to go?" }).click();
   const destination = journey.getByRole("combobox", {
     name: "Stop, address or place",
   });
