@@ -1,9 +1,6 @@
 import { t, useLanguage } from "../i18n";
 import { formatDistance } from "../utils/geo";
-import {
-  boardingDecision,
-  directJourneyConfidence,
-} from "../utils/journeyConfidence";
+import { boardingDecision } from "../utils/journeyConfidence";
 import { stopLabel } from "../utils/stopNames";
 import { formatClock, formatLeaves } from "../utils/time";
 import styles from "./JourneyOptions.module.css";
@@ -48,13 +45,6 @@ function estimateSourceText(liveState, includesFinalWalk = false) {
   if (liveState === "schedule") return t("Timetable estimate");
   if (liveState === "delayed") return t("Realtime uncertain");
   return t("Estimate");
-}
-
-function confidenceText(option) {
-  const confidence = directJourneyConfidence(option);
-  if (confidence.level === "high") return t("High confidence");
-  if (confidence.level === "medium") return t("Medium confidence");
-  return t("Low confidence");
 }
 
 function boardingText(option) {
@@ -164,6 +154,7 @@ export default function JourneyOptions({
   onSelectJourney = null,
   onOpenStop = null,
   mode = "default",
+  access = true,
 }) {
   useLanguage();
 
@@ -255,22 +246,22 @@ export default function JourneyOptions({
 
               <span className={styles.meta}>
                 {formatLeaves(option.departure.departureAt)} ·{" "}
-                {formatDistance(option.distanceMeters)} {t("to stop")} ·{" "}
+                {access && (
+                  <>
+                    {formatDistance(option.distanceMeters)} {t("to stop")} ·{" "}
+                  </>
+                )}
                 {estimateSourceText(
                   option.departure.liveState,
                   hasFinalWalk(option.departure)
                 )}
               </span>
 
-              <span className={styles.decision}>
-                <strong>{boardingText(option)}</strong>
-                <span
-                  className={styles.confidence}
-                  data-confidence={directJourneyConfidence(option).level}
-                >
-                  {confidenceText(option)}
+              {access && (
+                <span className={styles.decision}>
+                  <strong>{boardingText(option)}</strong>
                 </span>
-              </span>
+              )}
 
               {tradeoff && (
                 <span className={styles.tradeoff}>{tradeoff}</span>

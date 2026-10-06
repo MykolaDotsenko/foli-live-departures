@@ -22,7 +22,7 @@ const baseDeparture = {
   rideDurationSec: 1_200,
 };
 
-test("shows conservative boarding guidance and categorical confidence", () => {
+test("shows conservative boarding guidance without a duplicate confidence badge", () => {
   render(
     <JourneyOptions
       destinationLabel="Home"
@@ -64,15 +64,9 @@ test("shows conservative boarding guidance and categorical confidence", () => {
   );
 
   expect(screen.getByText("Line 18 · you should make it")).toBeInTheDocument();
-  expect(screen.getByText("High confidence")).toHaveAttribute(
-    "data-confidence",
-    "high"
-  );
   expect(screen.getByText("Line 7 · tight — move now")).toBeInTheDocument();
-  expect(screen.getByText("Low confidence")).toHaveAttribute(
-    "data-confidence",
-    "low"
-  );
+  expect(screen.queryByText("High confidence")).not.toBeInTheDocument();
+  expect(screen.queryByText("Low confidence")).not.toBeInTheDocument();
 });
 
 test("renders only meaningful option cards and opens the chosen boarding stop", () => {
@@ -330,6 +324,33 @@ test("the next bus is offered for missing the first one", () => {
     screen.getByText("If you miss the first one · about 10 min later")
   ).toBeInTheDocument();
   expect(screen.queryByText("The only bus there we found")).not.toBeInTheDocument();
+});
+
+test("a selected origin stop does not pretend the passenger is physically there", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      access={false}
+      options={[
+        {
+          id: "chosen-origin",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 0,
+          departure: { ...baseDeparture, catchability: "at-stop" },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.getByText(/Line 18/)).toBeInTheDocument();
+  expect(screen.queryByText(/you’re at its stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/to stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
 });
 
 test("at the stop, the card says where the passenger is, not that the bus is there", () => {

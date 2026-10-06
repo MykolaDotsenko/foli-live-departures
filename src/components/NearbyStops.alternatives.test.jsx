@@ -14,6 +14,7 @@ vi.mock("../hooks/useTransferJourneyOptions", () => ({
 }));
 
 import { resetLanguageForTests } from "../i18n";
+import { forgetPositionForTests } from "../utils/sessionPosition";
 import NearbyStops from "./NearbyStops";
 
 const stops = [
@@ -49,6 +50,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  forgetPositionForTests();
   resetLanguageForTests("en");
   vi.restoreAllMocks();
   hooks.useTransferJourneyOptions.mockReset();
@@ -131,7 +133,7 @@ test("with one direct bus, a change of bus is offered too, but not one worse in 
       onSelectTransferJourney={() => {}}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
 
   const direct = await screen.findByRole("region", {
     name: "Best ways to Puistokatu",
@@ -172,7 +174,7 @@ test("says it is still looking for a change of bus beside the direct one", async
       onSelectTransferJourney={() => {}}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
 
   // "No direct trip found nearby" stood under the direct trip it had found.
   expect(
@@ -200,7 +202,7 @@ test("a failed search for a change of bus is no news beside the direct bus", asy
       onSelectTransferJourney={() => {}}
     />
   );
-  fireEvent.click(screen.getByRole("button", { name: "Find nearest stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Use my location" }));
 
   await screen.findByRole("region", { name: "Best ways to Puistokatu" });
   expect(

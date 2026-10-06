@@ -383,8 +383,26 @@ const nativeJourneyInput = await retry("native journey destination input", async
 );
 record("Journey Assistant destination input is present", nativeJourneyInput === true);
 
+// Packaged Android ships the local POI/address packs and keeps the official
+// Turku planner as a wider-search fallback. It should not compete with the
+// primary destination field on an empty Home; make the fallback relevant by
+// entering a query that the local snapshot cannot contain.
+await evaluate(`(() => {
+  const input = document.querySelector("#journey-destination");
+  if (!(input instanceof HTMLInputElement)) return false;
+  const setter = Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value"
+  )?.set;
+  if (!setter) return false;
+  input.focus();
+  setter.call(input, "zzzz-no-local-destination-999999");
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  return true;
+})()`);
+
 const nativePlaceHandoff = await retry(
-  "native place-search handoff",
+  "native wider-search handoff",
   async () => {
     const snapshot = await evaluate(`(() => {
       const link = [...document.querySelectorAll("a")].find((node) =>
@@ -407,26 +425,27 @@ const nativePlaceHandoff = await retry(
       };
     })()`);
 
-    if (!snapshot?.link) {
+    if (!snapshot?.link || !snapshot.privacyTextPresent) {
       throw new Error(
-        `handoff link not ready: ${JSON.stringify(snapshot || {})}`
+        `wider-search handoff not ready: ${JSON.stringify(snapshot || {})}`
       );
     }
 
     return {
       ...snapshot.link,
-      language: snapshot.language
+      language: snapshot.language,
+      privacyTextPresent: snapshot.privacyTextPresent
     };
   },
-  // The native handoff link is intentionally conditioned on the app's online
-  // state. On a cold emulator WebView that connectivity probe can settle well
-  // after navigator.onLine is already true, so wait for UI readiness rather
-  // than weakening the link assertion.
+  // The handoff is intentionally conditioned on the app's online state. On a
+  // cold emulator WebView that connectivity probe can settle after
+  // navigator.onLine, so wait for the actual fallback UI.
   { attempts: 60, delayMs: 500 }
 );
 record(
-  "packaged Android hands address/POI search to the official planner",
-  nativePlaceHandoff?.href === "https://turku.digitransit.fi/",
+  "packaged Android offers the official planner when local place search has no match",
+  nativePlaceHandoff?.href === "https://turku.digitransit.fi/" &&
+    nativePlaceHandoff?.privacyTextPresent === true,
   nativePlaceHandoff || {}
 );
 

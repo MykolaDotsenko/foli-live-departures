@@ -117,6 +117,27 @@ test("a short distance without an accurate fix still says to walk there", () => 
   expect(screen.getByRole("link", { name: "Walk there" })).toBeInTheDocument();
 });
 
+test("a selected-origin journey with no physical distance omits invented zero metres", () => {
+  render(
+    <ActiveJourney
+      journey={journey({ distanceMeters: 0, nearStopAtSelection: false })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Walk to Kauppatori D2" })
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/About 0 m to the boarding stop/i)).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Walk there" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "I'm at the stop" })).toBeInTheDocument();
+});
+
 test("an unknown distance to the stop still says to walk there", () => {
   render(
     <ActiveJourney

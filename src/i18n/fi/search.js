@@ -38,7 +38,6 @@ export default {
   "e.g. Kauppatori": "esim. Kauppatori",
   "Use my location": "Käytä sijaintiani",
   "Find nearest stop": "Etsi lähin pysäkki",
-  "Choose a stop by name": "Valitse pysäkki nimellä",
   "Show departures": "Näytä lähdöt",
   Show: "Näytä",
   "Matching bus stops": "Hakua vastaavat pysäkit",
@@ -98,6 +97,7 @@ export default {
   Change: "Vaihda",
   Clear: "Tyhjennä",
   "Saved destinations": "Tallennetut määränpäät",
+  "Choose a starting stop": "Valitse lähtöpysäkki",
             "Nearby stops for {destination}":
     "Lähipysäkit määränpäähän {destination}",
   "Tap a stop to see when its buses leave.":

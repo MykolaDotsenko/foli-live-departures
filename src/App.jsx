@@ -46,6 +46,7 @@ import {
   finalWalkHeading,
   firstJourneyOption,
   pageHeading,
+  nearbyHeading,
   placeCardControl,
   recoveryJourneyTarget,
   rideHeading,
@@ -621,6 +622,17 @@ function App() {
     onClear: clearJourneyDestination,
   };
 
+  const homeRecovery =
+    !ride.session && (
+      <HomeRecovery
+        home={placesById.get("home") || null}
+        stops={stops}
+        online={online}
+        compact={Boolean(stopId)}
+        onOpenStop={selectStop}
+      />
+    );
+
   return (
     // The header and footer sit beside the main content, not inside it, so
     // they are the page's banner and contentinfo: inside <main> they were
@@ -727,25 +739,41 @@ function App() {
             />
           )}
 
-        {/* One column on a phone. On a wide screen, Get me Home takes the
-            left and search, saved stops and service updates the right, so
-            the board starts on the first screen (App.css). */}
+        {/* On an idle Home, lead with the passenger's destination intent.
+            Stop-first remains a parallel first-class path immediately below:
+            neither flow is a tab or global app mode. */}
+        {!ride.session && !finalWalk && !stopId && (
+          <JourneySearch
+            {...planSearchProps}
+            homeEntry
+            compact={Boolean(journey.destination)}
+            destination={journey.destination}
+            onChoosePlace={(place) => {
+              chooseJourneyPlace(place);
+              requestFocus(nearbyHeading);
+            }}
+            onChooseStop={(stop) => {
+              chooseJourneyStop(stop);
+              requestFocus(nearbyHeading);
+            }}
+            onChooseExternalPlace={(place) => {
+              const prepared = chooseJourneyExternalPlace(place);
+              if (prepared?.ok) requestFocus(nearbyHeading);
+              return prepared;
+            }}
+          />
+        )}
+
+        {/* Keep the existing stop-search surface as the parallel
+            first-class path. No second component or app mode is introduced:
+            only its position in the idle Home hierarchy changes. */}
         <div className="top-section">
-          {/* During a ride its route link would open Google Maps and leave
-              the page the alert runs in. It comes back when the ride ends. */}
-          {!ride.session && (
-            <HomeRecovery
-              home={placesById.get("home") || null}
-              stops={stops}
-              online={online}
-              compact={Boolean(stopId)}
-              onOpenStop={selectStop}
-            />
-          )}
+          {stopId && homeRecovery}
 
           <section className="search-panel" aria-label={t("Choose a bus stop")}>
             <BusStopForm
               compact={Boolean(stopId) && !firstVisit}
+              showLocationAction={!journey.destination || Boolean(stopId)}
               activeStopId={stopId}
               stops={stops}
               coordinatesStatus={coordinatesStatus}
@@ -770,21 +798,6 @@ function App() {
             />
           )}
         </div>
-
-        {/* Before a stop is open, "what leaves now" comes first: the stop
-            search above, with its location button. The planner follows it,
-            with the destination field leading. Ahead of the search it
-            pushed the question most passengers open the app for off a
-            phone's first screen. */}
-        {!ride.session && !finalWalk && !stopId && (
-          <JourneySearch
-            {...planSearchProps}
-            destination={journey.destination}
-            onChoosePlace={chooseJourneyPlace}
-            onChooseStop={chooseJourneyStop}
-            onChooseExternalPlace={chooseJourneyExternalPlace}
-          />
-        )}
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
@@ -866,25 +879,29 @@ function App() {
             and the list they had just found. */}
         {!transferRecoveryContext && (
           <NearbyStops
-          stops={stops}
-          coordinatesStatus={coordinatesStatus}
-          activeStopId={stopId || ""}
-          serviceBoundary={serviceBoundary}
-          online={online}
-          searchEdits={readSearchEdits}
-          destination={journey.destination}
-          timeConstraint={journeyPlan.timeConstraint}
-          timeValid={journeyPlan.timeValid}
-          routingPreference={journeyPlan.preference}
-          excludedJourney={
-            selectedJourney?.phase === "recovery" ? selectedJourney : null
-          }
-          onSelectJourney={selectJourneyOption}
-          onSelectTransferJourney={selectTransferJourneyOption}
-          onSelect={selectStop}
-          onOpenStop={selectSavedStop}
-        />
+            stops={stops}
+            coordinatesStatus={coordinatesStatus}
+            activeStopId={stopId || ""}
+            serviceBoundary={serviceBoundary}
+            online={online}
+            searchEdits={readSearchEdits}
+            destination={journey.destination}
+            timeConstraint={journeyPlan.timeConstraint}
+            timeValid={journeyPlan.timeValid}
+            routingPreference={journeyPlan.preference}
+            excludedJourney={
+              selectedJourney?.phase === "recovery" ? selectedJourney : null
+            }
+            onSelectJourney={selectJourneyOption}
+            onSelectTransferJourney={selectTransferJourneyOption}
+            onSelect={selectStop}
+            onOpenStop={selectSavedStop}
+          />
         )}
+
+        {/* Home recovery is useful, but on idle Home it must not compete with
+            destination, stop search or physical nearby-stop orientation. */}
+        {!stopId && homeRecovery}
 
         {!sharedPlace && (
           <MyPlaces

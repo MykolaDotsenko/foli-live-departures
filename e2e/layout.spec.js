@@ -118,12 +118,10 @@ test("mobile first screen shows a real departure without scrolling", async ({
   expect(metrics.top).toBeLessThan(metrics.viewportHeight);
 });
 
-// Before a stop was open, the journey planner stood above the stop search
-// and its timing controls above its own destination field, so on a phone
-// "what leaves from my stop" started below the first screen. The stop
-// search now leads; the destination field still makes the first screen,
-// and timing and route wait folded to one line below it.
-test("a first visit leads with the stop search, then the destination", async ({
+// Idle Home now follows the passenger's two main intents: destination-first
+// is the leading novice path, while known-stop search remains immediately
+// available. Timing/preferences stay progressively disclosed.
+test("a first visit leads with destination, then keeps stop search in reach", async ({
   page,
 }, testInfo) => {
   test.skip(
@@ -143,10 +141,10 @@ test("a first visit leads with the stop search, then the destination", async ({
   await expect(when).toBeHidden();
 
   const top = async (locator) => (await locator.boundingBox()).y;
-  expect(await top(stopSearch)).toBeLessThan(await top(destination));
   expect(await top(destination)).toBeLessThan(await top(plan));
-  await expect(stopSearch).toBeInViewport();
+  expect(await top(plan)).toBeLessThan(await top(stopSearch));
   await expect(destination).toBeInViewport();
+  await expect(stopSearch).toBeInViewport();
 
   await plan.click();
   await expect(when).toBeVisible();

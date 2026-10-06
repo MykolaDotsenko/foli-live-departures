@@ -36,7 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
-import { rememberPosition } from "../utils/sessionPosition";
+import { recentPosition, rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -252,6 +252,24 @@ function NearbyStops({
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
 
+  // If another explicit action in this tab already obtained a fresh, accurate
+  // fix (for example “Nearest to me first” in destination search), reuse it
+  // rather than asking for location twice. Never request location here and
+  // never reuse an inaccurate fix as a silent journey origin.
+  useEffect(() => {
+    if (!destination || activeStopId || position) return;
+    const remembered = recentPosition();
+    if (
+      !remembered ||
+      !Number.isFinite(remembered.accuracy) ||
+      remembered.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
+    ) {
+      return;
+    }
+    setPosition(remembered);
+    setStatus("success");
+  }, [activeStopId, destination, position]);
+
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
     typeof navigator !== "undefined" && "geolocation" in navigator;
@@ -259,17 +277,51 @@ function NearbyStops({
     geolocationSupported &&
     typeof navigator.geolocation?.watchPosition === "function";
 
-  const baseNearbyStops = useMemo(
-    () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
-    [position, stops]
-  );
   const stopsById = useMemo(
     () => new Map(stops.map((stop) => [String(stop.id), stop])),
     [stops]
   );
+  const activeOriginStop =
+    destination && activeStopId
+      ? stopsById.get(String(activeStopId)) || null
+      : null;
+
+  // Reuse only a location the passenger already asked the app to use, and
+  // only while its accuracy is still good enough for our conservative
+  // auto-origin threshold. This avoids a second permission prompt after
+  // "Nearest to me first" without turning an approximate fix into a claim
+  // about where the passenger is.
+  useEffect(() => {
+    if (!destination || activeOriginStop || position) return;
+    const remembered = recentPosition();
+    if (
+      !remembered ||
+      !Number.isFinite(remembered.accuracy) ||
+      remembered.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
+    ) {
+      return;
+    }
+    setPosition(remembered);
+    setStatus("success");
+    setError("");
+  }, [activeOriginStop, destination, position]);
+
+  // A stop-first journey already has an explicit origin. Use that stop's
+  // coordinates directly; it is not presented as a GPS fix.
+  const planningOrigin = hasCoordinates(activeOriginStop)
+    ? activeOriginStop
+    : position;
+  const planningAccuracy = activeOriginStop
+    ? 0
+    : position?.accuracy ?? null;
+  const baseNearbyStops = useMemo(
+    () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
+    [planningOrigin, stops]
+  );
+
   const expandedNearbyStops = useMemo(
-    () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
-    [position, stops]
+    () => findNearestStops(stops, planningOrigin, EXPANDED_NEARBY_STOP_LIMIT),
+    [planningOrigin, stops]
   );
   const searchExpanded =
     Boolean(destination?.id) && expandedDestinationId === destination.id;
@@ -281,7 +333,7 @@ function NearbyStops({
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
     destination,
-    positionAccuracy: position?.accuracy ?? null,
+    positionAccuracy: planningAccuracy,
     timeConstraint,
   });
 
@@ -317,7 +369,7 @@ function NearbyStops({
   useEffect(() => {
     if (
       !destination ||
-      !position ||
+      !planningOrigin ||
       searchExpanded ||
       fitState !== "ready" ||
       expandedNearbyStops.length <= baseNearbyStops.length ||
@@ -333,7 +385,7 @@ function NearbyStops({
     destination,
     expandedNearbyStops.length,
     fitState,
-    position,
+    planningOrigin,
     searchExpanded,
   ]);
 
@@ -366,7 +418,7 @@ function NearbyStops({
   // the passenger who misses the only bus needs another way.
   const directSearchComplete =
     Boolean(destination) &&
-    Boolean(position) &&
+    Boolean(planningOrigin) &&
     fitState === "ready" &&
     directJourneyOptions.length < 2 &&
     (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
@@ -377,7 +429,7 @@ function NearbyStops({
   const shouldSearchTransfers =
     Boolean(onSelectTransferJourney) &&
     Boolean(destination) &&
-    Boolean(position) &&
+    Boolean(planningOrigin) &&
     timeValid &&
     (directSearchComplete || preferenceWantsAlternatives);
 
@@ -387,7 +439,7 @@ function NearbyStops({
       originStops: nearbyStops,
       allStops: stops,
       destination,
-      positionAccuracy: position?.accuracy ?? null,
+      positionAccuracy: planningAccuracy,
       timeConstraint,
       routingPreference,
     });
@@ -433,8 +485,12 @@ function NearbyStops({
   const activeStopHasCoordinates = stops.some(
     (stop) => stop.id === activeStopId && hasCoordinates(stop)
   );
+  const recommendedRadarTargetId = activeOriginStop
+    ? activeStopId
+    : bestStopId;
   const initialRadarTargetId =
-    bestStopId || (activeStopHasCoordinates ? activeStopId : "");
+    recommendedRadarTargetId ||
+    (activeStopHasCoordinates ? activeStopId : "");
 
   const openRadar = () => {
     if (!hasStopCoordinates || !liveRadarSupported) return;
@@ -573,13 +629,20 @@ function NearbyStops({
     nearestChoiceIsAmbiguous(nearbyStops, position.accuracy);
   const locationDataLoading =
     coordinatesStatus === "loading" && !hasStopCoordinates;
+  const needsOriginDecision =
+    Boolean(destination) &&
+    !activeOriginStop &&
+    (!position ||
+      lowAccuracy ||
+      insideServiceArea === false ||
+      isFarFromNetwork);
 
   let locationNotice = "";
-  if (lowAccuracy) {
+  if (!activeOriginStop && lowAccuracy) {
     locationNotice = t(
       "Your location is approximate, so compare the nearby options before choosing."
     );
-  } else if (insideServiceArea === false) {
+  } else if (!activeOriginStop && insideServiceArea === false) {
     locationNotice = t(
       "Your location appears outside Föli’s published service area. Nearby stops are shown for reference, but none was selected automatically."
     );
@@ -604,21 +667,14 @@ function NearbyStops({
       <div className={styles.header}>
         <div>
           <h2 id="nearby-stops-title" className={styles.heading} tabIndex={-1}>
-            {destination
+            {destination && !needsOriginDecision
               ? t("Nearby stops for {destination}", {
                   destination: destinationLabel,
                 })
               : t("Near you")}
           </h2>
-          {/* Until a location is found there is nothing to choose from:
-              asking for "the best fit" left a passenger with a destination
-              looking for options that the button below has to fetch. Once
-              found, the line says what a stop card does; "switch back to
-              pure distance" described the sorting buttons beside it. */}
-          {/* "Open stop radar" said nothing of what a radar is for; the
-              line says so as long as the button is there. */}
           <p className={styles.description}>
-            {destination && position
+            {destination && planningOrigin
               ? t("Tap a stop to see when its buses leave.")
               : t("Uses your location once. It isn’t saved.")}{" "}
             <span id="stop-radar-hint">
@@ -628,36 +684,36 @@ function NearbyStops({
         </div>
 
         <div className={styles.headerActions}>
-          <button
-            type="button"
-            className={styles.locateButton}
-            onClick={() => {
-              if (status !== "locating" && hasStopCoordinates) locate();
-            }}
-            aria-disabled={
-              status === "locating" || !hasStopCoordinates ? "true" : undefined
-            }
-            aria-busy={status === "locating"}
-          >
-            <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
-            {status === "locating"
-              ? t("Locating…")
-              : position
-                ? t("Update location")
-                : t("Find nearest stop")}
-          </button>
+          {!activeOriginStop && (
+            <button
+              type="button"
+              className={styles.locateButton}
+              onClick={() => {
+                if (status !== "locating" && hasStopCoordinates) locate();
+              }}
+              aria-disabled={
+                status === "locating" || !hasStopCoordinates ? "true" : undefined
+              }
+              aria-busy={status === "locating"}
+            >
+              <span aria-hidden="true">{status === "locating" ? "…" : "⌖"}</span>
+              {status === "locating"
+                ? t("Locating…")
+                : position
+                  ? t("Update location")
+                  : destination
+                    ? t("Use my location")
+                    : t("Find nearest stop")}
+            </button>
+          )}
 
-          {/* From where, without location: a destination chosen with location
-              off or refused led only to this button and its error. The stop
-              search above is the other way to say where the journey starts;
-              the board it opens answers for the destination. */}
-          {destination && !position && !activeStopId && !radarOpen && (
+          {needsOriginDecision && !radarOpen && (
             <button
               type="button"
               className={styles.locateButton}
               onClick={() => document.getElementById("stop-search")?.focus()}
             >
-              {t("Choose a stop by name")}
+              {t("Choose a starting stop")}
             </button>
           )}
 
@@ -713,7 +769,7 @@ function NearbyStops({
             <StopRadar
               stops={stops}
               initialTargetStopId={initialRadarTargetId}
-              recommendedTargetStopId={bestStopId}
+              recommendedTargetStopId={recommendedRadarTargetId}
               activeStopId={activeStopId}
               compassPermission={compassPermission}
               onPosition={(nextPosition) => {
@@ -739,41 +795,47 @@ function NearbyStops({
         </RadarLoadBoundary>
       )}
 
-      {position && !radarOpen && (
+      {planningOrigin && !radarOpen && (
         <>
           {/* What the fix found, in a passenger's words. "One-time location
               only" repeated the line above the button, and "Selected stop ≈
               <10 m away" left the passenger to work out which stop that was. */}
-          <div className={styles.meta} role="status" aria-live="polite">
-            <span>
-              {position.accuracy !== null
-                ? t("Location found · ±{accuracy}", {
-                    accuracy: formatAccuracy(position.accuracy),
-                  })
-                : t("Location found")}
-            </span>
-            {selectedStop && (
-              <span>
-                {t("{stop} is {distance} away", {
-                  stop: stopLabel(selectedStop.stop),
-                  distance: formatDistance(selectedStop.distance),
-                })}
-              </span>
-            )}
-            {destination && fitState === "loading" && !searchExpanded && (
-              <span>{t("Checking routes…")}</span>
-            )}
-            {destination && searchExpanded && fitState === "loading" && (
-              <span>{t("Checking a little farther…")}</span>
-            )}
-            {destination && searchExpanded && fitState === "ready" && (
-              <span>
-                {t("Checked {count} nearby stops", {
-                  count: nearbyStops.length,
-                })}
-              </span>
-            )}
-          </div>
+          {((position && !activeOriginStop) ||
+            (destination && fitState === "loading") ||
+            (destination && searchExpanded && fitState === "ready")) && (
+            <div className={styles.meta} role="status" aria-live="polite">
+              {position && !activeOriginStop && (
+                <span>
+                  {position.accuracy !== null
+                    ? t("Location found · ±{accuracy}", {
+                        accuracy: formatAccuracy(position.accuracy),
+                      })
+                    : t("Location found")}
+                </span>
+              )}
+              {selectedStop && !activeOriginStop && (
+                <span>
+                  {t("{stop} is {distance} away", {
+                    stop: stopLabel(selectedStop.stop),
+                    distance: formatDistance(selectedStop.distance),
+                  })}
+                </span>
+              )}
+              {destination && fitState === "loading" && !searchExpanded && (
+                <span>{t("Checking routes…")}</span>
+              )}
+              {destination && searchExpanded && fitState === "loading" && (
+                <span>{t("Checking a little farther…")}</span>
+              )}
+              {destination && searchExpanded && fitState === "ready" && (
+                <span>
+                  {t("Checked {count} nearby stops", {
+                    count: nearbyStops.length,
+                  })}
+                </span>
+              )}
+            </div>
+          )}
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
@@ -784,12 +846,15 @@ function NearbyStops({
               options={directJourneyOptions}
               destinationLabel={destinationLabel}
               stopsById={stopsById}
+              access={!activeOriginStop}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
                       onSelectJourney({
                         ...option,
-                        positionAccuracyM: position.accuracy ?? null,
+                        positionAccuracyM: activeOriginStop
+                          ? null
+                          : position?.accuracy ?? null,
                       })
                   : null
               }
@@ -814,6 +879,7 @@ function NearbyStops({
               <TransferJourneyOptions
                 options={transferJourneyOptions}
                 destinationLabel={destinationLabel}
+                access={!activeOriginStop}
                 onSelectJourney={onSelectTransferJourney}
               />
             )}

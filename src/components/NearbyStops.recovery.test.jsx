@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { resetLanguageForTests } from "../i18n";
 
@@ -138,10 +138,6 @@ test("recovery cards exclude the failed concrete trip but keep the full nearby l
       onSelectJourney={() => {}}
       onSelect={() => {}}
     />
-  );
-
-  fireEvent.click(
-    screen.getByRole("button", { name: "Find nearest stop" })
   );
 
   const routeRegion = await screen.findByRole("region", {

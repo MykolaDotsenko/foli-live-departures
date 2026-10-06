@@ -298,21 +298,25 @@ export default function ActiveJourney({
 
       {journey.phase === "walking-to-stop" && (
         <>
-          <p className={styles.primaryStatus}>
-            {continuationLeg
-              ? sameTransferStop
-                ? t("Stay here for line {line}.", {
-                    line: journey.lineRef || "—",
-                  })
-                : t("Walk about {distance} to {stop} for line {line}.", {
+          {(continuationLeg ||
+            isNearBoardingStop(journey) ||
+            Number(journey.distanceMeters) > 0) && (
+            <p className={styles.primaryStatus}>
+              {continuationLeg
+                ? sameTransferStop
+                  ? t("Stay here for line {line}.", {
+                      line: journey.lineRef || "—",
+                    })
+                  : t("Walk about {distance} to {stop} for line {line}.", {
+                      distance: formatDistance(journey.distanceMeters),
+                      stop: journey.stopName,
+                      line: journey.lineRef || "—",
+                    })
+                : t("About {distance} to the boarding stop.", {
                     distance: formatDistance(journey.distanceMeters),
-                    stop: journey.stopName,
-                    line: journey.lineRef || "—",
-                  })
-              : t("About {distance} to the boarding stop.", {
-                  distance: formatDistance(journey.distanceMeters),
-                })}
-          </p>
+                  })}
+            </p>
+          )}
           {/* Arrival is never assumed from a location; the note names the
               button that confirms it instead of explaining that policy. */}
           <p className={styles.note}>

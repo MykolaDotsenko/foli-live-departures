@@ -33,7 +33,6 @@ export default {
   "e.g. Kauppatori": "напр. Kauppatori",
   "Use my location": "Використати моє місцезнаходження",
   "Find nearest stop": "Знайти найближчу зупинку",
-  "Choose a stop by name": "Вибрати зупинку за назвою",
   "Show departures": "Показати відправлення",
   Show: "Показати",
   "Matching bus stops": "Зупинки, що відповідають пошуку",
@@ -86,6 +85,7 @@ export default {
   Change: "Змінити",
   Clear: "Очистити",
   "Saved destinations": "Збережені пункти призначення",
+  "Choose a starting stop": "Вибрати початкову зупинку",
   "Nearby stops for {destination}": "Зупинки поруч для {destination}",
   "Tap a stop to see when its buses leave.":
     "Натисніть на зупинку, щоб побачити її відправлення.",
