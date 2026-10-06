@@ -9,9 +9,7 @@ test("idle Home exposes destination, stop and standalone Radar in task order", a
   const destination = page.locator(
     'section[aria-labelledby="journey-search-title"]'
   );
-  const stop = page.locator(
-    'section[aria-labelledby="home-stop-entry-title"]'
-  );
+  const stop = page.locator(".search-panel").first();
   const nearby = page.locator(
     'section[aria-labelledby="nearby-stops-title"]'
   );
@@ -20,7 +18,7 @@ test("idle Home exposes destination, stop and standalone Radar in task order", a
     destination.getByRole("heading", { name: "Where do you want to go?" })
   ).toBeVisible();
   await expect(
-    stop.getByRole("heading", { name: "Find your stop" })
+    stop.getByRole("combobox", { name: "Find your stop" })
   ).toBeVisible();
   await expect(
     nearby.getByRole("button", { name: "Open stop radar" })
@@ -30,9 +28,7 @@ test("idle Home exposes destination, stop and standalone Radar in task order", a
     const destinationSection = document.querySelector(
       'section[aria-labelledby="journey-search-title"]'
     );
-    const stopSection = document.querySelector(
-      'section[aria-labelledby="home-stop-entry-title"]'
-    );
+    const stopSection = document.querySelector(".search-panel");
     const nearbySection = document.querySelector(
       'section[aria-labelledby="nearby-stops-title"]'
     );
