@@ -165,6 +165,11 @@ export default {
   "Checked {count} nearby stops": "Kontrollerade {count} närliggande hållplatser",
 
   "Active journey": "Aktiv resa",
+  "Your bus is arriving": "Din buss är på väg in",
+  "Board line {line}. Confirm only after you are on the bus.": "Stig på linje {line}. Bekräfta först när du är ombord.",
+  "Your exit stop is already selected from this journey.": "Din avstigningshållplats är redan vald från resan.",
+  "Guide me with radar": "Visa vägen med radar",
+  "I'm on the bus": "Jag är på bussen",
   "Choose another route": "Välj en annan rutt",
   "Wait for line {line}": "Vänta på linje {line}",
   "Walk to {stop}": "Gå till {stop}",
