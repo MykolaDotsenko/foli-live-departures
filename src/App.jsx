@@ -73,6 +73,7 @@ import {
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
 import { requestCompassPermission } from "./utils/stopRadar";
+import { hasCoordinates } from "./utils/geo";
 
 const JourneyStopRadar = lazy(() => import("./components/StopRadar"));
 
@@ -264,6 +265,10 @@ function App() {
         : null,
     [selectedJourney, stops]
   );
+
+  useEffect(() => {
+    setJourneyRadarOpen(false);
+  }, [selectedJourney?.id, selectedJourney?.stopId]);
 
   const selectedJourneyMonitoringState = !selectedJourney
     ? "active"
@@ -586,7 +591,13 @@ function App() {
   };
 
   const openJourneyRadar = () => {
-    if (!selectedJourney?.stopId || !selectedJourneyStop) return;
+    if (
+      !selectedJourney?.stopId ||
+      !selectedJourneyStop ||
+      !hasCoordinates(selectedJourneyStop)
+    ) {
+      return;
+    }
     setJourneyRadarOpen(true);
     setJourneyRadarCompass("pending");
     void requestCompassPermission().then(setJourneyRadarCompass);
@@ -764,7 +775,7 @@ function App() {
             onShowDeparture={showSelectedJourneyDeparture}
             onBoard={confirmJourneyBoarding}
             onGuideWithRadar={
-              selectedJourneyStop ? openJourneyRadar : null
+              hasCoordinates(selectedJourneyStop) ? openJourneyRadar : null
             }
             onChooseAnother={chooseAnotherJourney}
             onOpenStop={openSelectedJourneyStop}
