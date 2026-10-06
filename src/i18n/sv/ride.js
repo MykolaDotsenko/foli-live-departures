@@ -155,6 +155,7 @@ export default {
 
   "Set up get-off alerts": "Ställ in avstigningslarm",
   "Where do you want to get off?": "Var vill du stiga av?",
+  "Change stop": "Byt hållplats",
   "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP.":
     "Välj din hållplats och håll sidan öppen med ljudet på. Du behöver inte titta på den: vi säger till när du ska trycka på STOP.",
   Cancel: "Avbryt",
