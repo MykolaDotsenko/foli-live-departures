@@ -932,16 +932,16 @@ function NearbyStops({
           {betterNearbyStop && (
             <div className={styles.notice} role="status">
               <span>
-                {t("A nearby stop has a meaningfully better option to {destination}.", {
+                {t("Best for {destination}", {
                   destination: destinationLabel,
-                })}
+                })}: {stopLabel(betterNearbyStop)}
               </span>{" "}
               <button
                 type="button"
                 className={styles.locateButton}
                 onClick={() => onSelect(betterNearbyStop.id)}
               >
-                {t("Open {stop}", { stop: stopLabel(betterNearbyStop) })}
+                {t("Show")}
               </button>
             </div>
           )}
