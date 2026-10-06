@@ -47,6 +47,7 @@ export default function StopRadarPanel({
   onPosition,
   onOpenStop,
   onClose,
+  showFallbackClose = true,
 }) {
   const [Radar, setRadar] = useState(() => lazyStopRadar());
   const [attempt, setAttempt] = useState(0);
@@ -67,6 +68,7 @@ export default function StopRadarPanel({
       key={attempt}
       onRetry={retry}
       onClose={onClose}
+      showClose={showFallbackClose}
     >
       <Suspense fallback={<p role="status">{t("Opening stop radar…")}</p>}>
         <Radar
