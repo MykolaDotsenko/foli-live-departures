@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
 import { forgetPositionForTests, rememberPosition } from "../utils/sessionPosition";
+import { AUTO_SELECT_MAX_ACCURACY_METERS } from "../utils/nearestStop";
 
 const nearbyHook = vi.hoisted(() => ({
   useDestinationAwareNearby: vi.fn(),
@@ -332,7 +333,7 @@ test("does not reuse a recent fix when its accuracy is too weak", async () => {
   rememberPosition({
     lat: 60.4518,
     lon: 22.2666,
-    accuracy: 120,
+    accuracy: AUTO_SELECT_MAX_ACCURACY_METERS + 1,
   });
 
   render(
