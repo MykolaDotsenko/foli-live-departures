@@ -34,6 +34,11 @@ export class RadarLoadBoundary extends Component {
         <button type="button" onClick={this.props.onRetry}>
           {t("Open stop radar")}
         </button>
+        {this.props.showClose && (
+          <button type="button" onClick={this.props.onClose}>
+            {t("Close stop radar")}
+          </button>
+        )}
       </div>
     );
   }
