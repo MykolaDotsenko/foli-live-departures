@@ -38,7 +38,6 @@ export default {
   "e.g. Kauppatori": "esim. Kauppatori",
   "Use my location": "Käytä sijaintiani",
   "Find nearest stop": "Etsi lähin pysäkki",
-  "Choose a stop by name": "Valitse pysäkki nimellä",
   "Show departures": "Näytä lähdöt",
   Show: "Näytä",
   "Matching bus stops": "Hakua vastaavat pysäkit",
