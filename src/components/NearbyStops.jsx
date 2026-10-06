@@ -313,8 +313,11 @@ function NearbyStops({
 
   useEffect(() => {
     const destinationId = destination?.id || "";
+    if (!destinationId) {
+      reusedDestinationRef.current = "";
+      return;
+    }
     if (
-      !destinationId ||
       activeOriginStop ||
       position ||
       !hasStopCoordinates ||
@@ -658,7 +661,9 @@ function NearbyStops({
     !positionCanStartJourney;
 
   let locationNotice = "";
-  if (lowAccuracy) {
+  if (activeOriginStop) {
+    locationNotice = "";
+  } else if (lowAccuracy) {
     locationNotice = t(
       "Your location is approximate, so compare the nearby options before choosing."
     );
@@ -828,11 +833,11 @@ function NearbyStops({
           {/* What the fix found, in a passenger's words. "One-time location
               only" repeated the line above the button, and "Selected stop ≈
               <10 m away" left the passenger to work out which stop that was. */}
-          {(position ||
+          {((position && !activeOriginStop) ||
             (destination && fitState === "loading") ||
             (destination && searchExpanded && fitState === "ready")) && (
             <div className={styles.meta} role="status" aria-live="polite">
-              {position && (
+              {position && !activeOriginStop && (
                 <span>
                   {position.accuracy !== null
                     ? t("Location found · ±{accuracy}", {
@@ -841,7 +846,7 @@ function NearbyStops({
                     : t("Location found")}
                 </span>
               )}
-              {selectedStop && (
+              {selectedStop && !activeOriginStop && (
                 <span>
                   {t("{stop} is {distance} away", {
                     stop: stopLabel(selectedStop.stop),
@@ -879,7 +884,9 @@ function NearbyStops({
                   ? (option) =>
                       onSelectJourney({
                         ...option,
-                        positionAccuracyM: position.accuracy ?? null,
+                        positionAccuracyM: activeOriginStop
+                          ? null
+                          : position?.accuracy ?? null,
                       })
                   : null
               }
