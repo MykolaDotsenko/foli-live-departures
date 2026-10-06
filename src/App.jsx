@@ -105,7 +105,7 @@ function App() {
   const restoreJourneyDestination = journey.restoreDestination;
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
-  const [journeyRadarOpen, setJourneyRadarOpen] = useState(false);
+  const [journeyRadarId, setJourneyRadarId] = useState("");
   const [boardingRequest, setBoardingRequest] = useState(0);
   const {
     journey: selectedJourney,
@@ -253,10 +253,6 @@ function App() {
         : null,
     [selectedJourney, stops]
   );
-
-  useEffect(() => {
-    setJourneyRadarOpen(false);
-  }, [selectedJourney?.id, selectedJourney?.stopId]);
 
   const selectedJourneyMonitoringState = !selectedJourney
     ? "active"
@@ -586,11 +582,11 @@ function App() {
     ) {
       return;
     }
-    setJourneyRadarOpen(true);
+    setJourneyRadarId(selectedJourney.id);
   };
 
   const closeJourneyRadar = () => {
-    setJourneyRadarOpen(false);
+    setJourneyRadarId("");
     globalThis.requestAnimationFrame?.(() => {
       activeJourneyHeading()?.focus({ preventScroll: true });
     });
@@ -598,7 +594,7 @@ function App() {
 
   const confirmJourneyBoarding = () => {
     if (!selectedJourney?.stopId || !selectedJourney.tripRef) return;
-    setJourneyRadarOpen(false);
+    setJourneyRadarId("");
     setBoardingRequest((request) => request + 1);
     selectStop(selectedJourney.stopId);
   };
@@ -766,14 +762,16 @@ function App() {
           />
         )}
 
-        {!ride.session && selectedJourney && journeyRadarOpen && (
+        {!ride.session &&
+          selectedJourney &&
+          journeyRadarId === selectedJourney.id && (
           <StopRadarPanel
             stops={stops}
             initialTargetStopId={selectedJourney.stopId}
             recommendedTargetStopId={selectedJourney.stopId}
             activeStopId={stopId}
             onOpenStop={(id) => {
-              setJourneyRadarOpen(false);
+              setJourneyRadarId("");
               requestFocus(pageHeading);
               selectStop(id);
               setFocusSaysStopId(id);
@@ -847,17 +845,10 @@ function App() {
               onSelect={selectSavedStop}
             />
 
-            {stopId && (
-              <ServiceAlerts
-                alerts={serviceAlerts}
-                error={serviceAlertsError}
-                receivedAtMs={serviceAlertsReceivedAtMs}
-              />
-            )}
           </div>
         )}
 
-        {selectedJourney && stopId && (
+        {stopId && (
           <ServiceAlerts
             alerts={serviceAlerts}
             error={serviceAlertsError}
