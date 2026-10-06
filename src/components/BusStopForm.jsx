@@ -77,6 +77,7 @@ function locationDoubt(verdict, stop, position) {
 
 function BusStopForm({
   compact = false,
+  hideLabel = false,
   activeStopId,
   stops,
   coordinatesStatus = "idle",
