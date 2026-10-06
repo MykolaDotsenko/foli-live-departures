@@ -164,7 +164,7 @@ export default function JourneyOptions({
   onSelectJourney = null,
   onOpenStop = null,
   mode = "default",
-  showAccess = true,
+  access = true,
 }) {
   useLanguage();
 
@@ -256,7 +256,7 @@ export default function JourneyOptions({
 
               <span className={styles.meta}>
                 {formatLeaves(option.departure.departureAt)} ·{" "}
-                {showAccess && (
+                {access && (
                   <>
                     {formatDistance(option.distanceMeters)} {t("to stop")} ·{" "}
                   </>
@@ -267,7 +267,7 @@ export default function JourneyOptions({
                 )}
               </span>
 
-              {showAccess && (
+              {access && (
                 <span className={styles.decision}>
                   <strong>{boardingText(option)}</strong>
                   <span
