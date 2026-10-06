@@ -77,7 +77,6 @@ function locationDoubt(verdict, stop, position) {
 
 function BusStopForm({
   compact = false,
-  hideLabel = false,
   activeStopId,
   stops,
   coordinatesStatus = "idle",
@@ -317,10 +316,7 @@ function BusStopForm({
       data-compact={compact ? "true" : undefined}
       noValidate
     >
-      <label
-        htmlFor="stop-search"
-        className={hideLabel ? "visually-hidden" : styles.label}
-      >
+      <label htmlFor="stop-search" className={styles.label}>
         {t("Find your stop")}
       </label>
 
