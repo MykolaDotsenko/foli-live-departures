@@ -355,6 +355,72 @@ test("does not reuse a recent fix when its accuracy is too weak", async () => {
   ).toBeInTheDocument();
 });
 
+test("reuses a fresh accurate location explicitly shared elsewhere in the tab", async () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  rememberPosition({ lat: 60.4518, lon: 22.2666, accuracy: 20 });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Nearby stops for Home stop" })
+  ).toBeInTheDocument();
+  expect(screen.getByText("Location found · ±20 m")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Choose a starting stop" })
+  ).not.toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+});
+
+test("does not silently reuse an inaccurate remembered location as journey origin", () => {
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "idle",
+    fitsByStop: {},
+  });
+  rememberPosition({ lat: 60.4518, lon: 22.2666, accuracy: 500 });
+  const getCurrentPosition = vi.fn();
+  Object.defineProperty(navigator, "geolocation", {
+    configurable: true,
+    value: { getCurrentPosition },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId=""
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Near you" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Use my location" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Choose a starting stop" })
+  ).toBeInTheDocument();
+  expect(getCurrentPosition).not.toHaveBeenCalled();
+});
+
 test("uses the open stop as origin without requesting GPS", () => {
   nearbyHook.useDestinationAwareNearby.mockReturnValue({
     state: "idle",
