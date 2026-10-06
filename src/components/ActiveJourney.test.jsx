@@ -210,10 +210,9 @@ test("waiting state points to the pinned selected departure", () => {
     screen.getByText("Your selected bus is pinned first in the departure board.")
   ).toBeInTheDocument();
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Show selected departure" })
-  );
-  expect(onShowDeparture).toHaveBeenCalledTimes(1);
+  expect(
+    screen.queryByRole("button", { name: "Show selected departure" })
+  ).not.toBeInTheDocument();
 });
 
 test("recovery clearly explains cancellation and preserves explicit choice", () => {
@@ -377,7 +376,7 @@ test("renders transfer leg 1 handoff and does not use the direct-journey Ride Mo
     screen.getByText("Leg 1 of 2 · change at Kauppatori platform B to line 7")
   ).toBeInTheDocument();
   expect(
-    screen.getByText(/Journey Assistant resumes with leg 2/i)
+    screen.getByRole("button", { name: "Show selected departure" })
   ).toBeInTheDocument();
 });
 
@@ -685,12 +684,6 @@ test("gives explicit cross-platform next actions on transfer leg 2", () => {
   );
 
   expect(screen.getByText("Wait here for line 7.")).toBeInTheDocument();
-  expect(
-    screen.getByText(
-      "When line 7 arrives, open the selected departure and start the Get-off alert."
-    )
-  ).toBeInTheDocument();
-
   fireEvent.click(
     screen.getByRole("button", { name: "Show line 7 departure" })
   );
@@ -811,10 +804,6 @@ test("renders second and final legs of a three-leg itinerary without legacy alia
   expect(
     screen.getByText("Leg 2 of 3 · change at Hub B to line 18")
   ).toBeInTheDocument();
-  expect(
-    screen.getByText(/Journey Assistant resumes with the next leg/i)
-  ).toBeInTheDocument();
-
   rerender(
     <ActiveJourney
       {...common}
