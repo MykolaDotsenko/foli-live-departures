@@ -164,6 +164,7 @@ export default function JourneyOptions({
   onSelectJourney = null,
   onOpenStop = null,
   mode = "default",
+  showBoardingConfidence = true,
 }) {
   useLanguage();
 
@@ -262,15 +263,17 @@ export default function JourneyOptions({
                 )}
               </span>
 
-              <span className={styles.decision}>
-                <strong>{boardingText(option)}</strong>
-                <span
-                  className={styles.confidence}
-                  data-confidence={directJourneyConfidence(option).level}
-                >
-                  {confidenceText(option)}
+              {showBoardingConfidence && (
+                <span className={styles.decision}>
+                  <strong>{boardingText(option)}</strong>
+                  <span
+                    className={styles.confidence}
+                    data-confidence={directJourneyConfidence(option).level}
+                  >
+                    {confidenceText(option)}
+                  </span>
                 </span>
-              </span>
+              )}
 
               {tradeoff && (
                 <span className={styles.tradeoff}>{tradeoff}</span>
