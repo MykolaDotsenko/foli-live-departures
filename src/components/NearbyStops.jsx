@@ -699,7 +699,7 @@ function NearbyStops({
               : t("Near you")}
           </h2>
           <p className={styles.description}>
-            {destination && position && !activeOriginStop
+            {destination && (position || activeOriginStop)
               ? t("Tap a stop to see when its buses leave.")
               : t("Uses your location once. It isn’t saved.")}{" "}
             <span id="stop-radar-hint">
