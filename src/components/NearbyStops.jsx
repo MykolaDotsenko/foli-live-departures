@@ -1,12 +1,4 @@
-import {
-  Component,
-  lazy,
-  Suspense,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { msg, t, useLanguage } from "../i18n";
 import useDestinationAwareNearby from "../hooks/useDestinationAwareNearby";
 import useTransferJourneyOptions from "../hooks/useTransferJourneyOptions";
@@ -18,7 +10,6 @@ import {
   hasCoordinates,
   isInsideMultiPolygon,
 } from "../utils/geo";
-import { requestCompassPermission } from "../utils/stopRadar";
 import { locationErrorMessage, requestOneTimePosition } from "../utils/location";
 import { buildWalkingDirectionsUrl } from "../utils/maps";
 import {
@@ -36,40 +27,10 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
+import StopRadarPanel from "./StopRadarPanel";
 import { recentPosition, rememberPosition } from "../utils/sessionPosition";
 
-// A fresh lazy component per attempt: React keeps a failed import's
-// rejection, so the one that failed would fail again on every reopen.
-const lazyStopRadar = () => lazy(() => import("./StopRadar"));
 const RADAR_ICON = "◉";
-
-// The radar loads on demand. Offline before it was cached, or after a
-// deploy removed the file a long-open page asks for, the failed load reached
-// the app-wide boundary and replaced everything, a ride in progress
-// included. It now fails here, inside the radar's own place.
-class RadarLoadBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { failed: false };
-  }
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  componentDidCatch() {
-    this.props.onFailed?.();
-  }
-
-  render() {
-    if (!this.state.failed) return this.props.children;
-    return (
-      <p className={styles.error} role="alert">
-        {t("Stop radar couldn’t open. Check your connection, then try again.")}
-      </p>
-    );
-  }
-}
 
 const NEARBY_STOP_LIMIT = 6;
 const EXPANDED_NEARBY_STOP_LIMIT = 12;
@@ -241,8 +202,6 @@ function NearbyStops({
   const [error, setError] = useState("");
   const [expandedDestinationId, setExpandedDestinationId] = useState("");
   const [radarOpen, setRadarOpen] = useState(false);
-  const [StopRadar, setStopRadar] = useState(lazyStopRadar);
-  const [compassPermission, setCompassPermission] = useState("pending");
   const rankingRef = useRef({ destinationId: "", order: [] });
   const radarButtonRef = useRef(null);
   const restoreRadarFocusRef = useRef(false);
@@ -251,24 +210,6 @@ function NearbyStops({
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
-
-  // If another explicit action in this tab already obtained a fresh, accurate
-  // fix (for example “Nearest to me first” in destination search), reuse it
-  // rather than asking for location twice. Never request location here and
-  // never reuse an inaccurate fix as a silent journey origin.
-  useEffect(() => {
-    if (!destination || activeStopId || position) return;
-    const remembered = recentPosition();
-    if (
-      !remembered ||
-      !Number.isFinite(remembered.accuracy) ||
-      remembered.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
-    ) {
-      return;
-    }
-    setPosition(remembered);
-    setStatus("success");
-  }, [activeStopId, destination, position]);
 
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
@@ -481,7 +422,18 @@ function NearbyStops({
     destinationSortedStops.find((stop) =>
       ["good", "tight"].includes(fitsByStop[stop.id]?.status)
     )?.id || "";
-
+  const betterStopId = activeOriginStop
+    ? rankDestinationStops(nearbyStops, fitsByStop, [activeStopId])[0]?.id
+    : "";
+  const betterNearbyStop =
+    bestStopId &&
+    String(betterStopId) === String(bestStopId) &&
+    String(bestStopId) !== String(activeStopId)
+      ? destinationSortedStops.find((stop) => stop.id === bestStopId) || null
+      : null;
+  const betterNearbyFit = betterNearbyStop
+    ? fitsByStop[betterNearbyStop.id]
+    : null;
   const activeStopHasCoordinates = stops.some(
     (stop) => stop.id === activeStopId && hasCoordinates(stop)
   );
@@ -498,7 +450,6 @@ function NearbyStops({
     radarSeededPositionRef.current = false;
     radarLatestPositionRef.current = null;
     setRadarOpen(true);
-    void requestCompassPermission().then(setCompassPermission);
   };
 
   // While the radar runs, the stops below keep its first fix (planning is
@@ -833,41 +784,27 @@ function NearbyStops({
       )}
 
       {radarOpen && (
-        <RadarLoadBoundary onFailed={() => setStopRadar(lazyStopRadar)}>
-          <Suspense
-            fallback={
-              <p className={styles.meta} role="status">
-                {t("Opening stop radar…")}
-              </p>
-            }
-          >
-            <StopRadar
-              stops={stops}
-              initialTargetStopId={initialRadarTargetId}
-              recommendedTargetStopId={recommendedRadarTargetId}
-              activeStopId={activeStopId}
-              compassPermission={compassPermission}
-              onPosition={(nextPosition) => {
-                // Seed Nearby from one fresh fix per radar session, then keep
-                // subsequent live fixes isolated inside StopRadar. Otherwise
-                // every walking update can perturb stop order/accuracy and
-                // restart destination-aware Föli planning.
-                radarLatestPositionRef.current = nextPosition;
-                if (radarSeededPositionRef.current) return;
-                radarSeededPositionRef.current = true;
-                setPosition(nextPosition);
-                rememberPosition(nextPosition);
-                setStatus("success");
-                setError("");
-              }}
-              onOpenStop={(id) => {
-                leaveRadar(false);
-                onOpenStop(id);
-              }}
-              onClose={closeRadar}
-            />
-          </Suspense>
-        </RadarLoadBoundary>
+        <StopRadarPanel
+          stops={stops}
+          initialTargetStopId={initialRadarTargetId}
+          recommendedTargetStopId={recommendedRadarTargetId}
+          activeStopId={activeStopId}
+          onPosition={(nextPosition) => {
+            radarLatestPositionRef.current = nextPosition;
+            if (radarSeededPositionRef.current) return;
+            radarSeededPositionRef.current = true;
+            setPosition(nextPosition);
+            rememberPosition(nextPosition);
+            setStatus("success");
+            setError("");
+          }}
+          onOpenStop={(id) => {
+            leaveRadar(false);
+            onOpenStop(id);
+          }}
+          onClose={closeRadar}
+          showFallbackClose={false}
+        />
       )}
 
       {planningOrigin && !radarOpen && (
@@ -914,6 +851,35 @@ function NearbyStops({
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
+          )}
+
+          {betterNearbyStop && (
+            <div
+              className={styles.notice}
+              role="status"
+              aria-label={t("Best for {destination}", {
+                destination: destinationLabel,
+              })}
+            >
+              <strong>
+                {t("Best for {destination}", { destination: destinationLabel })}:
+              </strong>{" "}
+              {stopLabel(betterNearbyStop)}
+              {betterNearbyFit?.best?.lineRef
+                ? ` · ${t("Line {line}", { line: betterNearbyFit.best.lineRef })}`
+                : ""}
+              <button
+                type="button"
+                className={styles.locateButton}
+                onClick={() => onOpenStop(String(betterNearbyStop.id))}
+                aria-label={t("Open {name}, stop {id}", {
+                  name: stopLabel(betterNearbyStop),
+                  id: betterNearbyStop.id,
+                })}
+              >
+                {t("Show")}
+              </button>
+            </div>
           )}
 
           {destination && directJourneyOptions.length > 0 && (

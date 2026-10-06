@@ -209,8 +209,11 @@ export default function ActiveJourney({
   stop,
   online = true,
   monitoringState = "active",
+  boardingAvailable = false,
   onConfirmAtStop,
   onShowDeparture,
+  onBoard,
+  onGuideWithRadar,
   onChooseAnother,
   onOpenStop,
 }) {
@@ -219,11 +222,18 @@ export default function ActiveJourney({
 
   if (!journey) return null;
 
+  const departureAt = Number(journey.departureAt);
+  const canBoard =
+    journey.phase === "waiting" &&
+    monitoringState === "active" &&
+    boardingAvailable &&
+    Number.isFinite(departureAt) &&
+    Math.abs(departureAt - nowMs / 1000) <= 120 &&
+    typeof onBoard === "function";
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
   const sameTransferStop = currentLegUsesSameTransferStop(journey);
-  const hasFutureLeg = Boolean(itinerary?.next && itinerary?.nextTransfer);
   const walkingUrl =
     online && !sameTransferStop && !isNearBoardingStop(journey)
       ? buildWalkingDirectionsUrl(stop)
@@ -332,33 +342,11 @@ export default function ActiveJourney({
       )}
 
       {journey.phase === "waiting" && (
-        <>
-          <p className={styles.primaryStatus}>
-            {continuationLeg
-              ? t("Wait here for line {line}.", {
-                  line: journey.lineRef || "—",
-                })
-              : t("Your selected bus is pinned first in the departure board.")}
-          </p>
-          <p className={styles.note}>
-            {hasFutureLeg
-              ? itinerary?.totalLegs > 2
-                ? t(
-                    "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg."
-                  )
-                : t(
-                    "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2."
-                  )
-              : continuationLeg
-                ? t(
-                    "When line {line} arrives, open the selected departure and start the Get-off alert.",
-                    { line: journey.lineRef || "—" }
-                  )
-                : t(
-                    "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
-                  )}
-          </p>
-        </>
+        <p className={styles.primaryStatus}>
+          {continuationLeg
+            ? t("Wait here for line {line}.", { line: journey.lineRef || "—" })
+            : t("Your selected bus is pinned first in the departure board.")}
+        </p>
       )}
 
       {journey.phase === "recovery" && (
@@ -411,6 +399,15 @@ export default function ActiveJourney({
               >
                 {t("I'm at the stop")}
               </button>
+              {onGuideWithRadar && (
+                <button
+                  type="button"
+                  className={styles.ghostButton}
+                  onClick={onGuideWithRadar}
+                >
+                  {t("Open stop radar")}
+                </button>
+              )}
               {walkingUrl && (
                 <a
                   className={styles.secondaryLink}
@@ -429,13 +426,15 @@ export default function ActiveJourney({
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={onShowDeparture}
+              onClick={canBoard ? onBoard : onShowDeparture}
             >
-              {continuationLeg
-                ? t("Show line {line} departure", {
-                    line: journey.lineRef || "—",
-                  })
-                : t("Show selected departure")}
+              {canBoard
+                ? t("I'm on the bus")
+                : continuationLeg
+                  ? t("Show line {line} departure", {
+                      line: journey.lineRef || "—",
+                    })
+                  : t("Show selected departure")}
             </button>
           )}
 

@@ -162,6 +162,7 @@ export default {
   "Checked {count} nearby stops": "Kontrollerade {count} närliggande hållplatser",
 
   "Active journey": "Aktiv resa",
+  "I'm on the bus": "Jag är på bussen",
   "Choose another route": "Välj en annan rutt",
   "Wait for line {line}": "Vänta på linje {line}",
   "Walk to {stop}": "Gå till {stop}",
@@ -175,8 +176,6 @@ export default {
   "When you get to the transfer stop, tap “I'm at the stop”.":
     "När du är vid byteshållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Wait here for line {line}.": "Vänta här på linje {line}.",
-  "When line {line} arrives, open the selected departure and start the Get-off alert.":
-    "När linje {line} kommer, öppna den valda avgången och starta avstigningslarmet.",
   "Show line {line} departure": "Visa avgång för linje {line}",
   "To {destination}": "Till {destination}",
   "Leaves {due}": "Avgår {due}",
@@ -188,8 +187,6 @@ export default {
     "När du är vid hållplatsen, tryck på ”Jag är vid hållplatsen”.",
   "Your selected bus is pinned first in the departure board.":
     "Din valda buss är fäst först på avgångstavlan.",
-  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
-    "När du stiger på, använd Avstigningslarm för den avgången. Reseläget förblir styrande därefter.",
   "Your selected bus was cancelled.": "Din valda buss ställdes in.",
   "Your selected bus is no longer a reliable option.":
     "Din valda buss är inte längre ett tillförlitligt alternativ.",
@@ -294,8 +291,6 @@ export default {
     "En vald framtida buss ställdes in. Välj ett nytt alternativ.",
   "A committed future bus has probably been missed. Choose a fresh option.":
     "En vald framtida buss har troligen missats. Välj ett nytt alternativ.",
-  "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg.":
-    "När du stiger på, starta avstigningslarmet för den här etappen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med nästa etapp.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Din andra buss ställdes in. Välj ett nytt alternativ.",
   "Live check: line {line} still looks catchable.":
@@ -314,8 +309,6 @@ export default {
     "Den andra bussen har troligen missats. Välj ett nytt alternativ.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
     "Det valda bytet kan inte längre fortsättas på ett tillförlitligt sätt. Välj ett nytt alternativ.",
-  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
-    "När du stiger på, starta avstigningslarmet för den valda byteshållplatsen. Reseläget förblir styrande tills du stiger av, därefter fortsätter reseassistenten med etapp 2.",
 
   "Enter a stop, address or place.": "Ange en hållplats, adress eller plats.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":

@@ -110,6 +110,7 @@ export default function RideSetup({
   routesByShortName,
   preferredTargetStopId = "",
   preferredTargetStopSequence = null,
+  journeyDriven = false,
   onStart,
   onCancel,
 }) {
@@ -233,7 +234,10 @@ export default function RideSetup({
   useEffect(() => {
     if (targetStopSequence || downstream.length === 0) return;
 
-    const preferredSequence = Number(preferredTargetStopSequence);
+    const preferredSequence =
+      preferredTargetStopSequence === null || preferredTargetStopSequence === ""
+        ? Number.NaN
+        : Number(preferredTargetStopSequence);
     const preferred = downstream.find(
       (item) =>
         (Number.isFinite(preferredSequence) &&
@@ -245,6 +249,16 @@ export default function RideSetup({
 
     if (preferred) {
       setTargetStopSequence(String(preferred.stopSequence));
+      return;
+    }
+
+    // A committed journey's exit stop is authoritative. If it cannot be
+    // matched to this trip, fail closed and make the passenger choose rather
+    // than silently falling back to a saved Home stop.
+    if (
+      journeyDriven &&
+      (preferredTargetStopId || Number.isFinite(preferredSequence))
+    ) {
       return;
     }
 
@@ -263,6 +277,7 @@ export default function RideSetup({
     setTargetStopSequence(String(home.stopSequence));
   }, [
     downstream,
+    journeyDriven,
     placesById,
     preferredTargetStopId,
     preferredTargetStopSequence,
@@ -364,6 +379,60 @@ export default function RideSetup({
     ) &&
     boardingIndex < 0;
 
+  const stopChoices = (
+    <fieldset className={styles.stopList}>
+      <legend className={styles.srOnly}>{t("Choose your exit stop")}</legend>
+      {downstream.map((item) => {
+        const clock = plannedClock(item.departureTime || item.arrivalTime);
+        const previousStopName = item.previousIsBoarding
+          ? currentStopName
+          : stopName(stopsById, item.previousStopId);
+        return (
+          <label
+            key={`${item.stopId}-${item.stopSequence}`}
+            className={styles.stopOption}
+            data-selected={
+              String(targetStopSequence) === String(item.stopSequence)
+                ? "true"
+                : "false"
+            }
+          >
+            <input
+              type="radio"
+              name={`ride-target-${arrival.tripref}`}
+              value={item.stopSequence}
+              checked={String(targetStopSequence) === String(item.stopSequence)}
+              onChange={() => {
+                setStartError("");
+                setTargetStopSequence(String(item.stopSequence));
+              }}
+            />
+            <span className={styles.stopCopy}>
+              <strong>
+                <StopName stop={item.stop} id={item.stopId} />
+              </strong>
+              <small>
+                {stopsAwayLabel(item.stopsAway)}
+                {clock ? ` · ${t("around {time}", { time: clock })}` : ""}
+                {previousStopName
+                  ? ` · ${t("after {name}", { name: previousStopName })}`
+                  : ""}
+              </small>
+            </span>
+            {item.places.length > 0 && (
+              <>
+                <span className={styles.srOnly}> · </span>
+                <span className={styles.placeBadge}>
+                  {item.places.map((label) => t(label)).join(" · ")}
+                </span>
+              </>
+            )}
+          </label>
+        );
+      })}
+    </fieldset>
+  );
+
   return (
     <section
       ref={panelRef}
@@ -375,12 +444,18 @@ export default function RideSetup({
           <p className={styles.kicker}>{t("Get-off alert")}</p>
           {/* Under the board's h1, so an h2: as an h4 it skipped two
               levels of the page's outline. */}
-          <h2>{t("Where do you want to get off?")}</h2>
-          <p>
-            {t(
-              "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP."
-            )}
-          </p>
+          <h2 id="ride-setup-title" tabIndex={-1}>
+            {journeyDriven && chosenStop
+              ? t("Get off at {name}", { name: optionName(chosenStop) })
+              : t("Where do you want to get off?")}
+          </h2>
+          {!journeyDriven && (
+            <p>
+              {t(
+                "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP."
+              )}
+            </p>
+          )}
         </div>
         <button type="button" className={styles.close} onClick={onCancel}>
           {t("Cancel")}
@@ -425,69 +500,14 @@ export default function RideSetup({
         !ambiguousBoarding &&
         downstream.length > 0 && (
           <>
-            <fieldset className={styles.stopList}>
-              <legend className={styles.srOnly}>
-                {t("Choose your exit stop")}
-              </legend>
-              {downstream.map((item) => {
-                const clock = plannedClock(
-                  item.departureTime || item.arrivalTime
-                );
-                const previousStopName = item.previousIsBoarding
-                  ? currentStopName
-                  : stopName(stopsById, item.previousStopId);
-
-                return (
-                  <label
-                    key={`${item.stopId}-${item.stopSequence}`}
-                    className={styles.stopOption}
-                    data-selected={
-                      String(targetStopSequence) === String(item.stopSequence)
-                        ? "true"
-                        : "false"
-                    }
-                  >
-                    <input
-                      type="radio"
-                      name={`ride-target-${arrival.tripref}`}
-                      value={item.stopSequence}
-                      checked={
-                        String(targetStopSequence) === String(item.stopSequence)
-                      }
-                      onChange={() => {
-                        setStartError("");
-                        setTargetStopSequence(String(item.stopSequence));
-                      }}
-                    />
-                    <span className={styles.stopCopy}>
-                      {/* Föli's name, marked Finnish, so a screen reader in
-                          English says "Puistokatu" as it is written. */}
-                      <strong>
-                        <StopName stop={item.stop} id={item.stopId} />
-                      </strong>
-                      <small>
-                        {stopsAwayLabel(item.stopsAway)}
-                        {clock ? ` · ${t("around {time}", { time: clock })}` : ""}
-                        {previousStopName
-                          ? ` · ${t("after {name}", { name: previousStopName })}`
-                          : ""}
-                      </small>
-                    </span>
-                    {item.places.length > 0 && (
-                      <>
-                        {/* Heard, not seen: without it the badge ran on
-                            from the line before, "…after KauppatoriHome". */}
-                        <span className={styles.srOnly}> · </span>
-                        <span className={styles.placeBadge}>
-                          {/* The labels are My Places' own phrases ("Home"). */}
-                          {item.places.map((label) => t(label)).join(" · ")}
-                        </span>
-                      </>
-                    )}
-                  </label>
-                );
-              })}
-            </fieldset>
+            {journeyDriven && chosenStop ? (
+              <details>
+                <summary className={styles.close}>{t("Change")}</summary>
+                {stopChoices}
+              </details>
+            ) : (
+              stopChoices
+            )}
 
             <div className={styles.options}>
               <label>

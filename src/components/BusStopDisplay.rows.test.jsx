@@ -59,6 +59,7 @@ function board(arrivals, stop = KAUPPATORI, overrides = {}) {
       onRefresh={() => {}}
       placesById={new Map()}
       activeRideTripRef={overrides.activeRideTripRef || ""}
+      selectedJourney={overrides.selectedJourney || null}
       onStartRide={overrides.onStartRide || (() => {})}
     />
   );
@@ -424,4 +425,32 @@ test("a destination and its translation are read apart", () => {
 
   const cell = screen.getByText("Harbour").closest("td");
   expect(cell.textContent).toMatch(/^Satama · Harbour/);
+});
+
+
+test("explicit journey boarding opens the selected bus setup with its exit prefilled", async () => {
+  const selectedJourney = {
+    id: "journey-1",
+    stopId: "164",
+    stopName: "Kauppatori",
+    tripRef: "trip-1",
+    lineRef: "1",
+    aimedDepartureAt: NOW + 300,
+    originAimedDepartureAt: null,
+    destinationStopId: "4",
+    destinationStopSequence: null,
+    phase: "waiting",
+    selectedAt: Date.now() - 60_000,
+  };
+
+  render(board([departure()], KAUPPATORI, { selectedJourney }));
+  fireEvent.click(screen.getByRole("button", { name: "Get-off alert" }));
+
+  await screen.findByRole("heading", {
+    name: "Get off at Turun linna",
+  });
+  expect(setupPanels()).toHaveLength(1);
+  const change = screen.getByText("Change").closest("details");
+  expect(change).not.toHaveAttribute("open");
+
 });

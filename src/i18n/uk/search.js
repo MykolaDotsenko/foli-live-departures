@@ -150,6 +150,7 @@ export default {
   "Checking a little farther…": "Перевіряємо трохи далі…",
   "Checked {count} nearby stops": "Перевірено {count} зупинок поруч",
   "Active journey": "Активна поїздка",
+  "I'm on the bus": "Я в автобусі",
   "Choose another route": "Вибрати інший маршрут",
   "Wait for line {line}": "Чекайте маршрут {line}",
   "Walk to {stop}": "Ідіть до {stop}",
@@ -163,8 +164,6 @@ export default {
   "When you get to the transfer stop, tap “I'm at the stop”.":
     "Коли дійдете до зупинки пересадки, натисніть «Я на зупинці».",
   "Wait here for line {line}.": "Чекайте тут маршрут {line}.",
-  "When line {line} arrives, open the selected departure and start the Get-off alert.":
-    "Коли прибуде маршрут {line}, відкрийте вибране відправлення й увімкніть сповіщення про вихід.",
   "Show line {line} departure": "Показати відправлення маршруту {line}",
   "To {destination}": "До {destination}",
   "Leaves {due}": "Відправлення {due}",
@@ -175,8 +174,6 @@ export default {
     "Коли дійдете до зупинки, натисніть «Я на зупинці».",
   "Your selected bus is pinned first in the departure board.":
     "Вибраний автобус закріплено першим на табло відправлень.",
-  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
-    "Після посадки ввімкніть «Сповіщення про вихід» для цього рейсу. Далі режим поїздки залишається головним.",
   "Your selected bus was cancelled.": "Вибраний автобус скасовано.",
   "Your selected bus is no longer a reliable option.": "Вибраний автобус більше не є надійним варіантом.",
   "Offline: this selected plan may be out of date.": "Без мережі: вибраний план може бути застарілим.",
@@ -273,8 +270,6 @@ export default {
     "Один із вибраних майбутніх автобусів скасовано. Виберіть свіжий варіант.",
   "A committed future bus has probably been missed. Choose a fresh option.":
     "Один із вибраних майбутніх автобусів, імовірно, вже пропущено. Виберіть свіжий варіант.",
-  "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg.":
-    "Після посадки ввімкніть сповіщення про вихід для цієї ділянки. Режим поїздки залишається головним до виходу, після чого Помічник маршруту продовжить із наступної ділянки.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Ваш другий автобус скасовано. Виберіть свіжий варіант.",
   "Live check: line {line} still looks catchable.":
@@ -293,8 +288,6 @@ export default {
     "Другий автобус, імовірно, вже пропущено. Виберіть свіжий варіант.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
     "Вибрану пересадку більше не можна надійно продовжити. Виберіть свіжий варіант.",
-  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
-    "Після посадки ввімкніть сповіщення про вихід для вибраної зупинки пересадки. Режим поїздки залишається головним до виходу, після чого Помічник маршруту продовжить із ділянки 2.",
   "Enter a stop, address or place.": "Введіть зупинку, адресу або місце.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
     "Пошук місць потребує мережі. Ви все одно можете вибрати зупинку Föli з підказок.",

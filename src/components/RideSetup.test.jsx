@@ -644,3 +644,120 @@ test("says what to do while there is no stop to start for", async () => {
   expect(screen.queryByText(/Choose your stop first/)).not.toBeInTheDocument();
   expect(screen.getByText(/^Get off at Puistokatu · /)).toBeInTheDocument();
 });
+
+
+test("journey-driven setup confirms the preferred exit before exposing the full stop list", async () => {
+  mocks.fetchTripDetails.mockResolvedValue(null);
+  mocks.fetchTripStopTimes.mockResolvedValue(threeStopTrip);
+  const onStart = vi.fn();
+
+  render(
+    <RideSetup
+      arrival={{
+        lineref: "1",
+        tripref: "trip-164-1",
+        destinationdisplay: "Satama",
+        expecteddeparturetime: 2_000_000_000,
+      }}
+      currentStopId="164"
+      currentStopName="Kauppatori"
+      stopsById={tripStops}
+      placesById={new Map()}
+      routesById={new Map()}
+      preferredTargetStopId="4"
+      journeyDriven
+      onStart={onStart}
+      onCancel={() => {}}
+    />
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Get off at Turun linna" })
+  ).toBeInTheDocument();
+  const change = screen.getByText("Change").closest("details");
+  expect(change).not.toHaveAttribute("open");
+
+  fireEvent.click(screen.getByText("Change"));
+  expect(change).toHaveAttribute("open");
+  expect(screen.getAllByRole("radio")).toHaveLength(2);
+  expect(screen.getByDisplayValue("3")).toBeChecked();
+
+  fireEvent.click(screen.getByRole("button", { name: "Start get-off alert" }));
+  expect(onStart).toHaveBeenCalledTimes(1);
+  expect(onStart.mock.calls[0][0].targetStop.id).toBe("4");
+});
+
+test("journey-driven setup never falls back to Home when the committed exit is missing", async () => {
+  mocks.fetchTripDetails.mockResolvedValue(null);
+  mocks.fetchTripStopTimes.mockResolvedValue(threeStopTrip);
+  const placesById = new Map([
+    [
+      "home",
+      {
+        id: "home",
+        label: "Home",
+        primaryStopId: "32",
+        stops: [{ id: "32", name: "Puistokatu" }],
+      },
+    ],
+  ]);
+
+  render(
+    <RideSetup
+      arrival={{
+        lineref: "1",
+        tripref: "trip-164-1",
+        expecteddeparturetime: 2_000_000_000,
+      }}
+      currentStopId="164"
+      currentStopName="Kauppatori"
+      stopsById={tripStops}
+      placesById={placesById}
+      routesById={new Map()}
+      preferredTargetStopId="999"
+      journeyDriven
+      onStart={() => {}}
+      onCancel={() => {}}
+    />
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Where do you want to get off?" })
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("radio")).toHaveLength(2);
+  expect(screen.getByDisplayValue("2")).not.toBeChecked();
+  expect(screen.getByDisplayValue("3")).not.toBeChecked();
+  expect(
+    screen.getByRole("button", { name: "Start get-off alert" })
+  ).toBeDisabled();
+});
+
+test("manual stop-first setup still exposes the stop list immediately", async () => {
+  mocks.fetchTripDetails.mockResolvedValue(null);
+  mocks.fetchTripStopTimes.mockResolvedValue(threeStopTrip);
+
+  render(
+    <RideSetup
+      arrival={{
+        lineref: "1",
+        tripref: "trip-164-1",
+        expecteddeparturetime: 2_000_000_000,
+      }}
+      currentStopId="164"
+      currentStopName="Kauppatori"
+      stopsById={tripStops}
+      placesById={new Map()}
+      routesById={new Map()}
+      onStart={() => {}}
+      onCancel={() => {}}
+    />
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Where do you want to get off?" })
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("radio")).toHaveLength(2);
+  expect(
+    screen.queryByRole("button", { name: "Change" })
+  ).not.toBeInTheDocument();
+});

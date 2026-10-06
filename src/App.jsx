@@ -19,6 +19,7 @@ import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
+import StopRadarPanel from "./components/StopRadarPanel";
 import useOnlineStatus from "./hooks/useOnlineStatus";
 import useActiveJourney from "./hooks/useActiveJourney";
 import useDestinationIntent from "./hooks/useDestinationIntent";
@@ -64,6 +65,7 @@ import {
   completedFinalWalk,
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
+import { hasCoordinates } from "./utils/geo";
 
 
 function announceStop(stopId, name, loading) {
@@ -103,6 +105,7 @@ function App() {
   const restoreJourneyDestination = journey.restoreDestination;
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
+  const [journeyRadarId, setJourneyRadarId] = useState("");
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -570,6 +573,38 @@ function App() {
     selectStop(selectedJourney.stopId);
   };
 
+  const openJourneyRadar = () => {
+    if (
+      !selectedJourney?.stopId ||
+      !selectedJourneyStop ||
+      !hasCoordinates(selectedJourneyStop)
+    ) {
+      return;
+    }
+    setJourneyRadarId(selectedJourney.id);
+  };
+
+  const closeJourneyRadar = () => {
+    setJourneyRadarId("");
+    globalThis.requestAnimationFrame?.(() => {
+      activeJourneyHeading()?.focus({ preventScroll: true });
+    });
+  };
+
+  const confirmJourneyBoarding = () => {
+    setJourneyRadarId("");
+    const action = globalThis.document?.getElementById(
+      "selected-journey-departure-action"
+    );
+    if (!(action instanceof globalThis.HTMLButtonElement) || action.disabled) return;
+    action.click();
+    globalThis.requestAnimationFrame?.(() =>
+      globalThis.document
+        ?.getElementById("ride-setup-title")
+        ?.focus({ preventScroll: true })
+    );
+  };
+
   const currentStop = stopId
     ? {
         id: stopId,
@@ -630,6 +665,15 @@ function App() {
         online={online}
         compact={Boolean(stopId)}
         onOpenStop={selectStop}
+      />
+    );
+
+  const stopServiceAlerts =
+    stopId && (
+      <ServiceAlerts
+        alerts={serviceAlerts}
+        error={serviceAlertsError}
+        receivedAtMs={serviceAlertsReceivedAtMs}
       />
     );
 
@@ -719,10 +763,35 @@ function App() {
             stop={selectedJourneyStop}
             online={online}
             monitoringState={selectedJourneyMonitoringState}
+            boardingAvailable={Boolean(
+              selectedJourneyArrival && !selectedJourneyCancelled
+            )}
             onConfirmAtStop={confirmJourneyAtStop}
             onShowDeparture={showSelectedJourneyDeparture}
+            onBoard={confirmJourneyBoarding}
+            onGuideWithRadar={
+              hasCoordinates(selectedJourneyStop) ? openJourneyRadar : null
+            }
             onChooseAnother={chooseAnotherJourney}
             onOpenStop={openSelectedJourneyStop}
+          />
+        )}
+
+        {!ride.session &&
+          selectedJourney &&
+          journeyRadarId === selectedJourney.id && (
+          <StopRadarPanel
+            stops={stops}
+            initialTargetStopId={selectedJourney.stopId}
+            recommendedTargetStopId={selectedJourney.stopId}
+            activeStopId={stopId}
+            onOpenStop={(id) => {
+              setJourneyRadarId("");
+              requestFocus(pageHeading);
+              selectStop(id);
+              setFocusSaysStopId(id);
+            }}
+            onClose={closeJourneyRadar}
           />
         )}
 
@@ -767,37 +836,35 @@ function App() {
         {/* Keep the existing stop-search surface as the parallel
             first-class path. No second component or app mode is introduced:
             only its position in the idle Home hierarchy changes. */}
-        <div className="top-section">
-          {stopId && homeRecovery}
+        {!selectedJourney && (
+          <div className="top-section">
+            {stopId && homeRecovery}
 
-          <section className="search-panel" aria-label={t("Choose a bus stop")}>
-            <BusStopForm
-              compact={Boolean(stopId) && !firstVisit}
-              showLocationAction={!journey.destination || Boolean(stopId)}
+            <section className="search-panel" aria-label={t("Choose a bus stop")}>
+              <BusStopForm
+                compact={Boolean(stopId) && !firstVisit}
+                showLocationAction={!journey.destination || Boolean(stopId)}
+                activeStopId={stopId}
+                stops={stops}
+                coordinatesStatus={coordinatesStatus}
+                serviceBoundary={serviceBoundary}
+                onSubmit={selectStop}
+                onEdit={noteSearchEdit}
+              />
+            </section>
+
+            <QuickStops
+              favorites={namedFavorites}
+              recents={namedRecents}
               activeStopId={stopId}
-              stops={stops}
-              coordinatesStatus={coordinatesStatus}
-              serviceBoundary={serviceBoundary}
-              onSubmit={selectStop}
-              onEdit={noteSearchEdit}
+              onSelect={selectSavedStop}
             />
-          </section>
 
-          <QuickStops
-            favorites={namedFavorites}
-            recents={namedRecents}
-            activeStopId={stopId}
-            onSelect={selectSavedStop}
-          />
+            {stopServiceAlerts}
+          </div>
+        )}
 
-          {stopId && (
-            <ServiceAlerts
-              alerts={serviceAlerts}
-              error={serviceAlertsError}
-              receivedAtMs={serviceAlertsReceivedAtMs}
-            />
-          )}
-        </div>
+        {selectedJourney && stopServiceAlerts}
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
@@ -850,7 +917,11 @@ function App() {
             the line above the board, and focus goes to the board's heading:
             sent below it, the page scrolled the buses to that destination,
             now listed first, out of sight. */}
-        {!ride.session && !finalWalk && stopId && !journey.destination && (
+        {!ride.session &&
+          !finalWalk &&
+          !selectedJourney &&
+          stopId &&
+          !journey.destination && (
           <JourneySearch
             key="journey-entry"
             {...planSearchProps}
@@ -877,7 +948,7 @@ function App() {
             a second copy for first visits unmounted under the passenger's
             finger as they chose a stop, dropping keyboard focus to the page
             and the list they had just found. */}
-        {!transferRecoveryContext && (
+        {!selectedJourney && !transferRecoveryContext && (
           <NearbyStops
             stops={stops}
             coordinatesStatus={coordinatesStatus}
@@ -901,9 +972,9 @@ function App() {
 
         {/* Home recovery is useful, but on idle Home it must not compete with
             destination, stop search or physical nearby-stop orientation. */}
-        {!stopId && homeRecovery}
+        {!selectedJourney && !stopId && homeRecovery}
 
-        {!sharedPlace && (
+        {!sharedPlace && !selectedJourney && (
           <MyPlaces
             stops={stops}
             coordinatesStatus={coordinatesStatus}

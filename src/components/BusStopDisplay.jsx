@@ -282,6 +282,12 @@ function BusStopDisplay({
     [language]
   );
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
+  const selectedJourneyIndex =
+    selectedJourney?.stopId === stopId
+      ? visibleArrivals.findIndex((arrival) =>
+          arrivalMatchesActiveJourney(arrival, selectedJourney)
+        )
+      : -1;
   const { fitsByRowKey: destinationFitsByKey, state: destinationFitState } =
     useDestinationBoardFits({
       stopId,
@@ -294,9 +300,7 @@ function BusStopDisplay({
     arrival,
     rowKey: rowKeys[index],
     fit: destinationFitsByKey[rowKeys[index]] || null,
-    selected:
-      selectedJourney?.stopId === stopId &&
-      arrivalMatchesActiveJourney(arrival, selectedJourney),
+    selected: index === selectedJourneyIndex,
     originalIndex: index,
   }));
 
