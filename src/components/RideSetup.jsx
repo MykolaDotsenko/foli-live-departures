@@ -110,6 +110,7 @@ export default function RideSetup({
   routesByShortName,
   preferredTargetStopId = "",
   preferredTargetStopSequence = null,
+  journeyDriven = false,
   onStart,
   onCancel,
 }) {
@@ -130,6 +131,7 @@ export default function RideSetup({
     String(import.meta.env.VITE_NATIVE_BUILD || "") === "true";
   const [nativeForeground, setNativeForeground] = useState(false);
   const [startError, setStartError] = useState("");
+  const [changeStop, setChangeStop] = useState(false);
   const panelRef = useRef(null);
   // The Start bar is fixed to the bottom of a phone: what is focused below
   // the fold must stop above it, not behind it.
@@ -375,12 +377,18 @@ export default function RideSetup({
           <p className={styles.kicker}>{t("Get-off alert")}</p>
           {/* Under the board's h1, so an h2: as an h4 it skipped two
               levels of the page's outline. */}
-          <h2>{t("Where do you want to get off?")}</h2>
-          <p>
-            {t(
-              "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP."
-            )}
-          </p>
+          <h2 id="ride-setup-title" tabIndex={-1}>
+            {journeyDriven && chosenStop
+              ? t("Get off at {name}", { name: optionName(chosenStop) })
+              : t("Where do you want to get off?")}
+          </h2>
+          {!journeyDriven && (
+            <p>
+              {t(
+                "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP."
+              )}
+            </p>
+          )}
         </div>
         <button type="button" className={styles.close} onClick={onCancel}>
           {t("Cancel")}
@@ -425,7 +433,8 @@ export default function RideSetup({
         !ambiguousBoarding &&
         downstream.length > 0 && (
           <>
-            <fieldset className={styles.stopList}>
+            {(!journeyDriven || changeStop || !chosenStop) && (
+              <fieldset className={styles.stopList}>
               <legend className={styles.srOnly}>
                 {t("Choose your exit stop")}
               </legend>
@@ -487,7 +496,18 @@ export default function RideSetup({
                   </label>
                 );
               })}
-            </fieldset>
+              </fieldset>
+            )}
+
+            {journeyDriven && chosenStop && !changeStop && (
+              <button
+                type="button"
+                className={styles.changeStop}
+                onClick={() => setChangeStop(true)}
+              >
+                {t("Change stop")}
+              </button>
+            )}
 
             <div className={styles.options}>
               <label>
