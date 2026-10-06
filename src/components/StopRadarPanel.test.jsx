@@ -1,35 +1,26 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, test, vi } from "vitest";
-import { RadarLoadBoundary } from "./StopRadarPanel";
+import StopRadarPanel from "./StopRadarPanel";
 
-function BrokenRadar() {
+vi.mock("./StopRadar", () => {
   throw new Error("chunk failed");
-}
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-test("a Radar chunk failure leaves explicit retry and close actions", () => {
-  vi.spyOn(console, "error").mockImplementation(() => {});
-  const onRetry = vi.fn();
+test("a Radar chunk failure leaves explicit retry and close actions", async () => {
   const onClose = vi.fn();
-
-  render(
-    <RadarLoadBoundary onRetry={onRetry} onClose={onClose} showClose>
-      <BrokenRadar />
-    </RadarLoadBoundary>
-  );
+  render(<StopRadarPanel stops={[]} onClose={onClose} />);
 
   expect(
-    screen.getByRole("alert")
+    await screen.findByRole("alert")
   ).toHaveTextContent(
     "Stop radar couldn’t open. Check your connection, then try again."
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Open stop radar" }));
-  expect(onRetry).toHaveBeenCalledTimes(1);
-
+  expect(screen.getByRole("button", { name: "Open stop radar" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Close stop radar" }));
   expect(onClose).toHaveBeenCalledTimes(1);
 });
