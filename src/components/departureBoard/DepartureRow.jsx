@@ -298,19 +298,15 @@ function DepartureRow({
                 });
               }}
               preferredTargetStopId={
-                selectedForJourney && selectedJourney?.destinationStopId
-                  ? selectedJourney.destinationStopId
+                selectedForJourney
+                  ? selectedJourney.destinationStopId || ""
                   : servesJourneyDestination
                     ? destinationFit.destinationStopId
                     : ""
               }
               preferredTargetStopSequence={
-                selectedForJourney &&
-                selectedJourney?.destinationStopSequence !== null &&
-                selectedJourney?.destinationStopSequence !== undefined &&
-                selectedJourney?.destinationStopSequence !== "" &&
-                Number.isFinite(Number(selectedJourney.destinationStopSequence))
-                  ? selectedJourney.destinationStopSequence
+                selectedForJourney
+                  ? selectedJourney.destinationStopSequence ?? null
                   : servesJourneyDestination
                     ? destinationFit.destinationStopSequence
                     : null
