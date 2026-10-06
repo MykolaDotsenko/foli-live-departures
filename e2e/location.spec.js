@@ -23,7 +23,7 @@ test("bare URL keeps one-tap location beside search and only fills the field", a
   const locate = page.getByRole("button", { name: "Use my location", exact: true });
   await expect(input).toHaveValue("");
   await expect(locate).toBeVisible();
-  await expect(page.getByRole("button", { name: "Find nearest stop" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Use my location" })).toBeVisible();
   await expect(page).not.toHaveURL(/stop=/);
   await expect(
     page.locator('section[aria-labelledby="departures-title"]')
@@ -61,7 +61,7 @@ test("finds the nearest stop from one-time browser geolocation", async ({
   await page.goto("/?stop=4");
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
 
   await expect(page).toHaveURL(/stop=164/);
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
@@ -96,7 +96,7 @@ test("a first visit offers the stops near you", async ({
   await context.setGeolocation({ latitude: 60.45182, longitude: 22.26662 });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
 
   await expect(page).toHaveURL(/stop=164/);
   await expect(page.getByRole("heading", { name: "Kauppatori" })).toBeVisible();
@@ -123,7 +123,7 @@ test("choosing a stop from the first visit's near-you list keeps your place", as
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
 
   const choice = page.getByRole("button", { name: /^Puistokatu, stop 32/ });
   await choice.click();
@@ -178,7 +178,7 @@ test("a late location fix leaves a stop searched for meanwhile on the board", as
   await page.goto("/?stop=4");
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   await page.getByRole("combobox", { name: "Find your stop" }).fill("32");
   await page.getByRole("button", { name: "Show departures" }).click();
   await expect(page).toHaveURL(/stop=32/);
@@ -259,7 +259,7 @@ test("a late near-you fix leaves a half-typed search and its board alone", async
   await page.goto("/?stop=4");
   await expect(page.getByRole("heading", { name: "Turun linna" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   const input = page.getByRole("combobox", { name: "Find your stop" });
   await input.fill("Puisto");
   expect(
@@ -344,11 +344,11 @@ test("with location refused, a destination is answered from a stop chosen by nam
     .fill("Puistokatu");
   await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
 
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
   await expect(page.getByText(/Location access is blocked/)).toBeVisible();
 
   // Before, that error was where a destination without location ended.
-  await page.getByRole("button", { name: "Choose a stop by name" }).click();
+  await page.getByRole("button", { name: "Choose a starting stop" }).click();
   const search = page.getByRole("combobox", { name: "Find your stop" });
   await expect(search).toBeFocused();
   await search.fill("Kauppatori");
@@ -434,7 +434,7 @@ test("journey options offer the next bus too, and where to get off", async ({
     .getByRole("combobox", { name: "Stop, address or place" })
     .fill("Puistokatu");
   await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
-  await page.getByRole("button", { name: "Find nearest stop" }).click();
+  await page.getByRole("button", { name: "Use my location" }).click();
 
   const options = page.getByRole("region", { name: "Best ways to Puistokatu" });
   const cards = options.getByRole("button");
