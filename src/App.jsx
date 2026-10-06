@@ -106,7 +106,6 @@ function App() {
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const [journeyRadarId, setJourneyRadarId] = useState("");
-  const [boardingRequest, setBoardingRequest] = useState(0);
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -593,10 +592,17 @@ function App() {
   };
 
   const confirmJourneyBoarding = () => {
-    if (!selectedJourney?.stopId || !selectedJourney.tripRef) return;
     setJourneyRadarId("");
-    setBoardingRequest((request) => request + 1);
-    selectStop(selectedJourney.stopId);
+    const action = globalThis.document?.getElementById(
+      "selected-journey-departure-action"
+    );
+    if (!(action instanceof globalThis.HTMLButtonElement) || action.disabled) return;
+    action.click();
+    globalThis.requestAnimationFrame?.(() =>
+      globalThis.document
+        ?.getElementById("ride-setup-title")
+        ?.focus({ preventScroll: true })
+    );
   };
 
   const currentStop = stopId
@@ -889,7 +895,6 @@ function App() {
               placesById={placesById}
               destination={journey.destination}
               selectedJourney={selectedJourney}
-              boardingRequest={boardingRequest}
               onStartRide={startRide}
               activeRideTripRef={ride.session?.tripRef || ""}
               cancellations={stopCancellations}
