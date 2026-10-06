@@ -87,6 +87,7 @@ export default function TransferJourneyOptions({
   destinationLabel,
   onSelectJourney,
   mode = "default",
+  showAccessDistance = true,
 }) {
   useLanguage();
   if (!Array.isArray(options) || options.length === 0) return null;
@@ -171,7 +172,11 @@ export default function TransferJourneyOptions({
               </span>
 
               <span className={styles.meta}>
-                {formatDistance(option.originDistanceMeters)} {t("to first stop")} ·{" "}
+                {showAccessDistance && (
+                  <>
+                    {formatDistance(option.originDistanceMeters)} {t("to first stop")} ·{" "}
+                  </>
+                )}
                 {formatDue(routeLegs[0]?.departureAt)}
                 {" · "}
                 {t("total walking ≈ {distance}", {
