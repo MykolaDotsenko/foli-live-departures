@@ -874,44 +874,26 @@ function NearbyStops({
           )}
 
           {betterNearbyStop && (
-            <aside
-              className={styles.betterStop}
-              aria-label={t("Best for {destination}", {
-                destination: destinationLabel,
-              })}
-            >
-              <div className={styles.betterStopCopy}>
-                <strong>
-                  {t("Best for {destination}", {
-                    destination: destinationLabel,
-                  })}
-                </strong>
-                <span>
-                  {stopLabel(betterNearbyStop)}
-                  {Number.isFinite(Number(betterNearbyStop.distanceMeters))
-                    ? ` · ${formatDistance(betterNearbyStop.distanceMeters)}`
-                    : ""}
-                  {betterNearbyFit?.best?.lineRef
-                    ? ` · ${t("Line {line}", { line: betterNearbyFit.best.lineRef })}`
-                    : ""}
-                  {Number.isFinite(Number(betterNearbyFit?.best?.destinationArrivalAt))
-                    ? ` · ${t("arrive about {time}", {
-                        time: formatClock(betterNearbyFit.best.destinationArrivalAt),
-                      })}`
-                    : ""}
-                </span>
-              </div>
+            <div className={styles.notice} role="status">
+              <strong>
+                {t("Best for {destination}", { destination: destinationLabel })}:
+              </strong>{" "}
+              {stopLabel(betterNearbyStop)}
+              {betterNearbyFit?.best?.lineRef
+                ? ` · ${t("Line {line}", { line: betterNearbyFit.best.lineRef })}`
+                : ""}
               <button
                 type="button"
-                className={styles.betterStopAction}
+                className={styles.locateButton}
                 onClick={() => onOpenStop(String(betterNearbyStop.id))}
-              >
-                {t("Open {name}, stop {id}", {
+                aria-label={t("Open {name}, stop {id}", {
                   name: stopLabel(betterNearbyStop),
                   id: betterNearbyStop.id,
                 })}
+              >
+                {t("Show")}
               </button>
-            </aside>
+            </div>
           )}
 
           {destination && directJourneyOptions.length > 0 && (
