@@ -332,6 +332,32 @@ test("the next bus is offered for missing the first one", () => {
   expect(screen.queryByText("The only bus there we found")).not.toBeInTheDocument();
 });
 
+test("a selected origin stop does not pretend the passenger is physically there", () => {
+  render(
+    <JourneyOptions
+      destinationLabel="Home"
+      onOpenStop={() => {}}
+      showBoardingConfidence={false}
+      options={[
+        {
+          id: "chosen-origin",
+          label: "fastest",
+          stopId: "100",
+          stopName: "Kauppatori",
+          distanceMeters: 0,
+          departure: { ...baseDeparture, catchability: "at-stop" },
+          arrivalDeltaSec: 0,
+          walkingDeltaMeters: 0,
+        },
+      ]}
+    />
+  );
+
+  expect(screen.getByText(/Line 18/)).toBeInTheDocument();
+  expect(screen.queryByText(/you’re at its stop/i)).not.toBeInTheDocument();
+  expect(screen.queryByText(/confidence/i)).not.toBeInTheDocument();
+});
+
 test("at the stop, the card says where the passenger is, not that the bus is there", () => {
   render(
     <JourneyOptions
