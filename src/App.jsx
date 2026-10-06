@@ -773,6 +773,7 @@ function App() {
           <section className="search-panel" aria-label={t("Choose a bus stop")}>
             <BusStopForm
               compact={Boolean(stopId) && !firstVisit}
+              showLocationAction={!journey.destination || Boolean(stopId)}
               activeStopId={stopId}
               stops={stops}
               coordinatesStatus={coordinatesStatus}
