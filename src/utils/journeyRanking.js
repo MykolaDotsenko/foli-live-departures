@@ -57,33 +57,6 @@ function destinationArrival(fit) {
 }
 
 /**
- * True only when moving away from an explicitly chosen origin stop has
- * meaningful passenger value. A stronger evidence class is enough; inside
- * the same class require the same two-minute threshold used to stabilize the
- * ranked recommendation.
- *
- * @param {any} currentFit
- * @param {any} candidateFit
- * @param {number} [switchThresholdSec]
- */
-export function materiallyBetterDestinationFit(
-  currentFit,
-  candidateFit,
-  switchThresholdSec = MATERIAL_SWITCH_SECONDS
-) {
-  const currentClass = rankingClass(currentFit);
-  const candidateClass = rankingClass(candidateFit);
-  if (candidateClass < currentClass) return true;
-  if (candidateClass > currentClass) return false;
-
-  const currentArrival = destinationArrival(currentFit);
-  const candidateArrival = destinationArrival(candidateFit);
-  if (currentArrival === null || candidateArrival === null) return false;
-
-  return currentArrival - candidateArrival >= Math.max(0, switchThresholdSec);
-}
-
-/**
  * Stable destination-aware ordering.
  *
  * The strongest evidence class always wins. Inside the same evidence class,
