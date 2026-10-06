@@ -829,37 +829,47 @@ function App() {
         {/* Keep the existing stop-search surface as the parallel
             first-class path. No second component or app mode is introduced:
             only its position in the idle Home hierarchy changes. */}
-        <div className="top-section">
-          {stopId && homeRecovery}
+        {!selectedJourney && (
+          <div className="top-section">
+            {stopId && homeRecovery}
 
-          <section className="search-panel" aria-label={t("Choose a bus stop")}>
-            <BusStopForm
-              compact={Boolean(stopId) && !firstVisit}
-              showLocationAction={!journey.destination || Boolean(stopId)}
+            <section className="search-panel" aria-label={t("Choose a bus stop")}>
+              <BusStopForm
+                compact={Boolean(stopId) && !firstVisit}
+                showLocationAction={!journey.destination || Boolean(stopId)}
+                activeStopId={stopId}
+                stops={stops}
+                coordinatesStatus={coordinatesStatus}
+                serviceBoundary={serviceBoundary}
+                onSubmit={selectStop}
+                onEdit={noteSearchEdit}
+              />
+            </section>
+
+            <QuickStops
+              favorites={namedFavorites}
+              recents={namedRecents}
               activeStopId={stopId}
-              stops={stops}
-              coordinatesStatus={coordinatesStatus}
-              serviceBoundary={serviceBoundary}
-              onSubmit={selectStop}
-              onEdit={noteSearchEdit}
+              onSelect={selectSavedStop}
             />
-          </section>
 
-          <QuickStops
-            favorites={namedFavorites}
-            recents={namedRecents}
-            activeStopId={stopId}
-            onSelect={selectSavedStop}
+            {stopId && (
+              <ServiceAlerts
+                alerts={serviceAlerts}
+                error={serviceAlertsError}
+                receivedAtMs={serviceAlertsReceivedAtMs}
+              />
+            )}
+          </div>
+        )}
+
+        {selectedJourney && stopId && (
+          <ServiceAlerts
+            alerts={serviceAlerts}
+            error={serviceAlertsError}
+            receivedAtMs={serviceAlertsReceivedAtMs}
           />
-
-          {stopId && (
-            <ServiceAlerts
-              alerts={serviceAlerts}
-              error={serviceAlertsError}
-              receivedAtMs={serviceAlertsReceivedAtMs}
-            />
-          )}
-        </div>
+        )}
 
         {/* Always in the page, so a change is announced: a live region
             added at that moment often is not. */}
@@ -913,7 +923,11 @@ function App() {
             the line above the board, and focus goes to the board's heading:
             sent below it, the page scrolled the buses to that destination,
             now listed first, out of sight. */}
-        {!ride.session && !finalWalk && stopId && !journey.destination && (
+        {!ride.session &&
+          !finalWalk &&
+          !selectedJourney &&
+          stopId &&
+          !journey.destination && (
           <JourneySearch
             key="journey-entry"
             {...planSearchProps}
@@ -940,7 +954,7 @@ function App() {
             a second copy for first visits unmounted under the passenger's
             finger as they chose a stop, dropping keyboard focus to the page
             and the list they had just found. */}
-        {!transferRecoveryContext && (
+        {!selectedJourney && !transferRecoveryContext && (
           <NearbyStops
             stops={stops}
             coordinatesStatus={coordinatesStatus}
@@ -964,9 +978,9 @@ function App() {
 
         {/* Home recovery is useful, but on idle Home it must not compete with
             destination, stop search or physical nearby-stop orientation. */}
-        {!stopId && homeRecovery}
+        {!selectedJourney && !stopId && homeRecovery}
 
-        {!sharedPlace && (
+        {!sharedPlace && !selectedJourney && (
           <MyPlaces
             stops={stops}
             coordinatesStatus={coordinatesStatus}
