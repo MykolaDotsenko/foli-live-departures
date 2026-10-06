@@ -87,7 +87,7 @@ export default function TransferJourneyOptions({
   destinationLabel,
   onSelectJourney,
   mode = "default",
-  showAccess = true,
+  access = true,
 }) {
   useLanguage();
   if (!Array.isArray(options) || options.length === 0) return null;
@@ -172,7 +172,7 @@ export default function TransferJourneyOptions({
               </span>
 
               <span className={styles.meta}>
-                {showAccess && (
+                {access && (
                   <>
                     {formatDistance(option.originDistanceMeters)} {t("to first stop")} ·{" "}
                   </>
