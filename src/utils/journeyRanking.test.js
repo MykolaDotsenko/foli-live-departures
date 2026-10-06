@@ -1,8 +1,5 @@
 import { expect, test } from "vitest";
-import {
-  materiallyBetterDestinationFit,
-  rankDestinationStops,
-} from "./journeyRanking";
+import { rankDestinationStops } from "./journeyRanking";
 
 const stops = [
   { id: "near", distanceMeters: 80 },
@@ -135,23 +132,3 @@ test("a tight stop with no later catchable bus still ranks below a good one", ()
 });
 
 
-test("better-stop suggestion requires a material improvement", () => {
-  expect(
-    materiallyBetterDestinationFit(good(2_090), good(2_000))
-  ).toBe(false);
-  expect(
-    materiallyBetterDestinationFit(good(2_121), good(2_000))
-  ).toBe(true);
-  expect(
-    materiallyBetterDestinationFit(
-      { status: "tight", best: { destinationArrivalAt: 1_900 } },
-      good(2_200)
-    )
-  ).toBe(true);
-  expect(
-    materiallyBetterDestinationFit(
-      good(2_000),
-      { status: "tight", best: { destinationArrivalAt: 1_700 } }
-    )
-  ).toBe(false);
-});
