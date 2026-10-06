@@ -7,7 +7,8 @@
 **Canonical product spec:** [Journey Assistant](JOURNEY_ASSISTANT_SPEC.md)  
 **Detailed nearby-routing appendix:** [Destination-aware Nearby](DESTINATION_AWARE_NEARBY_SPEC.md)  
 **Radar contract:** [Stop Radar / Compass](STOP_RADAR_SPEC.md)  
-**Ride contract:** [Ride Mode](RIDE_MODE_SPEC.md)
+**Ride contract:** [Ride Mode](RIDE_MODE_SPEC.md)  
+**Batch 1 screen-flow spec:** [Dual-entry Home + standalone Stop Radar](DUAL_FLOW_BATCH1_SCREEN_FLOW.md)
 
 ---
 
