@@ -58,8 +58,14 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // measure 645,210–645,268 raw and 182,998–183,095 gzip bytes; master
 // measured 643,270–643,363 raw and 182,498–182,545 gzip. The reviewed caps
 // are 646,000 raw and 183,300 gzip bytes. The startup budget is unchanged.
-const MAX_SHIPPED_JS_CSS_BYTES = 646_000;
-const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 183_300;
+// Dual-flow journey execution (2026-10-06: destination-first/stop-first
+// convergence, phase-led Active Journey, journey-targeted Radar, explicit
+// boarding handoff into the existing Get-off alert, and active-journey IA
+// hardening) measures 648,522 raw bytes on CI. Startup remains inside its
+// unchanged cap because Stop Radar is still lazy-loaded. Allocate bounded
+// headroom for this reviewed feature set rather than weakening startup limits.
+const MAX_SHIPPED_JS_CSS_BYTES = 649_000;
+const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 187_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
 
