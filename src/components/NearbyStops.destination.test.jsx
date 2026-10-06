@@ -346,7 +346,7 @@ test("does not reuse an approximate remembered location as a journey origin", ()
   );
 
   expect(
-    screen.getByRole("heading", { name: "Start from where you are?" })
+    screen.getByRole("heading", { name: "Near you" })
   ).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Use my location" })
@@ -388,9 +388,9 @@ test("uses the open stop as origin before any remembered or new GPS position", (
   );
 
   expect(
-    screen.getByRole("heading", { name: "Starting from Closer wrong side" })
+    screen.getByRole("heading", { name: "Nearby stops for Home stop" })
   ).toBeInTheDocument();
-  expect(screen.getByText("The open stop is your journey start.")).toBeInTheDocument();
+  expect(screen.getByText("Tap a stop to see when its buses leave.")).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "Use my location" })
   ).not.toBeInTheDocument();
