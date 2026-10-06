@@ -36,7 +36,7 @@ import { stopLabel } from "../utils/stopNames";
 import StopName from "./StopName";
 import JourneyOptions from "./JourneyOptions";
 import TransferJourneyOptions from "./TransferJourneyOptions";
-import { recentPosition, rememberPosition } from "../utils/sessionPosition";
+import { rememberPosition } from "../utils/sessionPosition";
 
 // A fresh lazy component per attempt: React keeps a failed import's
 // rejection, so the one that failed would fail again on every reopen.
@@ -88,30 +88,6 @@ function shownDestinationLabel(destination) {
   return destination.kind === "saved-place"
     ? t(destination.label)
     : destination.label;
-}
-
-// A remembered fix may become a journey origin only when it is still
-// precise enough and plausibly inside the Föli network. This never asks the
-// browser for location: it only reuses a position the passenger explicitly
-// shared earlier in this tab.
-function reusableJourneyPosition(stops, serviceBoundary) {
-  const position = recentPosition();
-  if (
-    !position ||
-    !Number.isFinite(position.accuracy) ||
-    position.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
-  ) {
-    return null;
-  }
-
-  if (isInsideMultiPolygon(position, serviceBoundary) === false) return null;
-
-  const nearest = findNearestStops(stops, position, 1)[0];
-  if (!nearest || nearest.distanceMeters > OUTSIDE_NETWORK_WARNING_METERS) {
-    return null;
-  }
-
-  return position;
 }
 
 function fitStatusText(fit, destinationLabel, isBest) {
@@ -272,7 +248,6 @@ function NearbyStops({
   const restoreRadarFocusRef = useRef(false);
   const radarSeededPositionRef = useRef(false);
   const radarLatestPositionRef = useRef(null);
-  const reusedDestinationRef = useRef("");
 
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
@@ -311,39 +286,6 @@ function NearbyStops({
     [planningOrigin, stops]
   );
 
-  useEffect(() => {
-    const destinationId = destination?.id || "";
-    if (!destinationId) {
-      reusedDestinationRef.current = "";
-      return;
-    }
-    if (
-      activeOriginStop ||
-      position ||
-      !hasStopCoordinates ||
-      reusedDestinationRef.current === destinationId
-    ) {
-      return;
-    }
-
-    const remembered = reusableJourneyPosition(stops, serviceBoundary);
-    // Mark this destination either way. If the old fix is too approximate,
-    // do not keep reconsidering it as unrelated catalogue/boundary renders
-    // arrive; the passenger gets an explicit origin choice instead.
-    reusedDestinationRef.current = destinationId;
-    if (!remembered) return;
-
-    setPosition(remembered);
-    setStatus("success");
-    setError("");
-  }, [
-    activeOriginStop,
-    destination?.id,
-    hasStopCoordinates,
-    position,
-    serviceBoundary,
-    stops,
-  ]);
   const expandedNearbyStops = useMemo(
     () => findNearestStops(stops, planningOrigin, EXPANDED_NEARBY_STOP_LIMIT),
     [planningOrigin, stops]
