@@ -90,6 +90,7 @@ export default {
   "Tap a stop to see when its buses leave.":
     "Натисніть на зупинку, щоб побачити її відправлення.",
   "Nearby stop sorting": "Сортування зупинок поруч",
+  "Compare nearby stops": "Порівняти зупинки поруч",
   "Best for {destination}": "Найкраще для {destination}",
   "Checking routes…": "Перевіряємо маршрути…",
   "Checking which buses go to {destination}…": "Перевіряємо, які автобуси їдуть до {destination}…",
