@@ -95,7 +95,7 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
 
   // Nothing to choose from yet: the passenger is told what the button does.
   expect(
-    screen.getByText("Uses your location once. It isn’t saved.")
+    screen.getByText("Use your location once, or choose a starting stop. It isn’t saved.")
   ).toBeInTheDocument();
   expect(
     screen.queryByText("Tap a stop to see when its buses leave.")
