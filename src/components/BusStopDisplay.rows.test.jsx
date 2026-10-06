@@ -455,7 +455,8 @@ test("explicit journey boarding opens the selected bus setup with its exit prefi
     name: "Get off at Turun linna",
   });
   expect(setupPanels()).toHaveLength(1);
-  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
+  const change = screen.getByText("Change").closest("details");
+  expect(change).not.toHaveAttribute("open");
 
   await waitFor(() => expect(heading).toHaveFocus());
 });
