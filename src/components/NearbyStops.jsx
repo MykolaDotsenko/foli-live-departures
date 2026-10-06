@@ -19,7 +19,7 @@ import {
   nearestChoiceIsAmbiguous,
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
-import { rankDestinationStops } from "../utils/journeyRanking";
+import { isMateriallyBetterDestinationFit, rankDestinationStops } from "../utils/journeyRanking";
 import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import { directOptionMatchesActiveJourney } from "../utils/activeJourney";
 import styles from "./NearbyStops.module.css";
@@ -440,6 +440,21 @@ function NearbyStops({
     destinationSortedStops.find((stop) =>
       ["good", "tight"].includes(fitsByStop[stop.id]?.status)
     )?.id || "";
+  const betterNearbyStop =
+    activeOriginStop &&
+    bestStopId &&
+    String(bestStopId) !== String(activeStopId) &&
+    isMateriallyBetterDestinationFit(
+      fitsByStop[bestStopId],
+      fitsByStop[activeStopId]
+    )
+      ? destinationSortedStops.find(
+          (stop) => String(stop.id) === String(bestStopId)
+        ) || null
+      : null;
+  const betterNearbyFit = betterNearbyStop
+    ? fitsByStop[betterNearbyStop.id]
+    : null;
   const activeStopHasCoordinates = stops.some(
     (stop) => stop.id === activeStopId && hasCoordinates(stop)
   );
@@ -856,6 +871,47 @@ function NearbyStops({
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
+          )}
+
+          {betterNearbyStop && (
+            <aside
+              className={styles.betterStop}
+              aria-label={t("Best for {destination}", {
+                destination: destinationLabel,
+              })}
+            >
+              <div className={styles.betterStopCopy}>
+                <strong>
+                  {t("Best for {destination}", {
+                    destination: destinationLabel,
+                  })}
+                </strong>
+                <span>
+                  {stopLabel(betterNearbyStop)}
+                  {Number.isFinite(Number(betterNearbyStop.distanceMeters))
+                    ? ` · ${formatDistance(betterNearbyStop.distanceMeters)}`
+                    : ""}
+                  {betterNearbyFit?.best?.lineRef
+                    ? ` · ${t("Line {line}", { line: betterNearbyFit.best.lineRef })}`
+                    : ""}
+                  {Number.isFinite(Number(betterNearbyFit?.best?.destinationArrivalAt))
+                    ? ` · ${t("arrive about {time}", {
+                        time: formatClock(betterNearbyFit.best.destinationArrivalAt),
+                      })}`
+                    : ""}
+                </span>
+              </div>
+              <button
+                type="button"
+                className={styles.betterStopAction}
+                onClick={() => onOpenStop(String(betterNearbyStop.id))}
+              >
+                {t("Open {name}, stop {id}", {
+                  name: stopLabel(betterNearbyStop),
+                  id: betterNearbyStop.id,
+                })}
+              </button>
+            </aside>
           )}
 
           {destination && directJourneyOptions.length > 0 && (
