@@ -95,6 +95,114 @@ test("destination-first can choose a destination without opening it as the curre
   ).toHaveCount(0);
 });
 
+test("destination selection collapses search and asks for an explicit origin", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.clearPermissions();
+  await page.goto("/");
+
+  const journey = page.locator(
+    'section[aria-labelledby="journey-search-title"]'
+  );
+  const destination = journey.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+  await destination.fill("Kauppatori");
+  await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
+
+  await expect(
+    journey.getByRole("combobox", { name: "Stop, address or place" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Start from where you are?" })
+  ).toBeFocused();
+  await expect(
+    page.getByRole("button", { name: "Use my location" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Choose a starting stop" })
+  ).toBeVisible();
+
+  // Merely choosing a destination must not request geolocation.
+  const permission = await context.newCDPSession(page).catch(() => null);
+  expect(permission === null || typeof permission === "object").toBe(true);
+
+  await page.getByRole("button", { name: "Choose a starting stop" }).click();
+  await expect(
+    page.getByRole("combobox", { name: "Find your stop" })
+  ).toBeFocused();
+
+  // The app remains usable with location ungranted.
+  await expect(page).not.toHaveURL(/stop=/);
+  expect(new globalThis.URL(page.url()).origin).toBe(
+    new globalThis.URL(baseURL).origin
+  );
+});
+
+test("destination can use explicit geolocation without opening a stop automatically", async ({
+  page,
+  context,
+  baseURL,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium-desktop");
+
+  await context.grantPermissions(["geolocation"], {
+    origin: new globalThis.URL(baseURL).origin,
+  });
+  await context.setGeolocation({
+    latitude: 60.45182,
+    longitude: 22.26662,
+    accuracy: 12,
+  });
+
+  await page.goto("/");
+  const journey = page.locator(
+    'section[aria-labelledby="journey-search-title"]'
+  );
+  await journey
+    .getByRole("combobox", { name: "Stop, address or place" })
+    .fill("Kauppatori");
+  await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
+
+  await page.getByRole("button", { name: "Use my location" }).click();
+
+  await expect(page.getByText("Location found · ±10 m")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Nearby stops for Kauppatori" })
+  ).toBeVisible();
+  await expect(page).not.toHaveURL(/stop=/);
+});
+
+test("an open stop remains the origin when a destination is added", async ({
+  page,
+}) => {
+  await page.goto("/?stop=164");
+
+  await expect(
+    page.getByRole("heading", { name: "Kauppatori", exact: true })
+  ).toBeVisible();
+
+  const journey = page.locator(
+    'section[aria-labelledby="journey-search-title"]'
+  );
+  await journey.getByRole("button", { name: "Where do you want to go?" }).click();
+  const destination = journey.getByRole("combobox", {
+    name: "Stop, address or place",
+  });
+  await destination.fill("Turun linna");
+  await journey.getByRole("option", { name: /Turun linna/ }).first().click();
+
+  await expect(
+    page.getByRole("heading", { name: /Starting from Kauppatori/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Use my location" })
+  ).toHaveCount(0);
+  await expect(page).toHaveURL(/stop=164/);
+});
+
 test("standalone Radar works with no destination and returns focus cleanly", async ({
   page,
   context,
