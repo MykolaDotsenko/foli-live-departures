@@ -894,6 +894,11 @@ test("an approaching selected bus asks for explicit boarding confirmation", () =
   expect(
     screen.getByRole("heading", { name: "Wait for line 18" })
   ).toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      "When you board, use Get-off alert on that departure. Ride Mode remains in control after that."
+    )
+  ).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "I'm on the bus" }));
   expect(onBoard).toHaveBeenCalledTimes(1);
