@@ -29,18 +29,7 @@ function hasFinalWalk(departure) {
   return Number.isFinite(distance) && distance >= 0;
 }
 
-function estimateSourceText(liveState, includesFinalWalk = false) {
-  if (includesFinalWalk) {
-    if (liveState === "live") return t("Live transit + approximate walk");
-    if (liveState === "schedule") {
-      return t("Timetable + approximate walk");
-    }
-    if (liveState === "delayed") {
-      return t("Realtime uncertain + approximate walk");
-    }
-    return t("Transit + approximate walk");
-  }
-
+function estimateSourceText(liveState) {
   if (liveState === "live") return t("Live estimate");
   if (liveState === "schedule") return t("Timetable estimate");
   if (liveState === "delayed") return t("Realtime uncertain");
@@ -273,10 +262,7 @@ export default function JourneyOptions({
                 <summary>{t("Trip details")}</summary>
                 {details && <span>{details}</span>}
                 <span>
-                  {estimateSourceText(
-                    option.departure.liveState,
-                    hasFinalWalk(option.departure)
-                  )}
+                  {estimateSourceText(option.departure.liveState)}
                 </span>
               </details>
             </article>
