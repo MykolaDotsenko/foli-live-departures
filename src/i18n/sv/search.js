@@ -98,6 +98,7 @@ export default {
   "Tap a stop to see when its buses leave.":
     "Tryck på en hållplats för att se dess avgångar.",
   "Nearby stop sorting": "Sortering av närliggande hållplatser",
+  "Compare nearby stops": "Jämför hållplatser i närheten",
   "Best for {destination}": "Bäst för {destination}",
   "Checking routes…": "Kontrollerar rutter…",
   "Checking which buses go to {destination}…":
