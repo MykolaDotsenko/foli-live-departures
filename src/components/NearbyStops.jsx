@@ -814,6 +814,7 @@ function NearbyStops({
               destinationLabel={destinationLabel}
               stopsById={stopsById}
               showBoardingConfidence={!activeOriginStop}
+              showAccessDistance={!activeOriginStop}
               onSelectJourney={
                 onSelectJourney
                   ? (option) =>
@@ -846,6 +847,7 @@ function NearbyStops({
               <TransferJourneyOptions
                 options={transferJourneyOptions}
                 destinationLabel={destinationLabel}
+                showAccessDistance={!activeOriginStop}
                 onSelectJourney={onSelectTransferJourney}
               />
             )}
