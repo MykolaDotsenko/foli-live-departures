@@ -882,6 +882,7 @@ test("an approaching selected bus asks for explicit boarding confirmation", () =
       stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
       online
       monitoringState="active"
+      boardingAvailable
       onConfirmAtStop={() => {}}
       onShowDeparture={onShowDeparture}
       onBoard={onBoard}
@@ -921,6 +922,38 @@ test("does not claim the bus is arriving when live monitoring is degraded", () =
       stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
       online
       monitoringState="degraded"
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onBoard={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Wait for line 18" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "I'm on the bus" })
+  ).not.toBeInTheDocument();
+});
+
+
+test("a due time without a current matching board row never offers boarding", () => {
+  const now = 1_900_000_000_000;
+  vi.spyOn(Date, "now").mockReturnValue(now);
+
+  render(
+    <ActiveJourney
+      journey={journey({
+        phase: "waiting",
+        atStopConfirmedAt: now - 60_000,
+        departureAt: now / 1000 + 30,
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      monitoringState="active"
+      boardingAvailable={false}
       onConfirmAtStop={() => {}}
       onShowDeparture={() => {}}
       onBoard={() => {}}
