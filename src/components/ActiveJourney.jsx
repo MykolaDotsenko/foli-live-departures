@@ -229,8 +229,10 @@ export default function ActiveJourney({
     monitoringState === "active" &&
     boardingAvailable &&
     Number.isFinite(secondsToDeparture) &&
-    secondsToDeparture <= 120 &&
-    secondsToDeparture >= -120;
+    Math.abs(secondsToDeparture) <= 120;
+  const showDepartureLabel = continuationLeg
+    ? t("Show line {line} departure", { line: journey.lineRef || "—" })
+    : t("Show selected departure");
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
@@ -448,38 +450,22 @@ export default function ActiveJourney({
         {journey.phase === "waiting" &&
           monitoringState !== "paused" && (
             <>
-              {busApproaching && onBoard ? (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={onBoard}
-                >
-                  {t("I'm on the bus")}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={styles.primaryButton}
-                  onClick={onShowDeparture}
-                >
-                  {continuationLeg
-                    ? t("Show line {line} departure", {
-                        line: journey.lineRef || "—",
-                      })
-                    : t("Show selected departure")}
-                </button>
-              )}
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={busApproaching && onBoard ? onBoard : onShowDeparture}
+              >
+                {busApproaching && onBoard
+                  ? t("I'm on the bus")
+                  : showDepartureLabel}
+              </button>
               {busApproaching && onBoard && (
                 <button
                   type="button"
                   className={styles.ghostButton}
                   onClick={onShowDeparture}
                 >
-                  {continuationLeg
-                    ? t("Show line {line} departure", {
-                        line: journey.lineRef || "—",
-                      })
-                    : t("Show selected departure")}
+                  {showDepartureLabel}
                 </button>
               )}
             </>
