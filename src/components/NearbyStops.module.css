@@ -126,6 +126,24 @@
   font-weight: 700;
 }
 
+.noticeButton {
+  margin-left: 4px;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: #006f78;
+  font: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.noticeButton:focus-visible {
+  outline: 3px solid #007985;
+  outline-offset: 2px;
+}
+
 .stopGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -450,6 +468,10 @@
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
+  }
+
+  :root[data-theme="dark"] .noticeButton {
+    color: var(--dm-accent);
   }
 
 
