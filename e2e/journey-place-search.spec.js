@@ -97,10 +97,15 @@ test.describe("reviewed direct-provider activation harness", () => {
   await journey
     .getByRole("button", { name: /Prisma Itäharju.*Turku, Finland/i })
     .click();
-  await expect(journey.getByText("Going to")).toBeVisible();
-  await expect(journey.getByText("Prisma Itäharju", { exact: true })).toBeVisible();
+  const selectedDestination = page.getByRole("region", {
+    name: "Journey destination",
+  });
+  await expect(selectedDestination.getByText("Going to")).toBeVisible();
   await expect(
-    journey.getByRole("link", { name: "© OpenStreetMap contributors" })
+    selectedDestination.getByText("Prisma Itäharju", { exact: true })
+  ).toBeVisible();
+  await expect(
+    selectedDestination.getByRole("link", { name: "© OpenStreetMap contributors" })
   ).toBeVisible();
 
   const a11y = await new AxeBuilder({ page })
@@ -138,10 +143,13 @@ test("production policy searches shipped addresses locally without contacting No
   await expect(address).toBeVisible();
   expect(providerCalls).toBe(0);
   await address.click();
-  await expect(journey.getByRole("status")).toContainText("Tampereentie 12");
+  let selectedDestination = page.getByRole("region", {
+    name: "Journey destination",
+  });
+  await expect(selectedDestination).toContainText("Tampereentie 12");
   expect(providerCalls).toBe(0);
 
-  await journey.getByRole("button", { name: "Clear destination" }).click();
+  await selectedDestination.getByRole("button", { name: "Clear" }).click();
   await input.fill("Unknownstreet 999");
   await journey.getByRole("button", { name: "Search destination" }).click();
   await expect(journey.getByRole("alert")).toContainText(
@@ -203,7 +211,10 @@ test("places shipped with the app are listed nearest first and become the destin
   expect(a11y.violations).toEqual([]);
 
   await list.getByRole("option").first().click();
-  await expect(journey.getByRole("status")).toContainText("Lidl Linnankatu");
+  const selectedDestination = page.getByRole("region", {
+    name: "Journey destination",
+  });
+  await expect(selectedDestination).toContainText("Lidl Linnankatu");
   await expect(
     page.getByRole("heading", { name: /Nearby stops for Lidl Linnankatu/ })
   ).toBeVisible();
