@@ -1,5 +1,8 @@
 import { expect, test } from "vitest";
-import { rankDestinationStops } from "./journeyRanking";
+import {
+  isMateriallyBetterDestinationFit,
+  rankDestinationStops,
+} from "./journeyRanking";
 
 const stops = [
   { id: "near", distanceMeters: 80 },
@@ -132,3 +135,28 @@ test("a tight stop with no later catchable bus still ranks below a good one", ()
 });
 
 
+
+
+test("material better-stop suggestion requires stronger evidence or at least two minutes", () => {
+  expect(
+    isMateriallyBetterDestinationFit(good(2_000), good(2_121))
+  ).toBe(true);
+  expect(
+    isMateriallyBetterDestinationFit(good(2_000), good(2_119))
+  ).toBe(false);
+  expect(
+    isMateriallyBetterDestinationFit(
+      good(2_600),
+      { status: "too-late", best: null }
+    )
+  ).toBe(true);
+});
+
+test("material better-stop suggestion fails closed when same-class ETA evidence is missing", () => {
+  expect(
+    isMateriallyBetterDestinationFit(
+      { status: "good", best: null },
+      { status: "good", best: null }
+    )
+  ).toBe(false);
+});
