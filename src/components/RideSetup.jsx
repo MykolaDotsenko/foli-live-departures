@@ -131,7 +131,6 @@ export default function RideSetup({
     String(import.meta.env.VITE_NATIVE_BUILD || "") === "true";
   const [nativeForeground, setNativeForeground] = useState(false);
   const [startError, setStartError] = useState("");
-  const [changeStop, setChangeStop] = useState(false);
   const panelRef = useRef(null);
   // The Start bar is fixed to the bottom of a phone: what is focused below
   // the fold must stop above it, not behind it.
@@ -439,8 +438,10 @@ export default function RideSetup({
         !ambiguousBoarding &&
         downstream.length > 0 && (
           <>
-            {(!journeyDriven || changeStop || !chosenStop) && (
-              <fieldset className={styles.stopList}>
+            {journeyDriven && chosenStop ? (
+              <details>
+                <summary className={styles.close}>{t("Change")}</summary>
+                <fieldset className={styles.stopList}>
               <legend className={styles.srOnly}>
                 {t("Choose your exit stop")}
               </legend>
@@ -502,17 +503,54 @@ export default function RideSetup({
                   </label>
                 );
               })}
-              </fieldset>
-            )}
+                </fieldset>
+              </details>
+            ) : (
+              <fieldset className={styles.stopList}>
+                <legend className={styles.srOnly}>
+                  {t("Choose your exit stop")}
+                </legend>
+                {downstream.map((item) => {
+                  const clock = plannedClock(
+                    item.departureTime || item.arrivalTime
+                  );
+                  const previousStopName = item.previousIsBoarding
+                    ? currentStopName
+                    : stopName(stopsById, item.previousStopId);
 
-            {journeyDriven && chosenStop && !changeStop && (
-              <button
-                type="button"
-                className={styles.close}
-                onClick={() => setChangeStop(true)}
-              >
-                {t("Change")}
-              </button>
+                  return (
+                    <label
+                      key={`${item.stopId}-${item.stopSequence}`}
+                      className={styles.stopOption}
+                      data-selected={
+                        String(targetStopSequence) === String(item.stopSequence)
+                          ? "true"
+                          : "false"
+                      }
+                    >
+                      <input
+                        type="radio"
+                        name="target-stop"
+                        value={item.stopSequence}
+                        checked={
+                          String(targetStopSequence) ===
+                          String(item.stopSequence)
+                        }
+                        onChange={(event) =>
+                          setTargetStopSequence(event.target.value)
+                        }
+                      />
+                      <span className={styles.stopCopy}>
+                        <strong>{optionName(item)}</strong>
+                        <small>
+                          {previousStopName}
+                          {clock ? ` · ${clock}` : ""}
+                        </small>
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
             )}
 
             <div className={styles.options}>
