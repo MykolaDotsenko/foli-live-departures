@@ -623,6 +623,79 @@ function NearbyStops({
     );
   }
 
+  const hasJourneyRecommendation =
+    directJourneyOptions.length > 0 || transferJourneyOptions.length > 0;
+  const nearbyComparison = (
+    <>
+      {destination && (
+        <div
+          className={styles.sortToggle}
+          role="group"
+          aria-label={t("Nearby stop sorting")}
+        >
+          <button
+            type="button"
+            aria-pressed={sortMode === "best"}
+            onClick={() => setSortMode("best")}
+          >
+            {t("Best for {destination}", {
+              destination: destinationLabel,
+            })}
+          </button>
+          <button
+            type="button"
+            aria-pressed={sortMode === "nearest"}
+            onClick={() => setSortMode("nearest")}
+          >
+            {t("Nearest")}
+          </button>
+        </div>
+      )}
+
+      {nearbyStops.length > 0 && (
+        <div
+          className={styles.stopGrid}
+          role="group"
+          aria-label={
+            destination
+              ? t("Nearby Föli stops for {destination}", {
+                  destination: destinationLabel,
+                })
+              : t("Nearest Föli stops")
+          }
+        >
+          {visibleStops.map((stop) => (
+            <NearbyStopCard
+              key={stop.id}
+              stop={stop}
+              isNearest={stop.id === nearbyStops[0]?.id}
+              isBest={
+                Boolean(destination) &&
+                sortMode === "best" &&
+                stop.id === bestStopId
+              }
+              isActive={stop.id === activeStopId}
+              online={online}
+              onSelect={onSelect}
+              destinationLabel={destinationLabel}
+              fit={fitsByStop[stop.id]}
+            />
+          ))}
+        </div>
+      )}
+
+      <p className={styles.disclaimer}>
+        {online
+          ? t(
+              "Distances are approximate straight-line distances. “Walk there” opens an external walking route in Google Maps."
+            )
+          : t(
+              "Distances are approximate straight-line distances. Walking route links return when you’re online."
+            )}
+      </p>
+    </>
+  );
+
   return (
     <section className={styles.wrapper} aria-labelledby="nearby-stops-title">
       <div className={styles.header}>
@@ -867,72 +940,14 @@ function NearbyStops({
               </p>
             )}
 
-          {destination && (
-            <div
-              className={styles.sortToggle}
-              role="group"
-              aria-label={t("Nearby stop sorting")}
-            >
-              <button
-                type="button"
-                aria-pressed={sortMode === "best"}
-                onClick={() => setSortMode("best")}
-              >
-                {t("Best for {destination}", {
-                  destination: destinationLabel,
-                })}
-              </button>
-              <button
-                type="button"
-                aria-pressed={sortMode === "nearest"}
-                onClick={() => setSortMode("nearest")}
-              >
-                {t("Nearest")}
-              </button>
-            </div>
+          {destination && hasJourneyRecommendation ? (
+            <details className={styles.comparison}>
+              <summary>{t("Compare nearby stops")}</summary>
+              <div className={styles.comparisonBody}>{nearbyComparison}</div>
+            </details>
+          ) : (
+            nearbyComparison
           )}
-
-          {nearbyStops.length > 0 && (
-            <div
-              className={styles.stopGrid}
-              role="group"
-              aria-label={
-                destination
-                  ? t("Nearby Föli stops for {destination}", {
-                      destination: destinationLabel,
-                    })
-                  : t("Nearest Föli stops")
-              }
-            >
-              {visibleStops.map((stop) => (
-                <NearbyStopCard
-                  key={stop.id}
-                  stop={stop}
-                  isNearest={stop.id === nearbyStops[0]?.id}
-                  isBest={
-                    Boolean(destination) &&
-                    sortMode === "best" &&
-                    stop.id === bestStopId
-                  }
-                  isActive={stop.id === activeStopId}
-                  online={online}
-                  onSelect={onSelect}
-                  destinationLabel={destinationLabel}
-                  fit={fitsByStop[stop.id]}
-                />
-              ))}
-            </div>
-          )}
-
-          <p className={styles.disclaimer}>
-            {online
-              ? t(
-                  "Distances are approximate straight-line distances. “Walk there” opens an external walking route in Google Maps."
-                )
-              : t(
-                  "Distances are approximate straight-line distances. Walking route links return when you’re online."
-                )}
-          </p>
         </>
       )}
     </section>
