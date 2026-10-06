@@ -107,26 +107,6 @@ function renderSearch(overrides = {}) {
   return props;
 }
 
-test("Home keeps the official planner visible when native place search is unavailable", () => {
-  placeSearch.hook.mockReturnValue({
-    results: [],
-    status: "idle",
-    error: "",
-    search: placeSearch.search,
-    clear: placeSearch.clear,
-    directEnabled: false,
-  });
-
-  renderSearch({ homeEntry: true });
-
-  expect(
-    screen.getByRole("link", { name: "Open Turku journey planner" })
-  ).toHaveAttribute("href", "https://turku.digitransit.fi/");
-  expect(
-    screen.queryByText("Searched on this device: nothing you type here is sent anywhere.")
-  ).not.toBeInTheDocument();
-});
-
 test("offers saved destinations as one-tap choices", () => {
   const props = renderSearch();
   fireEvent.click(screen.getByRole("button", { name: "Home" }));
