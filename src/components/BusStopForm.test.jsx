@@ -418,6 +418,27 @@ test("lists every stop that shares the exact name typed", () => {
 // The compact one-tap location action stays beside search even before a
 // board is open. "Near you" is the richer comparison view, not a substitute
 // for the fast search-row action.
+test("can hide the stop-search location shortcut when destination origin owns location", () => {
+  render(
+    <BusStopForm
+      activeStopId=""
+      stops={stops}
+      showLocationAction={false}
+      onSubmit={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.getByRole("combobox", { name: "Find your stop" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Use my location" })
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Show departures" })
+  ).toBeInTheDocument();
+});
+
 test("offers one-tap location before a stop is open", () => {
   render(<BusStopForm activeStopId="" stops={stops} onSubmit={vi.fn()} />);
 
