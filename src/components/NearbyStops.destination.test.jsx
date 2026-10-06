@@ -111,7 +111,7 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
     screen.queryByRole("group", {
       name: "Nearby Föli stops for Home stop",
     })
-  ).not.toBeVisible();
+  ).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByText("Compare nearby stops"));
 
