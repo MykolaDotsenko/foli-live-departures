@@ -337,7 +337,7 @@ test("a selected origin stop does not pretend the passenger is physically there"
     <JourneyOptions
       destinationLabel="Home"
       onOpenStop={() => {}}
-      showAccess={false}
+      access={false}
       options={[
         {
           id: "chosen-origin",
