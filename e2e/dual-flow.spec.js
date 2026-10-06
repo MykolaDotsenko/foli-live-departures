@@ -120,21 +120,24 @@ test("destination selection collapses search and asks for an explicit origin", a
   await expect(
     page.getByRole("combobox", { name: "Stop, address or place" })
   ).toHaveCount(0);
+  const nearby = page.locator(
+    'section[aria-labelledby="nearby-stops-title"]'
+  );
   await expect(
-    page.getByRole("heading", { name: "Near you" })
+    nearby.getByRole("heading", { name: "Near you" })
   ).toBeFocused();
   await expect(
-    page.getByRole("button", { name: "Use my location" })
+    nearby.getByRole("button", { name: "Use my location", exact: true })
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Choose a starting stop" })
+    nearby.getByRole("button", { name: "Choose a starting stop" })
   ).toBeVisible();
 
   // Merely choosing a destination must not request geolocation.
   const permission = await context.newCDPSession(page).catch(() => null);
   expect(permission === null || typeof permission === "object").toBe(true);
 
-  await page.getByRole("button", { name: "Choose a starting stop" }).click();
+  await nearby.getByRole("button", { name: "Choose a starting stop" }).click();
   await expect(
     page.getByRole("combobox", { name: "Find your stop" })
   ).toBeFocused();
@@ -171,9 +174,12 @@ test("destination can use explicit geolocation without opening a stop automatica
     .fill("Kauppatori");
   await journey.getByRole("option", { name: /Kauppatori/ }).first().click();
 
-  await page.getByRole("button", { name: "Use my location" }).click();
+  const nearby = page.locator(
+    'section[aria-labelledby="nearby-stops-title"]'
+  );
+  await nearby.getByRole("button", { name: "Use my location", exact: true }).click();
 
-  await expect(page.getByText("Location found · ±10 m")).toBeVisible();
+  await expect(nearby.getByText("Location found · ±10 m")).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Nearby stops for Kauppatori" })
   ).toBeVisible();
@@ -205,8 +211,11 @@ test("an open stop remains the origin when a destination is added", async ({
   await expect(
     page.getByRole("heading", { name: "Nearby stops for Turun linna" })
   ).toBeVisible();
+  const nearby = page.locator(
+    'section[aria-labelledby="nearby-stops-title"]'
+  );
   await expect(
-    page.getByRole("button", { name: "Use my location" })
+    nearby.getByRole("button", { name: "Use my location", exact: true })
   ).toHaveCount(0);
   await expect(page).toHaveURL(/stop=164/);
 });
