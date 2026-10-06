@@ -302,7 +302,6 @@ export default {
     "Valitun matkan tuleva bussi peruttiin. Valitse uusi vaihtoehto.",
   "A committed future bus has probably been missed. Choose a fresh option.":
     "Valitun matkan tuleva bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
-    "Kun nouset kyytiin, käynnistä tämän osuuden poistumishälytys. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa seuraavalla osuudella.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Toinen bussisi peruttiin. Valitse uusi vaihtoehto.",
   "Live check: line {line} still looks catchable.":
@@ -321,7 +320,6 @@ export default {
     "Toinen bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
     "Valittua vaihtoyhteyttä ei voi enää jatkaa luotettavasti. Valitse uusi vaihtoehto.",
-    "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
   "Place search needs a connection. You can still choose a Föli stop from the suggestions.":
