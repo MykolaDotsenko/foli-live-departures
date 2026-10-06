@@ -46,6 +46,7 @@ import {
   finalWalkHeading,
   firstJourneyOption,
   pageHeading,
+  nearbyHeading,
   placeCardControl,
   recoveryJourneyTarget,
   rideHeading,
@@ -734,10 +735,21 @@ function App() {
           <JourneySearch
             {...planSearchProps}
             homeEntry
+            compact={Boolean(journey.destination)}
             destination={journey.destination}
-            onChoosePlace={chooseJourneyPlace}
-            onChooseStop={chooseJourneyStop}
-            onChooseExternalPlace={chooseJourneyExternalPlace}
+            onChoosePlace={(place) => {
+              chooseJourneyPlace(place);
+              requestFocus(nearbyHeading);
+            }}
+            onChooseStop={(stop) => {
+              chooseJourneyStop(stop);
+              requestFocus(nearbyHeading);
+            }}
+            onChooseExternalPlace={(place) => {
+              const prepared = chooseJourneyExternalPlace(place);
+              if (prepared?.ok) requestFocus(nearbyHeading);
+              return prepared;
+            }}
           />
         )}
 
