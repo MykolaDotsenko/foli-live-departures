@@ -772,7 +772,9 @@ function App() {
             activeStopId={stopId}
             onOpenStop={(id) => {
               setJourneyRadarOpen(false);
+              requestFocus(pageHeading);
               selectStop(id);
+              setFocusSaysStopId(id);
             }}
             onClose={closeJourneyRadar}
           />
