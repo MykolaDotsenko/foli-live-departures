@@ -687,6 +687,51 @@ test("journey-driven setup confirms the preferred exit before exposing the full 
   expect(onStart.mock.calls[0][0].targetStop.id).toBe("4");
 });
 
+test("journey-driven setup never falls back to Home when the committed exit is missing", async () => {
+  mocks.fetchTripDetails.mockResolvedValue(null);
+  mocks.fetchTripStopTimes.mockResolvedValue(threeStopTrip);
+  const placesById = new Map([
+    [
+      "home",
+      {
+        id: "home",
+        label: "Home",
+        primaryStopId: "32",
+        stops: [{ id: "32", name: "Puistokatu" }],
+      },
+    ],
+  ]);
+
+  render(
+    <RideSetup
+      arrival={{
+        lineref: "1",
+        tripref: "trip-164-1",
+        expecteddeparturetime: 2_000_000_000,
+      }}
+      currentStopId="164"
+      currentStopName="Kauppatori"
+      stopsById={tripStops}
+      placesById={placesById}
+      routesById={new Map()}
+      preferredTargetStopId="999"
+      journeyDriven
+      onStart={() => {}}
+      onCancel={() => {}}
+    />
+  );
+
+  expect(
+    await screen.findByRole("heading", { name: "Where do you want to get off?" })
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("radio")).toHaveLength(2);
+  expect(screen.getByDisplayValue("2")).not.toBeChecked();
+  expect(screen.getByDisplayValue("3")).not.toBeChecked();
+  expect(
+    screen.getByRole("button", { name: "Start get-off alert" })
+  ).toBeDisabled();
+});
+
 test("manual stop-first setup still exposes the stop list immediately", async () => {
   mocks.fetchTripDetails.mockResolvedValue(null);
   mocks.fetchTripStopTimes.mockResolvedValue(threeStopTrip);
