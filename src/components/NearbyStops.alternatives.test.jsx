@@ -14,6 +14,7 @@ vi.mock("../hooks/useTransferJourneyOptions", () => ({
 }));
 
 import { resetLanguageForTests } from "../i18n";
+import { forgetPositionForTests } from "../utils/sessionPosition";
 import NearbyStops from "./NearbyStops";
 
 const stops = [
@@ -49,6 +50,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  forgetPositionForTests();
   resetLanguageForTests("en");
   vi.restoreAllMocks();
   hooks.useTransferJourneyOptions.mockReset();
