@@ -211,24 +211,6 @@ function NearbyStops({
   const activeStopIdRef = useRef(activeStopId);
   activeStopIdRef.current = activeStopId;
 
-  // If another explicit action in this tab already obtained a fresh, accurate
-  // fix (for example “Nearest to me first” in destination search), reuse it
-  // rather than asking for location twice. Never request location here and
-  // never reuse an inaccurate fix as a silent journey origin.
-  useEffect(() => {
-    if (!destination || activeStopId || position) return;
-    const remembered = recentPosition();
-    if (
-      !remembered ||
-      !Number.isFinite(remembered.accuracy) ||
-      remembered.accuracy > AUTO_SELECT_MAX_ACCURACY_METERS
-    ) {
-      return;
-    }
-    setPosition(remembered);
-    setStatus("success");
-  }, [activeStopId, destination, position]);
-
   const hasStopCoordinates = stops.some(hasCoordinates);
   const geolocationSupported =
     typeof navigator !== "undefined" && "geolocation" in navigator;
