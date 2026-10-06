@@ -16,7 +16,7 @@ test("a Radar chunk failure leaves explicit retry and close actions", () => {
   const onClose = vi.fn();
 
   render(
-    <RadarLoadBoundary onRetry={onRetry} onClose={onClose}>
+    <RadarLoadBoundary onRetry={onRetry} onClose={onClose} showClose>
       <BrokenRadar />
     </RadarLoadBoundary>
   );
