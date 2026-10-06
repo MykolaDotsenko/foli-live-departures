@@ -676,10 +676,10 @@ test("journey-driven setup confirms the preferred exit before exposing the full 
   ).toBeInTheDocument();
   expect(screen.queryByRole("radio")).not.toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "Change stop" })
+    screen.getByRole("button", { name: "Change" })
   ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Change stop" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change" }));
   expect(screen.getAllByRole("radio")).toHaveLength(2);
   expect(screen.getByDisplayValue("3")).toBeChecked();
 
@@ -714,6 +714,6 @@ test("manual stop-first setup still exposes the stop list immediately", async ()
   ).toBeInTheDocument();
   expect(screen.getAllByRole("radio")).toHaveLength(2);
   expect(
-    screen.queryByRole("button", { name: "Change stop" })
+    screen.queryByRole("button", { name: "Change" })
   ).not.toBeInTheDocument();
 });
