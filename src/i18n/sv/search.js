@@ -118,6 +118,9 @@ export default {
   "Nearby Föli stops for {destination}":
     "Föli-hållplatser nära {destination}",
   "Compare nearby stops": "Jämför hållplatser i närheten",
+  "A nearby stop has a meaningfully better option to {destination}.":
+    "En närliggande hållplats har ett tydligt bättre alternativ till {destination}.",
+  "Open {stop}": "Öppna {stop}",
 
   "Direct options": "Direktalternativ",
   "Trip details": "Resedetaljer",
