@@ -77,6 +77,7 @@ function locationDoubt(verdict, stop, position) {
 
 function BusStopForm({
   compact = false,
+  showLocationAction = true,
   activeStopId,
   stops,
   coordinatesStatus = "idle",
@@ -362,19 +363,21 @@ function BusStopForm({
               "Near you" below is the richer comparison view; this button is
               the fast path for filling the field with a confidently resolved
               nearby stop. */}
-          <button
-            className={styles.locateButton}
-            type="button"
-            onClick={locateNearestStop}
-            // Busy rather than disabled: a disabled button drops keyboard
-            // focus to the page while the location is looked up.
-            aria-disabled={locating ? "true" : undefined}
-            aria-busy={locating}
-            aria-label={t("Use my location")}
-            title={t("Use my location")}
-          >
-            <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
-          </button>
+          {showLocationAction && (
+            <button
+              className={styles.locateButton}
+              type="button"
+              onClick={locateNearestStop}
+              // Busy rather than disabled: a disabled button drops keyboard
+              // focus to the page while the location is looked up.
+              aria-disabled={locating ? "true" : undefined}
+              aria-busy={locating}
+              aria-label={t("Use my location")}
+              title={t("Use my location")}
+            >
+              <span aria-hidden="true">{locating ? "…" : "⌖"}</span>
+            </button>
+          )}
           <button
             className={styles.button}
             type="submit"
