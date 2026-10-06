@@ -117,8 +117,7 @@ function App() {
   const [finalWalk, setFinalWalk] = useState(null);
   const [journeyRadarOpen, setJourneyRadarOpen] = useState(false);
   const [journeyRadarCompass, setJourneyRadarCompass] = useState("pending");
-  const [boardingRequest, setBoardingRequest] = useState(null);
-  const boardingRequestIdRef = useRef(0);
+  const [boardingRequest, setBoardingRequest] = useState(0);
   const {
     journey: selectedJourney,
     selectDirectJourney,
@@ -613,12 +612,7 @@ function App() {
   const confirmJourneyBoarding = () => {
     if (!selectedJourney?.stopId || !selectedJourney.tripRef) return;
     setJourneyRadarOpen(false);
-    boardingRequestIdRef.current += 1;
-    setBoardingRequest({
-      id: boardingRequestIdRef.current,
-      stopId: selectedJourney.stopId,
-      tripRef: selectedJourney.tripRef,
-    });
+    setBoardingRequest((request) => request + 1);
     selectStop(selectedJourney.stopId);
   };
 
