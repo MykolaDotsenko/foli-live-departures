@@ -286,13 +286,12 @@ function BusStopDisplay({
   const rowKeys = departureKeys(visibleArrivals, referenceTime, stopId);
 
   useEffect(() => {
-    const requestId = Number(boardingRequest?.id);
+    const requestId = Number(boardingRequest);
     if (
       !Number.isFinite(requestId) ||
       requestId <= 0 ||
       handledBoardingRequestRef.current === requestId ||
-      String(boardingRequest?.stopId || "") !== String(stopId) ||
-      !selectedJourney
+      String(selectedJourney?.stopId || "") !== String(stopId)
     ) {
       return;
     }
@@ -302,9 +301,7 @@ function BusStopDisplay({
     );
     const rideKey = selectedIndex >= 0 ? rowKeys[selectedIndex] : "";
     const arrival = selectedIndex >= 0 ? visibleArrivals[selectedIndex] : null;
-    if (!rideKey || String(arrival?.tripref || "") !== boardingRequest.tripRef) {
-      return;
-    }
+    if (!rideKey || !arrival) return;
 
     handledBoardingRequestRef.current = requestId;
     setRideCandidateKey(rideKey);
