@@ -840,3 +840,99 @@ test("renders second and final legs of a three-leg itinerary without legacy alia
   ).toBeInTheDocument();
 });
 
+
+
+test("walking journey can open journey-driven radar without replacing the stop", () => {
+  const onGuideWithRadar = vi.fn();
+  const onConfirmAtStop = vi.fn();
+
+  render(
+    <ActiveJourney
+      journey={journey()}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      onConfirmAtStop={onConfirmAtStop}
+      onShowDeparture={() => {}}
+      onGuideWithRadar={onGuideWithRadar}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Guide me with radar" })
+  );
+  expect(onGuideWithRadar).toHaveBeenCalledTimes(1);
+  expect(onConfirmAtStop).not.toHaveBeenCalled();
+});
+
+test("an approaching selected bus asks for explicit boarding confirmation", () => {
+  const now = 1_900_000_000_000;
+  vi.spyOn(Date, "now").mockReturnValue(now);
+  const onBoard = vi.fn();
+  const onShowDeparture = vi.fn();
+
+  render(
+    <ActiveJourney
+      journey={journey({
+        phase: "waiting",
+        atStopConfirmedAt: now - 60_000,
+        departureAt: now / 1000 + 60,
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      monitoringState="active"
+      onConfirmAtStop={() => {}}
+      onShowDeparture={onShowDeparture}
+      onBoard={onBoard}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Your bus is arriving" })
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText("Board line 18. Confirm only after you are on the bus.")
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "I'm on the bus" }));
+  expect(onBoard).toHaveBeenCalledTimes(1);
+  expect(onShowDeparture).not.toHaveBeenCalled();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show selected departure" })
+  );
+  expect(onShowDeparture).toHaveBeenCalledTimes(1);
+});
+
+test("does not claim the bus is arriving when live monitoring is degraded", () => {
+  const now = 1_900_000_000_000;
+  vi.spyOn(Date, "now").mockReturnValue(now);
+
+  render(
+    <ActiveJourney
+      journey={journey({
+        phase: "waiting",
+        atStopConfirmedAt: now - 60_000,
+        departureAt: now / 1000 + 30,
+      })}
+      stop={{ id: "100", lat: 60.4518, lon: 22.2666 }}
+      online
+      monitoringState="degraded"
+      onConfirmAtStop={() => {}}
+      onShowDeparture={() => {}}
+      onBoard={() => {}}
+      onChooseAnother={() => {}}
+      onOpenStop={() => {}}
+    />
+  );
+
+  expect(
+    screen.getByRole("heading", { name: "Wait for line 18" })
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "I'm on the bus" })
+  ).not.toBeInTheDocument();
+});
