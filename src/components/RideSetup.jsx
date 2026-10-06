@@ -508,7 +508,7 @@ export default function RideSetup({
             {journeyDriven && chosenStop && !changeStop && (
               <button
                 type="button"
-                className={styles.changeStop}
+                className={styles.close}
                 onClick={() => setChangeStop(true)}
               >
                 {t("Change stop")}
