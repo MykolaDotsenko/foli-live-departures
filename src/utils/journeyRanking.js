@@ -57,6 +57,38 @@ function destinationArrival(fit) {
 }
 
 /**
+ * Whether a different stop is materially better than the stop the passenger
+ * explicitly chose as their origin. A stronger evidence class is enough; in
+ * the same class, require the same two-minute improvement used by the stable
+ * ranking. Unknown ETAs never trigger a same-class recommendation.
+ *
+ * @param {any} challengerFit
+ * @param {any} currentFit
+ * @param {number} [switchThresholdSec]
+ * @returns {boolean}
+ */
+export function isMateriallyBetterDestinationFit(
+  challengerFit,
+  currentFit,
+  switchThresholdSec = MATERIAL_SWITCH_SECONDS
+) {
+  if (!challengerFit || !currentFit) return false;
+
+  const challengerClass = rankingClass(challengerFit);
+  const currentClass = rankingClass(currentFit);
+  if (challengerClass < currentClass) return true;
+  if (challengerClass > currentClass) return false;
+
+  const challengerArrival = destinationArrival(challengerFit);
+  const currentArrival = destinationArrival(currentFit);
+  if (challengerArrival === null || currentArrival === null) return false;
+
+  return (
+    currentArrival - challengerArrival >= Math.max(0, switchThresholdSec)
+  );
+}
+
+/**
  * Stable destination-aware ordering.
  *
  * The strongest evidence class always wins. Inside the same evidence class,
