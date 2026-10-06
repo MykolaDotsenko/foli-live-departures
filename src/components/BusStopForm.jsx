@@ -316,7 +316,10 @@ function BusStopForm({
       data-compact={compact ? "true" : undefined}
       noValidate
     >
-      <label htmlFor="stop-search" className={styles.label}>
+      <label
+        htmlFor="stop-search"
+        className={hideLabel ? "visually-hidden" : styles.label}
+      >
         {t("Find your stop")}
       </label>
 
