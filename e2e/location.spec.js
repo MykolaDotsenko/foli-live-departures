@@ -344,11 +344,16 @@ test("with location refused, a destination is answered from a stop chosen by nam
     .fill("Puistokatu");
   await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
 
-  await page.getByRole("button", { name: "Use my location" }).click();
-  await expect(page.getByText(/Location access is blocked/)).toBeVisible();
+  const nearby = page.locator(
+    'section[aria-labelledby="nearby-stops-title"]'
+  );
+  await nearby
+    .getByRole("button", { name: "Use my location", exact: true })
+    .click();
+  await expect(nearby.getByText(/Location access is blocked/)).toBeVisible();
 
   // Before, that error was where a destination without location ended.
-  await page.getByRole("button", { name: "Choose a starting stop" }).click();
+  await nearby.getByRole("button", { name: "Choose a starting stop" }).click();
   const search = page.getByRole("combobox", { name: "Find your stop" });
   await expect(search).toBeFocused();
   await search.fill("Kauppatori");
@@ -434,7 +439,10 @@ test("journey options offer the next bus too, and where to get off", async ({
     .getByRole("combobox", { name: "Stop, address or place" })
     .fill("Puistokatu");
   await journey.getByRole("option", { name: /Puistokatu.*Stop 32/ }).click();
-  await page.getByRole("button", { name: "Use my location" }).click();
+  await page
+    .locator('section[aria-labelledby="nearby-stops-title"]')
+    .getByRole("button", { name: "Use my location", exact: true })
+    .click();
 
   const options = page.getByRole("region", { name: "Best ways to Puistokatu" });
   const cards = options.getByRole("button");
