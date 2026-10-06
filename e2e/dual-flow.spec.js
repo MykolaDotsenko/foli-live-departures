@@ -116,7 +116,7 @@ test("destination selection collapses search and asks for an explicit origin", a
     journey.getByRole("combobox", { name: "Stop, address or place" })
   ).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: "Start from where you are?" })
+    page.getByRole("heading", { name: "Near you" })
   ).toBeFocused();
   await expect(
     page.getByRole("button", { name: "Use my location" })
@@ -195,7 +195,7 @@ test("an open stop remains the origin when a destination is added", async ({
   await journey.getByRole("option", { name: /Turun linna/ }).first().click();
 
   await expect(
-    page.getByRole("heading", { name: /Starting from Kauppatori/ })
+    page.getByRole("heading", { name: "Nearby stops for Turun linna" })
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Use my location" })
