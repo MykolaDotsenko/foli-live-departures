@@ -142,7 +142,6 @@ export default {
     "Сповіщення про вихід — це допомога в дорозі, а не гарантований будильник. Браузер може призупинити сторінку, тому тримайте цей екран відкритим зі звуком.",
   "Set up get-off alerts": "Налаштувати сповіщення про вихід",
   "Where do you want to get off?": "Де ви хочете вийти?",
-  "Change stop": "Змінити зупинку",
   "Pick your stop and keep this page open with the sound on. You do not have to watch it: we tell you when to press STOP.":
     "Виберіть зупинку й тримайте сторінку відкритою зі звуком. Не потрібно постійно дивитися на екран: ми скажемо, коли натиснути STOP.",
   Cancel: "Скасувати",
