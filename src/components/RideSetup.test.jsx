@@ -674,12 +674,11 @@ test("journey-driven setup confirms the preferred exit before exposing the full 
   expect(
     await screen.findByRole("heading", { name: "Get off at Turun linna" })
   ).toBeInTheDocument();
-  expect(screen.queryByRole("radio")).not.toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Change" })
-  ).toBeInTheDocument();
+  const change = screen.getByText("Change").closest("details");
+  expect(change).not.toHaveAttribute("open");
 
-  fireEvent.click(screen.getByRole("button", { name: "Change" }));
+  fireEvent.click(screen.getByText("Change"));
+  expect(change).toHaveAttribute("open");
   expect(screen.getAllByRole("radio")).toHaveLength(2);
   expect(screen.getByDisplayValue("3")).toBeChecked();
 
