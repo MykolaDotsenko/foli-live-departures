@@ -1,12 +1,4 @@
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import AppFooter from "./app/AppFooter";
 import AppHeader from "./app/AppHeader";
@@ -27,6 +19,7 @@ import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
 import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
+import StopRadarPanel from "./components/StopRadarPanel";
 import useOnlineStatus from "./hooks/useOnlineStatus";
 import useActiveJourney from "./hooks/useActiveJourney";
 import useDestinationIntent from "./hooks/useDestinationIntent";
@@ -72,10 +65,7 @@ import {
   completedFinalWalk,
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
-import { requestCompassPermission } from "./utils/stopRadar";
 import { hasCoordinates } from "./utils/geo";
-
-const JourneyStopRadar = lazy(() => import("./components/StopRadar"));
 
 
 function announceStop(stopId, name, loading) {
@@ -116,7 +106,6 @@ function App() {
   const journeyPlan = useJourneyPlanSettings();
   const [finalWalk, setFinalWalk] = useState(null);
   const [journeyRadarOpen, setJourneyRadarOpen] = useState(false);
-  const [journeyRadarCompass, setJourneyRadarCompass] = useState("pending");
   const [boardingRequest, setBoardingRequest] = useState(0);
   const {
     journey: selectedJourney,
@@ -598,8 +587,6 @@ function App() {
       return;
     }
     setJourneyRadarOpen(true);
-    setJourneyRadarCompass("pending");
-    void requestCompassPermission().then(setJourneyRadarCompass);
   };
 
   const closeJourneyRadar = () => {
@@ -778,20 +765,17 @@ function App() {
         )}
 
         {!ride.session && selectedJourney && journeyRadarOpen && (
-          <Suspense fallback={null}>
-            <JourneyStopRadar
-              stops={stops}
-              initialTargetStopId={selectedJourney.stopId}
-              recommendedTargetStopId={selectedJourney.stopId}
-              activeStopId={stopId}
-              compassPermission={journeyRadarCompass}
-              onOpenStop={(id) => {
-                setJourneyRadarOpen(false);
-                selectStop(id);
-              }}
-              onClose={closeJourneyRadar}
-            />
-          </Suspense>
+          <StopRadarPanel
+            stops={stops}
+            initialTargetStopId={selectedJourney.stopId}
+            recommendedTargetStopId={selectedJourney.stopId}
+            activeStopId={stopId}
+            onOpenStop={(id) => {
+              setJourneyRadarOpen(false);
+              selectStop(id);
+            }}
+            onClose={closeJourneyRadar}
+          />
         )}
 
         {!ride.session &&
