@@ -140,10 +140,6 @@ test("recovery cards exclude the failed concrete trip but keep the full nearby l
     />
   );
 
-  fireEvent.click(
-    screen.getByRole("button", { name: "Find nearest stop" })
-  );
-
   const routeRegion = await screen.findByRole("region", {
     name: "Best ways to Home stop",
   });
