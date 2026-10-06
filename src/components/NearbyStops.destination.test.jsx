@@ -134,6 +134,103 @@ test("keeps every nearby stop but ranks a farther useful stop above a nearer wro
   expect(nearestOrder).toHaveLength(3);
 });
 
+test("suggests but never auto-switches from an explicit stop when a nearby stop is materially better", () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: {
+          tripRef: "trip-current",
+          lineRef: "1",
+          catchability: "comfortable",
+          departureAt: now + 300,
+          destinationArrivalAt: now + 2_000,
+        },
+      },
+      "200": {
+        status: "good",
+        best: {
+          tripRef: "trip-better",
+          lineRef: "18",
+          catchability: "comfortable",
+          departureAt: now + 360,
+          destinationArrivalAt: now + 1_500,
+        },
+      },
+      "300": { status: "no-direct", best: null },
+    },
+  });
+
+  const onSelect = vi.fn();
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={onSelect}
+    />
+  );
+
+  expect(
+    screen.getByText(
+      "A nearby stop has a meaningfully better option to Home stop."
+    )
+  ).toBeInTheDocument();
+  expect(onSelect).not.toHaveBeenCalled();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Open Farther useful" })
+  );
+  expect(onSelect).toHaveBeenCalledTimes(1);
+  expect(onSelect).toHaveBeenCalledWith("200");
+});
+
+test("does not suggest switching stops for a small ETA advantage", () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: {
+          tripRef: "trip-current",
+          lineRef: "1",
+          catchability: "comfortable",
+          departureAt: now + 300,
+          destinationArrivalAt: now + 1_600,
+        },
+      },
+      "200": {
+        status: "good",
+        best: {
+          tripRef: "trip-small-win",
+          lineRef: "18",
+          catchability: "comfortable",
+          departureAt: now + 360,
+          destinationArrivalAt: now + 1_540,
+        },
+      },
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.queryByText(/meaningfully better option/i)
+  ).not.toBeInTheDocument();
+});
+
 test("keeps nearby stops directly visible when no journey choice is trustworthy", async () => {
   nearbyHook.useDestinationAwareNearby.mockReturnValue({
     state: "ready",
