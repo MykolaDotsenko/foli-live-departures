@@ -235,12 +235,18 @@ export default function RideSetup({
   useEffect(() => {
     if (targetStopSequence || downstream.length === 0) return;
 
-    const preferredSequence = Number(preferredTargetStopSequence);
+    const hasPreferredSequence =
+      preferredTargetStopSequence !== null &&
+      preferredTargetStopSequence !== undefined &&
+      preferredTargetStopSequence !== "";
+    const preferredSequence = hasPreferredSequence
+      ? Number(preferredTargetStopSequence)
+      : null;
     const preferred = downstream.find(
       (item) =>
         (Number.isFinite(preferredSequence) &&
           Number(item.stopSequence) === preferredSequence) ||
-        (!Number.isFinite(preferredSequence) &&
+        ((!Number.isFinite(preferredSequence) || preferredSequence === null) &&
           preferredTargetStopId &&
           String(item.stopId) === String(preferredTargetStopId))
     );
