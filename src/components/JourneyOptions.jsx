@@ -269,12 +269,10 @@ export default function JourneyOptions({
                 )}
               </button>
 
-              <details className={styles.details}>
+              <details>
                 <summary>{t("Trip details")}</summary>
-                {details && (
-                  <span className={styles.detailText}>{details}</span>
-                )}
-                <span className={styles.detailText}>
+                {details && <span>{details}</span>}
+                <span>
                   {estimateSourceText(
                     option.departure.liveState,
                     hasFinalWalk(option.departure)
