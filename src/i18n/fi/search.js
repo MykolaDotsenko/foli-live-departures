@@ -124,6 +124,9 @@ export default {
   "Nearby Föli stops for {destination}":
     "Fölin lähipysäkit määränpäähän {destination}",
   "Compare nearby stops": "Vertaa lähipysäkkejä",
+  "A nearby stop has a meaningfully better option to {destination}.":
+    "Läheiseltä pysäkiltä on selvästi parempi vaihtoehto määränpäähän {destination}.",
+  "Open {stop}": "Avaa {stop}",
 
 
   // Direct journey alternatives
