@@ -186,7 +186,6 @@ export default {
   "When you get to the transfer stop, tap “I'm at the stop”.":
     "Kun olet vaihtopysäkillä, napauta ”Olen pysäkillä”.",
   "Wait here for line {line}.": "Odota tässä linjaa {line}.",
-  "When line {line} arrives, open the selected departure and start the Get-off alert.":
     "Kun linja {line} saapuu, avaa valittu lähtö ja käynnistä poistumishälytys.",
   "Show line {line} departure": "Näytä linjan {line} lähtö",
   "To {destination}": "Määränpää {destination}",
@@ -198,7 +197,6 @@ export default {
     "Kun olet pysäkillä, napauta ”Olen pysäkillä”.",
   "Your selected bus is pinned first in the departure board.":
     "Valitsemasi bussi on kiinnitetty lähtötaulun ensimmäiseksi.",
-  "When you board, use Get-off alert on that departure. Ride Mode remains in control after that.":
     "Kun nouset kyytiin, käytä kyseisen lähdön Poistumishälytystä. Ride Mode vastaa sen jälkeen matkasta.",
   "Your selected bus was cancelled.": "Valitsemasi bussi peruttiin.",
   "Your selected bus is no longer a reliable option.":
@@ -306,7 +304,6 @@ export default {
     "Valitun matkan tuleva bussi peruttiin. Valitse uusi vaihtoehto.",
   "A committed future bus has probably been missed. Choose a fresh option.":
     "Valitun matkan tuleva bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
-  "When you board, start the Get-off alert for this leg. Ride Mode stays in control until you get off, then Journey Assistant resumes with the next leg.":
     "Kun nouset kyytiin, käynnistä tämän osuuden poistumishälytys. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa seuraavalla osuudella.",
   "Your second bus was cancelled. Choose a fresh option.":
     "Toinen bussisi peruttiin. Valitse uusi vaihtoehto.",
@@ -326,7 +323,6 @@ export default {
     "Toinen bussi on todennäköisesti mennyt. Valitse uusi vaihtoehto.",
   "The selected transfer can no longer be continued safely. Choose a fresh option.":
     "Valittua vaihtoyhteyttä ei voi enää jatkaa luotettavasti. Valitse uusi vaihtoehto.",
-  "When you board, start the Get-off alert for the selected transfer stop. Ride Mode stays in control until you get off, then Journey Assistant resumes with leg 2.":
     "Kun nouset kyytiin, käynnistä poistumishälytys valitulle vaihtopysäkille. Ajotila pysyy ohjauksessa poistumiseen asti, minkä jälkeen Matka-avustaja jatkaa toisella osuudella.",
   "Enter a stop, address or place.":
     "Kirjoita pysäkki, osoite tai paikka.",
