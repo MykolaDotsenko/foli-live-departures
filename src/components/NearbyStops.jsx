@@ -692,24 +692,16 @@ function NearbyStops({
       <div className={styles.header}>
         <div>
           <h2 id="nearby-stops-title" className={styles.heading} tabIndex={-1}>
-            {activeOriginStop
-              ? t("Starting from {stop}", { stop: stopLabel(activeOriginStop) })
-              : needsOriginDecision
-                ? t("Start from where you are?")
-                : destination
-                  ? t("Nearby stops for {destination}", {
-                      destination: destinationLabel,
-                    })
-                  : t("Near you")}
+            {destination && !needsOriginDecision
+              ? t("Nearby stops for {destination}", {
+                  destination: destinationLabel,
+                })
+              : t("Near you")}
           </h2>
           <p className={styles.description}>
-            {activeOriginStop
-              ? t("The open stop is your journey start.")
-              : needsOriginDecision
-                ? t("Use your location once, or choose a starting stop. It isn’t saved.")
-                : destination && position
-                  ? t("Tap a stop to see when its buses leave.")
-                  : t("Uses your location once. It isn’t saved.")}{" "}
+            {destination && position && !activeOriginStop
+              ? t("Tap a stop to see when its buses leave.")
+              : t("Uses your location once. It isn’t saved.")}{" "}
             <span id="stop-radar-hint">
               {t("The radar shows the way to a stop as you walk.")}
             </span>
