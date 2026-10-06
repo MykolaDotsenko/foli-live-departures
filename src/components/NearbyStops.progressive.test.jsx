@@ -127,7 +127,7 @@ test("expands beyond the first six stops when no usable option exists there", as
   );
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Find nearest stop" })
+    screen.getByRole("button", { name: "Use my location" })
   );
 
   await waitFor(() =>
@@ -257,7 +257,7 @@ test("does not expand when the first six already contain two meaningful options"
   );
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Find nearest stop" })
+    screen.getByRole("button", { name: "Use my location" })
   );
 
   const group = await screen.findByRole("group", {
