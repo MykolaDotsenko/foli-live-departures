@@ -19,7 +19,7 @@ import {
   nearestChoiceIsAmbiguous,
 } from "../utils/nearestStop";
 import { formatClock, formatDue } from "../utils/time";
-import { isMateriallyBetterDestinationFit, rankDestinationStops } from "../utils/journeyRanking";
+import { rankDestinationStops } from "../utils/journeyRanking";
 import { selectDirectJourneyOptions } from "../utils/directJourneyOptions";
 import { directOptionMatchesActiveJourney } from "../utils/activeJourney";
 import styles from "./NearbyStops.module.css";
@@ -422,17 +422,14 @@ function NearbyStops({
     destinationSortedStops.find((stop) =>
       ["good", "tight"].includes(fitsByStop[stop.id]?.status)
     )?.id || "";
+  const betterStopId = activeOriginStop
+    ? rankDestinationStops(nearbyStops, fitsByStop, [activeStopId])[0]?.id
+    : "";
   const betterNearbyStop =
-    activeOriginStop &&
     bestStopId &&
-    String(bestStopId) !== String(activeStopId) &&
-    isMateriallyBetterDestinationFit(
-      fitsByStop[bestStopId],
-      fitsByStop[activeStopId]
-    )
-      ? destinationSortedStops.find(
-          (stop) => String(stop.id) === String(bestStopId)
-        ) || null
+    String(betterStopId) === String(bestStopId) &&
+    String(bestStopId) !== String(activeStopId)
+      ? destinationSortedStops.find((stop) => stop.id === bestStopId) || null
       : null;
   const betterNearbyFit = betterNearbyStop
     ? fitsByStop[betterNearbyStop.id]
