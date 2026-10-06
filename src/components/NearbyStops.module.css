@@ -126,6 +126,50 @@
   font-weight: 700;
 }
 
+.betterStop {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 11px;
+  border: 1px solid #9bcabd;
+  border-radius: 12px;
+  background: #f2faf7;
+}
+
+.betterStopCopy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  color: #254b41;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.betterStopCopy span {
+  color: #466158;
+  overflow-wrap: anywhere;
+}
+
+.betterStopAction {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #17806a;
+  border-radius: 10px;
+  background: #fff;
+  color: #126351;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 850;
+  text-align: center;
+}
+
+.betterStopAction:hover {
+  background: #eaf7f2;
+}
+
 .stopGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -269,6 +313,16 @@
 }
 
 @media (max-width: 560px) {
+  .betterStop {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .betterStopAction {
+    width: 100%;
+    min-height: 46px;
+  }
+
   .header {
     align-items: stretch;
     flex-direction: column;
@@ -299,6 +353,7 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .locateButton,
+  .betterStopAction,
   .stopCard,
   .stopButton,
   .walkLink {
@@ -312,6 +367,7 @@
 @media (forced-colors: active) {
   .stopCard[data-active="true"],
   .locateButton,
+  .betterStopAction,
   .radarButton,
   .walkLink {
     border: 2px solid ButtonText;
@@ -450,6 +506,26 @@
     border-color: var(--dm-warn-line);
     background: var(--dm-warn-surface);
     color: var(--dm-warn-text);
+  }
+
+  :root[data-theme="dark"] .betterStop {
+    border-color: var(--dm-accent);
+    background: var(--dm-accent-surface);
+  }
+
+  :root[data-theme="dark"] .betterStopCopy,
+  :root[data-theme="dark"] .betterStopCopy span {
+    color: var(--dm-text);
+  }
+
+  :root[data-theme="dark"] .betterStopAction {
+    border-color: var(--dm-accent);
+    background: var(--dm-raised);
+    color: var(--dm-accent);
+  }
+
+  :root[data-theme="dark"] .betterStopAction:hover {
+    background: var(--dm-sunken);
   }
 
 
