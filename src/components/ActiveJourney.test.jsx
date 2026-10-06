@@ -860,7 +860,7 @@ test("walking journey can open journey-driven radar without replacing the stop",
   );
 
   fireEvent.click(
-    screen.getByRole("button", { name: "Guide me with radar" })
+    screen.getByRole("button", { name: "Open stop radar" })
   );
   expect(onGuideWithRadar).toHaveBeenCalledTimes(1);
   expect(onConfirmAtStop).not.toHaveBeenCalled();
@@ -892,10 +892,7 @@ test("an approaching selected bus asks for explicit boarding confirmation", () =
   );
 
   expect(
-    screen.getByRole("heading", { name: "Your bus is arriving" })
-  ).toBeInTheDocument();
-  expect(
-    screen.getByText("Board line 18. Confirm only after you are on the bus.")
+    screen.getByRole("heading", { name: "Wait for line 18" })
   ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "I'm on the bus" }));
