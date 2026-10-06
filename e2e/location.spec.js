@@ -445,18 +445,35 @@ test("journey options offer the next bus too, and where to get off", async ({
     .click();
 
   const options = page.getByRole("region", { name: "Best ways to Puistokatu" });
-  const cards = options.getByRole("button");
+  const cards = options.locator("article > button");
   await expect(cards).toHaveCount(2);
   await expect(options.getByText("2 options")).toBeVisible();
 
   await expect(cards.nth(0)).toContainText("Fastest");
   await expect(cards.nth(0)).toContainText("Line 1 → Satama");
-  await expect(cards.nth(0)).toContainText(
-    "Get off at Puistokatu · about 5 min on the bus"
-  );
+  await expect(cards.nth(0)).toContainText("Get off at Puistokatu");
   await expect(cards.nth(1)).toContainText("Next bus");
   await expect(cards.nth(1)).toContainText("Line 7 → Runosmäki");
   await expect(cards.nth(1)).toContainText(
     "If you miss the first one · about 7 min later"
   );
+
+  const firstDetails = options.locator("article").first().locator("details");
+  await expect(firstDetails).not.toHaveAttribute("open");
+  await expect(firstDetails.getByText("about 5 min on the bus")).toBeHidden();
+  await firstDetails.getByText("Trip details").click();
+  await expect(firstDetails).toHaveAttribute("open");
+  await expect(firstDetails.getByText("about 5 min on the bus")).toBeVisible();
+
+  const nearbyComparison = page
+    .getByText("Compare nearby stops", { exact: true })
+    .locator("..");
+  await expect(nearbyComparison).not.toHaveAttribute("open");
+  await expect(
+    page.getByRole("group", { name: "Nearby Föli stops for Puistokatu" })
+  ).toHaveCount(0);
+  await page.getByText("Compare nearby stops", { exact: true }).click();
+  await expect(
+    page.getByRole("group", { name: "Nearby Föli stops for Puistokatu" })
+  ).toBeVisible();
 });
