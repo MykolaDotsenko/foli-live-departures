@@ -117,8 +117,10 @@ export default {
   Best: "Bäst",
   "Nearby Föli stops for {destination}":
     "Föli-hållplatser nära {destination}",
+  "Compare nearby stops": "Jämför hållplatser i närheten",
 
   "Direct options": "Direktalternativ",
+  "Trip details": "Resedetaljer",
   "Best ways to {destination}": "Bästa sätten till {destination}",
   "1 option": "1 alternativ",
   "{count} options": options,
