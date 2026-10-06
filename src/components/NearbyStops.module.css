@@ -240,6 +240,32 @@
   outline-offset: -3px;
 }
 
+.comparison {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid #d8e5e7;
+}
+
+.comparison > summary {
+  min-height: 44px;
+  padding: 10px 2px 6px;
+  color: #285860;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.comparison > summary:focus-visible {
+  outline: 3px solid #007985;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.comparisonBody {
+  display: grid;
+  gap: 8px;
+}
+
 .disclaimer {
   color: #52666f;
 }
@@ -428,6 +454,14 @@
   :root[data-theme="dark"] .stopText > span,
   :root[data-theme="dark"] .disclaimer {
     color: var(--dm-muted);
+  }
+
+  :root[data-theme="dark"] .comparison {
+    border-color: var(--dm-line);
+  }
+
+  :root[data-theme="dark"] .comparison > summary {
+    color: var(--dm-accent);
   }
 
   :root[data-theme="dark"] .locateButton {
