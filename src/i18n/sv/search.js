@@ -118,9 +118,6 @@ export default {
   "Nearby Föli stops for {destination}":
     "Föli-hållplatser nära {destination}",
   "Compare nearby stops": "Jämför hållplatser i närheten",
-  "A nearby stop has a meaningfully better option to {destination}.":
-    "En närliggande hållplats har ett tydligt bättre alternativ till {destination}.",
-  "Open {stop}": "Öppna {stop}",
 
   "Direct options": "Direktalternativ",
   "Trip details": "Resedetaljer",
@@ -165,10 +162,6 @@ export default {
   "Checked {count} nearby stops": "Kontrollerade {count} närliggande hållplatser",
 
   "Active journey": "Aktiv resa",
-  "Your bus is arriving": "Din buss är på väg in",
-  "Board line {line}. Confirm only after you are on the bus.": "Stig på linje {line}. Bekräfta först när du är ombord.",
-  "Your exit stop is already selected from this journey.": "Din avstigningshållplats är redan vald från resan.",
-  "Guide me with radar": "Visa vägen med radar",
   "I'm on the bus": "Jag är på bussen",
   "Choose another route": "Välj en annan rutt",
   "Wait for line {line}": "Vänta på linje {line}",
