@@ -622,6 +622,17 @@ function App() {
     onClear: clearJourneyDestination,
   };
 
+  const homeRecovery =
+    !ride.session && (
+      <HomeRecovery
+        home={placesById.get("home") || null}
+        stops={stops}
+        online={online}
+        compact={Boolean(stopId)}
+        onOpenStop={selectStop}
+      />
+    );
+
   return (
     // The header and footer sit beside the main content, not inside it, so
     // they are the page's banner and contentinfo: inside <main> they were
@@ -757,15 +768,7 @@ function App() {
             first-class path. No second component or app mode is introduced:
             only its position in the idle Home hierarchy changes. */}
         <div className="top-section">
-          {!ride.session && stopId && (
-            <HomeRecovery
-              home={placesById.get("home") || null}
-              stops={stops}
-              online={online}
-              compact
-              onOpenStop={selectStop}
-            />
-          )}
+          {stopId && homeRecovery}
 
           <section className="search-panel" aria-label={t("Choose a bus stop")}>
             <BusStopForm
@@ -897,15 +900,7 @@ function App() {
 
         {/* Home recovery is useful, but on idle Home it must not compete with
             destination, stop search or physical nearby-stop orientation. */}
-        {!ride.session && !stopId && (
-          <HomeRecovery
-            home={placesById.get("home") || null}
-            stops={stops}
-            online={online}
-            compact={false}
-            onOpenStop={selectStop}
-          />
-        )}
+        {!stopId && homeRecovery}
 
         {!sharedPlace && (
           <MyPlaces
