@@ -255,6 +255,16 @@ export default function RideSetup({
       return;
     }
 
+    // A committed journey's exit stop is authoritative. If it cannot be
+    // matched to this trip, fail closed and make the passenger choose rather
+    // than silently falling back to a saved Home stop.
+    if (
+      journeyDriven &&
+      (preferredTargetStopId || hasPreferredSequence)
+    ) {
+      return;
+    }
+
     const homeStops = downstream.filter((item) =>
       item.places.includes("Home")
     );
@@ -270,6 +280,7 @@ export default function RideSetup({
     setTargetStopSequence(String(home.stopSequence));
   }, [
     downstream,
+    journeyDriven,
     placesById,
     preferredTargetStopId,
     preferredTargetStopSequence,
