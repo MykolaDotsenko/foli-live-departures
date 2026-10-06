@@ -821,33 +821,45 @@ export default function JourneySearch({
           )
         ) : (
           <>
-            <div className={styles.handoff}>
-              {!homeEntry && (
+            {!homeEntry && (
+              <div className={styles.handoff}>
                 <p className={styles.privacyNote}>
                   {t(
                     "Searched on this device: nothing you type here is sent anywhere."
                   )}
                 </p>
-              )}
-              {online && (
-                <a
-                  className={styles.handoffLink}
-                  href="https://turku.digitransit.fi/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t("Open Turku journey planner")}
-                </a>
-              )}
-            </div>
+                {online && (
+                  <a
+                    className={styles.handoffLink}
+                    href="https://turku.digitransit.fi/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t("Open Turku journey planner")}
+                  </a>
+                )}
+              </div>
+            )}
             {value.trim() &&
               options.length === 0 &&
               value.trim() !== destinationLabel(destination) && (
-                <p className={styles.privacyNote}>
-                  {t(
-                    "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner."
+                <>
+                  <p className={styles.privacyNote}>
+                    {t(
+                      "Offline OpenStreetMap data may not contain every address. For a wider search, use the official Turku journey planner."
+                    )}
+                  </p>
+                  {homeEntry && online && (
+                    <a
+                      className={styles.handoffLink}
+                      href="https://turku.digitransit.fi/"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t("Open Turku journey planner")}
+                    </a>
                   )}
-                </p>
+                </>
               )}
           </>
         )}
