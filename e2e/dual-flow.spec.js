@@ -41,13 +41,13 @@ test("idle Home exposes destination, stop and standalone Radar in task order", a
         destinationSection &&
           stopSection &&
           destinationSection.compareDocumentPosition(stopSection) &
-            Node.DOCUMENT_POSITION_FOLLOWING
+            globalThis.Node.DOCUMENT_POSITION_FOLLOWING
       ),
       stopBeforeNearby: Boolean(
         stopSection &&
           nearbySection &&
           stopSection.compareDocumentPosition(nearbySection) &
-            Node.DOCUMENT_POSITION_FOLLOWING
+            globalThis.Node.DOCUMENT_POSITION_FOLLOWING
       ),
       activeTag: document.activeElement?.tagName || "",
     };
