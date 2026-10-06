@@ -230,12 +230,12 @@ export default function ActiveJourney({
     boardingAvailable &&
     Number.isFinite(secondsToDeparture) &&
     Math.abs(secondsToDeparture) <= 120;
-  const showDepartureLabel = continuationLeg
-    ? t("Show line {line} departure", { line: journey.lineRef || "—" })
-    : t("Show selected departure");
   const transferLiveStatus = transferLiveStatusText(journey);
   const itinerary = itineraryContext(journey);
   const continuationLeg = isTransferContinuationLeg(journey);
+  const showDepartureLabel = continuationLeg
+    ? t("Show line {line} departure", { line: journey.lineRef || "—" })
+    : t("Show selected departure");
   const sameTransferStop = currentLegUsesSameTransferStop(journey);
   const hasFutureLeg = Boolean(itinerary?.next && itinerary?.nextTransfer);
   const walkingUrl =
