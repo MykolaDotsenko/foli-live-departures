@@ -93,11 +93,6 @@ export default {
   Change: "Ändra",
   Clear: "Rensa",
   "Saved destinations": "Sparade destinationer",
-  "Starting from {stop}": "Start från {stop}",
-  "Start from where you are?": "Starta från din nuvarande position?",
-  "The open stop is your journey start.": "Den öppna hållplatsen är resans startpunkt.",
-  "Use your location once, or choose a starting stop. It isn’t saved.":
-    "Använd din position en gång eller välj en starthållplats. Positionen sparas inte.",
   "Choose a starting stop": "Välj starthållplats",
   "Nearby stops for {destination}": "Hållplatser nära {destination}",
   "Tap a stop to see when its buses leave.":
