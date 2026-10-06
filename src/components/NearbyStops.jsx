@@ -285,8 +285,8 @@ function NearbyStops({
     typeof navigator.geolocation?.watchPosition === "function";
 
   const baseNearbyStops = useMemo(
-    () => findNearestStops(stops, position, NEARBY_STOP_LIMIT),
-    [position, stops]
+    () => findNearestStops(stops, planningOrigin, NEARBY_STOP_LIMIT),
+    [planningOrigin, stops]
   );
   const stopsById = useMemo(
     () => new Map(stops.map((stop) => [String(stop.id), stop])),
@@ -296,6 +296,17 @@ function NearbyStops({
     destination && activeStopId
       ? stopsById.get(String(activeStopId)) || null
       : null;
+  // A stop-first journey already has an explicit origin. Feed the existing
+  // nearby/routing intelligence the stop's coordinates without pretending
+  // they are the passenger's GPS position.
+  const planningOrigin =
+    activeOriginStop && hasCoordinates(activeOriginStop)
+      ? {
+          lat: Number(activeOriginStop.lat),
+          lon: Number(activeOriginStop.lon),
+          accuracy: 0,
+        }
+      : position;
 
   useEffect(() => {
     const destinationId = destination?.id || "";
@@ -328,8 +339,8 @@ function NearbyStops({
     stops,
   ]);
   const expandedNearbyStops = useMemo(
-    () => findNearestStops(stops, position, EXPANDED_NEARBY_STOP_LIMIT),
-    [position, stops]
+    () => findNearestStops(stops, planningOrigin, EXPANDED_NEARBY_STOP_LIMIT),
+    [planningOrigin, stops]
   );
   const searchExpanded =
     Boolean(destination?.id) && expandedDestinationId === destination.id;
@@ -341,7 +352,7 @@ function NearbyStops({
   const { fitsByStop, state: fitState } = useDestinationAwareNearby({
     stops: nearbyStops,
     destination,
-    positionAccuracy: position?.accuracy ?? null,
+    positionAccuracy: planningOrigin?.accuracy ?? null,
     timeConstraint,
   });
 
@@ -377,7 +388,7 @@ function NearbyStops({
   useEffect(() => {
     if (
       !destination ||
-      !position ||
+      !planningOrigin ||
       searchExpanded ||
       fitState !== "ready" ||
       expandedNearbyStops.length <= baseNearbyStops.length ||
@@ -393,7 +404,7 @@ function NearbyStops({
     destination,
     expandedNearbyStops.length,
     fitState,
-    position,
+    planningOrigin,
     searchExpanded,
   ]);
 
@@ -426,7 +437,7 @@ function NearbyStops({
   // the passenger who misses the only bus needs another way.
   const directSearchComplete =
     Boolean(destination) &&
-    Boolean(position) &&
+    Boolean(planningOrigin) &&
     fitState === "ready" &&
     directJourneyOptions.length < 2 &&
     (searchExpanded || expandedNearbyStops.length <= baseNearbyStops.length);
@@ -437,7 +448,7 @@ function NearbyStops({
   const shouldSearchTransfers =
     Boolean(onSelectTransferJourney) &&
     Boolean(destination) &&
-    Boolean(position) &&
+    Boolean(planningOrigin) &&
     timeValid &&
     (directSearchComplete || preferenceWantsAlternatives);
 
@@ -447,7 +458,7 @@ function NearbyStops({
       originStops: nearbyStops,
       allStops: stops,
       destination,
-      positionAccuracy: position?.accuracy ?? null,
+      positionAccuracy: planningOrigin?.accuracy ?? null,
       timeConstraint,
       routingPreference,
     });
@@ -809,41 +820,47 @@ function NearbyStops({
         </RadarLoadBoundary>
       )}
 
-      {position && !radarOpen && (
+      {planningOrigin && !radarOpen && (
         <>
           {/* What the fix found, in a passenger's words. "One-time location
               only" repeated the line above the button, and "Selected stop ≈
               <10 m away" left the passenger to work out which stop that was. */}
-          <div className={styles.meta} role="status" aria-live="polite">
-            <span>
-              {position.accuracy !== null
-                ? t("Location found · ±{accuracy}", {
-                    accuracy: formatAccuracy(position.accuracy),
-                  })
-                : t("Location found")}
-            </span>
-            {selectedStop && (
-              <span>
-                {t("{stop} is {distance} away", {
-                  stop: stopLabel(selectedStop.stop),
-                  distance: formatDistance(selectedStop.distance),
-                })}
-              </span>
-            )}
-            {destination && fitState === "loading" && !searchExpanded && (
-              <span>{t("Checking routes…")}</span>
-            )}
-            {destination && searchExpanded && fitState === "loading" && (
-              <span>{t("Checking a little farther…")}</span>
-            )}
-            {destination && searchExpanded && fitState === "ready" && (
-              <span>
-                {t("Checked {count} nearby stops", {
-                  count: nearbyStops.length,
-                })}
-              </span>
-            )}
-          </div>
+          {(position ||
+            (destination && fitState === "loading") ||
+            (destination && searchExpanded && fitState === "ready")) && (
+            <div className={styles.meta} role="status" aria-live="polite">
+              {position && (
+                <span>
+                  {position.accuracy !== null
+                    ? t("Location found · ±{accuracy}", {
+                        accuracy: formatAccuracy(position.accuracy),
+                      })
+                    : t("Location found")}
+                </span>
+              )}
+              {selectedStop && (
+                <span>
+                  {t("{stop} is {distance} away", {
+                    stop: stopLabel(selectedStop.stop),
+                    distance: formatDistance(selectedStop.distance),
+                  })}
+                </span>
+              )}
+              {destination && fitState === "loading" && !searchExpanded && (
+                <span>{t("Checking routes…")}</span>
+              )}
+              {destination && searchExpanded && fitState === "loading" && (
+                <span>{t("Checking a little farther…")}</span>
+              )}
+              {destination && searchExpanded && fitState === "ready" && (
+                <span>
+                  {t("Checked {count} nearby stops", {
+                    count: nearbyStops.length,
+                  })}
+                </span>
+              )}
+            </div>
+          )}
 
           {locationNotice && (
             <p className={styles.notice}>{locationNotice}</p>
