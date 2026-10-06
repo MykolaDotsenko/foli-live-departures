@@ -234,18 +234,15 @@ export default function RideSetup({
   useEffect(() => {
     if (targetStopSequence || downstream.length === 0) return;
 
-    const hasPreferredSequence =
-      preferredTargetStopSequence !== null &&
-      preferredTargetStopSequence !== undefined &&
-      preferredTargetStopSequence !== "";
-    const preferredSequence = hasPreferredSequence
-      ? Number(preferredTargetStopSequence)
-      : null;
+    const preferredSequence =
+      preferredTargetStopSequence === null || preferredTargetStopSequence === ""
+        ? Number.NaN
+        : Number(preferredTargetStopSequence);
     const preferred = downstream.find(
       (item) =>
         (Number.isFinite(preferredSequence) &&
           Number(item.stopSequence) === preferredSequence) ||
-        ((!Number.isFinite(preferredSequence) || preferredSequence === null) &&
+        (!Number.isFinite(preferredSequence) &&
           preferredTargetStopId &&
           String(item.stopId) === String(preferredTargetStopId))
     );
@@ -260,7 +257,7 @@ export default function RideSetup({
     // than silently falling back to a saved Home stop.
     if (
       journeyDriven &&
-      (preferredTargetStopId || hasPreferredSequence)
+      (preferredTargetStopId || Number.isFinite(preferredSequence))
     ) {
       return;
     }
