@@ -296,6 +296,95 @@ test("a chosen option carries the accuracy of the fix it was measured from", asy
   ).toHaveAccessibleDescription("The radar shows the way to a stop as you walk.");
 });
 
+test("suggests a materially better nearby stop without switching the explicit origin", () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: {
+          lineRef: "1",
+          departureAt: now + 300,
+          destinationArrivalAt: now + 1_500,
+        },
+      },
+      "200": {
+        status: "good",
+        best: {
+          lineRef: "18",
+          departureAt: now + 360,
+          destinationArrivalAt: now + 1_200,
+        },
+      },
+      "300": { status: "no-direct", best: null },
+    },
+  });
+  const onOpenStop = vi.fn();
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={vi.fn()}
+      onOpenStop={onOpenStop}
+    />
+  );
+
+  const suggestion = screen.getByLabelText("Best for Home stop");
+  expect(within(suggestion).getByText(/Farther useful/)).toBeInTheDocument();
+  expect(onOpenStop).not.toHaveBeenCalled();
+
+  fireEvent.click(
+    within(suggestion).getByRole("button", {
+      name: "Open Farther useful, stop 200",
+    })
+  );
+  expect(onOpenStop).toHaveBeenCalledWith("200");
+});
+
+test("does not suggest another stop for a small same-class ETA advantage", () => {
+  const now = Math.floor(Date.now() / 1000);
+  nearbyHook.useDestinationAwareNearby.mockReturnValue({
+    state: "ready",
+    fitsByStop: {
+      "100": {
+        status: "good",
+        best: {
+          lineRef: "1",
+          departureAt: now + 300,
+          destinationArrivalAt: now + 1_300,
+        },
+      },
+      "200": {
+        status: "good",
+        best: {
+          lineRef: "18",
+          departureAt: now + 360,
+          destinationArrivalAt: now + 1_211,
+        },
+      },
+      "300": { status: "no-direct", best: null },
+    },
+  });
+
+  render(
+    <NearbyStops
+      stops={stops}
+      coordinatesStatus="ready"
+      activeStopId="100"
+      destination={destination}
+      onSelect={vi.fn()}
+    />
+  );
+
+  expect(
+    screen.queryByLabelText("Best for Home stop")
+  ).not.toBeInTheDocument();
+});
+
 test("with location refused, a destination still has a way to say where the journey starts", async () => {
   nearbyHook.useDestinationAwareNearby.mockReturnValue({
     state: "idle",
