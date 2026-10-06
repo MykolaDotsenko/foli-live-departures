@@ -312,10 +312,6 @@ export default {
   "final walk ≈ {distance}": "фінальна піша ділянка ≈ {distance}",
   "Arrival includes an approximate final walk based on straight-line distance; the real walking route can be longer.":
     "Час прибуття містить приблизну фінальну пішу ділянку за відстанню по прямій; реальний шлях може бути довшим.",
-  "Live transit + approximate walk": "Актуальний транспорт + приблизна піша ділянка",
-  "Timetable + approximate walk": "Розклад + приблизна піша ділянка",
-  "Realtime uncertain + approximate walk": "Актуальні дані невизначені + приблизна піша ділянка",
-  "Transit + approximate walk": "Транспорт + приблизна піша ділянка",
   "Final walk is approximate straight-line based guidance. The real walking route can be longer.":
     "Фінальна піша ділянка — приблизна оцінка за відстанню по прямій. Реальний шлях може бути довшим.",
   "This place appears outside Föli’s service area. Choose a destination inside the Föli area.":
