@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import AppFooter from "./app/AppFooter";
 import AppHeader from "./app/AppHeader";
 import useStopBoard from "./app/useStopBoard";
 import useTransferWatch from "./app/useTransferWatch";
 import ActiveJourney from "./components/ActiveJourney";
-import BusStopDisplay from "./components/BusStopDisplay";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
 import FinalWalk from "./components/FinalWalk";
@@ -17,7 +16,6 @@ import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
-import RideMode from "./components/RideMode";
 import ServiceAlerts from "./components/ServiceAlerts";
 import StopRadarPanel from "./components/StopRadarPanel";
 import useOnlineStatus from "./hooks/useOnlineStatus";
@@ -66,6 +64,9 @@ import {
   finalWalkFromRideSelection,
 } from "./utils/finalWalk";
 import { hasCoordinates } from "./utils/geo";
+
+const BusStopDisplay = lazy(() => import("./components/BusStopDisplay"));
+const RideMode = lazy(() => import("./components/RideMode"));
 
 
 function announceStop(stopId, name, loading) {
@@ -701,21 +702,23 @@ function App() {
           ride.fieldReport && <FieldTestReport report={ride.fieldReport} />}
 
         {ride.session && (
-          <RideMode
-            session={ride.session}
-            runtime={ride.runtime}
-            gps={ride.gps}
-            wakeLockState={ride.wakeLockState}
-            onTestAlert={ride.testAlert}
-            onEndRide={endRide}
-            onOpenStop={selectStop}
-            // The saved continuation is created only by
-            // transferJourneyForRideSelection(), which already proves an
-            // exact current-leg/exit-occurrence match and a committed future
-            // leg. It survives a same-tab reload with the active ride.
-            transferJourney={pendingTransferJourney}
-            transferRevalidation={transferRevalidation}
-          />
+          <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+            <RideMode
+              session={ride.session}
+              runtime={ride.runtime}
+              gps={ride.gps}
+              wakeLockState={ride.wakeLockState}
+              onTestAlert={ride.testAlert}
+              onEndRide={endRide}
+              onOpenStop={selectStop}
+              // The saved continuation is created only by
+              // transferJourneyForRideSelection(), which already proves an
+              // exact current-leg/exit-occurrence match and a committed future
+              // leg. It survives a same-tab reload with the active ride.
+              transferJourney={pendingTransferJourney}
+              transferRevalidation={transferRevalidation}
+            />
+          </Suspense>
         )}
 
         {!ride.session && finalWalk && (
@@ -874,38 +877,40 @@ function App() {
 
         {stopId && (
           <>
-            <BusStopDisplay
-              stopId={stopId}
-              stopName={displayStopName}
-              stop={selectedStop}
-              stops={stops}
-              arrivals={arrivals}
-              routesById={routesById}
-              routesByShortName={routesByShortName}
-              serverTime={serverTime}
-              receivedAtMs={receivedAtMs}
-              realtimeAvailable={realtimeAvailable}
-              scheduleAvailable={scheduleAvailable}
-              scheduleFailed={scheduleFailed === true}
-              scheduleIncomplete={scheduleIncomplete === true}
-              loading={loading}
-              refreshing={refreshing}
-              error={error}
-              onRefresh={() => refresh()}
-              isFavorite={favoriteIds.has(stopId)}
-              onToggleFavorite={() =>
-                currentStop && toggleFavorite(currentStop)
-              }
-              placesById={placesById}
-              destination={journey.destination}
-              selectedJourney={selectedJourney}
-              onStartRide={startRide}
-              activeRideTripRef={ride.session?.tripRef || ""}
-              cancellations={stopCancellations}
-              unknownStop={unknownStop}
-              online={online}
-              lineNotices={lineNotices}
-            />
+            <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+              <BusStopDisplay
+                stopId={stopId}
+                stopName={displayStopName}
+                stop={selectedStop}
+                stops={stops}
+                arrivals={arrivals}
+                routesById={routesById}
+                routesByShortName={routesByShortName}
+                serverTime={serverTime}
+                receivedAtMs={receivedAtMs}
+                realtimeAvailable={realtimeAvailable}
+                scheduleAvailable={scheduleAvailable}
+                scheduleFailed={scheduleFailed === true}
+                scheduleIncomplete={scheduleIncomplete === true}
+                loading={loading}
+                refreshing={refreshing}
+                error={error}
+                onRefresh={() => refresh()}
+                isFavorite={favoriteIds.has(stopId)}
+                onToggleFavorite={() =>
+                  currentStop && toggleFavorite(currentStop)
+                }
+                placesById={placesById}
+                destination={journey.destination}
+                selectedJourney={selectedJourney}
+                onStartRide={startRide}
+                activeRideTripRef={ride.session?.tripRef || ""}
+                cancellations={stopCancellations}
+                unknownStop={unknownStop}
+                online={online}
+                lineNotices={lineNotices}
+              />
+            </Suspense>
           </>
         )}
 
