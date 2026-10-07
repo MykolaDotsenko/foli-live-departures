@@ -7,6 +7,7 @@ export default {
   "Live bus times, disruptions and get-off alerts.":
     "Актуальні часи автобусів, зміни в русі та сповіщення про вихід.",
   Online: "Онлайн",
+  "Loading…": "Завантаження…",
   "Offline mode": "Немає з’єднання",
   Dark: "Темна",
   Light: "Світла",
