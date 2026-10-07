@@ -62,9 +62,16 @@ const MAX_EAGER_GZIP_JS_CSS_BYTES = 180_000;
 // convergence, phase-led Active Journey, journey-targeted Radar, explicit
 // boarding handoff into the existing Get-off alert, and active-journey IA
 // hardening) measures 648,522 raw bytes on CI. Startup remains inside its
-// unchanged cap because Stop Radar is still lazy-loaded. Allocate bounded
-// headroom for this reviewed feature set rather than weakening startup limits.
-const MAX_SHIPPED_JS_CSS_BYTES = 649_000;
+// unchanged cap because Stop Radar is still lazy-loaded.
+//
+// React 19.3 migration (2026-10-07) increases the complete shipped runtime,
+// but the board, Ride Mode, Active Journey, recovery, final-walk and field
+// diagnostics surfaces are now honest on-demand chunks. The unchanged eager
+// 625,000 raw / 180,000 gzip startup gates still pass. The complete app
+// measures 729,495 raw bytes on CI, so allocate narrow raw headroom here
+// without weakening startup performance. Gzip remains at the previous cap
+// until the same migration is measured independently below.
+const MAX_SHIPPED_JS_CSS_BYTES = 731_000;
 const MAX_SHIPPED_GZIP_JS_CSS_BYTES = 187_000;
 const MAX_LAZY_ASSET_BYTES = 125_000;
 const MAX_LAZY_ASSET_GZIP_BYTES = 45_000;
