@@ -4,15 +4,11 @@ import AppFooter from "./app/AppFooter";
 import AppHeader from "./app/AppHeader";
 import useStopBoard from "./app/useStopBoard";
 import useTransferWatch from "./app/useTransferWatch";
-import ActiveJourney from "./components/ActiveJourney";
 import BusStopForm from "./components/BusStopForm";
 import ConnectivityStatus from "./components/ConnectivityStatus";
-import FinalWalk from "./components/FinalWalk";
-import FieldTestReport from "./components/FieldTestReport";
 import HomeRecovery from "./components/HomeRecovery";
 import IosInstallHint from "./components/IosInstallHint";
 import JourneySearch from "./components/JourneySearch";
-import TransferRecoveryPanel from "./components/TransferRecoveryPanel";
 import MyPlaces from "./components/MyPlaces";
 import NearbyStops from "./components/NearbyStops";
 import QuickStops from "./components/QuickStops";
@@ -65,8 +61,14 @@ import {
 } from "./utils/finalWalk";
 import { hasCoordinates } from "./utils/geo";
 
+const ActiveJourney = lazy(() => import("./components/ActiveJourney"));
 const BusStopDisplay = lazy(() => import("./components/BusStopDisplay"));
+const FieldTestReport = lazy(() => import("./components/FieldTestReport"));
+const FinalWalk = lazy(() => import("./components/FinalWalk"));
 const RideMode = lazy(() => import("./components/RideMode"));
+const TransferRecoveryPanel = lazy(
+  () => import("./components/TransferRecoveryPanel")
+);
 
 
 function announceStop(stopId, name, loading) {
@@ -699,7 +701,11 @@ function App() {
 
         {!ride.session &&
           ride.fieldDiagnosticsEnabled &&
-          ride.fieldReport && <FieldTestReport report={ride.fieldReport} />}
+          ride.fieldReport && (
+            <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+              <FieldTestReport report={ride.fieldReport} />
+            </Suspense>
+          )}
 
         {ride.session && (
           <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
@@ -722,11 +728,13 @@ function App() {
         )}
 
         {!ride.session && finalWalk && (
-          <FinalWalk
-            walk={finalWalk}
-            online={online}
-            onDone={finishFinalWalk}
-          />
+          <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+            <FinalWalk
+              walk={finalWalk}
+              online={online}
+              onDone={finishFinalWalk}
+            />
+          </Suspense>
         )}
 
         {sharedPlace && (
@@ -761,23 +769,25 @@ function App() {
         )}
 
         {!ride.session && selectedJourney && (
-          <ActiveJourney
-            journey={selectedJourney}
-            stop={selectedJourneyStop}
-            online={online}
-            monitoringState={selectedJourneyMonitoringState}
-            boardingAvailable={Boolean(
-              selectedJourneyArrival && !selectedJourneyCancelled
-            )}
-            onConfirmAtStop={confirmJourneyAtStop}
-            onShowDeparture={showSelectedJourneyDeparture}
-            onBoard={confirmJourneyBoarding}
-            onGuideWithRadar={
-              hasCoordinates(selectedJourneyStop) ? openJourneyRadar : null
-            }
-            onChooseAnother={chooseAnotherJourney}
-            onOpenStop={openSelectedJourneyStop}
-          />
+          <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+            <ActiveJourney
+              journey={selectedJourney}
+              stop={selectedJourneyStop}
+              online={online}
+              monitoringState={selectedJourneyMonitoringState}
+              boardingAvailable={Boolean(
+                selectedJourneyArrival && !selectedJourneyCancelled
+              )}
+              onConfirmAtStop={confirmJourneyAtStop}
+              onShowDeparture={showSelectedJourneyDeparture}
+              onBoard={confirmJourneyBoarding}
+              onGuideWithRadar={
+                hasCoordinates(selectedJourneyStop) ? openJourneyRadar : null
+              }
+              onChooseAnother={chooseAnotherJourney}
+              onOpenStop={openSelectedJourneyStop}
+            />
+          </Suspense>
         )}
 
         {!ride.session &&
@@ -801,14 +811,16 @@ function App() {
         {!ride.session &&
           selectedJourney?.phase === "recovery" &&
           transferRecoveryContext && (
-            <TransferRecoveryPanel
-              state={online ? transferRecovery.state : "offline"}
-              directOptions={transferRecovery.directOptions}
-              transferOptions={transferRecovery.transferOptions}
-              destination={journey.destination}
-              onSelectJourney={selectJourneyOption}
-              onSelectTransferJourney={selectTransferJourneyOption}
-            />
+            <Suspense fallback={<p role="status">{t("Loading…")}</p>}>
+              <TransferRecoveryPanel
+                state={online ? transferRecovery.state : "offline"}
+                directOptions={transferRecovery.directOptions}
+                transferOptions={transferRecovery.transferOptions}
+                destination={journey.destination}
+                onSelectJourney={selectJourneyOption}
+                onSelectTransferJourney={selectTransferJourneyOption}
+              />
+            </Suspense>
           )}
 
         {/* On an idle Home, lead with the passenger's destination intent.
