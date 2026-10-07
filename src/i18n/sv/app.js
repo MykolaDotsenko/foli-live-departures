@@ -8,6 +8,7 @@ export default {
   "Live bus times, disruptions and get-off alerts.":
     "Bussavgångar i realtid, trafikstörningar och avstigningslarm.",
   Online: "Online",
+  "Loading…": "Laddar…",
   "Offline mode": "Offlineläge",
   Dark: "Mörkt",
   Light: "Ljust",
