@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { expect, test } from "vitest";
 import usePendingFocus from "./usePendingFocus";
@@ -42,6 +42,39 @@ test("focus follows the action to a target that mounts with it", () => {
   fireEvent.click(go);
 
   expect(screen.getByRole("heading", { name: "Result" })).toHaveFocus();
+});
+
+function OutsideReact() {
+  const requestFocus = usePendingFocus();
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          requestFocus(() => document.getElementById("async-result"))
+        }
+      >
+        Wait for lazy target
+      </button>
+      <div data-testid="async-host" />
+    </>
+  );
+}
+
+test("focus follows a target inserted without re-rendering the hook owner", async () => {
+  render(<OutsideReact />);
+  const button = screen.getByRole("button", { name: "Wait for lazy target" });
+  button.focus();
+  fireEvent.click(button);
+
+  const target = document.createElement("h2");
+  target.id = "async-result";
+  target.tabIndex = -1;
+  target.textContent = "Lazy result";
+  screen.getByTestId("async-host").append(target);
+
+  await waitFor(() => expect(target).toHaveFocus());
 });
 
 test("nothing moves focus unless an action asked", () => {
