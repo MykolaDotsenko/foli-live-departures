@@ -9,22 +9,10 @@ const PENDING_FOCUS_MS = 60_000;
  * Moves keyboard focus somewhere sensible after an action removes the
  * control that had it.
  *
- * Pressing "Start get-off alert", choosing a saved stop or cancelling a
- * setup took the button away under the passenger's finger, and a screen
- * reader or keyboard user was left at the top of the page with no idea
- * where the result went. The action asks for focus to go to a named place;
- * the move is made after the next render that has that place on screen,
- * since it often mounts only then.
- *
- * It never takes focus from somewhere the passenger has gone themselves:
- * the move is made only while focus is still on the control that asked, or
- * has fallen to the page because that control is gone. Focus on the page
- * alone is not enough: tapping plain text leaves it there too, and a slow
- * "Use my location" answered after the passenger had moved on pulled focus,
- * and the page's scroll, back to the setup. For the same reason a press or
- * a focus anywhere outside the control that asked withdraws the request.
- * Nothing asks on a page load or a background refresh, so those never move
- * focus at all.
+ * The target may mount in the same React render, after an async answer, or
+ * inside a React.lazy/Suspense boundary. A pending request therefore checks
+ * both after renders and when the DOM gains new nodes. It never polls and it
+ * never takes focus back after the passenger has moved somewhere else.
  *
  * @returns {(findTarget: () => (HTMLElement | null | undefined)) => void}
  */
@@ -41,10 +29,7 @@ export default function usePendingFocus() {
     pending?.stopListening();
   }, []);
 
-  useEffect(() => cancel, [cancel]);
-
-  // Every render: the target may be drawn by any of them.
-  useEffect(() => {
+  const tryFocus = useCallback(() => {
     const pending = pendingRef.current;
     if (!pending) return;
     if (Date.now() > pending.until) {
@@ -64,11 +49,22 @@ export default function usePendingFocus() {
 
     const target = pending.findTarget();
     if (!target || !target.isConnected) return;
+
+    // Remove the focusin listener before focusing the destination, otherwise
+    // our own move would look like the passenger moved on.
     cancel();
     target.focus();
     // Focus should also reveal the result. WebKit can keep a newly focused
     // heading outside the viewport after nearby content collapses or moves.
     target.scrollIntoView?.({ block: "nearest" });
+  }, [cancel]);
+
+  useEffect(() => cancel, [cancel]);
+
+  // Same-render targets remain fast: any render of the component owning this
+  // hook gives the pending request another chance.
+  useEffect(() => {
+    tryFocus();
   });
 
   return useCallback(
@@ -81,6 +77,11 @@ export default function usePendingFocus() {
         origin && origin !== document.body && origin !== document.documentElement
           ? origin
           : null;
+
+      /** @type {MutationObserver | null} */
+      let observer = null;
+      let expiryTimer = 0;
+
       /** @param {Event} event */
       const movedOn = (event) => {
         const where = event.target;
@@ -93,18 +94,35 @@ export default function usePendingFocus() {
         }
         cancel();
       };
+
+      const stopListening = () => {
+        document.removeEventListener("pointerdown", movedOn, true);
+        document.removeEventListener("focusin", movedOn, true);
+        observer?.disconnect();
+        if (expiryTimer) globalThis.clearTimeout(expiryTimer);
+      };
+
       document.addEventListener("pointerdown", movedOn, true);
       document.addEventListener("focusin", movedOn, true);
       pendingRef.current = {
         findTarget,
         origin,
         until: Date.now() + PENDING_FOCUS_MS,
-        stopListening: () => {
-          document.removeEventListener("pointerdown", movedOn, true);
-          document.removeEventListener("focusin", movedOn, true);
-        },
+        stopListening,
       };
+
+      // The target may already exist. Otherwise, Suspense or another async
+      // surface can add it without re-rendering the component that owns this
+      // hook; observe additions until it appears or the request is cancelled.
+      tryFocus();
+      if (pendingRef.current && globalThis.MutationObserver) {
+        observer = new globalThis.MutationObserver(tryFocus);
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+      if (pendingRef.current) {
+        expiryTimer = globalThis.setTimeout(cancel, PENDING_FOCUS_MS);
+      }
     },
-    [cancel]
+    [cancel, tryFocus]
   );
 }
