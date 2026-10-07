@@ -10,6 +10,7 @@ export default {
   "Live bus times, disruptions and get-off alerts.":
     "Reaaliaikaiset bussiajat, häiriöt ja pysäkkihälytykset.",
   Online: "Yhteys toimii",
+  "Loading…": "Ladataan…",
   "Offline mode": "Ei yhteyttä",
   Dark: "Tumma",
   Light: "Vaalea",
